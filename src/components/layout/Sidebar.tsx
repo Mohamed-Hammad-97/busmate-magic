@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LanguageSwitcher } from "./LanguageSwitcher";
+import { CitySelector } from "./CitySelector";
 
 interface NavItem {
   label: string;
@@ -102,6 +103,11 @@ export function Sidebar() {
             );
           })}
         </nav>
+
+        {/* City Selector */}
+        <div className="px-3 py-2 border-t border-sidebar-border">
+          <CitySelector />
+        </div>
 
         {/* Language Switcher */}
         <div className="px-3 py-2 border-t border-sidebar-border">

@@ -274,18 +274,18 @@ const Routes = () => {
 
   // Prepare data for map
   const mapSchools = useMemo(() => {
-    const schoolSet = new Map<string, { id: string; name: string; latitude: number; longitude: number }>();
+    const schoolMap: Record<string, { id: string; name: string; latitude: number; longitude: number }> = {};
     filteredRoutes.forEach((r: any) => {
-      if (r.schools && !schoolSet.has(r.schools.id)) {
-        schoolSet.set(r.schools.id, {
+      if (r.schools && !schoolMap[r.schools.id]) {
+        schoolMap[r.schools.id] = {
           id: r.schools.id,
           name: r.schools.name,
           latitude: r.schools.latitude,
           longitude: r.schools.longitude,
-        });
+        };
       }
     });
-    return Array.from(schoolSet.values());
+    return Object.values(schoolMap);
   }, [filteredRoutes]);
 
   const mapStudents = useMemo(() => {

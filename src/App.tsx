@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ParentAuthProvider } from "@/contexts/ParentAuthContext";
+import { CityProvider } from "@/contexts/CityContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { ParentProtectedRoute } from "@/components/auth/ParentProtectedRoute";
 import Auth from "./pages/Auth";
@@ -49,6 +50,7 @@ const App = () => (
           {/* Employee Auth-wrapped routes */}
           <Route path="/*" element={
             <AuthProvider>
+              <CityProvider>
               <Routes>
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />
                 <Route path="/auth" element={<Auth />} />
@@ -65,6 +67,7 @@ const App = () => (
                 <Route path="/employees" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              </CityProvider>
             </AuthProvider>
           } />
         </Routes>
