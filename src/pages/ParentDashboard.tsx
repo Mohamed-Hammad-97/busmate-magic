@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParentAuth } from "@/contexts/ParentAuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,13 +14,42 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Bus, LogOut, User, CreditCard, MapPin, School, Phone, Bell, CheckCircle, Clock, AlertCircle, Navigation } from "lucide-react";
+import { Bus, LogOut, User, CreditCard, MapPin, School, Phone, Bell, CheckCircle, Clock, AlertCircle, Navigation, MessageCircle, Lock } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { ParentLiveTracking } from "@/components/tracking/ParentLiveTracking";
+import { ParentChat } from "@/components/chat/ParentChat";
+import { SetPasswordDialog } from "@/components/chat/SetPasswordDialog";
 
 export default function ParentDashboard() {
-  const { parentAccount, signOut } = useParentAuth();
+  const { parentAccount, signOut, user } = useParentAuth();
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+
+  // Check if parent needs to set password (after subscription is verified)
+  useEffect(() => {
+    const checkPasswordStatus = async () => {
+      if (!parentAccount?.id) return;
+      
+      // Check if parent has active subscription and no password
+      const { data: account } = await supabase
+        .from("parent_accounts")
+        .select("has_password")
+        .eq("id", parentAccount.id)
+        .single();
+
+      const { data: registrations } = await supabase
+        .from("registrations")
+        .select("status")
+        .eq("parent_id", parentAccount.id);
+
+      // Show password dialog if has active registration but no password
+      if (account && !account.has_password && registrations && registrations.length > 0) {
+        setShowPasswordDialog(true);
+      }
+    };
+
+    checkPasswordStatus();
+  }, [parentAccount?.id]);
 
   // Fetch registrations for this parent
   const { data: registrations = [] } = useQuery({
@@ -186,7 +216,7 @@ export default function ParentDashboard() {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="tracking" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="tracking" className="gap-2">
               <Navigation className="h-4 w-4" />
               التتبع
@@ -194,6 +224,10 @@ export default function ParentDashboard() {
             <TabsTrigger value="children">أبنائي</TabsTrigger>
             <TabsTrigger value="routes">المسارات</TabsTrigger>
             <TabsTrigger value="payments">المدفوعات</TabsTrigger>
+            <TabsTrigger value="chat" className="gap-2">
+              <MessageCircle className="h-4 w-4" />
+              الدعم
+            </TabsTrigger>
           </TabsList>
 
           {/* Live Tracking Tab */}
@@ -360,8 +394,20 @@ export default function ParentDashboard() {
               );
             })}
           </TabsContent>
+
+          {/* Chat Tab */}
+          <TabsContent value="chat">
+            <ParentChat />
+          </TabsContent>
         </Tabs>
       </main>
+
+      {/* Set Password Dialog */}
+      <SetPasswordDialog
+        open={showPasswordDialog}
+        onOpenChange={setShowPasswordDialog}
+        onSuccess={() => setShowPasswordDialog(false)}
+      />
     </div>
   );
 }
