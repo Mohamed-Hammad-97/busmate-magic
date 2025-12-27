@@ -23,10 +23,12 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Search, CreditCard, CheckCircle, Clock, AlertCircle, Check, Eye, Hash } from 'lucide-react';
+import { Search, CreditCard, CheckCircle, Clock, AlertCircle, Check, Eye, Hash, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { PaymentProfileDialog } from '@/components/payments/PaymentProfileDialog';
+import { PaymentReminders } from '@/components/payments/PaymentReminders';
+import { InvoiceGenerator } from '@/components/payments/InvoiceGenerator';
 
 const Payments = () => {
   const queryClient = useQueryClient();
@@ -209,6 +211,12 @@ const Payments = () => {
           <h1 className="text-3xl font-bold text-foreground">إدارة المدفوعات</h1>
           <p className="text-muted-foreground">متابعة الأقساط والمدفوعات</p>
         </div>
+
+        {/* Payment Reminders */}
+        <PaymentReminders 
+          payments={payments} 
+          onViewPayment={(payment) => openPaymentProfile(payment)}
+        />
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -407,6 +415,18 @@ const Payments = () => {
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
+                              <InvoiceGenerator
+                                data={{
+                                  parentName: payment.subscriptions?.registrations?.parent_accounts?.parent_name || '',
+                                  studentName: payment.subscriptions?.registrations?.student_name || '',
+                                  subscriptionType: payment.subscriptions?.subscription_type || '',
+                                  totalAmount: payment.subscriptions?.value || 0,
+                                  paidAmount: paymentsByRegistration[payment.subscriptions?.registration_id]?.paidAmount || 0,
+                                  payments: paymentsByRegistration[payment.subscriptions?.registration_id]?.payments || [],
+                                  registrationId: payment.subscriptions?.registration_id || payment.id,
+                                }}
+                                variant="icon"
+                              />
                               {payment.status !== 'paid' && (
                                 <Button
                                   variant="ghost"

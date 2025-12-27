@@ -33,9 +33,11 @@ import {
   Check,
   Edit2,
   Save,
-  X
+  X,
+  FileText
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { InvoiceGenerator } from './InvoiceGenerator';
 
 interface PaymentProfileDialogProps {
   open: boolean;
@@ -212,6 +214,21 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
                 </div>
               </CardContent>
             </Card>
+          </div>
+
+          {/* Invoice Download */}
+          <div className="flex justify-end">
+            <InvoiceGenerator
+              data={{
+                parentName,
+                studentName,
+                subscriptionType: subscription?.subscription_type || '',
+                totalAmount,
+                paidAmount,
+                payments,
+                registrationId,
+              }}
+            />
           </div>
 
           {/* Payments Table */}
