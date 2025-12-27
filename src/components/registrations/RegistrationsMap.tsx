@@ -106,28 +106,69 @@ const RegistrationsMap: React.FC<RegistrationsMapProps> = ({ registrations }) =>
       }
     }
 
-    // Add student markers
+    // Add student markers with 3D pin style
     filteredRegistrations.forEach((reg) => {
       if (!reg.parent_accounts) return;
       
       const el = document.createElement('div');
       el.innerHTML = `
         <div style="
-          width: 28px;
-          height: 28px;
-          background: hsl(var(--chart-2));
-          border-radius: 50%;
-          border: 2px solid white;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+          position: relative;
           cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
+          filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4));
         ">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="8" r="5"></circle>
-            <path d="M20 21a8 8 0 1 0-16 0"></path>
-          </svg>
+          <!-- 3D Pin Body -->
+          <div style="
+            width: 36px;
+            height: 44px;
+            background: linear-gradient(135deg, #FF6B6B 0%, #EE5A5A 50%, #D94848 100%);
+            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid white;
+            box-shadow: inset 0 -4px 8px rgba(0,0,0,0.2), inset 0 4px 8px rgba(255,255,255,0.3);
+          ">
+            <!-- Face Icon -->
+            <div style="
+              width: 24px;
+              height: 24px;
+              background: white;
+              border-radius: 50%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              margin-top: -4px;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            ">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D94848" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <circle cx="9" cy="10" r="1" fill="#D94848"></circle>
+                <circle cx="15" cy="10" r="1" fill="#D94848"></circle>
+                <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
+              </svg>
+            </div>
+          </div>
+          <!-- Pin Point -->
+          <div style="
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 12px solid #D94848;
+            margin: -2px auto 0;
+            filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2));
+          "></div>
+          <!-- Shadow -->
+          <div style="
+            width: 20px;
+            height: 6px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 50%;
+            margin: 2px auto 0;
+            filter: blur(2px);
+          "></div>
         </div>
       `;
 
