@@ -16,7 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Sparkles, MapPin, Users, Route, Loader2, CheckCircle2, Lightbulb, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Sparkles, MapPin, Users, Route, Loader2, CheckCircle2, Lightbulb, ArrowRight, ArrowLeft, Plus, RefreshCw } from 'lucide-react';
 import { useCity } from '@/contexts/CityContext';
 import RouteMap from '@/components/routes/RouteMap';
 import type { Tables } from '@/integrations/supabase/types';
@@ -37,6 +37,23 @@ interface RouteSuggestion {
   pendingFeesCount: number;
 }
 
+interface RouteUpdate {
+  routeId: string;
+  routeName: string;
+  currentCount: number;
+  maxSeats: number;
+  availableSeats: number;
+  studentsToAdd: {
+    id: string;
+    student_name: string;
+    parent_name: string;
+    lat: number;
+    lng: number;
+    status: string;
+    distance: number;
+  }[];
+}
+
 const AIRoutes: React.FC = () => {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.language === 'ar';
@@ -48,6 +65,7 @@ const AIRoutes: React.FC = () => {
   const [selectedCarType, setSelectedCarType] = useState<string>('ac');
   const [maxSeats, setMaxSeats] = useState<string>('12');
   const [suggestions, setSuggestions] = useState<RouteSuggestion[]>([]);
+  const [routeUpdates, setRouteUpdates] = useState<RouteUpdate[]>([]);
   const [aiInsights, setAiInsights] = useState<string>('');
   const [routeDirection, setRouteDirection] = useState<'to_school' | 'from_school'>('to_school');
   const [selectedSuggestion, setSelectedSuggestion] = useState<RouteSuggestion | null>(null);
@@ -125,12 +143,20 @@ const AIRoutes: React.FC = () => {
     },
     onSuccess: (data) => {
       setSuggestions(data.suggestions || []);
+      setRouteUpdates(data.routeUpdates || []);
       setAiInsights(data.aiInsights || '');
       setSelectedSuggestion(null);
-      if (data.suggestions?.length === 0) {
+      if (data.suggestions?.length === 0 && data.routeUpdates?.length === 0) {
         toast({ title: isRtl ? 'لا يوجد طلاب غير معينين لهذه المدرسة' : 'No unassigned students found for this school and car type' });
       } else {
-        toast({ title: isRtl ? `تم العثور على ${data.totalStudents} طالب، مجمعين في ${data.suggestions.length} خطوط` : `Found ${data.totalStudents} students, grouped into ${data.suggestions.length} routes` });
+        const updateMsg = data.routeUpdates?.length > 0 
+          ? (isRtl ? `، ${data.studentsForExistingRoutes} يمكن إضافتهم لخطوط موجودة` : `, ${data.studentsForExistingRoutes} can be added to existing routes`)
+          : '';
+        toast({ 
+          title: isRtl 
+            ? `تم العثور على ${data.totalStudents} طالب، مجمعين في ${data.suggestions.length} خطوط جديدة${updateMsg}` 
+            : `Found ${data.totalStudents} students, grouped into ${data.suggestions.length} new routes${updateMsg}` 
+        });
       }
     },
     onError: (error: any) => {
@@ -167,12 +193,35 @@ const AIRoutes: React.FC = () => {
     },
   });
 
+  const addToExistingRouteMutation = useMutation({
+    mutationFn: async ({ routeId, students }: { routeId: string; students: RouteUpdate['studentsToAdd'] }) => {
+      const { data, error } = await supabase.functions.invoke('ai-route-planner', {
+        body: {
+          action: 'add-to-existing-route',
+          routeId,
+          students,
+        },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      toast({ title: isRtl ? `تم إضافة ${data.addedCount} طالب للخط بنجاح!` : `Successfully added ${data.addedCount} students to route!` });
+      queryClient.invalidateQueries({ queryKey: ['routes'] });
+      suggestMutation.mutate();
+    },
+    onError: (error: any) => {
+      toast({ title: isRtl ? 'خطأ في إضافة الطلاب' : 'Error adding students', description: error.message, variant: 'destructive' });
+    },
+  });
+
   const handleSuggest = () => {
     if (!selectedSchool) {
       toast({ title: isRtl ? 'يرجى اختيار المدرسة' : 'Please select a school', variant: 'destructive' });
       return;
     }
     setSuggestions([]);
+    setRouteUpdates([]);
     setAiInsights('');
     setSelectedSuggestion(null);
     suggestMutation.mutate();
@@ -318,7 +367,79 @@ const AIRoutes: React.FC = () => {
           </Card>
         )}
 
-        {/* Map and Suggestions */}
+        {/* Existing Routes with Available Capacity */}
+        {routeUpdates.length > 0 && (
+          <Card className="border-green-200 bg-green-50/50 dark:border-green-800 dark:bg-green-950/20">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                <RefreshCw className="h-5 w-5" />
+                {isRtl ? 'خطوط موجودة يمكن إضافة طلاب لها' : 'Existing Routes with Available Capacity'}
+              </CardTitle>
+              <CardDescription>
+                {isRtl 
+                  ? 'هؤلاء الطلاب قريبون من خطوط موجودة ويمكن إضافتهم إليها' 
+                  : 'These students are near existing routes and can be added to them'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {routeUpdates.map((update) => (
+                <Card key={update.routeId} className="border">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="text-base">{update.routeName}</CardTitle>
+                        <CardDescription className="text-xs">
+                          {isRtl 
+                            ? `${update.currentCount}/${update.maxSeats} طالب - يمكن إضافة ${update.availableSeats}` 
+                            : `${update.currentCount}/${update.maxSeats} students - can add ${update.availableSeats}`}
+                        </CardDescription>
+                      </div>
+                      <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
+                        <Plus className="h-3 w-3 mr-1" />
+                        {update.studentsToAdd.length}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="space-y-1">
+                      {update.studentsToAdd.map((student) => (
+                        <div key={student.id} className="flex items-center gap-2 text-sm">
+                          <Plus className="h-3 w-3 text-green-600" />
+                          <span className="truncate flex-1">{student.student_name || student.parent_name}</span>
+                          <span className="text-xs text-muted-foreground">{student.distance} km</span>
+                          {student.status === 'pending_fees' && (
+                            <Badge variant="outline" className="text-xs text-orange-600 border-orange-300 px-1">
+                              {isRtl ? 'معلق' : 'Pending'}
+                            </Badge>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    <Button
+                      className="w-full bg-green-600 hover:bg-green-700"
+                      onClick={() => addToExistingRouteMutation.mutate({ 
+                        routeId: update.routeId, 
+                        students: update.studentsToAdd 
+                      })}
+                      disabled={addToExistingRouteMutation.isPending}
+                    >
+                      {addToExistingRouteMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <>
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          {isRtl ? 'تحديث الخط وإضافة الطلاب' : 'Update Route & Add Students'}
+                        </>
+                      )}
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Map and New Route Suggestions */}
         {suggestions.length > 0 && (
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Map */}
@@ -349,10 +470,10 @@ const AIRoutes: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Suggestions List */}
+            {/* New Route Suggestions List */}
             <div className="space-y-4">
               <h2 className="text-xl font-semibold">
-                {isRtl ? `الخطوط المقترحة (${suggestions.length})` : `Suggested Routes (${suggestions.length})`}
+                {isRtl ? `خطوط جديدة مقترحة (${suggestions.length})` : `New Route Suggestions (${suggestions.length})`}
               </h2>
               <div className="space-y-4 max-h-[600px] overflow-y-auto">
                 {suggestions.map((suggestion, idx) => (
@@ -426,7 +547,7 @@ const AIRoutes: React.FC = () => {
         )}
 
         {/* Empty state */}
-        {!suggestMutation.isPending && suggestions.length === 0 && (
+        {!suggestMutation.isPending && suggestions.length === 0 && routeUpdates.length === 0 && (
           <Card className="border-dashed">
             <CardContent className="py-12 text-center">
               <Sparkles className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
