@@ -1,20 +1,16 @@
-import React, { useState } from "react";
+import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { DriverTripInterface } from "@/components/tracking/DriverTripInterface";
 import { OperationsMapView } from "@/components/tracking/OperationsMapView";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Bus, MapPin, Users, Play, Map, List } from "lucide-react";
+import { MapPin, Users, Map, List } from "lucide-react";
 import { useCity } from "@/contexts/CityContext";
 
 export default function LiveTracking() {
   const { selectedCity } = useCity();
-  const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
 
   const { data: routes = [], isLoading } = useQuery({
     queryKey: ["routes-for-tracking", selectedCity],
@@ -79,7 +75,7 @@ export default function LiveTracking() {
             <OperationsMapView />
           </TabsContent>
 
-          {/* Routes List View */}
+          {/* Routes List View - View Only for Admin */}
           <TabsContent value="routes">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {routes.map((route) => {
@@ -92,7 +88,7 @@ export default function LiveTracking() {
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-base">{route.name}</CardTitle>
                         {isActive && (
-                          <Badge className="bg-green-500">نشط</Badge>
+                          <Badge className="bg-green-500">Active / نشط</Badge>
                         )}
                       </div>
                     </CardHeader>
@@ -103,21 +99,26 @@ export default function LiveTracking() {
                       </div>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Users className="h-4 w-4" />
-                        {studentCount} طالب
+                        {studentCount} Students / طالب
                       </div>
                       {route.drivers && (
                         <div className="text-sm text-muted-foreground">
-                          السائق: {route.drivers.full_name}
+                          Driver / السائق: {route.drivers.full_name}
                         </div>
                       )}
-                      <Button
-                        className="w-full gap-2"
-                        variant={isActive ? "default" : "outline"}
-                        onClick={() => setSelectedRouteId(route.id)}
-                      >
-                        {isActive ? <Bus className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                        {isActive ? "متابعة الرحلة" : "بدء الرحلة"}
-                      </Button>
+                      {route.supervisors && (
+                        <div className="text-sm text-muted-foreground">
+                          Supervisor / المشرف: {route.supervisors.full_name}
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2 text-sm">
+                        <Badge variant={route.car_type === 'ac' ? 'default' : 'secondary'}>
+                          {route.car_type === 'ac' ? 'AC / مكيف' : 'Non-AC / بدون تكييف'}
+                        </Badge>
+                        <Badge variant="outline">
+                          {route.max_seats} Seats / مقعد
+                        </Badge>
+                      </div>
                     </CardContent>
                   </Card>
                 );
@@ -125,17 +126,6 @@ export default function LiveTracking() {
             </div>
           </TabsContent>
         </Tabs>
-
-        <Dialog open={!!selectedRouteId} onOpenChange={() => setSelectedRouteId(null)}>
-          <DialogContent className="max-w-4xl h-[90vh] p-0">
-            {selectedRouteId && (
-              <DriverTripInterface
-                routeId={selectedRouteId}
-                onClose={() => setSelectedRouteId(null)}
-              />
-            )}
-          </DialogContent>
-        </Dialog>
       </div>
     </DashboardLayout>
   );
