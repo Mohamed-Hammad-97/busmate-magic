@@ -1,7 +1,6 @@
-import React, { useEffect, useRef, useState } from "react";
-import mapboxgl from "mapbox-gl";
-import "mapbox-gl/dist/mapbox-gl.css";
-import { useMapboxToken } from "@/hooks/useMapboxToken";
+import React, { useState, useCallback, useEffect } from "react";
+import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
+import { useGoogleMapsToken } from "@/hooks/useGoogleMapsToken";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Bus, Users, Phone, MapPin, Clock, X } from "lucide-react";
@@ -56,13 +55,28 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   dropped_off: { label: "تم التوصيل", color: "bg-gray-500" },
 };
 
+const containerStyle = {
+  width: '100%',
+  height: '100%',
+};
+
+const defaultCenter = {
+  lat: 30.0444,
+  lng: 31.2357,
+};
+
 export function OperationsMapView() {
-  const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
-  const markers = useRef<Map<string, mapboxgl.Marker>>(new Map());
-  const { token, isLoading: tokenLoading } = useMapboxToken();
-  const [mapLoaded, setMapLoaded] = useState(false);
+  const { token, isLoading: tokenLoading } = useGoogleMapsToken();
+
+  const { isLoaded, loadError } = useJsApiLoader({
+    googleMapsApiKey: token || '',
+    language: 'ar',
+    region: 'EG',
+  });
+
+  const [map, setMap] = useState<google.maps.Map | null>(null);
   const [selectedTrip, setSelectedTrip] = useState<ActiveTrip | null>(null);
+  const [activeMarker, setActiveMarker] = useState<string | null>(null);
 
   // Fetch all active trips with realtime refresh
   const { data: activeTrips = [], isLoading: tripsLoading } = useQuery({
@@ -117,108 +131,40 @@ export function OperationsMapView() {
     enabled: !!selectedTrip,
   });
 
-  // Initialize map
+  const onLoad = useCallback((mapInstance: google.maps.Map) => {
+    setMap(mapInstance);
+  }, []);
+
+  const onUnmount = useCallback(() => {
+    setMap(null);
+  }, []);
+
+  // Fit bounds to show all buses
   useEffect(() => {
-    if (!mapContainer.current || !token) return;
+    if (!map || selectedTrip) return;
 
-    mapboxgl.accessToken = token;
-
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: "mapbox://styles/mapbox/streets-v12",
-      center: [31.2357, 30.0444], // Cairo default
-      zoom: 10,
-    });
-
-    map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
-
-    map.current.on("load", () => {
-      setMapLoaded(true);
-    });
-
-    return () => {
-      map.current?.remove();
-    };
-  }, [token]);
-
-  // Update bus markers
-  useEffect(() => {
-    if (!map.current || !mapLoaded) return;
-
-    const currentTripIds = new Set<string>();
-    const bounds = new mapboxgl.LngLatBounds();
+    const bounds = new google.maps.LatLngBounds();
     let hasValidBounds = false;
 
     activeTrips.forEach((trip) => {
-      if (!trip.current_latitude || !trip.current_longitude) return;
-      
-      currentTripIds.add(trip.id);
-      bounds.extend([trip.current_longitude, trip.current_latitude]);
-      hasValidBounds = true;
-
-      const isSelected = selectedTrip?.id === trip.id;
-
-      if (markers.current.has(trip.id)) {
-        // Update existing marker position
-        const marker = markers.current.get(trip.id)!;
-        marker.setLngLat([trip.current_longitude, trip.current_latitude]);
-        
-        // Update selected state
-        const el = marker.getElement();
-        const innerDiv = el.querySelector("div");
-        if (innerDiv) {
-          innerDiv.className = `w-12 h-12 rounded-full flex items-center justify-center shadow-lg border-3 transition-all ${
-            isSelected ? "bg-primary border-primary-foreground scale-125" : "bg-blue-600 border-white"
-          }`;
-        }
-      } else {
-        // Create new marker
-        const el = document.createElement("div");
-        el.className = "bus-marker cursor-pointer";
-        el.innerHTML = `
-          <div class="w-12 h-12 rounded-full flex items-center justify-center shadow-lg border-3 transition-all ${
-            isSelected ? "bg-primary border-primary-foreground scale-125" : "bg-blue-600 border-white"
-          }">
-            <svg class="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.22.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
-            </svg>
-          </div>
-        `;
-
-        el.onclick = () => setSelectedTrip(trip);
-
-        const marker = new mapboxgl.Marker({ element: el })
-          .setLngLat([trip.current_longitude, trip.current_latitude])
-          .addTo(map.current!);
-
-        markers.current.set(trip.id, marker);
+      if (trip.current_latitude && trip.current_longitude) {
+        bounds.extend({ lat: trip.current_latitude, lng: trip.current_longitude });
+        hasValidBounds = true;
       }
     });
 
-    // Remove markers for trips no longer active
-    markers.current.forEach((marker, id) => {
-      if (!currentTripIds.has(id)) {
-        marker.remove();
-        markers.current.delete(id);
-      }
-    });
-
-    // Fit bounds to show all buses
-    if (hasValidBounds && !selectedTrip) {
-      map.current.fitBounds(bounds, { padding: 100, maxZoom: 13 });
+    if (hasValidBounds) {
+      map.fitBounds(bounds, 100);
     }
-  }, [activeTrips, mapLoaded, selectedTrip]);
+  }, [map, activeTrips, selectedTrip]);
 
   // Center on selected trip
   useEffect(() => {
-    if (!map.current || !selectedTrip?.current_latitude || !selectedTrip?.current_longitude) return;
+    if (!map || !selectedTrip?.current_latitude || !selectedTrip?.current_longitude) return;
     
-    map.current.flyTo({
-      center: [selectedTrip.current_longitude, selectedTrip.current_latitude],
-      zoom: 14,
-      duration: 1000,
-    });
-  }, [selectedTrip]);
+    map.panTo({ lat: selectedTrip.current_latitude, lng: selectedTrip.current_longitude });
+    map.setZoom(14);
+  }, [map, selectedTrip]);
 
   if (tokenLoading) {
     return (
@@ -228,9 +174,65 @@ export function OperationsMapView() {
     );
   }
 
+  if (loadError || !token) {
+    return (
+      <div className="flex items-center justify-center h-[600px] bg-muted/20 rounded-lg">
+        <p className="text-muted-foreground">Google Maps API key not configured</p>
+      </div>
+    );
+  }
+
+  if (!isLoaded) {
+    return (
+      <div className="flex items-center justify-center h-[600px] bg-muted/20 rounded-lg">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <div className="relative w-full h-[600px] rounded-lg overflow-hidden border">
-      <div ref={mapContainer} className="absolute inset-0" />
+      <GoogleMap
+        mapContainerStyle={containerStyle}
+        center={defaultCenter}
+        zoom={10}
+        onLoad={onLoad}
+        onUnmount={onUnmount}
+        options={{
+          disableDefaultUI: false,
+          zoomControl: true,
+          streetViewControl: false,
+          mapTypeControl: false,
+          fullscreenControl: false,
+        }}
+      >
+        {/* Bus Markers */}
+        {activeTrips.map((trip) => {
+          if (!trip.current_latitude || !trip.current_longitude) return null;
+          
+          const isSelected = selectedTrip?.id === trip.id;
+
+          return (
+            <Marker
+              key={trip.id}
+              position={{
+                lat: trip.current_latitude,
+                lng: trip.current_longitude,
+              }}
+              icon={{
+                url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+                    <circle cx="24" cy="24" r="${isSelected ? 24 : 22}" fill="${isSelected ? '#3B82F6' : '#2563EB'}" stroke="white" stroke-width="3"/>
+                    <path d="M35 23.5C35 22 34 21 32 21H29L27 16H21L19 21H16C14 21 13 22 13 23.5L13 32H15V33.5C15 34.3 15.7 35 16.5 35C17.3 35 18 34.3 18 33.5V32H30V33.5C30 34.3 30.7 35 31.5 35C32.3 35 33 34.3 33 33.5V32H35V23.5ZM17 28C16 28 15 27 15 26C15 25 16 24 17 24C18 24 19 25 19 26C19 27 18 28 17 28ZM31 28C30 28 29 27 29 26C29 25 30 24 31 24C32 24 33 25 33 26C33 27 32 28 31 28ZM15 23L17 18.5H31L33 23H15Z" fill="white"/>
+                  </svg>
+                `),
+                scaledSize: new google.maps.Size(48, 48),
+              }}
+              onClick={() => setSelectedTrip(trip)}
+            />
+          );
+        })}
+      </GoogleMap>
 
       {/* Active trips count badge */}
       <div className="absolute top-4 left-4 bg-background/95 backdrop-blur-sm rounded-lg px-4 py-2 shadow-lg border">

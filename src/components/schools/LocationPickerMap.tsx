@@ -1,9 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
-import mapboxgl from 'mapbox-gl';
-import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
-import 'mapbox-gl/dist/mapbox-gl.css';
-import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
+import React, { useState, useCallback, useRef } from 'react';
+import { GoogleMap, useJsApiLoader, Marker, Autocomplete } from '@react-google-maps/api';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { MapPin, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -11,21 +9,59 @@ interface LocationPickerMapProps {
   initialLat?: number;
   initialLng?: number;
   onLocationChange: (lat: number, lng: number) => void;
-  mapboxToken: string;
+  googleMapsApiKey: string;
 }
+
+const containerStyle = {
+  width: '100%',
+  height: '250px',
+};
+
+const libraries: ("places")[] = ["places"];
 
 const LocationPickerMap: React.FC<LocationPickerMapProps> = ({
   initialLat = 30.0444,
   initialLng = 31.2357,
   onLocationChange,
-  mapboxToken,
+  googleMapsApiKey,
 }) => {
-  const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
-  const marker = useRef<mapboxgl.Marker | null>(null);
-  const geocoder = useRef<MapboxGeocoder | null>(null);
-  const [isMapReady, setIsMapReady] = useState(false);
+  const { isLoaded, loadError } = useJsApiLoader({
+    googleMapsApiKey: googleMapsApiKey || '',
+    libraries,
+    language: 'ar',
+    region: 'EG',
+  });
+
+  const [map, setMap] = useState<google.maps.Map | null>(null);
+  const [markerPosition, setMarkerPosition] = useState({ lat: initialLat, lng: initialLng });
   const [isLocating, setIsLocating] = useState(false);
+  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+
+  const onLoad = useCallback((mapInstance: google.maps.Map) => {
+    setMap(mapInstance);
+  }, []);
+
+  const onUnmount = useCallback(() => {
+    setMap(null);
+  }, []);
+
+  const handleMapClick = useCallback((e: google.maps.MapMouseEvent) => {
+    if (e.latLng) {
+      const lat = e.latLng.lat();
+      const lng = e.latLng.lng();
+      setMarkerPosition({ lat, lng });
+      onLocationChange(lat, lng);
+    }
+  }, [onLocationChange]);
+
+  const handleMarkerDragEnd = useCallback((e: google.maps.MapMouseEvent) => {
+    if (e.latLng) {
+      const lat = e.latLng.lat();
+      const lng = e.latLng.lng();
+      setMarkerPosition({ lat, lng });
+      onLocationChange(lat, lng);
+    }
+  }, [onLocationChange]);
 
   const handleGetCurrentLocation = () => {
     if (!navigator.geolocation) {
@@ -37,12 +73,10 @@ const LocationPickerMap: React.FC<LocationPickerMapProps> = ({
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
-        marker.current?.setLngLat([longitude, latitude]);
-        map.current?.flyTo({
-          center: [longitude, latitude],
-          zoom: 15,
-        });
+        setMarkerPosition({ lat: latitude, lng: longitude });
         onLocationChange(latitude, longitude);
+        map?.panTo({ lat: latitude, lng: longitude });
+        map?.setZoom(15);
         setIsLocating(false);
         toast.success('تم تحديد موقعك الحالي');
       },
@@ -66,96 +100,90 @@ const LocationPickerMap: React.FC<LocationPickerMapProps> = ({
     );
   };
 
-  useEffect(() => {
-    if (!mapContainer.current || !mapboxToken) return;
+  const onAutocompleteLoad = useCallback((autocomplete: google.maps.places.Autocomplete) => {
+    autocompleteRef.current = autocomplete;
+  }, []);
 
-    mapboxgl.accessToken = mapboxToken;
-
-    // Use Arabic localized style
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/streets-v12',
-      center: [initialLng, initialLat],
-      zoom: 12,
-    });
-
-    // Set language to Arabic after style loads
-    map.current.on('load', () => {
-      const layers = map.current?.getStyle().layers;
-      if (layers) {
-        layers.forEach((layer) => {
-          if (layer.type === 'symbol' && layer.layout?.['text-field']) {
-            map.current?.setLayoutProperty(layer.id, 'text-field', ['coalesce', ['get', 'name_ar'], ['get', 'name']]);
-          }
-        });
+  const onPlaceChanged = useCallback(() => {
+    if (autocompleteRef.current) {
+      const place = autocompleteRef.current.getPlace();
+      if (place.geometry?.location) {
+        const lat = place.geometry.location.lat();
+        const lng = place.geometry.location.lng();
+        setMarkerPosition({ lat, lng });
+        onLocationChange(lat, lng);
+        map?.panTo({ lat, lng });
+        map?.setZoom(15);
       }
-      setIsMapReady(true);
-    });
-
-    // Add geocoder (search bar) with Arabic support
-    geocoder.current = new MapboxGeocoder({
-      accessToken: mapboxToken,
-      mapboxgl: mapboxgl as any,
-      placeholder: 'ابحث عن موقع...',
-      language: 'ar',
-      countries: 'eg',
-      marker: false,
-    });
-
-    map.current.addControl(geocoder.current, 'top-left');
-    map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
-
-    // Handle geocoder result
-    geocoder.current.on('result', (e) => {
-      const [lng, lat] = e.result.center;
-      marker.current?.setLngLat([lng, lat]);
-      onLocationChange(lat, lng);
-    });
-
-    // Add draggable marker
-    marker.current = new mapboxgl.Marker({
-      draggable: true,
-      color: 'hsl(var(--primary))',
-    })
-      .setLngLat([initialLng, initialLat])
-      .addTo(map.current);
-
-    marker.current.on('dragend', () => {
-      const lngLat = marker.current?.getLngLat();
-      if (lngLat) {
-        onLocationChange(lngLat.lat, lngLat.lng);
-      }
-    });
-
-    // Click on map to move marker
-    map.current.on('click', (e) => {
-      marker.current?.setLngLat(e.lngLat);
-      onLocationChange(e.lngLat.lat, e.lngLat.lng);
-    });
-
-    return () => {
-      geocoder.current = null;
-      map.current?.remove();
-    };
-  }, [mapboxToken]);
+    }
+  }, [map, onLocationChange]);
 
   // Update marker position when initial values change
-  useEffect(() => {
-    if (isMapReady && marker.current && map.current) {
-      marker.current.setLngLat([initialLng, initialLat]);
-      map.current.flyTo({
-        center: [initialLng, initialLat],
-        zoom: 12,
-      });
-    }
-  }, [initialLat, initialLng, isMapReady]);
+  React.useEffect(() => {
+    setMarkerPosition({ lat: initialLat, lng: initialLng });
+    map?.panTo({ lat: initialLat, lng: initialLng });
+  }, [initialLat, initialLng, map]);
+
+  if (loadError) {
+    return (
+      <div className="w-full h-[250px] flex items-center justify-center bg-muted rounded-lg">
+        <p className="text-muted-foreground">Error loading Google Maps</p>
+      </div>
+    );
+  }
+
+  if (!isLoaded) {
+    return (
+      <div className="w-full h-[250px] flex items-center justify-center bg-muted rounded-lg">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-2">
       <p className="text-sm text-muted-foreground">
         انقر على الخريطة أو اسحب العلامة لتحديد موقع المدرسة
       </p>
-      <div ref={mapContainer} className="w-full h-[250px] rounded-lg border border-border" />
+      
+      <Autocomplete
+        onLoad={onAutocompleteLoad}
+        onPlaceChanged={onPlaceChanged}
+        options={{
+          componentRestrictions: { country: 'eg' },
+        }}
+      >
+        <Input
+          type="text"
+          placeholder="ابحث عن موقع..."
+          className="w-full mb-2"
+        />
+      </Autocomplete>
+
+      <div className="w-full h-[250px] rounded-lg border border-border overflow-hidden">
+        <GoogleMap
+          mapContainerStyle={containerStyle}
+          center={markerPosition}
+          zoom={12}
+          onLoad={onLoad}
+          onUnmount={onUnmount}
+          onClick={handleMapClick}
+          options={{
+            disableDefaultUI: false,
+            zoomControl: true,
+            streetViewControl: false,
+            mapTypeControl: false,
+            fullscreenControl: false,
+          }}
+        >
+          <Marker
+            position={markerPosition}
+            draggable={true}
+            onDragEnd={handleMarkerDragEnd}
+          />
+        </GoogleMap>
+      </div>
+
       <Button
         type="button"
         variant="outline"
