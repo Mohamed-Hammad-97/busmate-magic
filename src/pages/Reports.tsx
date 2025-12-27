@@ -25,7 +25,8 @@ import {
   Calendar,
   Bus,
   FileText,
-  Download
+  Download,
+  DollarSign
 } from "lucide-react";
 import { format, subDays, startOfMonth, endOfMonth } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -35,6 +36,7 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from "recharts";
+import { FinancialReports } from "@/components/reports/FinancialReports";
 
 const Reports = () => {
   const [dateRange, setDateRange] = useState({
@@ -259,12 +261,20 @@ const Reports = () => {
         </div>
 
         {/* Detailed Reports Tabs */}
-        <Tabs defaultValue="trips" className="space-y-4">
+        <Tabs defaultValue="financial" className="space-y-4">
           <TabsList>
+            <TabsTrigger value="financial" className="flex items-center gap-2">
+              <DollarSign className="h-4 w-4" />
+              التقارير المالية
+            </TabsTrigger>
             <TabsTrigger value="trips">سجل الرحلات</TabsTrigger>
             <TabsTrigger value="attendance">الحضور</TabsTrigger>
             <TabsTrigger value="incidents">الحوادث</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="financial">
+            <FinancialReports payments={payments} />
+          </TabsContent>
 
           <TabsContent value="trips">
             <Card>
