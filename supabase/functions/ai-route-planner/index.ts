@@ -138,7 +138,9 @@ serve(async (req) => {
   }
 
   try {
-    const { action, schoolId, carType, maxSeatsPerRoute } = await req.json();
+    // Parse body ONCE - it can only be consumed once
+    const body = await req.json();
+    const { action, schoolId, carType, maxSeatsPerRoute, routeId, suggestion, driverId, supervisorId } = body;
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -278,7 +280,7 @@ serve(async (req) => {
     }
 
     if (action === "optimize-route") {
-      const { routeId } = await req.json();
+      // routeId already extracted from body above
 
       // Get route with assignments
       const { data: route, error: routeError } = await supabase
@@ -340,15 +342,15 @@ serve(async (req) => {
     }
 
     if (action === "create-suggested-route") {
-      const { suggestion, schoolId: sId, carType: cType, driverId, supervisorId } = await req.json();
+      // All values already extracted from body above
 
       // Create the route
       const { data: newRoute, error: createError } = await supabase
         .from("routes")
         .insert({
           name: suggestion.name,
-          school_id: sId,
-          car_type: cType,
+          school_id: schoolId,
+          car_type: carType,
           max_seats: suggestion.students.length,
           driver_id: driverId || null,
           supervisor_id: supervisorId || null,
