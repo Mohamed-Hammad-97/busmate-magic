@@ -136,35 +136,35 @@ const Register: React.FC = () => {
     e.preventDefault();
 
     if (!formData.student_name.trim()) {
-      toast({ title: 'يرجى إدخال اسم الطالب', variant: 'destructive' });
+      toast({ title: 'Please enter student name / يرجى إدخال اسم الطالب', variant: 'destructive' });
       return;
     }
     if (!formData.parent_name.trim()) {
-      toast({ title: 'يرجى إدخال اسم ولي الأمر', variant: 'destructive' });
+      toast({ title: 'Please enter parent name / يرجى إدخال اسم ولي الأمر', variant: 'destructive' });
       return;
     }
     if (!formData.national_id.trim()) {
-      toast({ title: 'يرجى إدخال الرقم القومي', variant: 'destructive' });
+      toast({ title: 'Please enter national ID / يرجى إدخال الرقم القومي', variant: 'destructive' });
       return;
     }
     if (!formData.father_phone.trim()) {
-      toast({ title: 'يرجى إدخال رقم الأب', variant: 'destructive' });
+      toast({ title: 'Please enter father phone / يرجى إدخال رقم الأب', variant: 'destructive' });
       return;
     }
     if (!formData.emergency_phone.trim()) {
-      toast({ title: 'يرجى إدخال رقم الطوارئ', variant: 'destructive' });
+      toast({ title: 'Please enter emergency phone / يرجى إدخال رقم الطوارئ', variant: 'destructive' });
       return;
     }
     if (!formData.city) {
-      toast({ title: 'يرجى اختيار المدينة', variant: 'destructive' });
+      toast({ title: 'Please select city / يرجى اختيار المدينة', variant: 'destructive' });
       return;
     }
     if (!formData.school_id) {
-      toast({ title: 'يرجى اختيار المدرسة', variant: 'destructive' });
+      toast({ title: 'Please select school / يرجى اختيار المدرسة', variant: 'destructive' });
       return;
     }
     if (!formData.grade) {
-      toast({ title: 'يرجى اختيار الصف', variant: 'destructive' });
+      toast({ title: 'Please select grade / يرجى اختيار الصف', variant: 'destructive' });
       return;
     }
 
@@ -177,12 +177,15 @@ const Register: React.FC = () => {
         <Card className="max-w-md w-full text-center">
           <CardContent className="pt-8 pb-8 space-y-4">
             <CheckCircle2 className="h-16 w-16 mx-auto text-green-500" />
-            <h2 className="text-2xl font-bold">تم استلام طلب التسجيل!</h2>
+            <h2 className="text-2xl font-bold">Registration Received! / تم استلام طلب التسجيل!</h2>
+            <p className="text-muted-foreground">
+              Thank you for submitting your registration. Our team will contact you soon to complete the registration and payment process.
+            </p>
             <p className="text-muted-foreground">
               شكراً لتقديم طلب التسجيل. سيتواصل معكم فريقنا قريباً لاستكمال إجراءات التسجيل والدفع.
             </p>
             <p className="text-sm text-muted-foreground">
-              الطالب: {formData.student_name}
+              Student / الطالب: {formData.student_name}
             </p>
           </CardContent>
         </Card>
@@ -220,39 +223,37 @@ const Register: React.FC = () => {
           {step === 1 && (
             <Card>
               <CardHeader>
-                <CardTitle>معلومات الطالب وولي الأمر</CardTitle>
-                <CardDescription>أدخل البيانات الأساسية</CardDescription>
+                <CardTitle>Student & Parent Information / معلومات الطالب وولي الأمر</CardTitle>
+                <CardDescription>Enter basic information / أدخل البيانات الأساسية</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label>اسم الطالب *</Label>
+                  <Label>Student Name / اسم الطالب *</Label>
                   <Input
                     value={formData.student_name}
                     onChange={(e) => setFormData((f) => ({ ...f, student_name: e.target.value }))}
-                    placeholder="الاسم الرباعي للطالب"
-                    dir="rtl"
+                    placeholder="Full student name / الاسم الرباعي للطالب"
                   />
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label>اسم ولي الأمر *</Label>
+                    <Label>Parent Name / اسم ولي الأمر *</Label>
                     <Input
                       value={formData.parent_name}
                       onChange={(e) => setFormData((f) => ({ ...f, parent_name: e.target.value }))}
-                      placeholder="الاسم الكامل"
-                      dir="rtl"
+                      placeholder="Full name / الاسم الكامل"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>الرقم القومي *</Label>
+                    <Label>National ID / الرقم القومي *</Label>
                     <Input
                       value={formData.national_id}
                       onChange={(e) => setFormData((f) => ({ ...f, national_id: e.target.value }))}
-                      placeholder="14 رقم"
+                      placeholder="14 digits / 14 رقم"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>رقم الأب *</Label>
+                    <Label>Father Phone / رقم الأب *</Label>
                     <Input
                       value={formData.father_phone}
                       onChange={(e) => setFormData((f) => ({ ...f, father_phone: e.target.value }))}
@@ -260,7 +261,7 @@ const Register: React.FC = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>رقم الأم</Label>
+                    <Label>Mother Phone / رقم الأم</Label>
                     <Input
                       value={formData.mother_phone}
                       onChange={(e) => setFormData((f) => ({ ...f, mother_phone: e.target.value }))}
@@ -268,7 +269,7 @@ const Register: React.FC = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>رقم الطوارئ *</Label>
+                    <Label>Emergency Phone / رقم الطوارئ *</Label>
                     <Input
                       value={formData.emergency_phone}
                       onChange={(e) => setFormData((f) => ({ ...f, emergency_phone: e.target.value }))}
@@ -276,22 +277,21 @@ const Register: React.FC = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>الوظيفة</Label>
+                    <Label>Occupation / الوظيفة</Label>
                     <Input
                       value={formData.job}
                       onChange={(e) => setFormData((f) => ({ ...f, job: e.target.value }))}
-                      placeholder="الوظيفة"
-                      dir="rtl"
+                      placeholder="Job title / الوظيفة"
                     />
                   </div>
                   <div className="space-y-2 sm:col-span-2">
-                    <Label>المدينة *</Label>
+                    <Label>City / المدينة *</Label>
                     <Select
                       value={formData.city}
                       onValueChange={(v) => setFormData((f) => ({ ...f, city: v }))}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="اختر المدينة" />
+                        <SelectValue placeholder="Select city / اختر المدينة" />
                       </SelectTrigger>
                       <SelectContent className="bg-background border border-border z-50">
                         {cities.map((city) => (
@@ -305,7 +305,7 @@ const Register: React.FC = () => {
                 </div>
                 <div className="flex justify-end pt-4">
                   <Button type="button" onClick={() => setStep(2)}>
-                    التالي
+                    Next / التالي
                   </Button>
                 </div>
               </CardContent>
@@ -315,8 +315,8 @@ const Register: React.FC = () => {
           {step === 2 && (
             <Card>
               <CardHeader>
-                <CardTitle>موقع الاستلام</CardTitle>
-                <CardDescription>حدد موقع استلام الطالب على الخريطة</CardDescription>
+                <CardTitle>Pickup Location / موقع الاستلام</CardTitle>
+                <CardDescription>Select the student pickup location on the map / حدد موقع استلام الطالب على الخريطة</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {mapboxToken ? (
@@ -330,19 +330,19 @@ const Register: React.FC = () => {
                   />
                 ) : (
                   <div className="h-[300px] flex items-center justify-center bg-muted rounded-lg">
-                    <p className="text-muted-foreground">جاري تحميل الخريطة...</p>
+                    <p className="text-muted-foreground">Loading map... / جاري تحميل الخريطة...</p>
                   </div>
                 )}
                 <div className="flex gap-4 justify-center text-sm text-muted-foreground">
-                  <span>خط العرض: {formData.pickup_latitude.toFixed(6)}</span>
-                  <span>خط الطول: {formData.pickup_longitude.toFixed(6)}</span>
+                  <span>Latitude / خط العرض: {formData.pickup_latitude.toFixed(6)}</span>
+                  <span>Longitude / خط الطول: {formData.pickup_longitude.toFixed(6)}</span>
                 </div>
                 <div className="flex justify-between pt-4">
                   <Button type="button" variant="outline" onClick={() => setStep(1)}>
-                    السابق
+                    Previous / السابق
                   </Button>
                   <Button type="button" onClick={() => setStep(3)}>
-                    التالي
+                    Next / التالي
                   </Button>
                 </div>
               </CardContent>
@@ -352,19 +352,19 @@ const Register: React.FC = () => {
           {step === 3 && (
             <Card>
               <CardHeader>
-                <CardTitle>معلومات التسجيل</CardTitle>
-                <CardDescription>اختر المدرسة والصف ونوع السيارة</CardDescription>
+                <CardTitle>Registration Details / معلومات التسجيل</CardTitle>
+                <CardDescription>Select school, grade, and car type / اختر المدرسة والصف ونوع السيارة</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label>المدرسة *</Label>
+                    <Label>School / المدرسة *</Label>
                     <Select
                       value={formData.school_id}
                       onValueChange={(v) => setFormData((f) => ({ ...f, school_id: v }))}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="اختر المدرسة" />
+                        <SelectValue placeholder="Select school / اختر المدرسة" />
                       </SelectTrigger>
                       <SelectContent className="bg-background border border-border z-50">
                         {schools.map((school) => (
@@ -376,13 +376,13 @@ const Register: React.FC = () => {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>الصف *</Label>
+                    <Label>Grade / الصف *</Label>
                     <Select
                       value={formData.grade}
                       onValueChange={(v) => setFormData((f) => ({ ...f, grade: v }))}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="اختر الصف" />
+                        <SelectValue placeholder="Select grade / اختر الصف" />
                       </SelectTrigger>
                       <SelectContent className="bg-background border border-border z-50">
                         {gradeOptions.map((grade) => (
@@ -394,7 +394,7 @@ const Register: React.FC = () => {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>قسم التعليم *</Label>
+                    <Label>Education Department / قسم التعليم *</Label>
                     <Select
                       value={formData.education_department}
                       onValueChange={(v) => setFormData((f) => ({ ...f, education_department: v as Enums<'education_department'> }))}
@@ -403,14 +403,14 @@ const Register: React.FC = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-background border border-border z-50">
-                        <SelectItem value="national">وطني</SelectItem>
+                        <SelectItem value="national">National / وطني</SelectItem>
                         <SelectItem value="ig">IG</SelectItem>
-                        <SelectItem value="american">أمريكي</SelectItem>
+                        <SelectItem value="american">American / أمريكي</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>نوع السيارة *</Label>
+                    <Label>Car Type / نوع السيارة *</Label>
                     <Select
                       value={formData.car_type}
                       onValueChange={(v) => setFormData((f) => ({ ...f, car_type: v as Enums<'car_type'> }))}
@@ -419,18 +419,18 @@ const Register: React.FC = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-background border border-border z-50">
-                        <SelectItem value="ac">مكيف</SelectItem>
-                        <SelectItem value="non_ac">بدون تكييف</SelectItem>
+                        <SelectItem value="ac">AC / مكيف</SelectItem>
+                        <SelectItem value="non_ac">Non-AC / بدون تكييف</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
                 <div className="flex justify-between pt-4">
                   <Button type="button" variant="outline" onClick={() => setStep(2)}>
-                    السابق
+                    Previous / السابق
                   </Button>
                   <Button type="submit" disabled={submitMutation.isPending}>
-                    {submitMutation.isPending ? 'جاري الإرسال...' : 'إرسال الطلب'}
+                    {submitMutation.isPending ? 'Submitting... / جاري الإرسال...' : 'Submit / إرسال الطلب'}
                   </Button>
                 </div>
               </CardContent>
