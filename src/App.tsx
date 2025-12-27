@@ -9,6 +9,10 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Schools from "./pages/Schools";
 import Registrations from "./pages/Registrations";
+import Customers from "./pages/Customers";
+import RoutesPage from "./pages/Routes";
+import Payments from "./pages/Payments";
+import Staff from "./pages/Staff";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,30 +27,13 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/auth" element={<Auth />} />
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/schools"
-              element={
-                <ProtectedRoute>
-                  <Schools />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/registrations"
-              element={
-                <ProtectedRoute>
-                  <Registrations />
-                </ProtectedRoute>
-              }
-            />
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/schools" element={<ProtectedRoute><Schools /></ProtectedRoute>} />
+            <Route path="/registrations" element={<ProtectedRoute><Registrations /></ProtectedRoute>} />
+            <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
+            <Route path="/routes" element={<ProtectedRoute><RoutesPage /></ProtectedRoute>} />
+            <Route path="/payments" element={<ProtectedRoute><Payments /></ProtectedRoute>} />
+            <Route path="/staff" element={<ProtectedRoute><Staff /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
