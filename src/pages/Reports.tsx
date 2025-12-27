@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
@@ -37,22 +37,31 @@ import {
 } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from "recharts";
 import { FinancialReports } from "@/components/reports/FinancialReports";
+import { useCity } from "@/contexts/CityContext";
 
 const Reports = () => {
+  const { selectedCity } = useCity();
   const [dateRange, setDateRange] = useState({
     start: format(startOfMonth(new Date()), "yyyy-MM-dd"),
     end: format(endOfMonth(new Date()), "yyyy-MM-dd"),
   });
 
+  // City filter helper
+  const cityMapping: Record<string, string[]> = {
+    cairo: ['cairo', 'القاهرة', 'قاهرة'],
+    giza: ['giza', 'الجيزة', 'جيزة'],
+    alexandria: ['alexandria', 'الإسكندرية', 'اسكندرية', 'إسكندرية'],
+  };
+
   // Fetch trip logs
-  const { data: tripLogs = [] } = useQuery({
+  const { data: allTripLogs = [] } = useQuery({
     queryKey: ["trip-logs", dateRange],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("trip_logs")
         .select(`
           *,
-          routes (name, schools (name))
+          routes (name, schools (name, city))
         `)
         .gte("trip_date", dateRange.start)
         .lte("trip_date", dateRange.end)
@@ -62,15 +71,25 @@ const Reports = () => {
     },
   });
 
+  // Filter trip logs by city
+  const tripLogs = useMemo(() => {
+    if (selectedCity === 'all') return allTripLogs;
+    const cityNames = cityMapping[selectedCity] || [];
+    return allTripLogs.filter((t: any) => {
+      const city = t.routes?.schools?.city;
+      return cityNames.some((name) => city?.toLowerCase().includes(name.toLowerCase()));
+    });
+  }, [allTripLogs, selectedCity]);
+
   // Fetch attendance records
-  const { data: attendance = [] } = useQuery({
+  const { data: allAttendance = [] } = useQuery({
     queryKey: ["attendance", dateRange],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("attendance")
         .select(`
           *,
-          registrations (student_name),
+          registrations (student_name, parent_accounts (city)),
           trip_logs (trip_date, routes (name))
         `)
         .order("created_at", { ascending: false })
@@ -80,15 +99,25 @@ const Reports = () => {
     },
   });
 
+  // Filter attendance by city
+  const attendance = useMemo(() => {
+    if (selectedCity === 'all') return allAttendance;
+    const cityNames = cityMapping[selectedCity] || [];
+    return allAttendance.filter((a: any) => {
+      const city = a.registrations?.parent_accounts?.city;
+      return cityNames.some((name) => city?.toLowerCase().includes(name.toLowerCase()));
+    });
+  }, [allAttendance, selectedCity]);
+
   // Fetch incident reports
-  const { data: incidents = [] } = useQuery({
+  const { data: allIncidents = [] } = useQuery({
     queryKey: ["incidents"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("incident_reports")
         .select(`
           *,
-          routes (name)
+          routes (name, schools (city))
         `)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -96,18 +125,45 @@ const Reports = () => {
     },
   });
 
+  // Filter incidents by city
+  const incidents = useMemo(() => {
+    if (selectedCity === 'all') return allIncidents;
+    const cityNames = cityMapping[selectedCity] || [];
+    return allIncidents.filter((i: any) => {
+      const city = i.routes?.schools?.city;
+      return cityNames.some((name) => city?.toLowerCase().includes(name.toLowerCase()));
+    });
+  }, [allIncidents, selectedCity]);
+
   // Fetch payments for financial analytics
-  const { data: payments = [] } = useQuery({
+  const { data: allPayments = [] } = useQuery({
     queryKey: ["payments-analytics"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("payments")
-        .select("*")
+        .select(`
+          *,
+          subscriptions (
+            registrations (
+              parent_accounts (city)
+            )
+          )
+        `)
         .order("due_date", { ascending: true });
       if (error) throw error;
       return data;
     },
   });
+
+  // Filter payments by city
+  const payments = useMemo(() => {
+    if (selectedCity === 'all') return allPayments;
+    const cityNames = cityMapping[selectedCity] || [];
+    return allPayments.filter((p: any) => {
+      const city = p.subscriptions?.registrations?.parent_accounts?.city;
+      return cityNames.some((name) => city?.toLowerCase().includes(name.toLowerCase()));
+    });
+  }, [allPayments, selectedCity]);
 
   // Calculate KPIs
   const totalTrips = tripLogs.length;

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
@@ -22,6 +22,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Plus, Search, Users, MapPin, Phone, Edit, Eye } from 'lucide-react';
+import { useCity } from '@/contexts/CityContext';
 import type { Tables } from '@/integrations/supabase/types';
 import CustomerDialog from '@/components/customers/CustomerDialog';
 import CustomerDetails from '@/components/customers/CustomerDetails';
@@ -30,12 +31,13 @@ type ParentAccount = Tables<'parent_accounts'>;
 
 const Customers = () => {
   const queryClient = useQueryClient();
+  const { selectedCity } = useCity();
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<ParentAccount | null>(null);
 
-  const { data: customers = [], isLoading } = useQuery({
+  const { data: allCustomers = [], isLoading } = useQuery({
     queryKey: ['customers'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -46,6 +48,20 @@ const Customers = () => {
       return data as ParentAccount[];
     },
   });
+
+  // Filter customers by city
+  const customers = useMemo(() => {
+    if (selectedCity === 'all') return allCustomers;
+    const cityMapping: Record<string, string[]> = {
+      cairo: ['cairo', 'القاهرة', 'قاهرة'],
+      giza: ['giza', 'الجيزة', 'جيزة'],
+      alexandria: ['alexandria', 'الإسكندرية', 'اسكندرية', 'إسكندرية'],
+    };
+    const cityNames = cityMapping[selectedCity] || [];
+    return allCustomers.filter((c) =>
+      cityNames.some((name) => c.city?.toLowerCase().includes(name.toLowerCase()))
+    );
+  }, [allCustomers, selectedCity]);
 
   const { data: registrationCounts = {} } = useQuery({
     queryKey: ['customer-registration-counts'],

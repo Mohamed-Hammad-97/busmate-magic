@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Plus, Search, Eye, Edit2, ClipboardList, DollarSign, Link2, Map } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -66,7 +66,6 @@ const Registrations: React.FC = () => {
   const [selectedRegistration, setSelectedRegistration] = useState<Registration | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [cityFilter, setCityFilter] = useState<string>('all');
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -98,11 +97,21 @@ const Registrations: React.FC = () => {
     },
   });
 
-  // Filter by global city first, then by local filters
-  const cityFilteredRegistrations = registrations.filter((reg) => {
-    if (selectedCity === 'all') return true;
-    return reg.parent_accounts?.city?.toLowerCase() === selectedCity.toLowerCase();
-  });
+  // City mapping for consistent filtering
+  const cityMapping: Record<string, string[]> = {
+    cairo: ['cairo', 'القاهرة', 'قاهرة'],
+    giza: ['giza', 'الجيزة', 'جيزة'],
+    alexandria: ['alexandria', 'الإسكندرية', 'اسكندرية', 'إسكندرية'],
+  };
+
+  // Filter by global city first
+  const cityFilteredRegistrations = useMemo(() => {
+    if (selectedCity === 'all') return registrations;
+    const cityNames = cityMapping[selectedCity] || [];
+    return registrations.filter((reg) => 
+      cityNames.some((name) => reg.parent_accounts?.city?.toLowerCase().includes(name.toLowerCase()))
+    );
+  }, [registrations, selectedCity]);
 
   const filteredRegistrations = cityFilteredRegistrations.filter((reg) => {
     const matchesSearch =
@@ -111,8 +120,7 @@ const Registrations: React.FC = () => {
       reg.parent_accounts?.national_id?.includes(searchQuery) ||
       reg.schools?.name?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'all' || reg.status === statusFilter;
-    const matchesCityFilter = cityFilter === 'all' || reg.parent_accounts?.city?.toLowerCase() === cityFilter.toLowerCase();
-    return matchesSearch && matchesStatus && matchesCityFilter;
+    return matchesSearch && matchesStatus;
   });
 
   const handleViewDetails = (registration: Registration) => {
@@ -145,17 +153,6 @@ const Registrations: React.FC = () => {
                 className="pl-9"
               />
             </div>
-            <Select value={cityFilter} onValueChange={setCityFilter}>
-              <SelectTrigger className="w-[140px]">
-                <SelectValue placeholder="All Cities" />
-              </SelectTrigger>
-              <SelectContent className="bg-background border border-border z-50">
-                <SelectItem value="all">All Cities</SelectItem>
-                <SelectItem value="cairo">Cairo</SelectItem>
-                <SelectItem value="giza">Giza</SelectItem>
-                <SelectItem value="alexandria">Alexandria</SelectItem>
-              </SelectContent>
-            </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-[140px]">
                 <SelectValue placeholder="All Status" />
