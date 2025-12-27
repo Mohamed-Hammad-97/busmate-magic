@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { Sidebar } from "./Sidebar";
 
 interface DashboardLayoutProps {
@@ -8,10 +9,13 @@ interface DashboardLayoutProps {
 }
 
 export function DashboardLayout({ children, title, description }: DashboardLayoutProps) {
+  const { i18n } = useTranslation();
+  const isRtl = i18n.language === 'ar';
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background" dir={isRtl ? 'rtl' : 'ltr'}>
       <Sidebar />
-      <main className="pl-64">
+      <main className={isRtl ? 'pr-64' : 'pl-64'}>
         <div className="p-8">
           {(title || description) && (
             <div className="mb-8">
