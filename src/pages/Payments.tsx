@@ -29,9 +29,11 @@ import { ar } from 'date-fns/locale';
 import { PaymentProfileDialog } from '@/components/payments/PaymentProfileDialog';
 import { PaymentReminders } from '@/components/payments/PaymentReminders';
 import { InvoiceGenerator } from '@/components/payments/InvoiceGenerator';
+import { useCity } from '@/contexts/CityContext';
 
 const Payments = () => {
   const queryClient = useQueryClient();
+  const { selectedCity } = useCity();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [installmentFilter, setInstallmentFilter] = useState<string>('');
@@ -44,7 +46,7 @@ const Payments = () => {
     studentName: string;
   } | null>(null);
 
-  const { data: payments = [], isLoading } = useQuery({
+  const { data: allPayments = [], isLoading } = useQuery({
     queryKey: ['payments'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -60,7 +62,7 @@ const Payments = () => {
             registrations (
               id,
               student_name,
-              parent_accounts (parent_name)
+              parent_accounts (parent_name, city)
             )
           )
         `)
@@ -69,6 +71,21 @@ const Payments = () => {
       return data;
     },
   });
+
+  // Filter payments by city
+  const payments = useMemo(() => {
+    if (selectedCity === 'all') return allPayments;
+    const cityMapping: Record<string, string[]> = {
+      cairo: ['cairo', 'القاهرة', 'قاهرة'],
+      giza: ['giza', 'الجيزة', 'جيزة'],
+      alexandria: ['alexandria', 'الإسكندرية', 'اسكندرية', 'إسكندرية'],
+    };
+    const cityNames = cityMapping[selectedCity] || [];
+    return allPayments.filter((p: any) => {
+      const city = p.subscriptions?.registrations?.parent_accounts?.city;
+      return cityNames.some((name) => city?.toLowerCase().includes(name.toLowerCase()));
+    });
+  }, [allPayments, selectedCity]);
 
   const markPaidMutation = useMutation({
     mutationFn: async (paymentId: string) => {
