@@ -245,6 +245,76 @@ export type Database = {
           },
         ]
       }
+      live_trips: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          current_latitude: number | null
+          current_longitude: number | null
+          driver_id: string | null
+          id: string
+          last_location_update: string | null
+          route_id: string
+          started_at: string | null
+          started_by: string | null
+          status: Database["public"]["Enums"]["trip_status"]
+          supervisor_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          current_latitude?: number | null
+          current_longitude?: number | null
+          driver_id?: string | null
+          id?: string
+          last_location_update?: string | null
+          route_id: string
+          started_at?: string | null
+          started_by?: string | null
+          status?: Database["public"]["Enums"]["trip_status"]
+          supervisor_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          current_latitude?: number | null
+          current_longitude?: number | null
+          driver_id?: string | null
+          id?: string
+          last_location_update?: string | null
+          route_id?: string
+          started_at?: string | null
+          started_by?: string | null
+          status?: Database["public"]["Enums"]["trip_status"]
+          supervisor_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_trips_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_trips_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_trips_supervisor_id_fkey"
+            columns: ["supervisor_id"]
+            isOneToOne: false
+            referencedRelation: "supervisors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       parent_accounts: {
         Row: {
           city: string
@@ -339,6 +409,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          p256dh: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       registrations: {
         Row: {
@@ -651,6 +751,111 @@ export type Database = {
           },
         ]
       }
+      trip_notifications: {
+        Row: {
+          created_at: string
+          id: string
+          live_trip_id: string
+          message: string
+          notification_type: Database["public"]["Enums"]["trip_notification_type"]
+          read_at: string | null
+          registration_id: string | null
+          sent_at: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          live_trip_id: string
+          message: string
+          notification_type: Database["public"]["Enums"]["trip_notification_type"]
+          read_at?: string | null
+          registration_id?: string | null
+          sent_at?: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          live_trip_id?: string
+          message?: string
+          notification_type?: Database["public"]["Enums"]["trip_notification_type"]
+          read_at?: string | null
+          registration_id?: string | null
+          sent_at?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_notifications_live_trip_id_fkey"
+            columns: ["live_trip_id"]
+            isOneToOne: false
+            referencedRelation: "live_trips"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_notifications_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trip_student_status: {
+        Row: {
+          arrived_at: string | null
+          created_at: string
+          dropped_off_at: string | null
+          id: string
+          live_trip_id: string
+          picked_up_at: string | null
+          pickup_order: number | null
+          registration_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          arrived_at?: string | null
+          created_at?: string
+          dropped_off_at?: string | null
+          id?: string
+          live_trip_id: string
+          picked_up_at?: string | null
+          pickup_order?: number | null
+          registration_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          arrived_at?: string | null
+          created_at?: string
+          dropped_off_at?: string | null
+          id?: string
+          live_trip_id?: string
+          picked_up_at?: string | null
+          pickup_order?: number | null
+          registration_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_student_status_live_trip_id_fkey"
+            columns: ["live_trip_id"]
+            isOneToOne: false
+            referencedRelation: "live_trips"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_student_status_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -705,6 +910,14 @@ export type Database = {
       payment_status: "paid" | "pending" | "overdue"
       registration_status: "pending_fees" | "complete" | "cancelled"
       subscription_type: "monthly" | "yearly"
+      trip_notification_type:
+        | "trip_started"
+        | "arriving_soon"
+        | "arrived_at_pickup"
+        | "picked_up"
+        | "arrived_at_school"
+        | "trip_completed"
+      trip_status: "pending" | "in_progress" | "completed" | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -839,6 +1052,15 @@ export const Constants = {
       payment_status: ["paid", "pending", "overdue"],
       registration_status: ["pending_fees", "complete", "cancelled"],
       subscription_type: ["monthly", "yearly"],
+      trip_notification_type: [
+        "trip_started",
+        "arriving_soon",
+        "arrived_at_pickup",
+        "picked_up",
+        "arrived_at_school",
+        "trip_completed",
+      ],
+      trip_status: ["pending", "in_progress", "completed", "cancelled"],
     },
   },
 } as const
