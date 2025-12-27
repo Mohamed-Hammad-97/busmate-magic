@@ -1,7 +1,6 @@
-import React, { useEffect, useRef, useState } from "react";
-import mapboxgl from "mapbox-gl";
-import "mapbox-gl/dist/mapbox-gl.css";
-import { useMapboxToken } from "@/hooks/useMapboxToken";
+import React, { useState, useCallback, useEffect } from "react";
+import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
+import { useGoogleMapsToken } from "@/hooks/useGoogleMapsToken";
 import { Loader2 } from "lucide-react";
 import type { TripStudentStatus, LiveTrip } from "@/hooks/useLiveTrip";
 
@@ -20,6 +19,16 @@ const STATUS_COLORS: Record<string, string> = {
   dropped_off: "#6b7280", // gray
 };
 
+const containerStyle = {
+  width: '100%',
+  height: '100%',
+};
+
+const defaultCenter = {
+  lat: 30.0444,
+  lng: 31.2357,
+};
+
 export function LiveTripMap({
   trip,
   students,
@@ -27,165 +36,60 @@ export function LiveTripMap({
   showDriverLocation = true,
   isDriver = false,
 }: LiveTripMapProps) {
-  const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
-  const driverMarker = useRef<mapboxgl.Marker | null>(null);
-  const studentMarkers = useRef<Map<string, mapboxgl.Marker>>(new Map());
-  const schoolMarker = useRef<mapboxgl.Marker | null>(null);
-  const { token, isLoading: tokenLoading } = useMapboxToken();
-  const [mapLoaded, setMapLoaded] = useState(false);
+  const { token, isLoading: tokenLoading } = useGoogleMapsToken();
+  
+  const { isLoaded, loadError } = useJsApiLoader({
+    googleMapsApiKey: token || '',
+    language: 'ar',
+    region: 'EG',
+  });
 
-  // Initialize map
+  const [map, setMap] = useState<google.maps.Map | null>(null);
+  const [activeMarker, setActiveMarker] = useState<string | null>(null);
+
+  const onLoad = useCallback((mapInstance: google.maps.Map) => {
+    setMap(mapInstance);
+  }, []);
+
+  const onUnmount = useCallback(() => {
+    setMap(null);
+  }, []);
+
+  // Fit bounds to show all markers
   useEffect(() => {
-    if (!mapContainer.current || !token) return;
+    if (!map) return;
 
-    mapboxgl.accessToken = token;
-
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: "mapbox://styles/mapbox/streets-v12",
-      center: [31.2357, 30.0444], // Cairo default
-      zoom: 12,
-    });
-
-    map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
-
-    map.current.on("load", () => {
-      setMapLoaded(true);
-    });
-
-    return () => {
-      map.current?.remove();
-    };
-  }, [token]);
-
-  // Update markers when data changes
-  useEffect(() => {
-    if (!map.current || !mapLoaded) return;
-
-    const bounds = new mapboxgl.LngLatBounds();
+    const bounds = new google.maps.LatLngBounds();
     let hasValidBounds = false;
 
-    // Update school marker
+    // Add school location
     if (trip?.routes?.schools) {
       const school = trip.routes.schools;
-      if (schoolMarker.current) {
-        schoolMarker.current.setLngLat([school.longitude, school.latitude]);
-      } else {
-        const el = document.createElement("div");
-        el.className = "school-marker";
-        el.innerHTML = `
-          <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center shadow-lg border-2 border-white">
-            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-            </svg>
-          </div>
-        `;
-
-        schoolMarker.current = new mapboxgl.Marker({ element: el })
-          .setLngLat([school.longitude, school.latitude])
-          .setPopup(new mapboxgl.Popup().setHTML(`<h3 class="font-bold">${school.name}</h3><p>المدرسة</p>`))
-          .addTo(map.current!);
-      }
-      bounds.extend([school.longitude, school.latitude]);
+      bounds.extend({ lat: school.latitude, lng: school.longitude });
       hasValidBounds = true;
     }
 
-    // Update driver marker
+    // Add driver location
     if (showDriverLocation && trip?.current_latitude && trip?.current_longitude) {
-      if (driverMarker.current) {
-        driverMarker.current.setLngLat([trip.current_longitude, trip.current_latitude]);
-      } else {
-        const el = document.createElement("div");
-        el.className = "driver-marker";
-        el.innerHTML = `
-          <div class="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center shadow-lg border-3 border-white animate-pulse">
-            <svg class="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.22.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
-            </svg>
-          </div>
-        `;
-
-        driverMarker.current = new mapboxgl.Marker({ element: el })
-          .setLngLat([trip.current_longitude, trip.current_latitude])
-          .addTo(map.current!);
-      }
-      bounds.extend([trip.current_longitude, trip.current_latitude]);
+      bounds.extend({ lat: trip.current_latitude, lng: trip.current_longitude });
       hasValidBounds = true;
     }
 
-    // Update student markers
-    const currentStudentIds = new Set<string>();
-
+    // Add student locations
     students.forEach((student) => {
-      if (!student.registrations?.parent_accounts) return;
-      
-      const parent = student.registrations.parent_accounts;
-      const lat = parent.pickup_latitude;
-      const lng = parent.pickup_longitude;
-      
-      if (!lat || !lng) return;
-      
-      currentStudentIds.add(student.id);
-      bounds.extend([lng, lat]);
-      hasValidBounds = true;
-
-      const statusColor = STATUS_COLORS[student.status] || STATUS_COLORS.pending;
-
-      if (studentMarkers.current.has(student.id)) {
-        // Update existing marker
-        const marker = studentMarkers.current.get(student.id)!;
-        const el = marker.getElement();
-        const innerDiv = el.querySelector("div");
-        if (innerDiv) {
-          innerDiv.style.backgroundColor = statusColor;
+      if (student.registrations?.parent_accounts) {
+        const parent = student.registrations.parent_accounts;
+        if (parent.pickup_latitude && parent.pickup_longitude) {
+          bounds.extend({ lat: parent.pickup_latitude, lng: parent.pickup_longitude });
+          hasValidBounds = true;
         }
-      } else {
-        // Create new marker
-        const el = document.createElement("div");
-        el.className = "student-marker cursor-pointer";
-        el.innerHTML = `
-          <div class="w-8 h-8 rounded-full flex items-center justify-center shadow-md border-2 border-white transition-all" style="background-color: ${statusColor}">
-            <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-            </svg>
-          </div>
-        `;
-
-        if (isDriver && onStudentClick) {
-          el.onclick = () => onStudentClick(student);
-        }
-
-        const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(`
-          <div class="p-2">
-            <h3 class="font-bold text-sm">${student.registrations.student_name}</h3>
-            <p class="text-xs text-gray-600">${parent.parent_name}</p>
-            <p class="text-xs text-gray-500">${parent.father_phone}</p>
-          </div>
-        `);
-
-        const marker = new mapboxgl.Marker({ element: el })
-          .setLngLat([lng, lat])
-          .setPopup(popup)
-          .addTo(map.current!);
-
-        studentMarkers.current.set(student.id, marker);
       }
     });
 
-    // Remove markers for students no longer in the list
-    studentMarkers.current.forEach((marker, id) => {
-      if (!currentStudentIds.has(id)) {
-        marker.remove();
-        studentMarkers.current.delete(id);
-      }
-    });
-
-    // Fit bounds
     if (hasValidBounds) {
-      map.current.fitBounds(bounds, { padding: 50, maxZoom: 15 });
+      map.fitBounds(bounds, 50);
     }
-  }, [trip, students, mapLoaded, showDriverLocation, isDriver, onStudentClick]);
+  }, [map, trip, students, showDriverLocation]);
 
   if (tokenLoading) {
     return (
@@ -195,9 +99,132 @@ export function LiveTripMap({
     );
   }
 
+  if (loadError || !token) {
+    return (
+      <div className="flex items-center justify-center h-full bg-muted/20">
+        <p className="text-muted-foreground">Google Maps API key not configured</p>
+      </div>
+    );
+  }
+
+  if (!isLoaded) {
+    return (
+      <div className="flex items-center justify-center h-full bg-muted/20">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <div className="relative w-full h-full">
-      <div ref={mapContainer} className="absolute inset-0 rounded-lg" />
+      <GoogleMap
+        mapContainerStyle={containerStyle}
+        center={defaultCenter}
+        zoom={12}
+        onLoad={onLoad}
+        onUnmount={onUnmount}
+        options={{
+          disableDefaultUI: false,
+          zoomControl: true,
+          streetViewControl: false,
+          mapTypeControl: false,
+          fullscreenControl: false,
+        }}
+      >
+        {/* School Marker */}
+        {trip?.routes?.schools && (
+          <Marker
+            position={{
+              lat: trip.routes.schools.latitude,
+              lng: trip.routes.schools.longitude,
+            }}
+            icon={{
+              url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
+                  <circle cx="20" cy="20" r="18" fill="#3B82F6" stroke="white" stroke-width="2"/>
+                  <path d="M10 18l10-6 10 6M12 20v8h16v-8M18 28v-4h4v4" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              `),
+              scaledSize: new google.maps.Size(40, 40),
+            }}
+            onClick={() => setActiveMarker('school')}
+          >
+            {activeMarker === 'school' && (
+              <InfoWindow onCloseClick={() => setActiveMarker(null)}>
+                <div>
+                  <h3 className="font-bold">{trip.routes.schools.name}</h3>
+                  <p>المدرسة</p>
+                </div>
+              </InfoWindow>
+            )}
+          </Marker>
+        )}
+
+        {/* Driver Marker */}
+        {showDriverLocation && trip?.current_latitude && trip?.current_longitude && (
+          <Marker
+            position={{
+              lat: trip.current_latitude,
+              lng: trip.current_longitude,
+            }}
+            icon={{
+              url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+                  <circle cx="24" cy="24" r="22" fill="#2563EB" stroke="white" stroke-width="3"/>
+                  <path d="M35 23.5C35 22 34 21 32 21H29L27 16H21L19 21H16C14 21 13 22 13 23.5L13 32H15V33.5C15 34.3 15.7 35 16.5 35C17.3 35 18 34.3 18 33.5V32H30V33.5C30 34.3 30.7 35 31.5 35C32.3 35 33 34.3 33 33.5V32H35V23.5ZM17 28C16 28 15 27 15 26C15 25 16 24 17 24C18 24 19 25 19 26C19 27 18 28 17 28ZM31 28C30 28 29 27 29 26C29 25 30 24 31 24C32 24 33 25 33 26C33 27 32 28 31 28ZM15 23L17 18.5H31L33 23H15Z" fill="white"/>
+                </svg>
+              `),
+              scaledSize: new google.maps.Size(48, 48),
+            }}
+          />
+        )}
+
+        {/* Student Markers */}
+        {students.map((student) => {
+          if (!student.registrations?.parent_accounts) return null;
+          
+          const parent = student.registrations.parent_accounts;
+          if (!parent.pickup_latitude || !parent.pickup_longitude) return null;
+
+          const statusColor = STATUS_COLORS[student.status] || STATUS_COLORS.pending;
+
+          return (
+            <Marker
+              key={student.id}
+              position={{
+                lat: parent.pickup_latitude,
+                lng: parent.pickup_longitude,
+              }}
+              icon={{
+                url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+                    <circle cx="16" cy="16" r="14" fill="${statusColor}" stroke="white" stroke-width="2"/>
+                    <circle cx="16" cy="12" r="4" fill="white"/>
+                    <path d="M8 26c0-4 4-6 8-6s8 2 8 6" fill="white"/>
+                  </svg>
+                `),
+                scaledSize: new google.maps.Size(32, 32),
+              }}
+              onClick={() => {
+                if (isDriver && onStudentClick) {
+                  onStudentClick(student);
+                }
+                setActiveMarker(student.id);
+              }}
+            >
+              {activeMarker === student.id && (
+                <InfoWindow onCloseClick={() => setActiveMarker(null)}>
+                  <div className="p-2">
+                    <h3 className="font-bold text-sm">{student.registrations.student_name}</h3>
+                    <p className="text-xs text-gray-600">{parent.parent_name}</p>
+                    <p className="text-xs text-gray-500">{parent.father_phone}</p>
+                  </div>
+                </InfoWindow>
+              )}
+            </Marker>
+          );
+        })}
+      </GoogleMap>
       
       {/* Legend */}
       <div className="absolute bottom-4 left-4 bg-background/95 backdrop-blur-sm rounded-lg p-3 shadow-lg border">

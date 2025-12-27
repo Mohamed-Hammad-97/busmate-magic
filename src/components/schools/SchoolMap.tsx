@@ -1,101 +1,117 @@
-import React, { useEffect, useRef } from 'react';
-import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
+import React, { useState, useCallback, useEffect } from 'react';
+import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
 import type { Tables } from '@/integrations/supabase/types';
+import { Loader2 } from 'lucide-react';
 
 type School = Tables<'schools'>;
 
 interface SchoolMapProps {
   schools: School[];
   onSchoolClick?: (school: School) => void;
-  mapboxToken: string;
+  googleMapsApiKey: string;
 }
 
-const SchoolMap: React.FC<SchoolMapProps> = ({ schools, onSchoolClick, mapboxToken }) => {
-  const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
-  const markersRef = useRef<mapboxgl.Marker[]>([]);
+const containerStyle = {
+  width: '100%',
+  height: '400px',
+};
 
+const defaultCenter = {
+  lat: 30.0444,
+  lng: 31.2357,
+};
+
+const SchoolMap: React.FC<SchoolMapProps> = ({ schools, onSchoolClick, googleMapsApiKey }) => {
+  const { isLoaded, loadError } = useJsApiLoader({
+    googleMapsApiKey: googleMapsApiKey || '',
+    language: 'ar',
+    region: 'EG',
+  });
+
+  const [map, setMap] = useState<google.maps.Map | null>(null);
+  const [activeMarker, setActiveMarker] = useState<string | null>(null);
+
+  const onLoad = useCallback((mapInstance: google.maps.Map) => {
+    setMap(mapInstance);
+  }, []);
+
+  const onUnmount = useCallback(() => {
+    setMap(null);
+  }, []);
+
+  // Fit bounds to show all schools
   useEffect(() => {
-    if (!mapContainer.current || !mapboxToken) return;
+    if (!map || schools.length === 0) return;
 
-    mapboxgl.accessToken = mapboxToken;
-
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/streets-v12',
-      center: [31.2357, 30.0444], // Cairo, Egypt
-      zoom: 10,
+    const bounds = new google.maps.LatLngBounds();
+    schools.forEach((school) => {
+      bounds.extend({ lat: school.latitude, lng: school.longitude });
     });
+    map.fitBounds(bounds, 50);
+  }, [map, schools]);
 
-    map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+  if (loadError) {
+    return (
+      <div className="w-full h-[400px] flex items-center justify-center bg-muted rounded-lg">
+        <p className="text-muted-foreground">Error loading Google Maps</p>
+      </div>
+    );
+  }
 
-    return () => {
-      map.current?.remove();
-    };
-  }, [mapboxToken]);
-
-  useEffect(() => {
-    if (!map.current) return;
-
-    // Clear existing markers
-    markersRef.current.forEach(marker => marker.remove());
-    markersRef.current = [];
-
-    // Add markers for each school
-    schools.forEach(school => {
-      const el = document.createElement('div');
-      el.className = 'school-marker';
-      el.style.cssText = `
-        width: 30px;
-        height: 30px;
-        background: hsl(var(--primary));
-        border-radius: 50%;
-        border: 3px solid white;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      `;
-      el.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m4 6 8-4 8 4"></path><path d="m18 10 4 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-8l4-2"></path><path d="M14 22v-4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v4"></path><path d="M18 5v17"></path><path d="M6 5v17"></path><circle cx="12" cy="9" r="2"></circle></svg>`;
-
-      const marker = new mapboxgl.Marker(el)
-        .setLngLat([school.longitude, school.latitude])
-        .setPopup(
-          new mapboxgl.Popup({ offset: 25 }).setHTML(
-            `<strong>${school.name}</strong><br/>${school.city || 'No city'}`
-          )
-        )
-        .addTo(map.current!);
-
-      el.addEventListener('click', () => {
-        onSchoolClick?.(school);
-      });
-
-      markersRef.current.push(marker);
-    });
-
-    // Fit map to show all markers
-    if (schools.length > 0) {
-      const bounds = new mapboxgl.LngLatBounds();
-      schools.forEach(school => {
-        bounds.extend([school.longitude, school.latitude]);
-      });
-      map.current.fitBounds(bounds, { padding: 50, maxZoom: 14 });
-    }
-  }, [schools, onSchoolClick]);
-
-  const focusOnSchool = (school: School) => {
-    map.current?.flyTo({
-      center: [school.longitude, school.latitude],
-      zoom: 15,
-      duration: 1500,
-    });
-  };
+  if (!isLoaded) {
+    return (
+      <div className="w-full h-[400px] flex items-center justify-center bg-muted rounded-lg">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
-    <div ref={mapContainer} className="w-full h-[400px] rounded-lg border border-border" />
+    <div className="w-full h-[400px] rounded-lg border border-border overflow-hidden">
+      <GoogleMap
+        mapContainerStyle={containerStyle}
+        center={defaultCenter}
+        zoom={10}
+        onLoad={onLoad}
+        onUnmount={onUnmount}
+        options={{
+          disableDefaultUI: false,
+          zoomControl: true,
+          streetViewControl: false,
+          mapTypeControl: false,
+          fullscreenControl: false,
+        }}
+      >
+        {schools.map((school) => (
+          <Marker
+            key={school.id}
+            position={{ lat: school.latitude, lng: school.longitude }}
+            icon={{
+              url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+                  <circle cx="16" cy="16" r="14" fill="#3B82F6" stroke="white" stroke-width="3"/>
+                  <path d="M8 14l8-5 8 5M10 17v6h12v-6M14 23v-3h4v3" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              `),
+              scaledSize: new google.maps.Size(32, 32),
+            }}
+            onClick={() => {
+              setActiveMarker(school.id);
+              onSchoolClick?.(school);
+            }}
+          >
+            {activeMarker === school.id && (
+              <InfoWindow onCloseClick={() => setActiveMarker(null)}>
+                <div>
+                  <strong>{school.name}</strong><br/>
+                  {school.city || 'No city'}
+                </div>
+              </InfoWindow>
+            )}
+          </Marker>
+        ))}
+      </GoogleMap>
+    </div>
   );
 };
 

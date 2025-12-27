@@ -1,7 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
-import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
-import { useMapboxToken } from '@/hooks/useMapboxToken';
+import React, { useState, useCallback, useEffect } from 'react';
+import { GoogleMap, useJsApiLoader, Marker, InfoWindow, Polyline } from '@react-google-maps/api';
+import { useGoogleMapsToken } from '@/hooks/useGoogleMapsToken';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from 'react-i18next';
 import { Users, School, Route, Loader2 } from 'lucide-react';
@@ -52,6 +51,11 @@ const ROUTE_COLORS = [
   '#F97316', // orange
 ];
 
+const defaultCenter = {
+  lat: 30.0444,
+  lng: 31.2357,
+};
+
 const RouteMap: React.FC<RouteMapProps> = ({
   students = [],
   schools = [],
@@ -64,272 +68,107 @@ const RouteMap: React.FC<RouteMapProps> = ({
 }) => {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.language === 'ar';
-  const { token, isLoading: tokenLoading } = useMapboxToken();
-  const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
-  const markersRef = useRef<mapboxgl.Marker[]>([]);
+  const { token, isLoading: tokenLoading } = useGoogleMapsToken();
 
+  const { isLoaded, loadError } = useJsApiLoader({
+    googleMapsApiKey: token || '',
+    language: 'ar',
+    region: 'EG',
+  });
+
+  const [map, setMap] = useState<google.maps.Map | null>(null);
   const [showStudents, setShowStudents] = useState(true);
   const [showSchools, setShowSchools] = useState(true);
   const [showRoutes, setShowRoutes] = useState(true);
+  const [activeMarker, setActiveMarker] = useState<string | null>(null);
 
+  const containerStyle = {
+    width: '100%',
+    height,
+  };
+
+  const onLoad = useCallback((mapInstance: google.maps.Map) => {
+    setMap(mapInstance);
+  }, []);
+
+  const onUnmount = useCallback(() => {
+    setMap(null);
+  }, []);
+
+  // Fit bounds to show all markers
   useEffect(() => {
-    if (!mapContainer.current || !token) return;
+    if (!map) return;
 
-    mapboxgl.accessToken = token;
-
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/streets-v12',
-      center: [31.2357, 30.0444], // Cairo, Egypt
-      zoom: 10,
-    });
-
-    map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
-
-    return () => {
-      map.current?.remove();
-    };
-  }, [token]);
-
-  useEffect(() => {
-    if (!map.current) return;
-
-    // Clear existing markers
-    markersRef.current.forEach((marker) => marker.remove());
-    markersRef.current = [];
-
-    // Clear existing route lines
-    routes.forEach((_, idx) => {
-      if (map.current?.getLayer(`route-line-${idx}`)) {
-        map.current.removeLayer(`route-line-${idx}`);
-      }
-      if (map.current?.getSource(`route-${idx}`)) {
-        map.current.removeSource(`route-${idx}`);
-      }
-    });
-
-    const bounds = new mapboxgl.LngLatBounds();
+    const bounds = new google.maps.LatLngBounds();
     let hasPoints = false;
 
-    // Add student markers
     if (showStudents) {
       students.forEach((student) => {
-        if (!student.lat || !student.lng) return;
-        
-        const el = document.createElement('div');
-        el.style.cssText = `
-          width: 24px;
-          height: 24px;
-          background: #3B82F6;
-          border-radius: 50%;
-          border: 2px solid white;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          font-size: 10px;
-          font-weight: bold;
-        `;
-        el.innerText = student.pickup_order?.toString() || '•';
-
-        const marker = new mapboxgl.Marker(el)
-          .setLngLat([student.lng, student.lat])
-          .setPopup(
-            new mapboxgl.Popup({ offset: 25 }).setHTML(
-              `<strong>${student.student_name || student.parent_name}</strong>`
-            )
-          )
-          .addTo(map.current!);
-
-        markersRef.current.push(marker);
-        bounds.extend([student.lng, student.lat]);
-        hasPoints = true;
+        if (student.lat && student.lng) {
+          bounds.extend({ lat: student.lat, lng: student.lng });
+          hasPoints = true;
+        }
       });
     }
 
-    // Add school markers
     if (showSchools) {
       schools.forEach((school) => {
-        const el = document.createElement('div');
-        el.style.cssText = `
-          width: 32px;
-          height: 32px;
-          background: hsl(var(--primary));
-          border-radius: 50%;
-          border: 3px solid white;
-          box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        `;
-        el.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m4 6 8-4 8 4"></path><path d="m18 10 4 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-8l4-2"></path><path d="M14 22v-4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v4"></path><path d="M18 5v17"></path><path d="M6 5v17"></path><circle cx="12" cy="9" r="2"></circle></svg>`;
-
-        const marker = new mapboxgl.Marker(el)
-          .setLngLat([school.longitude, school.latitude])
-          .setPopup(
-            new mapboxgl.Popup({ offset: 25 }).setHTML(`<strong>${school.name}</strong>`)
-          )
-          .addTo(map.current!);
-
-        markersRef.current.push(marker);
-        bounds.extend([school.longitude, school.latitude]);
+        bounds.extend({ lat: school.latitude, lng: school.longitude });
         hasPoints = true;
       });
     }
 
-    // Add route lines and markers
-    if (showRoutes && showRouteLine) {
-      routes.forEach((route, idx) => {
-        const color = route.color || ROUTE_COLORS[idx % ROUTE_COLORS.length];
-        const isSelected = selectedRoute?.id === route.id;
-
-        // Sort students by pickup_order
-        const sortedStudents = [...route.students].sort(
-          (a, b) => (a.pickup_order || 0) - (b.pickup_order || 0)
-        );
-
-        // Create line coordinates: students -> school
-        const coordinates: [number, number][] = [];
-        sortedStudents.forEach((student) => {
+    if (showRoutes) {
+      routes.forEach((route) => {
+        route.students.forEach((student) => {
           if (student.lat && student.lng) {
-            coordinates.push([student.lng, student.lat]);
-            bounds.extend([student.lng, student.lat]);
+            bounds.extend({ lat: student.lat, lng: student.lng });
             hasPoints = true;
           }
         });
-
         if (route.school) {
-          coordinates.push([route.school.longitude, route.school.latitude]);
-          bounds.extend([route.school.longitude, route.school.latitude]);
+          bounds.extend({ lat: route.school.latitude, lng: route.school.longitude });
           hasPoints = true;
         }
-
-        // Add route line
-        if (coordinates.length >= 2 && map.current) {
-          map.current.on('load', () => {
-            if (!map.current?.getSource(`route-${idx}`)) {
-              map.current?.addSource(`route-${idx}`, {
-                type: 'geojson',
-                data: {
-                  type: 'Feature',
-                  properties: {},
-                  geometry: {
-                    type: 'LineString',
-                    coordinates,
-                  },
-                },
-              });
-
-              map.current?.addLayer({
-                id: `route-line-${idx}`,
-                type: 'line',
-                source: `route-${idx}`,
-                layout: {
-                  'line-join': 'round',
-                  'line-cap': 'round',
-                },
-                paint: {
-                  'line-color': color,
-                  'line-width': isSelected ? 5 : 3,
-                  'line-opacity': isSelected ? 1 : 0.7,
-                },
-              });
-            }
-          });
-
-          // For already loaded map
-          if (map.current.isStyleLoaded()) {
-            if (!map.current.getSource(`route-${idx}`)) {
-              map.current.addSource(`route-${idx}`, {
-                type: 'geojson',
-                data: {
-                  type: 'Feature',
-                  properties: {},
-                  geometry: {
-                    type: 'LineString',
-                    coordinates,
-                  },
-                },
-              });
-
-              map.current.addLayer({
-                id: `route-line-${idx}`,
-                type: 'line',
-                source: `route-${idx}`,
-                layout: {
-                  'line-join': 'round',
-                  'line-cap': 'round',
-                },
-                paint: {
-                  'line-color': color,
-                  'line-width': isSelected ? 5 : 3,
-                  'line-opacity': isSelected ? 1 : 0.7,
-                },
-              });
-            }
-          }
-        }
-
-        // Add student markers for route
-        sortedStudents.forEach((student) => {
-          if (!student.lat || !student.lng) return;
-
-          const el = document.createElement('div');
-          el.style.cssText = `
-            width: 24px;
-            height: 24px;
-            background: ${color};
-            border-radius: 50%;
-            border: 2px solid white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 10px;
-            font-weight: bold;
-            cursor: pointer;
-          `;
-          el.innerText = student.pickup_order?.toString() || '•';
-
-          const marker = new mapboxgl.Marker(el)
-            .setLngLat([student.lng, student.lat])
-            .setPopup(
-              new mapboxgl.Popup({ offset: 25 }).setHTML(
-                `<strong>${route.name}</strong><br/>${student.student_name || student.parent_name}`
-              )
-            )
-            .addTo(map.current!);
-
-          el.addEventListener('click', () => onRouteClick?.(route));
-          markersRef.current.push(marker);
-        });
       });
     }
 
-    // Fit bounds
     if (hasPoints) {
-      map.current.fitBounds(bounds, { padding: 50, maxZoom: 14 });
+      map.fitBounds(bounds, 50);
     }
-  }, [students, schools, routes, showStudents, showSchools, showRoutes, selectedRoute, showRouteLine, onRouteClick]);
+  }, [map, students, schools, routes, showStudents, showSchools, showRoutes]);
 
   const focusOnRoute = (route: RouteData) => {
-    if (!map.current) return;
+    if (!map) return;
 
-    const bounds = new mapboxgl.LngLatBounds();
+    const bounds = new google.maps.LatLngBounds();
     route.students.forEach((s) => {
-      if (s.lat && s.lng) bounds.extend([s.lng, s.lat]);
+      if (s.lat && s.lng) bounds.extend({ lat: s.lat, lng: s.lng });
     });
     if (route.school) {
-      bounds.extend([route.school.longitude, route.school.latitude]);
+      bounds.extend({ lat: route.school.latitude, lng: route.school.longitude });
     }
 
-    map.current.fitBounds(bounds, { padding: 50, maxZoom: 15, duration: 1500 });
+    map.fitBounds(bounds, 50);
   };
 
   if (tokenLoading) {
+    return (
+      <div className="flex items-center justify-center bg-muted rounded-lg" style={{ height }}>
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (loadError || !token) {
+    return (
+      <div className="flex items-center justify-center bg-muted rounded-lg" style={{ height }}>
+        <p className="text-muted-foreground">Google Maps API key not configured</p>
+      </div>
+    );
+  }
+
+  if (!isLoaded) {
     return (
       <div className="flex items-center justify-center bg-muted rounded-lg" style={{ height }}>
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -368,7 +207,144 @@ const RouteMap: React.FC<RouteMapProps> = ({
         </div>
       )}
 
-      <div ref={mapContainer} className="w-full rounded-lg border border-border" style={{ height }} />
+      <div className="w-full rounded-lg border border-border overflow-hidden" style={{ height }}>
+        <GoogleMap
+          mapContainerStyle={containerStyle}
+          center={defaultCenter}
+          zoom={10}
+          onLoad={onLoad}
+          onUnmount={onUnmount}
+          options={{
+            disableDefaultUI: false,
+            zoomControl: true,
+            streetViewControl: false,
+            mapTypeControl: false,
+            fullscreenControl: false,
+          }}
+        >
+          {/* Standalone Student Markers */}
+          {showStudents && students.map((student) => {
+            if (!student.lat || !student.lng) return null;
+            return (
+              <Marker
+                key={student.id}
+                position={{ lat: student.lat, lng: student.lng }}
+                label={{
+                  text: student.pickup_order?.toString() || '•',
+                  color: 'white',
+                  fontWeight: 'bold',
+                  fontSize: '10px',
+                }}
+                icon={{
+                  url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="10" fill="#3B82F6" stroke="white" stroke-width="2"/>
+                    </svg>
+                  `),
+                  scaledSize: new google.maps.Size(24, 24),
+                  labelOrigin: new google.maps.Point(12, 12),
+                }}
+                onClick={() => setActiveMarker(student.id)}
+              >
+                {activeMarker === student.id && (
+                  <InfoWindow onCloseClick={() => setActiveMarker(null)}>
+                    <strong>{student.student_name || student.parent_name}</strong>
+                  </InfoWindow>
+                )}
+              </Marker>
+            );
+          })}
+
+          {/* School Markers */}
+          {showSchools && schools.map((school) => (
+            <Marker
+              key={school.id}
+              position={{ lat: school.latitude, lng: school.longitude }}
+              icon={{
+                url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+                    <circle cx="16" cy="16" r="14" fill="#3B82F6" stroke="white" stroke-width="3"/>
+                    <path d="M8 14l8-5 8 5M10 17v6h12v-6M14 23v-3h4v3" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                `),
+                scaledSize: new google.maps.Size(32, 32),
+              }}
+              onClick={() => setActiveMarker(`school-${school.id}`)}
+            >
+              {activeMarker === `school-${school.id}` && (
+                <InfoWindow onCloseClick={() => setActiveMarker(null)}>
+                  <strong>{school.name}</strong>
+                </InfoWindow>
+              )}
+            </Marker>
+          ))}
+
+          {/* Route Lines and Markers */}
+          {showRoutes && showRouteLine && routes.map((route, idx) => {
+            const color = route.color || ROUTE_COLORS[idx % ROUTE_COLORS.length];
+            const isSelected = selectedRoute?.id === route.id;
+
+            // Sort students by pickup_order
+            const sortedStudents = [...route.students].sort(
+              (a, b) => (a.pickup_order || 0) - (b.pickup_order || 0)
+            );
+
+            // Create path coordinates
+            const path: { lat: number; lng: number }[] = [];
+            sortedStudents.forEach((student) => {
+              if (student.lat && student.lng) {
+                path.push({ lat: student.lat, lng: student.lng });
+              }
+            });
+            if (route.school) {
+              path.push({ lat: route.school.latitude, lng: route.school.longitude });
+            }
+
+            return (
+              <React.Fragment key={route.id}>
+                {/* Route Line */}
+                {path.length >= 2 && (
+                  <Polyline
+                    path={path}
+                    options={{
+                      strokeColor: color,
+                      strokeWeight: isSelected ? 5 : 3,
+                      strokeOpacity: isSelected ? 1 : 0.7,
+                    }}
+                  />
+                )}
+
+                {/* Route Student Markers */}
+                {sortedStudents.map((student) => {
+                  if (!student.lat || !student.lng) return null;
+                  return (
+                    <Marker
+                      key={`route-${route.id}-${student.id}`}
+                      position={{ lat: student.lat, lng: student.lng }}
+                      label={{
+                        text: student.pickup_order?.toString() || '•',
+                        color: 'white',
+                        fontWeight: 'bold',
+                        fontSize: '10px',
+                      }}
+                      icon={{
+                        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10" fill="${color}" stroke="white" stroke-width="2"/>
+                          </svg>
+                        `),
+                        scaledSize: new google.maps.Size(24, 24),
+                        labelOrigin: new google.maps.Point(12, 12),
+                      }}
+                      onClick={() => onRouteClick?.(route)}
+                    />
+                  );
+                })}
+              </React.Fragment>
+            );
+          })}
+        </GoogleMap>
+      </div>
 
       {showRoutes && routes.length > 0 && (
         <div className="space-y-2">
