@@ -1,1 +1,4 @@
 project_id = "cfkipvshbozcofsbpfln"
+
+[functions.ai-route-planner]
+verify_jwt = true

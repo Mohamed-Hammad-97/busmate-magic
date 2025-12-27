@@ -56,15 +56,19 @@ const RegistrationDetails: React.FC<RegistrationDetailsProps> = ({
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Parent Info */}
+          {/* Student Info */}
           <div className="space-y-3">
             <h3 className="font-semibold flex items-center gap-2">
               <User className="h-4 w-4" />
-              Parent Information
+              Student & Parent Information
             </h3>
             <div className="grid gap-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Name</span>
+                <span className="text-muted-foreground">Student Name</span>
+                <span className="font-medium">{registration.student_name || '-'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Parent Name</span>
                 <span className="font-medium">{parent?.parent_name}</span>
               </div>
               <div className="flex justify-between">

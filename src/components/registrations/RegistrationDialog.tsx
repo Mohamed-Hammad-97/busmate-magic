@@ -50,6 +50,7 @@ interface ParentFormData {
 }
 
 interface RegistrationFormData {
+  student_name: string;
   school_id: string;
   grade: string;
   car_type: Enums<'car_type'>;
@@ -87,6 +88,7 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
   });
 
   const [regData, setRegData] = useState<RegistrationFormData>({
+    student_name: '',
     school_id: '',
     grade: '',
     car_type: 'ac',
@@ -137,6 +139,7 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
         pickup_longitude: registration.parent_accounts?.pickup_longitude || 31.2357,
       });
       setRegData({
+        student_name: registration.student_name || '',
         school_id: registration.school_id,
         grade: registration.grade,
         car_type: registration.car_type,
@@ -161,6 +164,7 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
       pickup_longitude: 31.2357,
     });
     setRegData({
+      student_name: '',
       school_id: '',
       grade: '',
       car_type: 'ac',
@@ -193,6 +197,7 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
         const { error: regError } = await supabase
           .from('registrations')
           .update({
+            student_name: regData.student_name,
             school_id: regData.school_id,
             grade: regData.grade,
             car_type: regData.car_type,
@@ -200,6 +205,7 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
             status: regData.status,
           })
           .eq('id', registration.id);
+        if (regError) throw regError;
         if (regError) throw regError;
       } else {
         // Create new parent account
@@ -225,6 +231,7 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
           .from('registrations')
           .insert({
             parent_id: newParent.id,
+            student_name: regData.student_name,
             school_id: regData.school_id,
             grade: regData.grade,
             car_type: regData.car_type,
@@ -232,6 +239,7 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
             status: regData.status,
             created_by: user?.id,
           });
+        if (regError) throw regError;
         if (regError) throw regError;
       }
     },
@@ -249,6 +257,10 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
     e.preventDefault();
     
     // Validation
+    if (!regData.student_name.trim()) {
+      toast({ title: 'Please enter student name', variant: 'destructive' });
+      return;
+    }
     if (!parentData.parent_name.trim()) {
       toast({ title: 'Please enter parent name', variant: 'destructive' });
       return;
@@ -297,6 +309,14 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
 
             <TabsContent value="parent" className="space-y-4 mt-4">
               <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2 sm:col-span-2">
+                  <Label>Student Name *</Label>
+                  <Input
+                    value={regData.student_name}
+                    onChange={(e) => setRegData((r) => ({ ...r, student_name: e.target.value }))}
+                    placeholder="Full student name"
+                  />
+                </div>
                 <div className="space-y-2">
                   <Label>Parent Name *</Label>
                   <Input
