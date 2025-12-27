@@ -87,11 +87,9 @@ export default function ParentAuth() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-primary/10 to-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <div className="flex items-center gap-2">
-              <Bus className="h-10 w-10 text-primary" />
-              <span className="text-2xl font-bold">بوابة ولي الأمر</span>
-            </div>
+          <div className="flex flex-col items-center mb-4">
+            <img src="/src/assets/seater-logo.jpg" alt="Seater" className="h-16 w-auto mb-2" />
+            <span className="text-xl font-semibold text-muted-foreground">Parent Login</span>
           </div>
           <CardTitle>
             {step === "phone" ? "تسجيل الدخول" : "التحقق من الرقم"}
