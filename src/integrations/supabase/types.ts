@@ -56,6 +56,92 @@ export type Database = {
           },
         ]
       }
+      chat_conversations: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          id: string
+          last_message_at: string | null
+          parent_id: string
+          status: string
+          subject: string | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          id?: string
+          last_message_at?: string | null
+          parent_id: string
+          status?: string
+          subject?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          id?: string
+          last_message_at?: string | null
+          parent_id?: string
+          status?: string
+          subject?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_conversations_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_conversations_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "parent_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_messages: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          sender_id: string
+          sender_type: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          sender_id: string
+          sender_type: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          sender_id?: string
+          sender_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cities: {
         Row: {
           created_at: string
@@ -118,6 +204,54 @@ export type Database = {
             columns: ["registration_id"]
             isOneToOne: false
             referencedRelation: "registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_accounts: {
+        Row: {
+          created_at: string
+          driver_id: string | null
+          id: string
+          is_active: boolean
+          phone: string
+          supervisor_id: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          driver_id?: string | null
+          id?: string
+          is_active?: boolean
+          phone: string
+          supervisor_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          driver_id?: string | null
+          id?: string
+          is_active?: boolean
+          phone?: string
+          supervisor_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_accounts_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_accounts_supervisor_id_fkey"
+            columns: ["supervisor_id"]
+            isOneToOne: false
+            referencedRelation: "supervisors"
             referencedColumns: ["id"]
           },
         ]
@@ -321,6 +455,7 @@ export type Database = {
           created_at: string
           emergency_phone: string
           father_phone: string
+          has_password: boolean
           id: string
           job: string | null
           mother_phone: string | null
@@ -336,6 +471,7 @@ export type Database = {
           created_at?: string
           emergency_phone: string
           father_phone: string
+          has_password?: boolean
           id?: string
           job?: string | null
           mother_phone?: string | null
@@ -351,6 +487,7 @@ export type Database = {
           created_at?: string
           emergency_phone?: string
           father_phone?: string
+          has_password?: boolean
           id?: string
           job?: string | null
           mother_phone?: string | null
@@ -900,6 +1037,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_driver_or_supervisor: { Args: { _user_id: string }; Returns: boolean }
       is_employee: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
