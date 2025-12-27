@@ -140,7 +140,7 @@ serve(async (req) => {
   try {
     // Parse body ONCE - it can only be consumed once
     const body = await req.json();
-    const { action, schoolId, carType, maxSeatsPerRoute, routeId, suggestion, driverId, supervisorId } = body;
+    const { action, schoolId, carType, maxSeatsPerRoute, routeId, suggestion, driverId, supervisorId, searchArea } = body;
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -180,7 +180,23 @@ serve(async (req) => {
         .select("registration_id");
       
       const assignedIds = new Set((assignments || []).map(a => a.registration_id));
-      const unassigned = (registrations || []).filter(r => !assignedIds.has(r.id));
+      let unassigned = (registrations || []).filter(r => !assignedIds.has(r.id));
+
+      // If search area is provided, filter students by geographic location
+      if (searchArea && searchArea.centerLat && searchArea.centerLng && searchArea.radiusKm) {
+        unassigned = unassigned.filter((r: any) => {
+          const pa = Array.isArray(r.parent_accounts) ? r.parent_accounts[0] : r.parent_accounts;
+          if (!pa || !pa.pickup_latitude || !pa.pickup_longitude) return false;
+          
+          const distance = calculateDistance(
+            searchArea.centerLat,
+            searchArea.centerLng,
+            pa.pickup_latitude,
+            pa.pickup_longitude
+          );
+          return distance <= searchArea.radiusKm;
+        });
+      }
 
       // Check existing routes that have available capacity
       const { data: existingRoutes, error: routesError } = await supabase

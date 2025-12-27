@@ -16,10 +16,16 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Sparkles, MapPin, Users, Route, Loader2, CheckCircle2, Lightbulb, ArrowRight, ArrowLeft, Plus, RefreshCw } from 'lucide-react';
+import { Sparkles, MapPin, Users, Route, Loader2, CheckCircle2, Lightbulb, ArrowRight, ArrowLeft, Plus, RefreshCw, Circle } from 'lucide-react';
 import { useCity } from '@/contexts/CityContext';
 import RouteMap from '@/components/routes/RouteMap';
+import DrawableAreaMap from '@/components/routes/DrawableAreaMap';
 import type { Tables } from '@/integrations/supabase/types';
+
+interface SearchArea {
+  center: { lat: number; lng: number };
+  radiusKm: number;
+}
 
 interface RouteSuggestion {
   name: string;
@@ -69,6 +75,7 @@ const AIRoutes: React.FC = () => {
   const [aiInsights, setAiInsights] = useState<string>('');
   const [routeDirection, setRouteDirection] = useState<'to_school' | 'from_school'>('to_school');
   const [selectedSuggestion, setSelectedSuggestion] = useState<RouteSuggestion | null>(null);
+  const [searchArea, setSearchArea] = useState<SearchArea | null>(null);
 
   const { data: allSchools = [] } = useQuery({
     queryKey: ['schools-active'],
@@ -136,6 +143,11 @@ const AIRoutes: React.FC = () => {
           schoolId: selectedSchool,
           carType: selectedCarType,
           maxSeatsPerRoute: parseInt(maxSeats),
+          searchArea: searchArea ? {
+            centerLat: searchArea.center.lat,
+            centerLng: searchArea.center.lng,
+            radiusKm: searchArea.radiusKm,
+          } : null,
         },
       });
       if (error) throw error;
@@ -351,6 +363,31 @@ const AIRoutes: React.FC = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Search Area Map */}
+        {selectedSchool && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Circle className="h-5 w-5" />
+                {isRtl ? 'تحديد منطقة البحث (اختياري)' : 'Define Search Area (Optional)'}
+              </CardTitle>
+              <CardDescription>
+                {isRtl 
+                  ? 'ارسم دائرة على الخريطة لتحديد المنطقة التي تريد البحث فيها عن الطلاب' 
+                  : 'Draw a circle on the map to limit the search to students in that area'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <DrawableAreaMap
+                school={selectedSchoolData}
+                searchArea={searchArea}
+                onAreaChange={setSearchArea}
+                height="350px"
+              />
+            </CardContent>
+          </Card>
+        )}
 
         {/* AI Insights */}
         {aiInsights && (
