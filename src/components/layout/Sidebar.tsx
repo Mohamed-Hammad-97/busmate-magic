@@ -1,4 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -16,6 +17,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 
 interface NavItem {
   label: string;
@@ -41,7 +43,26 @@ const navItems: NavItem[] = [
 
 export function Sidebar() {
   const location = useLocation();
+  const { t, i18n } = useTranslation();
   const { employee, isSuperAdmin, hasDepartment, signOut } = useAuth();
+  const isRtl = i18n.language === 'ar';
+
+  const getNavLabel = (item: NavItem) => {
+    const labelMap: Record<string, string> = {
+      Dashboard: t('nav.dashboard'),
+      Schools: t('nav.schools'),
+      Registrations: t('nav.registrations'),
+      Customers: t('nav.customers'),
+      Routes: t('nav.routes'),
+      'AI Route Planner': t('nav.aiRoutes'),
+      'Drivers & Staff': t('nav.staff'),
+      Payments: t('nav.payments'),
+      Reports: t('nav.reports'),
+      Employees: t('settings.employees'),
+      Settings: t('nav.settings'),
+    };
+    return labelMap[item.label] || item.label;
+  };
 
   const filteredItems = navItems.filter((item) => {
     if (item.adminOnly) return isSuperAdmin;
@@ -50,7 +71,7 @@ export function Sidebar() {
   });
 
   return (
-    <aside className="fixed left-0 top-0 z-40 h-screen w-64 bg-sidebar border-r border-sidebar-border">
+    <aside className={`fixed top-0 z-40 h-screen w-64 bg-sidebar border-sidebar-border ${isRtl ? 'right-0 border-l' : 'left-0 border-r'}`}>
       <div className="flex h-full flex-col">
         {/* Logo */}
         <div className="flex h-16 items-center gap-2 border-b border-sidebar-border px-6">
@@ -76,11 +97,16 @@ export function Sidebar() {
                 )}
               >
                 <item.icon className="h-5 w-5" />
-                {item.label}
+                {getNavLabel(item)}
               </Link>
             );
           })}
         </nav>
+
+        {/* Language Switcher */}
+        <div className="px-3 py-2 border-t border-sidebar-border">
+          <LanguageSwitcher />
+        </div>
 
         {/* User section */}
         <div className="border-t border-sidebar-border p-4">
@@ -98,7 +124,7 @@ export function Sidebar() {
             onClick={signOut}
           >
             <LogOut className="h-5 w-5" />
-            Sign Out
+            {isRtl ? 'تسجيل الخروج' : 'Sign Out'}
           </Button>
         </div>
       </div>

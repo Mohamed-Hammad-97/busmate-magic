@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Plus, Search, Eye, Edit2, ClipboardList, DollarSign, Link2 } from 'lucide-react';
+import { Plus, Search, Eye, Edit2, ClipboardList, DollarSign, Link2, Share2 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,6 +27,7 @@ import { useToast } from '@/hooks/use-toast';
 import RegistrationDialog from '@/components/registrations/RegistrationDialog';
 import RegistrationDetails from '@/components/registrations/RegistrationDetails';
 import SubscriptionDialog from '@/components/registrations/SubscriptionDialog';
+import { ShareButton } from '@/components/shared/ShareButton';
 import type { Tables, Enums } from '@/integrations/supabase/types';
 
 type Registration = Tables<'registrations'> & {
@@ -46,6 +48,8 @@ const statusLabels: Record<Enums<'registration_status'>, string> = {
 };
 
 const Registrations: React.FC = () => {
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.language === 'ar';
   const [dialogOpen, setDialogOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [subscriptionOpen, setSubscriptionOpen] = useState(false);
@@ -55,10 +59,11 @@ const Registrations: React.FC = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  const formLink = `${window.location.origin}/register`;
+
   const copyFormLink = () => {
-    const link = `${window.location.origin}/register`;
-    navigator.clipboard.writeText(link);
-    toast({ title: 'Link copied!', description: link });
+    navigator.clipboard.writeText(formLink);
+    toast({ title: t('common.copied'), description: formLink });
   };
 
   const handleAddFees = (registration: Registration) => {
@@ -136,11 +141,16 @@ const Registrations: React.FC = () => {
           <div className="flex gap-2">
             <Button variant="outline" onClick={copyFormLink}>
               <Link2 className="h-4 w-4 mr-2" />
-              Copy Form Link
+              {t('registrations.copyFormLink')}
             </Button>
+            <ShareButton 
+              url={formLink}
+              title={isRtl ? 'رابط تسجيل الطلاب' : 'Student Registration Link'}
+              text={isRtl ? 'سجل طفلك في خدمة النقل المدرسي' : 'Register your child for school bus service'}
+            />
             <Button onClick={handleAddNew}>
               <Plus className="h-4 w-4 mr-2" />
-              New Registration
+              {t('registrations.newRegistration')}
             </Button>
           </div>
         </div>
