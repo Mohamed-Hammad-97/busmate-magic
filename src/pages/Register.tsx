@@ -194,9 +194,9 @@ const Register: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-b from-primary/10 to-background py-8 px-4">
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center gap-2 mb-4">
-            <Bus className="h-10 w-10 text-primary" />
-            <GraduationCap className="h-8 w-8 text-primary" />
+          <div className="flex flex-col items-center mb-4">
+            <img src="/src/assets/seater-logo.jpg" alt="Seater" className="h-20 w-auto mb-2" />
+            <span className="text-lg font-semibold text-muted-foreground">Student Registration</span>
           </div>
           <h1 className="text-3xl font-bold">تسجيل طالب جديد</h1>
           <p className="text-muted-foreground mt-2">استمارة التسجيل في خدمة النقل المدرسي</p>
