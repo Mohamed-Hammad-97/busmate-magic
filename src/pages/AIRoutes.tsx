@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,7 +16,9 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Sparkles, MapPin, Users, Route, Loader2, CheckCircle2, Lightbulb } from 'lucide-react';
+import { Sparkles, MapPin, Users, Route, Loader2, CheckCircle2, Lightbulb, ArrowRight, ArrowLeft } from 'lucide-react';
+import { useCity } from '@/contexts/CityContext';
+import RouteMap from '@/components/routes/RouteMap';
 import type { Tables } from '@/integrations/supabase/types';
 
 interface RouteSuggestion {
@@ -33,16 +36,21 @@ interface RouteSuggestion {
 }
 
 const AIRoutes: React.FC = () => {
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.language === 'ar';
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { selectedCity, cityLabels } = useCity();
 
   const [selectedSchool, setSelectedSchool] = useState<string>('');
   const [selectedCarType, setSelectedCarType] = useState<string>('ac');
   const [maxSeats, setMaxSeats] = useState<string>('12');
   const [suggestions, setSuggestions] = useState<RouteSuggestion[]>([]);
   const [aiInsights, setAiInsights] = useState<string>('');
+  const [routeDirection, setRouteDirection] = useState<'to_school' | 'from_school'>('to_school');
+  const [selectedSuggestion, setSelectedSuggestion] = useState<RouteSuggestion | null>(null);
 
-  const { data: schools = [] } = useQuery({
+  const { data: allSchools = [] } = useQuery({
     queryKey: ['schools-active'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -54,6 +62,25 @@ const AIRoutes: React.FC = () => {
       return data;
     },
   });
+
+  // Filter schools by city
+  const schools = useMemo(() => {
+    if (selectedCity === 'all') return allSchools;
+    const cityMapping: Record<string, string[]> = {
+      cairo: ['cairo', 'القاهرة', 'قاهرة'],
+      giza: ['giza', 'الجيزة', 'جيزة'],
+      alexandria: ['alexandria', 'الإسكندرية', 'اسكندرية', 'إسكندرية'],
+    };
+    const cityNames = cityMapping[selectedCity] || [];
+    return allSchools.filter((s) =>
+      cityNames.some((name) => s.city?.toLowerCase().includes(name.toLowerCase()))
+    );
+  }, [allSchools, selectedCity]);
+
+  const selectedSchoolData = useMemo(() => 
+    schools.find(s => s.id === selectedSchool), 
+    [schools, selectedSchool]
+  );
 
   const { data: drivers = [] } = useQuery({
     queryKey: ['drivers-active'],
@@ -97,14 +124,15 @@ const AIRoutes: React.FC = () => {
     onSuccess: (data) => {
       setSuggestions(data.suggestions || []);
       setAiInsights(data.aiInsights || '');
+      setSelectedSuggestion(null);
       if (data.suggestions?.length === 0) {
-        toast({ title: 'No unassigned students found for this school and car type' });
+        toast({ title: isRtl ? 'لا يوجد طلاب غير معينين لهذه المدرسة' : 'No unassigned students found for this school and car type' });
       } else {
-        toast({ title: `Found ${data.totalStudents} students, grouped into ${data.suggestions.length} routes` });
+        toast({ title: isRtl ? `تم العثور على ${data.totalStudents} طالب، مجمعين في ${data.suggestions.length} خطوط` : `Found ${data.totalStudents} students, grouped into ${data.suggestions.length} routes` });
       }
     },
     onError: (error: any) => {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast({ title: isRtl ? 'خطأ' : 'Error', description: error.message, variant: 'destructive' });
     },
   });
 
@@ -128,25 +156,47 @@ const AIRoutes: React.FC = () => {
       return data;
     },
     onSuccess: () => {
-      toast({ title: 'Route created successfully!' });
+      toast({ title: isRtl ? 'تم إنشاء الخط بنجاح!' : 'Route created successfully!' });
       queryClient.invalidateQueries({ queryKey: ['routes'] });
-      // Remove created route from suggestions
       suggestMutation.mutate();
     },
     onError: (error: any) => {
-      toast({ title: 'Error creating route', description: error.message, variant: 'destructive' });
+      toast({ title: isRtl ? 'خطأ في إنشاء الخط' : 'Error creating route', description: error.message, variant: 'destructive' });
     },
   });
 
   const handleSuggest = () => {
     if (!selectedSchool) {
-      toast({ title: 'Please select a school', variant: 'destructive' });
+      toast({ title: isRtl ? 'يرجى اختيار المدرسة' : 'Please select a school', variant: 'destructive' });
       return;
     }
     setSuggestions([]);
     setAiInsights('');
+    setSelectedSuggestion(null);
     suggestMutation.mutate();
   };
+
+  // Prepare map data
+  const mapRoutes = useMemo(() => {
+    return suggestions.map((suggestion, idx) => ({
+      id: `suggestion-${idx}`,
+      name: suggestion.name,
+      students: suggestion.students.map(s => ({
+        id: s.id,
+        student_name: s.student_name,
+        parent_name: s.parent_name,
+        lat: s.lat,
+        lng: s.lng,
+        pickup_order: routeDirection === 'to_school' ? s.pickup_order : (suggestion.students.length - s.pickup_order + 1),
+      })),
+      school: selectedSchoolData ? {
+        id: selectedSchoolData.id,
+        name: selectedSchoolData.name,
+        latitude: selectedSchoolData.latitude,
+        longitude: selectedSchoolData.longitude,
+      } : undefined,
+    }));
+  }, [suggestions, selectedSchoolData, routeDirection]);
 
   return (
     <DashboardLayout>
@@ -154,26 +204,26 @@ const AIRoutes: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <Sparkles className="h-8 w-8 text-primary" />
-            AI Route Planner
+            {isRtl ? 'مخطط الخطوط الذكي' : 'AI Route Planner'}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Automatically group students and optimize pickup routes using AI
+            {isRtl ? 'تجميع الطلاب وتحسين خطوط التوصيل باستخدام الذكاء الاصطناعي' : 'Automatically group students and optimize pickup routes using AI'}
           </p>
         </div>
 
         {/* Configuration */}
         <Card>
           <CardHeader>
-            <CardTitle>Route Configuration</CardTitle>
-            <CardDescription>Select school and preferences to generate route suggestions</CardDescription>
+            <CardTitle>{isRtl ? 'إعدادات الخط' : 'Route Configuration'}</CardTitle>
+            <CardDescription>{isRtl ? 'اختر المدرسة والتفضيلات لإنشاء اقتراحات الخطوط' : 'Select school and preferences to generate route suggestions'}</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4 md:grid-cols-4">
+            <div className="grid gap-4 md:grid-cols-5">
               <div className="space-y-2">
-                <Label>School *</Label>
+                <Label>{isRtl ? 'المدرسة *' : 'School *'}</Label>
                 <Select value={selectedSchool} onValueChange={setSelectedSchool}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select school" />
+                    <SelectValue placeholder={isRtl ? 'اختر المدرسة' : 'Select school'} />
                   </SelectTrigger>
                   <SelectContent className="bg-background border border-border z-50">
                     {schools.map((school) => (
@@ -186,20 +236,20 @@ const AIRoutes: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label>Car Type</Label>
+                <Label>{isRtl ? 'نوع السيارة' : 'Car Type'}</Label>
                 <Select value={selectedCarType} onValueChange={setSelectedCarType}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-background border border-border z-50">
-                    <SelectItem value="ac">AC</SelectItem>
-                    <SelectItem value="non_ac">Non-AC</SelectItem>
+                    <SelectItem value="ac">{isRtl ? 'مكيف' : 'AC'}</SelectItem>
+                    <SelectItem value="non_ac">{isRtl ? 'غير مكيف' : 'Non-AC'}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label>Max Seats per Route</Label>
+                <Label>{isRtl ? 'أقصى عدد مقاعد' : 'Max Seats per Route'}</Label>
                 <Input
                   type="number"
                   value={maxSeats}
@@ -209,17 +259,40 @@ const AIRoutes: React.FC = () => {
                 />
               </div>
 
+              <div className="space-y-2">
+                <Label>{isRtl ? 'اتجاه الخط' : 'Route Direction'}</Label>
+                <Select value={routeDirection} onValueChange={(v) => setRouteDirection(v as any)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border border-border z-50">
+                    <SelectItem value="to_school">
+                      <div className="flex items-center gap-2">
+                        <ArrowRight className="h-4 w-4" />
+                        {isRtl ? 'إلى المدرسة' : 'To School'}
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="from_school">
+                      <div className="flex items-center gap-2">
+                        <ArrowLeft className="h-4 w-4" />
+                        {isRtl ? 'من المدرسة' : 'From School'}
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="flex items-end">
                 <Button onClick={handleSuggest} disabled={suggestMutation.isPending} className="w-full">
                   {suggestMutation.isPending ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Analyzing...
+                      {isRtl ? 'جاري التحليل...' : 'Analyzing...'}
                     </>
                   ) : (
                     <>
                       <Sparkles className="h-4 w-4 mr-2" />
-                      Generate Suggestions
+                      {isRtl ? 'إنشاء الاقتراحات' : 'Generate Suggestions'}
                     </>
                   )}
                 </Button>
@@ -234,7 +307,7 @@ const AIRoutes: React.FC = () => {
             <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center gap-2">
                 <Lightbulb className="h-5 w-5 text-primary" />
-                AI Insights
+                {isRtl ? 'رؤى الذكاء الاصطناعي' : 'AI Insights'}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -243,55 +316,97 @@ const AIRoutes: React.FC = () => {
           </Card>
         )}
 
-        {/* Suggestions */}
+        {/* Map and Suggestions */}
         {suggestions.length > 0 && (
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold">Suggested Routes ({suggestions.length})</h2>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {suggestions.map((suggestion, idx) => (
-                <Card key={idx} className="hover:shadow-md transition-shadow">
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg">{suggestion.name}</CardTitle>
-                      <Badge variant="secondary">
-                        <Users className="h-3 w-3 mr-1" />
-                        {suggestion.studentCount}
-                      </Badge>
-                    </div>
-                    <CardDescription>
-                      <Route className="h-3 w-3 inline mr-1" />
-                      Est. {suggestion.estimatedDistance} km
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="max-h-40 overflow-y-auto space-y-1">
-                      {suggestion.students.map((student, sIdx) => (
-                        <div key={student.id} className="flex items-center gap-2 text-sm">
-                          <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center font-medium">
-                            {student.pickup_order}
-                          </span>
-                          <span className="truncate">{student.student_name || student.parent_name}</span>
-                        </div>
-                      ))}
-                    </div>
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* Map */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5" />
+                  {isRtl ? 'خريطة الخطوط المقترحة' : 'Suggested Routes Map'}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <RouteMap
+                  routes={mapRoutes}
+                  schools={selectedSchoolData ? [{
+                    id: selectedSchoolData.id,
+                    name: selectedSchoolData.name,
+                    latitude: selectedSchoolData.latitude,
+                    longitude: selectedSchoolData.longitude,
+                  }] : []}
+                  selectedRoute={selectedSuggestion ? mapRoutes.find(r => r.name === selectedSuggestion.name) : null}
+                  onRouteClick={(route) => {
+                    const suggestion = suggestions.find(s => s.name === route.name);
+                    setSelectedSuggestion(suggestion || null);
+                  }}
+                  showControls={false}
+                  height="500px"
+                />
+              </CardContent>
+            </Card>
 
-                    <Button
-                      className="w-full"
-                      onClick={() => createRouteMutation.mutate({ suggestion })}
-                      disabled={createRouteMutation.isPending}
-                    >
-                      {createRouteMutation.isPending ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <>
-                          <CheckCircle2 className="h-4 w-4 mr-2" />
-                          Create Route
-                        </>
-                      )}
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
+            {/* Suggestions List */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold">
+                {isRtl ? `الخطوط المقترحة (${suggestions.length})` : `Suggested Routes (${suggestions.length})`}
+              </h2>
+              <div className="space-y-4 max-h-[600px] overflow-y-auto">
+                {suggestions.map((suggestion, idx) => (
+                  <Card
+                    key={idx}
+                    className={`hover:shadow-md transition-shadow cursor-pointer ${
+                      selectedSuggestion?.name === suggestion.name ? 'ring-2 ring-primary' : ''
+                    }`}
+                    onClick={() => setSelectedSuggestion(suggestion)}
+                  >
+                    <CardHeader className="pb-2">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-lg">{suggestion.name}</CardTitle>
+                        <Badge variant="secondary">
+                          <Users className="h-3 w-3 mr-1" />
+                          {suggestion.studentCount}
+                        </Badge>
+                      </div>
+                      <CardDescription>
+                        <Route className="h-3 w-3 inline mr-1" />
+                        {isRtl ? `تقريباً ${suggestion.estimatedDistance} كم` : `Est. ${suggestion.estimatedDistance} km`}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="max-h-32 overflow-y-auto space-y-1">
+                        {suggestion.students.map((student, sIdx) => (
+                          <div key={student.id} className="flex items-center gap-2 text-sm">
+                            <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center font-medium">
+                              {routeDirection === 'to_school' ? student.pickup_order : (suggestion.students.length - student.pickup_order + 1)}
+                            </span>
+                            <span className="truncate">{student.student_name || student.parent_name}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      <Button
+                        className="w-full"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          createRouteMutation.mutate({ suggestion });
+                        }}
+                        disabled={createRouteMutation.isPending}
+                      >
+                        {createRouteMutation.isPending ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <>
+                            <CheckCircle2 className="h-4 w-4 mr-2" />
+                            {isRtl ? 'إنشاء الخط' : 'Create Route'}
+                          </>
+                        )}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             </div>
           </div>
         )}
@@ -301,9 +416,13 @@ const AIRoutes: React.FC = () => {
           <Card className="border-dashed">
             <CardContent className="py-12 text-center">
               <Sparkles className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">No Route Suggestions Yet</h3>
+              <h3 className="text-lg font-medium mb-2">
+                {isRtl ? 'لا توجد اقتراحات خطوط بعد' : 'No Route Suggestions Yet'}
+              </h3>
               <p className="text-muted-foreground text-sm max-w-md mx-auto">
-                Select a school and click "Generate Suggestions" to let AI analyze student locations and create optimized routes.
+                {isRtl
+                  ? 'اختر مدرسة واضغط على "إنشاء الاقتراحات" للسماح للذكاء الاصطناعي بتحليل مواقع الطلاب وإنشاء خطوط محسنة.'
+                  : 'Select a school and click "Generate Suggestions" to let AI analyze student locations and create optimized routes.'}
               </p>
             </CardContent>
           </Card>
