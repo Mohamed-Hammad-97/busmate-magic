@@ -348,6 +348,7 @@ export type Database = {
           parent_id: string
           school_id: string
           status: Database["public"]["Enums"]["registration_status"]
+          student_name: string
           updated_at: string
         }
         Insert: {
@@ -360,6 +361,7 @@ export type Database = {
           parent_id: string
           school_id: string
           status?: Database["public"]["Enums"]["registration_status"]
+          student_name?: string
           updated_at?: string
         }
         Update: {
@@ -372,6 +374,7 @@ export type Database = {
           parent_id?: string
           school_id?: string
           status?: Database["public"]["Enums"]["registration_status"]
+          student_name?: string
           updated_at?: string
         }
         Relationships: [

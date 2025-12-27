@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Search, Eye, Edit2, ClipboardList } from 'lucide-react';
+import { Plus, Search, Eye, Edit2, ClipboardList, DollarSign, Link2 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
@@ -25,6 +25,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import RegistrationDialog from '@/components/registrations/RegistrationDialog';
 import RegistrationDetails from '@/components/registrations/RegistrationDetails';
+import SubscriptionDialog from '@/components/registrations/SubscriptionDialog';
 import type { Tables, Enums } from '@/integrations/supabase/types';
 
 type Registration = Tables<'registrations'> & {
@@ -47,11 +48,23 @@ const statusLabels: Record<Enums<'registration_status'>, string> = {
 const Registrations: React.FC = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [subscriptionOpen, setSubscriptionOpen] = useState(false);
   const [selectedRegistration, setSelectedRegistration] = useState<Registration | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const copyFormLink = () => {
+    const link = `${window.location.origin}/register`;
+    navigator.clipboard.writeText(link);
+    toast({ title: 'Link copied!', description: link });
+  };
+
+  const handleAddFees = (registration: Registration) => {
+    setSelectedRegistration(registration);
+    setSubscriptionOpen(true);
+  };
 
   const { data: registrations = [], isLoading } = useQuery({
     queryKey: ['registrations'],
@@ -120,11 +133,16 @@ const Registrations: React.FC = () => {
               </SelectContent>
             </Select>
           </div>
-          <Button onClick={handleAddNew}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Registration
-          </Button>
-        </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={copyFormLink}>
+              <Link2 className="h-4 w-4 mr-2" />
+              Copy Form Link
+            </Button>
+            <Button onClick={handleAddNew}>
+              <Plus className="h-4 w-4 mr-2" />
+              New Registration
+            </Button>
+          </div>
 
         {/* Stats */}
         <div className="grid gap-4 md:grid-cols-4">
@@ -184,8 +202,8 @@ const Registrations: React.FC = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Student Name</TableHead>
                     <TableHead>Parent Name</TableHead>
-                    <TableHead>National ID</TableHead>
                     <TableHead>School</TableHead>
                     <TableHead>Grade</TableHead>
                     <TableHead>Car Type</TableHead>
@@ -198,9 +216,9 @@ const Registrations: React.FC = () => {
                   {filteredRegistrations.map((reg) => (
                     <TableRow key={reg.id}>
                       <TableCell className="font-medium">
-                        {reg.parent_accounts?.parent_name || '-'}
+                        {reg.student_name || '-'}
                       </TableCell>
-                      <TableCell>{reg.parent_accounts?.national_id || '-'}</TableCell>
+                      <TableCell>{reg.parent_accounts?.parent_name || '-'}</TableCell>
                       <TableCell>{reg.schools?.name || '-'}</TableCell>
                       <TableCell>{reg.grade}</TableCell>
                       <TableCell>
@@ -232,6 +250,21 @@ const Registrations: React.FC = () => {
                           >
                             <Edit2 className="h-4 w-4" />
                           </Button>
+                          {reg.status === 'pending_fees' && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleAddFees(reg)}
+                              className="text-green-600"
+                            >
+                              <DollarSign className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -258,6 +291,22 @@ const Registrations: React.FC = () => {
           onOpenChange={setDetailsOpen}
           registration={selectedRegistration}
         />
+
+        <SubscriptionDialog
+          open={subscriptionOpen}
+          onOpenChange={setSubscriptionOpen}
+          registration={selectedRegistration}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ['registrations'] });
+            setSubscriptionOpen(false);
+          }}
+        />
+      </div>
+    </DashboardLayout>
+  );
+};
+
+export default Registrations;
       </div>
     </DashboardLayout>
   );

@@ -9,6 +9,7 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Schools from "./pages/Schools";
 import Registrations from "./pages/Registrations";
+import Register from "./pages/Register";
 import Customers from "./pages/Customers";
 import RoutesPage from "./pages/Routes";
 import Payments from "./pages/Payments";
@@ -27,6 +28,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/register" element={<Register />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/schools" element={<ProtectedRoute><Schools /></ProtectedRoute>} />
             <Route path="/registrations" element={<ProtectedRoute><Registrations /></ProtectedRoute>} />
