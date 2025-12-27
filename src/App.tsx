@@ -16,6 +16,7 @@ import Register from "./pages/Register";
 import Customers from "./pages/Customers";
 import RoutesPage from "./pages/Routes";
 import AIRoutes from "./pages/AIRoutes";
+import LiveTracking from "./pages/LiveTracking";
 import Payments from "./pages/Payments";
 import Staff from "./pages/Staff";
 import Reports from "./pages/Reports";
@@ -59,6 +60,7 @@ const App = () => (
                 <Route path="/registrations" element={<ProtectedRoute><Registrations /></ProtectedRoute>} />
                 <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
                 <Route path="/routes" element={<ProtectedRoute><RoutesPage /></ProtectedRoute>} />
+                <Route path="/live-tracking" element={<ProtectedRoute><LiveTracking /></ProtectedRoute>} />
                 <Route path="/ai-routes" element={<ProtectedRoute><AIRoutes /></ProtectedRoute>} />
                 <Route path="/payments" element={<ProtectedRoute><Payments /></ProtectedRoute>} />
                 <Route path="/staff" element={<ProtectedRoute><Staff /></ProtectedRoute>} />
