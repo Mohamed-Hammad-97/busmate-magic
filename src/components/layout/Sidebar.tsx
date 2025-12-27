@@ -17,6 +17,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import seaterLogo from "@/assets/seater-logo.jpg";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { CitySelector } from "./CitySelector";
 
@@ -76,9 +77,9 @@ export function Sidebar() {
       <div className="flex h-full flex-col">
         {/* Logo */}
         <div className="flex h-16 items-center gap-2 border-b border-sidebar-border px-6">
-          <Bus className="h-8 w-8 text-sidebar-primary" />
+          <img src={seaterLogo} alt="Seater" className="h-10 w-10 rounded-lg object-cover" />
           <span className="text-lg font-semibold text-sidebar-foreground">
-            BusTrack
+            Seater
           </span>
         </div>
 
