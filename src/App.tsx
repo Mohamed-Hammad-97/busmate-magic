@@ -5,9 +5,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ParentAuthProvider } from "@/contexts/ParentAuthContext";
+import { DriverAuthProvider } from "@/contexts/DriverAuthContext";
 import { CityProvider } from "@/contexts/CityContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { ParentProtectedRoute } from "@/components/auth/ParentProtectedRoute";
+import { DriverProtectedRoute } from "@/components/auth/DriverProtectedRoute";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Schools from "./pages/Schools";
@@ -24,6 +26,9 @@ import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import ParentAuth from "./pages/ParentAuth";
 import ParentDashboard from "./pages/ParentDashboard";
+import DriverAuth from "./pages/DriverAuth";
+import DriverDashboard from "./pages/DriverDashboard";
+import SupportChat from "./pages/SupportChat";
 
 const queryClient = new QueryClient();
 
@@ -47,6 +52,17 @@ const App = () => (
               </Routes>
             </ParentAuthProvider>
           } />
+
+          {/* Driver/Supervisor Portal routes */}
+          <Route path="/driver/*" element={
+            <DriverAuthProvider>
+              <Routes>
+                <Route path="/login" element={<DriverAuth />} />
+                <Route path="/" element={<DriverProtectedRoute><DriverDashboard /></DriverProtectedRoute>} />
+                <Route path="*" element={<Navigate to="/driver" replace />} />
+              </Routes>
+            </DriverAuthProvider>
+          } />
           
           {/* Employee Auth-wrapped routes */}
           <Route path="/*" element={
@@ -64,6 +80,7 @@ const App = () => (
                 <Route path="/ai-routes" element={<ProtectedRoute><AIRoutes /></ProtectedRoute>} />
                 <Route path="/payments" element={<ProtectedRoute><Payments /></ProtectedRoute>} />
                 <Route path="/staff" element={<ProtectedRoute><Staff /></ProtectedRoute>} />
+                <Route path="/support-chat" element={<ProtectedRoute><SupportChat /></ProtectedRoute>} />
                 <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
                 <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                 <Route path="/employees" element={<ProtectedRoute><Settings /></ProtectedRoute>} />

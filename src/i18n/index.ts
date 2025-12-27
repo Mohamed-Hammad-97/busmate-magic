@@ -47,6 +47,7 @@ const resources = {
         reports: 'Reports',
         settings: 'Settings',
         aiRoutes: 'AI Routes',
+        supportChat: 'Support Chat',
       },
       // Registrations
       registrations: {
@@ -207,6 +208,7 @@ const resources = {
         reports: 'التقارير',
         settings: 'الإعدادات',
         aiRoutes: 'مسارات AI',
+        supportChat: 'الدعم والمحادثات',
       },
       // Registrations
       registrations: {
