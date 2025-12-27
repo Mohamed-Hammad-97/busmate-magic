@@ -31,8 +31,9 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Plus, Search, Users, Car, UserCheck, Edit, MapPin } from 'lucide-react';
+import { Plus, Search, Users, Car, UserCheck, Edit, MapPin, KeyRound } from 'lucide-react';
 import { useCity } from '@/contexts/CityContext';
+import { DriverAccountsManagement } from '@/components/staff/DriverAccountsManagement';
 
 const Staff = () => {
   const queryClient = useQueryClient();
@@ -257,6 +258,10 @@ const Staff = () => {
             <TabsList>
               <TabsTrigger value="drivers">السائقين</TabsTrigger>
               <TabsTrigger value="supervisors">المشرفين</TabsTrigger>
+              <TabsTrigger value="accounts" className="gap-1">
+                <KeyRound className="h-4 w-4" />
+                الحسابات
+              </TabsTrigger>
             </TabsList>
             <Button
               onClick={() => {
@@ -405,6 +410,11 @@ const Staff = () => {
                 </Table>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Accounts Tab */}
+          <TabsContent value="accounts">
+            <DriverAccountsManagement />
           </TabsContent>
         </Tabs>
 

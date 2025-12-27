@@ -16,6 +16,7 @@ import {
   ClipboardList,
   Sparkles,
   Navigation,
+  MessageCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import seaterLogo from "@/assets/seater-logo.jpg";
@@ -40,6 +41,7 @@ const navItems: NavItem[] = [
   { label: "AI Route Planner", href: "/ai-routes", icon: Sparkles, department: "operations" },
   { label: "Drivers & Staff", href: "/staff", icon: Bus, department: "operations" },
   { label: "Payments", href: "/payments", icon: CreditCard, department: "finance" },
+  { label: "Support Chat", href: "/support-chat", icon: MessageCircle, department: "customer_support" },
   { label: "Reports", href: "/reports", icon: BarChart3 },
   { label: "Employees", href: "/employees", icon: UserCog, adminOnly: true },
   { label: "Settings", href: "/settings", icon: Settings },
@@ -62,6 +64,7 @@ export function Sidebar() {
       'AI Route Planner': t('nav.aiRoutes'),
       'Drivers & Staff': t('nav.staff'),
       Payments: t('nav.payments'),
+      'Support Chat': t('nav.supportChat'),
       Reports: t('nav.reports'),
       Employees: t('settings.employees'),
       Settings: t('nav.settings'),
