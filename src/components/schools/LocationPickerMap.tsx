@@ -1,6 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
+import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
+import { Button } from '@/components/ui/button';
+import { MapPin, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface LocationPickerMapProps {
   initialLat?: number;
@@ -18,13 +23,55 @@ const LocationPickerMap: React.FC<LocationPickerMapProps> = ({
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const marker = useRef<mapboxgl.Marker | null>(null);
+  const geocoder = useRef<MapboxGeocoder | null>(null);
   const [isMapReady, setIsMapReady] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
+
+  const handleGetCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error('الموقع الجغرافي غير مدعوم في متصفحك');
+      return;
+    }
+
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        marker.current?.setLngLat([longitude, latitude]);
+        map.current?.flyTo({
+          center: [longitude, latitude],
+          zoom: 15,
+        });
+        onLocationChange(latitude, longitude);
+        setIsLocating(false);
+        toast.success('تم تحديد موقعك الحالي');
+      },
+      (error) => {
+        setIsLocating(false);
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            toast.error('تم رفض الوصول إلى الموقع');
+            break;
+          case error.POSITION_UNAVAILABLE:
+            toast.error('معلومات الموقع غير متوفرة');
+            break;
+          case error.TIMEOUT:
+            toast.error('انتهت مهلة طلب الموقع');
+            break;
+          default:
+            toast.error('حدث خطأ أثناء تحديد الموقع');
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  };
 
   useEffect(() => {
     if (!mapContainer.current || !mapboxToken) return;
 
     mapboxgl.accessToken = mapboxToken;
 
+    // Use Arabic localized style
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/streets-v12',
@@ -32,7 +79,38 @@ const LocationPickerMap: React.FC<LocationPickerMapProps> = ({
       zoom: 12,
     });
 
+    // Set language to Arabic after style loads
+    map.current.on('load', () => {
+      const layers = map.current?.getStyle().layers;
+      if (layers) {
+        layers.forEach((layer) => {
+          if (layer.type === 'symbol' && layer.layout?.['text-field']) {
+            map.current?.setLayoutProperty(layer.id, 'text-field', ['coalesce', ['get', 'name_ar'], ['get', 'name']]);
+          }
+        });
+      }
+      setIsMapReady(true);
+    });
+
+    // Add geocoder (search bar) with Arabic support
+    geocoder.current = new MapboxGeocoder({
+      accessToken: mapboxToken,
+      mapboxgl: mapboxgl as any,
+      placeholder: 'ابحث عن موقع...',
+      language: 'ar',
+      countries: 'eg',
+      marker: false,
+    });
+
+    map.current.addControl(geocoder.current, 'top-left');
     map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+
+    // Handle geocoder result
+    geocoder.current.on('result', (e) => {
+      const [lng, lat] = e.result.center;
+      marker.current?.setLngLat([lng, lat]);
+      onLocationChange(lat, lng);
+    });
 
     // Add draggable marker
     marker.current = new mapboxgl.Marker({
@@ -55,11 +133,8 @@ const LocationPickerMap: React.FC<LocationPickerMapProps> = ({
       onLocationChange(e.lngLat.lat, e.lngLat.lng);
     });
 
-    map.current.on('load', () => {
-      setIsMapReady(true);
-    });
-
     return () => {
+      geocoder.current = null;
       map.current?.remove();
     };
   }, [mapboxToken]);
@@ -78,9 +153,28 @@ const LocationPickerMap: React.FC<LocationPickerMapProps> = ({
   return (
     <div className="space-y-2">
       <p className="text-sm text-muted-foreground">
-        Click on the map or drag the marker to set the school location
+        انقر على الخريطة أو اسحب العلامة لتحديد موقع المدرسة
       </p>
       <div ref={mapContainer} className="w-full h-[250px] rounded-lg border border-border" />
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full"
+        onClick={handleGetCurrentLocation}
+        disabled={isLocating}
+      >
+        {isLocating ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            جاري تحديد الموقع...
+          </>
+        ) : (
+          <>
+            <MapPin className="mr-2 h-4 w-4" />
+            استخدام موقعي الحالي
+          </>
+        )}
+      </Button>
     </div>
   );
 };
