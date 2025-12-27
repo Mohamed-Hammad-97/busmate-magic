@@ -182,62 +182,180 @@ serve(async (req) => {
       const assignedIds = new Set((assignments || []).map(a => a.registration_id));
       const unassigned = (registrations || []).filter(r => !assignedIds.has(r.id));
 
-      if (unassigned.length === 0) {
+      // Check existing routes that have available capacity
+      const { data: existingRoutes, error: routesError } = await supabase
+        .from("routes")
+        .select(`
+          id,
+          name,
+          school_id,
+          car_type,
+          max_seats,
+          is_active,
+          route_assignments (
+            id,
+            registration_id,
+            pickup_order
+          )
+        `)
+        .eq("school_id", schoolId)
+        .eq("car_type", carType)
+        .eq("is_active", true);
+
+      if (routesError) throw routesError;
+
+      // Find routes with available capacity and suggest students to add
+      const routeUpdates: any[] = [];
+      const studentsToAssign = new Set<string>();
+
+      if (existingRoutes && unassigned.length > 0) {
+        // Transform unassigned data
+        const formattedUnassigned: RegistrationWithLocation[] = unassigned.map((r: any) => ({
+          id: r.id,
+          student_name: r.student_name,
+          school_id: r.school_id,
+          car_type: r.car_type,
+          status: r.status,
+          parent_accounts: Array.isArray(r.parent_accounts) ? r.parent_accounts[0] : r.parent_accounts,
+          schools: Array.isArray(r.schools) ? r.schools[0] : r.schools,
+        }));
+
+        for (const route of existingRoutes) {
+          const currentCount = route.route_assignments?.length || 0;
+          const availableSeats = route.max_seats - currentCount;
+
+          if (availableSeats > 0) {
+            // Get the existing assigned students' locations to find nearby unassigned students
+            const { data: existingAssignments } = await supabase
+              .from("route_assignments")
+              .select(`
+                registration_id,
+                registrations (
+                  parent_accounts (
+                    pickup_latitude,
+                    pickup_longitude
+                  )
+                )
+              `)
+              .eq("route_id", route.id);
+
+            // Calculate centroid of existing pickup points
+            let centroidLat = 0, centroidLng = 0;
+            if (existingAssignments && existingAssignments.length > 0) {
+              const locs = existingAssignments.map((a: any) => {
+                const pa = Array.isArray(a.registrations?.parent_accounts) 
+                  ? a.registrations.parent_accounts[0] 
+                  : a.registrations?.parent_accounts;
+                return pa;
+              }).filter(Boolean);
+
+              if (locs.length > 0) {
+                centroidLat = locs.reduce((sum: number, l: any) => sum + (l.pickup_latitude || 0), 0) / locs.length;
+                centroidLng = locs.reduce((sum: number, l: any) => sum + (l.pickup_longitude || 0), 0) / locs.length;
+              }
+            }
+
+            // Find nearby unassigned students
+            const nearbyStudents = formattedUnassigned
+              .filter(s => !studentsToAssign.has(s.id))
+              .map(s => ({
+                student: s,
+                distance: centroidLat && centroidLng
+                  ? calculateDistance(centroidLat, centroidLng, s.parent_accounts.pickup_latitude, s.parent_accounts.pickup_longitude)
+                  : 0,
+              }))
+              .sort((a, b) => a.distance - b.distance)
+              .slice(0, availableSeats);
+
+            if (nearbyStudents.length > 0) {
+              nearbyStudents.forEach(ns => studentsToAssign.add(ns.student.id));
+
+              routeUpdates.push({
+                routeId: route.id,
+                routeName: route.name,
+                currentCount,
+                maxSeats: route.max_seats,
+                availableSeats,
+                studentsToAdd: nearbyStudents.map(ns => ({
+                  id: ns.student.id,
+                  student_name: ns.student.student_name,
+                  parent_name: ns.student.parent_accounts.parent_name,
+                  lat: ns.student.parent_accounts.pickup_latitude,
+                  lng: ns.student.parent_accounts.pickup_longitude,
+                  status: ns.student.status,
+                  distance: Math.round(ns.distance * 10) / 10,
+                })),
+              });
+            }
+          }
+        }
+      }
+
+      // Remaining unassigned students (not suggested to add to existing routes)
+      const remainingUnassigned = unassigned.filter(r => !studentsToAssign.has(r.id));
+
+      if (remainingUnassigned.length === 0 && routeUpdates.length === 0) {
         return new Response(
-          JSON.stringify({ suggestions: [], message: "No unassigned students found" }),
+          JSON.stringify({ suggestions: [], routeUpdates: [], message: "No unassigned students found" }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
-      // Transform the data to match expected format (Supabase returns arrays for relations in some cases)
-      const formattedStudents: RegistrationWithLocation[] = unassigned.map((r: any) => ({
-        id: r.id,
-        student_name: r.student_name,
-        school_id: r.school_id,
-        car_type: r.car_type,
-        status: r.status,
-        parent_accounts: Array.isArray(r.parent_accounts) ? r.parent_accounts[0] : r.parent_accounts,
-        schools: Array.isArray(r.schools) ? r.schools[0] : r.schools,
-      }));
+      // Create new route suggestions for remaining students
+      let suggestions: any[] = [];
+      let school: any = null;
 
-      const school = formattedStudents[0]?.schools;
-      const clusters = clusterStudents(formattedStudents, maxSeatsPerRoute || 12);
-      
-      const suggestions = clusters.map((cluster, idx) => {
-        const optimized = optimizePickupOrder(cluster, school?.latitude || 0, school?.longitude || 0);
-        const totalDistance = optimized.reduce((sum, student, i) => {
-          if (i === 0) return sum;
-          const prev = optimized[i - 1];
-          return sum + calculateDistance(
-            prev.parent_accounts.pickup_latitude,
-            prev.parent_accounts.pickup_longitude,
-            student.parent_accounts.pickup_latitude,
-            student.parent_accounts.pickup_longitude
-          );
-        }, 0);
+      if (remainingUnassigned.length > 0) {
+        // Transform the data to match expected format
+        const formattedStudents: RegistrationWithLocation[] = remainingUnassigned.map((r: any) => ({
+          id: r.id,
+          student_name: r.student_name,
+          school_id: r.school_id,
+          car_type: r.car_type,
+          status: r.status,
+          parent_accounts: Array.isArray(r.parent_accounts) ? r.parent_accounts[0] : r.parent_accounts,
+          schools: Array.isArray(r.schools) ? r.schools[0] : r.schools,
+        }));
 
-        return {
-          name: `Route ${idx + 1} - ${cluster[0]?.parent_accounts.city || 'Area'}`,
-          students: optimized.map((s, order) => ({
-            id: s.id,
-            student_name: s.student_name,
-            parent_name: s.parent_accounts.parent_name,
-            pickup_order: order + 1,
-            lat: s.parent_accounts.pickup_latitude,
-            lng: s.parent_accounts.pickup_longitude,
-            status: s.status,
-          })),
-          estimatedDistance: Math.round(totalDistance * 10) / 10,
-          studentCount: cluster.length,
-          pendingFeesCount: cluster.filter(s => s.status === 'pending_fees').length,
-        };
-      });
+        school = formattedStudents[0]?.schools;
+        const clusters = clusterStudents(formattedStudents, maxSeatsPerRoute || 12);
+        
+        suggestions = clusters.map((cluster, idx) => {
+          const optimized = optimizePickupOrder(cluster, school?.latitude || 0, school?.longitude || 0);
+          const totalDistance = optimized.reduce((sum, student, i) => {
+            if (i === 0) return sum;
+            const prev = optimized[i - 1];
+            return sum + calculateDistance(
+              prev.parent_accounts.pickup_latitude,
+              prev.parent_accounts.pickup_longitude,
+              student.parent_accounts.pickup_latitude,
+              student.parent_accounts.pickup_longitude
+            );
+          }, 0);
+
+          return {
+            name: `Route ${idx + 1} - ${cluster[0]?.parent_accounts.city || 'Area'}`,
+            students: optimized.map((s, order) => ({
+              id: s.id,
+              student_name: s.student_name,
+              parent_name: s.parent_accounts.parent_name,
+              pickup_order: order + 1,
+              lat: s.parent_accounts.pickup_latitude,
+              lng: s.parent_accounts.pickup_longitude,
+              status: s.status,
+            })),
+            estimatedDistance: Math.round(totalDistance * 10) / 10,
+            studentCount: cluster.length,
+            pendingFeesCount: cluster.filter(s => s.status === 'pending_fees').length,
+          };
+        });
+      }
 
       // Use AI to generate additional insights
       const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
       let aiInsights = "";
 
-      if (LOVABLE_API_KEY && suggestions.length > 0) {
+      if (LOVABLE_API_KEY && (suggestions.length > 0 || routeUpdates.length > 0)) {
         try {
           const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
             method: "POST",
@@ -254,7 +372,7 @@ serve(async (req) => {
                 },
                 {
                   role: "user",
-                  content: `I have ${suggestions.length} suggested routes for ${unassigned.length} students at ${school?.name}. Routes have ${suggestions.map(s => s.studentCount).join(', ')} students each. Estimated distances are ${suggestions.map(s => s.estimatedDistance).join(', ')} km. Provide 2-3 quick optimization tips.`
+                  content: `I have ${suggestions.length} new route suggestions and ${routeUpdates.length} existing routes that can accept more students. ${routeUpdates.length > 0 ? `Existing routes can take ${routeUpdates.reduce((sum, r) => sum + r.studentsToAdd.length, 0)} more students.` : ''} Provide 2-3 quick tips.`
                 }
               ],
             }),
@@ -272,9 +390,64 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           suggestions,
+          routeUpdates,
           aiInsights,
           totalStudents: unassigned.length,
+          studentsForExistingRoutes: studentsToAssign.size,
+          studentsForNewRoutes: remainingUnassigned.length,
         }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (action === "add-to-existing-route") {
+      const { routeId: targetRouteId, students: studentsToAdd } = body;
+
+      // Get current max pickup_order
+      const { data: currentAssignments } = await supabase
+        .from("route_assignments")
+        .select("pickup_order")
+        .eq("route_id", targetRouteId)
+        .order("pickup_order", { ascending: false })
+        .limit(1);
+
+      let nextOrder = (currentAssignments?.[0]?.pickup_order || 0) + 1;
+
+      // Insert new assignments
+      const newAssignments = studentsToAdd.map((s: any, idx: number) => ({
+        route_id: targetRouteId,
+        registration_id: s.id,
+        pickup_order: nextOrder + idx,
+      }));
+
+      const { error: insertError } = await supabase
+        .from("route_assignments")
+        .insert(newAssignments);
+
+      if (insertError) throw insertError;
+
+      // Optionally update route max_seats if needed
+      const { data: route } = await supabase
+        .from("routes")
+        .select("max_seats")
+        .eq("id", targetRouteId)
+        .single();
+
+      const { data: totalAssignments } = await supabase
+        .from("route_assignments")
+        .select("id")
+        .eq("route_id", targetRouteId);
+
+      const newTotal = totalAssignments?.length || 0;
+      if (route && newTotal > route.max_seats) {
+        await supabase
+          .from("routes")
+          .update({ max_seats: newTotal })
+          .eq("id", targetRouteId);
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, addedCount: studentsToAdd.length }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
