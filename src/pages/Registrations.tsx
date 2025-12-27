@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Search, Eye, Edit2, ClipboardList, DollarSign, Link2, Share2 } from 'lucide-react';
+import { Plus, Search, Eye, Edit2, ClipboardList, DollarSign, Link2, Map } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
@@ -22,12 +22,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import RegistrationDialog from '@/components/registrations/RegistrationDialog';
 import RegistrationDetails from '@/components/registrations/RegistrationDetails';
 import SubscriptionDialog from '@/components/registrations/SubscriptionDialog';
+import RegistrationsMap from '@/components/registrations/RegistrationsMap';
 import { ShareButton } from '@/components/shared/ShareButton';
+import { useCity } from '@/contexts/CityContext';
 import type { Tables, Enums } from '@/integrations/supabase/types';
 
 type Registration = Tables<'registrations'> & {
@@ -49,13 +57,16 @@ const statusLabels: Record<Enums<'registration_status'>, string> = {
 
 const Registrations: React.FC = () => {
   const { t, i18n } = useTranslation();
+  const { selectedCity } = useCity();
   const isRtl = i18n.language === 'ar';
   const [dialogOpen, setDialogOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [subscriptionOpen, setSubscriptionOpen] = useState(false);
+  const [mapOpen, setMapOpen] = useState(false);
   const [selectedRegistration, setSelectedRegistration] = useState<Registration | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [cityFilter, setCityFilter] = useState<string>('all');
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -87,13 +98,21 @@ const Registrations: React.FC = () => {
     },
   });
 
-  const filteredRegistrations = registrations.filter((reg) => {
+  // Filter by global city first, then by local filters
+  const cityFilteredRegistrations = registrations.filter((reg) => {
+    if (selectedCity === 'all') return true;
+    return reg.parent_accounts?.city?.toLowerCase() === selectedCity.toLowerCase();
+  });
+
+  const filteredRegistrations = cityFilteredRegistrations.filter((reg) => {
     const matchesSearch =
+      reg.student_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       reg.parent_accounts?.parent_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       reg.parent_accounts?.national_id?.includes(searchQuery) ||
       reg.schools?.name?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'all' || reg.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesCityFilter = cityFilter === 'all' || reg.parent_accounts?.city?.toLowerCase() === cityFilter.toLowerCase();
+    return matchesSearch && matchesStatus && matchesCityFilter;
   });
 
   const handleViewDetails = (registration: Registration) => {
@@ -116,18 +135,29 @@ const Registrations: React.FC = () => {
       <div className="space-y-6">
         {/* Filters */}
         <div className="flex flex-wrap gap-4 items-center justify-between">
-          <div className="flex gap-3 flex-1 max-w-xl">
-            <div className="relative flex-1">
+          <div className="flex gap-3 flex-1 flex-wrap">
+            <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search by parent name, ID, or school..."
+                placeholder="Search by student, parent, ID, or school..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9"
               />
             </div>
+            <Select value={cityFilter} onValueChange={setCityFilter}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="All Cities" />
+              </SelectTrigger>
+              <SelectContent className="bg-background border border-border z-50">
+                <SelectItem value="all">All Cities</SelectItem>
+                <SelectItem value="cairo">Cairo</SelectItem>
+                <SelectItem value="giza">Giza</SelectItem>
+                <SelectItem value="alexandria">Alexandria</SelectItem>
+              </SelectContent>
+            </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[160px]">
+              <SelectTrigger className="w-[140px]">
                 <SelectValue placeholder="All Status" />
               </SelectTrigger>
               <SelectContent className="bg-background border border-border z-50">
@@ -139,6 +169,10 @@ const Registrations: React.FC = () => {
             </Select>
           </div>
           <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setMapOpen(true)}>
+              <Map className="h-4 w-4 mr-2" />
+              View Map
+            </Button>
             <Button variant="outline" onClick={copyFormLink}>
               <Link2 className="h-4 w-4 mr-2" />
               {t('registrations.copyFormLink')}
@@ -307,6 +341,21 @@ const Registrations: React.FC = () => {
             setSubscriptionOpen(false);
           }}
         />
+
+        {/* Map Dialog */}
+        <Dialog open={mapOpen} onOpenChange={setMapOpen}>
+          <DialogContent className="max-w-6xl h-[80vh]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Map className="h-5 w-5" />
+                Student Locations Map
+              </DialogTitle>
+            </DialogHeader>
+            <div className="flex-1 overflow-hidden">
+              <RegistrationsMap registrations={filteredRegistrations} />
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );
