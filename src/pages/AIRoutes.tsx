@@ -22,9 +22,13 @@ import RouteMap from '@/components/routes/RouteMap';
 import DrawableAreaMap from '@/components/routes/DrawableAreaMap';
 import type { Tables } from '@/integrations/supabase/types';
 
+interface PolygonPoint {
+  lat: number;
+  lng: number;
+}
+
 interface SearchArea {
-  center: { lat: number; lng: number };
-  radiusKm: number;
+  points: PolygonPoint[];
 }
 
 interface RouteSuggestion {
@@ -143,10 +147,8 @@ const AIRoutes: React.FC = () => {
           schoolId: selectedSchool,
           carType: selectedCarType,
           maxSeatsPerRoute: parseInt(maxSeats),
-          searchArea: searchArea ? {
-            centerLat: searchArea.center.lat,
-            centerLng: searchArea.center.lng,
-            radiusKm: searchArea.radiusKm,
+          searchArea: searchArea && searchArea.points.length >= 3 ? {
+            polygon: searchArea.points,
           } : null,
         },
       });

@@ -47,6 +47,28 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * c;
 }
 
+// Point-in-polygon check using ray casting algorithm
+function isPointInPolygon(
+  pointLat: number,
+  pointLng: number,
+  polygon: { lat: number; lng: number }[]
+): boolean {
+  if (polygon.length < 3) return false;
+  
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const xi = polygon[i].lng, yi = polygon[i].lat;
+    const xj = polygon[j].lng, yj = polygon[j].lat;
+    
+    const intersect = ((yi > pointLat) !== (yj > pointLat))
+      && (pointLng < (xj - xi) * (pointLat - yi) / (yj - yi) + xi);
+    
+    if (intersect) inside = !inside;
+  }
+  
+  return inside;
+}
+
 // Cluster students by proximity
 function clusterStudents(
   students: RegistrationWithLocation[],
@@ -182,19 +204,13 @@ serve(async (req) => {
       const assignedIds = new Set((assignments || []).map(a => a.registration_id));
       let unassigned = (registrations || []).filter(r => !assignedIds.has(r.id));
 
-      // If search area is provided, filter students by geographic location
-      if (searchArea && searchArea.centerLat && searchArea.centerLng && searchArea.radiusKm) {
+      // If search area polygon is provided, filter students by geographic location
+      if (searchArea && searchArea.polygon && searchArea.polygon.length >= 3) {
         unassigned = unassigned.filter((r: any) => {
           const pa = Array.isArray(r.parent_accounts) ? r.parent_accounts[0] : r.parent_accounts;
           if (!pa || !pa.pickup_latitude || !pa.pickup_longitude) return false;
           
-          const distance = calculateDistance(
-            searchArea.centerLat,
-            searchArea.centerLng,
-            pa.pickup_latitude,
-            pa.pickup_longitude
-          );
-          return distance <= searchArea.radiusKm;
+          return isPointInPolygon(pa.pickup_latitude, pa.pickup_longitude, searchArea.polygon);
         });
       }
 
