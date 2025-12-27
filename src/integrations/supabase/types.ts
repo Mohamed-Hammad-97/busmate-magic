@@ -124,6 +124,7 @@ export type Database = {
       }
       drivers: {
         Row: {
+          city: string
           created_at: string
           documents_url: string | null
           full_name: string
@@ -134,6 +135,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          city?: string
           created_at?: string
           documents_url?: string | null
           full_name: string
@@ -144,6 +146,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          city?: string
           created_at?: string
           documents_url?: string | null
           full_name?: string
@@ -576,6 +579,7 @@ export type Database = {
       }
       supervisors: {
         Row: {
+          city: string
           created_at: string
           documents_url: string | null
           full_name: string
@@ -585,6 +589,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          city?: string
           created_at?: string
           documents_url?: string | null
           full_name: string
@@ -594,6 +599,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          city?: string
           created_at?: string
           documents_url?: string | null
           full_name?: string

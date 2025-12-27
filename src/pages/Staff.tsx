@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
@@ -19,42 +19,56 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Plus, Search, Users, Car, UserCheck, Edit, Phone } from 'lucide-react';
-import type { Tables } from '@/integrations/supabase/types';
-
-type Driver = Tables<'drivers'>;
-type Supervisor = Tables<'supervisors'>;
+import { Plus, Search, Users, Car, UserCheck, Edit, MapPin } from 'lucide-react';
+import { useCity } from '@/contexts/CityContext';
 
 const Staff = () => {
   const queryClient = useQueryClient();
+  const { selectedCity } = useCity();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('drivers');
   
+  // City mapping for consistent filtering
+  const cityMapping: Record<string, string[]> = {
+    cairo: ['cairo', 'القاهرة', 'قاهرة', 'Cairo'],
+    giza: ['giza', 'الجيزة', 'جيزة', 'Giza'],
+    alexandria: ['alexandria', 'الإسكندرية', 'اسكندرية', 'إسكندرية', 'Alexandria'],
+  };
+
   // Driver Dialog State
   const [isDriverDialogOpen, setIsDriverDialogOpen] = useState(false);
-  const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
+  const [selectedDriver, setSelectedDriver] = useState<any>(null);
   const [driverForm, setDriverForm] = useState({
     full_name: '',
     phone: '',
     license_number: '',
+    city: 'Cairo',
     is_active: true,
   });
 
   // Supervisor Dialog State
   const [isSupervisorDialogOpen, setIsSupervisorDialogOpen] = useState(false);
-  const [selectedSupervisor, setSelectedSupervisor] = useState<Supervisor | null>(null);
+  const [selectedSupervisor, setSelectedSupervisor] = useState<any>(null);
   const [supervisorForm, setSupervisorForm] = useState({
     full_name: '',
     phone: '',
+    city: 'Cairo',
     is_active: true,
   });
 
-  const { data: drivers = [], isLoading: driversLoading } = useQuery({
+  const { data: allDrivers = [], isLoading: driversLoading } = useQuery({
     queryKey: ['drivers'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -62,11 +76,11 @@ const Staff = () => {
         .select('*')
         .order('full_name');
       if (error) throw error;
-      return data as Driver[];
+      return data;
     },
   });
 
-  const { data: supervisors = [], isLoading: supervisorsLoading } = useQuery({
+  const { data: allSupervisors = [], isLoading: supervisorsLoading } = useQuery({
     queryKey: ['supervisors'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -74,9 +88,26 @@ const Staff = () => {
         .select('*')
         .order('full_name');
       if (error) throw error;
-      return data as Supervisor[];
+      return data;
     },
   });
+
+  // Filter by global city
+  const drivers = useMemo(() => {
+    if (selectedCity === 'all') return allDrivers;
+    const cityNames = cityMapping[selectedCity] || [];
+    return allDrivers.filter((d: any) =>
+      cityNames.some((name) => d.city?.toLowerCase().includes(name.toLowerCase()))
+    );
+  }, [allDrivers, selectedCity]);
+
+  const supervisors = useMemo(() => {
+    if (selectedCity === 'all') return allSupervisors;
+    const cityNames = cityMapping[selectedCity] || [];
+    return allSupervisors.filter((s: any) =>
+      cityNames.some((name) => s.city?.toLowerCase().includes(name.toLowerCase()))
+    );
+  }, [allSupervisors, selectedCity]);
 
   // Driver Mutations
   const saveDriverMutation = useMutation({
@@ -131,42 +162,44 @@ const Staff = () => {
   });
 
   const resetDriverForm = () => {
-    setDriverForm({ full_name: '', phone: '', license_number: '', is_active: true });
+    setDriverForm({ full_name: '', phone: '', license_number: '', city: 'Cairo', is_active: true });
     setSelectedDriver(null);
   };
 
   const resetSupervisorForm = () => {
-    setSupervisorForm({ full_name: '', phone: '', is_active: true });
+    setSupervisorForm({ full_name: '', phone: '', city: 'Cairo', is_active: true });
     setSelectedSupervisor(null);
   };
 
-  const handleEditDriver = (driver: Driver) => {
+  const handleEditDriver = (driver: any) => {
     setSelectedDriver(driver);
     setDriverForm({
       full_name: driver.full_name,
       phone: driver.phone,
       license_number: driver.license_number,
+      city: driver.city || 'Cairo',
       is_active: driver.is_active,
     });
     setIsDriverDialogOpen(true);
   };
 
-  const handleEditSupervisor = (supervisor: Supervisor) => {
+  const handleEditSupervisor = (supervisor: any) => {
     setSelectedSupervisor(supervisor);
     setSupervisorForm({
       full_name: supervisor.full_name,
       phone: supervisor.phone,
+      city: supervisor.city || 'Cairo',
       is_active: supervisor.is_active,
     });
     setIsSupervisorDialogOpen(true);
   };
 
-  const filteredDrivers = drivers.filter((d) =>
+  const filteredDrivers = drivers.filter((d: any) =>
     d.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     d.phone.includes(searchTerm)
   );
 
-  const filteredSupervisors = supervisors.filter((s) =>
+  const filteredSupervisors = supervisors.filter((s: any) =>
     s.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     s.phone.includes(searchTerm)
   );
@@ -196,7 +229,7 @@ const Staff = () => {
               <UserCheck className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{drivers.filter((d) => d.is_active).length}</div>
+              <div className="text-2xl font-bold">{drivers.filter((d: any) => d.is_active).length}</div>
             </CardContent>
           </Card>
           <Card>
@@ -214,7 +247,7 @@ const Staff = () => {
               <UserCheck className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{supervisors.filter((s) => s.is_active).length}</div>
+              <div className="text-2xl font-bold">{supervisors.filter((s: any) => s.is_active).length}</div>
             </CardContent>
           </Card>
         </div>
@@ -261,6 +294,7 @@ const Staff = () => {
                       <TableHead className="text-right">الاسم</TableHead>
                       <TableHead className="text-right">الهاتف</TableHead>
                       <TableHead className="text-right">رقم الرخصة</TableHead>
+                      <TableHead className="text-right">المدينة</TableHead>
                       <TableHead className="text-right">الحالة</TableHead>
                       <TableHead className="text-right">الإجراءات</TableHead>
                     </TableRow>
@@ -268,22 +302,28 @@ const Staff = () => {
                   <TableBody>
                     {driversLoading ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center py-8">
+                        <TableCell colSpan={6} className="text-center py-8">
                           جاري التحميل...
                         </TableCell>
                       </TableRow>
                     ) : filteredDrivers.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center py-8">
+                        <TableCell colSpan={6} className="text-center py-8">
                           لا يوجد سائقين
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filteredDrivers.map((driver) => (
+                      filteredDrivers.map((driver: any) => (
                         <TableRow key={driver.id}>
                           <TableCell className="font-medium">{driver.full_name}</TableCell>
                           <TableCell dir="ltr" className="text-right">{driver.phone}</TableCell>
                           <TableCell>{driver.license_number}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="gap-1">
+                              <MapPin className="h-3 w-3" />
+                              {driver.city || 'غير محدد'}
+                            </Badge>
+                          </TableCell>
                           <TableCell>
                             <Badge variant={driver.is_active ? 'default' : 'secondary'}>
                               {driver.is_active ? 'نشط' : 'غير نشط'}
@@ -315,6 +355,7 @@ const Staff = () => {
                     <TableRow>
                       <TableHead className="text-right">الاسم</TableHead>
                       <TableHead className="text-right">الهاتف</TableHead>
+                      <TableHead className="text-right">المدينة</TableHead>
                       <TableHead className="text-right">الحالة</TableHead>
                       <TableHead className="text-right">الإجراءات</TableHead>
                     </TableRow>
@@ -322,21 +363,27 @@ const Staff = () => {
                   <TableBody>
                     {supervisorsLoading ? (
                       <TableRow>
-                        <TableCell colSpan={4} className="text-center py-8">
+                        <TableCell colSpan={5} className="text-center py-8">
                           جاري التحميل...
                         </TableCell>
                       </TableRow>
                     ) : filteredSupervisors.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={4} className="text-center py-8">
+                        <TableCell colSpan={5} className="text-center py-8">
                           لا يوجد مشرفين
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filteredSupervisors.map((supervisor) => (
+                      filteredSupervisors.map((supervisor: any) => (
                         <TableRow key={supervisor.id}>
                           <TableCell className="font-medium">{supervisor.full_name}</TableCell>
                           <TableCell dir="ltr" className="text-right">{supervisor.phone}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="gap-1">
+                              <MapPin className="h-3 w-3" />
+                              {supervisor.city || 'غير محدد'}
+                            </Badge>
+                          </TableCell>
                           <TableCell>
                             <Badge variant={supervisor.is_active ? 'default' : 'secondary'}>
                               {supervisor.is_active ? 'نشط' : 'غير نشط'}
@@ -370,7 +417,7 @@ const Staff = () => {
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                if (!driverForm.full_name || !driverForm.phone || !driverForm.license_number) {
+                if (!driverForm.full_name || !driverForm.phone || !driverForm.license_number || !driverForm.city) {
                   toast.error('يرجى ملء جميع الحقول المطلوبة');
                   return;
                 }
@@ -405,6 +452,22 @@ const Staff = () => {
                   required
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="driver_city">المدينة *</Label>
+                <Select 
+                  value={driverForm.city} 
+                  onValueChange={(value) => setDriverForm({ ...driverForm, city: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="اختر المدينة" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border border-border z-50">
+                    <SelectItem value="Cairo">القاهرة</SelectItem>
+                    <SelectItem value="Giza">الجيزة</SelectItem>
+                    <SelectItem value="Alexandria">الإسكندرية</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="flex items-center justify-between">
                 <Label htmlFor="driver_active">نشط</Label>
                 <Switch
@@ -434,7 +497,7 @@ const Staff = () => {
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                if (!supervisorForm.full_name || !supervisorForm.phone) {
+                if (!supervisorForm.full_name || !supervisorForm.phone || !supervisorForm.city) {
                   toast.error('يرجى ملء جميع الحقول المطلوبة');
                   return;
                 }
@@ -459,6 +522,22 @@ const Staff = () => {
                   onChange={(e) => setSupervisorForm({ ...supervisorForm, phone: e.target.value })}
                   required
                 />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="supervisor_city">المدينة *</Label>
+                <Select 
+                  value={supervisorForm.city} 
+                  onValueChange={(value) => setSupervisorForm({ ...supervisorForm, city: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="اختر المدينة" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border border-border z-50">
+                    <SelectItem value="Cairo">القاهرة</SelectItem>
+                    <SelectItem value="Giza">الجيزة</SelectItem>
+                    <SelectItem value="Alexandria">الإسكندرية</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="flex items-center justify-between">
                 <Label htmlFor="supervisor_active">نشط</Label>
