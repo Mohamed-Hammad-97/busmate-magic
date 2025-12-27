@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
@@ -29,17 +30,25 @@ import {
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Plus, Search, Route, Bus, Users, Edit, Eye } from 'lucide-react';
+import { Plus, Search, Route, Bus, Users, Edit, Map, School } from 'lucide-react';
+import { useCity } from '@/contexts/CityContext';
+import RouteMap from '@/components/routes/RouteMap';
 import type { Tables } from '@/integrations/supabase/types';
 
 type RouteType = Tables<'routes'>;
 
 const Routes = () => {
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.language === 'ar';
   const queryClient = useQueryClient();
+  const { selectedCity } = useCity();
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedRoute, setSelectedRoute] = useState<RouteType | null>(null);
+  const [activeTab, setActiveTab] = useState<'table' | 'map'>('table');
+  const [mapSelectedRoute, setMapSelectedRoute] = useState<any>(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -58,7 +67,7 @@ const Routes = () => {
         .from('routes')
         .select(`
           *,
-          schools (name),
+          schools (id, name, city, latitude, longitude),
           drivers (full_name),
           supervisors (full_name)
         `)
@@ -68,7 +77,7 @@ const Routes = () => {
     },
   });
 
-  const { data: schools = [] } = useQuery({
+  const { data: allSchools = [] } = useQuery({
     queryKey: ['schools-active'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -80,6 +89,34 @@ const Routes = () => {
       return data;
     },
   });
+
+  // Filter schools by city
+  const schools = useMemo(() => {
+    if (selectedCity === 'all') return allSchools;
+    const cityMapping: Record<string, string[]> = {
+      cairo: ['cairo', 'القاهرة', 'قاهرة'],
+      giza: ['giza', 'الجيزة', 'جيزة'],
+      alexandria: ['alexandria', 'الإسكندرية', 'اسكندرية', 'إسكندرية'],
+    };
+    const cityNames = cityMapping[selectedCity] || [];
+    return allSchools.filter((s) =>
+      cityNames.some((name) => s.city?.toLowerCase().includes(name.toLowerCase()))
+    );
+  }, [allSchools, selectedCity]);
+
+  // Filter routes by city
+  const cityFilteredRoutes = useMemo(() => {
+    if (selectedCity === 'all') return routes;
+    const cityMapping: Record<string, string[]> = {
+      cairo: ['cairo', 'القاهرة', 'قاهرة'],
+      giza: ['giza', 'الجيزة', 'جيزة'],
+      alexandria: ['alexandria', 'الإسكندرية', 'اسكندرية', 'إسكندرية'],
+    };
+    const cityNames = cityMapping[selectedCity] || [];
+    return routes.filter((r: any) =>
+      cityNames.some((name) => r.schools?.city?.toLowerCase().includes(name.toLowerCase()))
+    );
+  }, [routes, selectedCity]);
 
   const { data: drivers = [] } = useQuery({
     queryKey: ['drivers-active'],
@@ -107,21 +144,36 @@ const Routes = () => {
     },
   });
 
-  const { data: assignmentCounts = {} } = useQuery({
-    queryKey: ['route-assignment-counts'],
+  const { data: routeAssignments = [] } = useQuery({
+    queryKey: ['route-assignments-with-locations'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('route_assignments')
-        .select('route_id');
+        .select(`
+          *,
+          registrations (
+            id,
+            student_name,
+            parent_accounts (
+              id,
+              parent_name,
+              pickup_latitude,
+              pickup_longitude
+            )
+          )
+        `);
       if (error) throw error;
-      
-      const counts: Record<string, number> = {};
-      data.forEach((a) => {
-        counts[a.route_id] = (counts[a.route_id] || 0) + 1;
-      });
-      return counts;
+      return data;
     },
   });
+
+  const assignmentCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    routeAssignments.forEach((a: any) => {
+      counts[a.route_id] = (counts[a.route_id] || 0) + 1;
+    });
+    return counts;
+  }, [routeAssignments]);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -156,12 +208,15 @@ const Routes = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['routes'] });
-      toast.success(selectedRoute ? 'تم تحديث الخط بنجاح' : 'تم إضافة الخط بنجاح');
+      toast.success(selectedRoute 
+        ? (isRtl ? 'تم تحديث الخط بنجاح' : 'Route updated successfully')
+        : (isRtl ? 'تم إضافة الخط بنجاح' : 'Route added successfully')
+      );
       setIsDialogOpen(false);
       resetForm();
     },
     onError: (error) => {
-      toast.error('حدث خطأ أثناء الحفظ');
+      toast.error(isRtl ? 'حدث خطأ أثناء الحفظ' : 'Error saving route');
       console.error(error);
     },
   });
@@ -201,33 +256,99 @@ const Routes = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.school_id) {
-      toast.error('يرجى ملء جميع الحقول المطلوبة');
+      toast.error(isRtl ? 'يرجى ملء جميع الحقول المطلوبة' : 'Please fill all required fields');
       return;
     }
     saveMutation.mutate();
   };
 
-  const filteredRoutes = routes.filter((route: any) =>
+  const filteredRoutes = cityFilteredRoutes.filter((route: any) =>
     route.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     route.schools?.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const carTypeLabels: Record<string, string> = {
-    ac: 'مكيف',
-    non_ac: 'غير مكيف',
+    ac: isRtl ? 'مكيف' : 'AC',
+    non_ac: isRtl ? 'غير مكيف' : 'Non-AC',
   };
+
+  // Prepare data for map
+  const mapSchools = useMemo(() => {
+    const schoolSet = new Map<string, { id: string; name: string; latitude: number; longitude: number }>();
+    filteredRoutes.forEach((r: any) => {
+      if (r.schools && !schoolSet.has(r.schools.id)) {
+        schoolSet.set(r.schools.id, {
+          id: r.schools.id,
+          name: r.schools.name,
+          latitude: r.schools.latitude,
+          longitude: r.schools.longitude,
+        });
+      }
+    });
+    return Array.from(schoolSet.values());
+  }, [filteredRoutes]);
+
+  const mapStudents = useMemo(() => {
+    const students: any[] = [];
+    routeAssignments.forEach((a: any) => {
+      if (a.registrations?.parent_accounts) {
+        const pa = a.registrations.parent_accounts;
+        students.push({
+          id: a.registration_id,
+          student_name: a.registrations.student_name,
+          parent_name: pa.parent_name,
+          lat: pa.pickup_latitude,
+          lng: pa.pickup_longitude,
+          pickup_order: a.pickup_order,
+        });
+      }
+    });
+    return students;
+  }, [routeAssignments]);
+
+  const mapRoutes = useMemo(() => {
+    return filteredRoutes.map((route: any) => {
+      const routeStudents = routeAssignments
+        .filter((a: any) => a.route_id === route.id)
+        .map((a: any) => ({
+          id: a.registration_id,
+          student_name: a.registrations?.student_name || '',
+          parent_name: a.registrations?.parent_accounts?.parent_name || '',
+          lat: a.registrations?.parent_accounts?.pickup_latitude,
+          lng: a.registrations?.parent_accounts?.pickup_longitude,
+          pickup_order: a.pickup_order,
+        }))
+        .filter((s: any) => s.lat && s.lng);
+
+      return {
+        id: route.id,
+        name: route.name,
+        students: routeStudents,
+        school: route.schools ? {
+          id: route.schools.id,
+          name: route.schools.name,
+          latitude: route.schools.latitude,
+          longitude: route.schools.longitude,
+        } : undefined,
+      };
+    });
+  }, [filteredRoutes, routeAssignments]);
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">إدارة الخطوط</h1>
-            <p className="text-muted-foreground">إدارة خطوط النقل وتعيين السائقين والمشرفين</p>
+            <h1 className="text-3xl font-bold text-foreground">
+              {isRtl ? 'إدارة الخطوط' : 'Routes Management'}
+            </h1>
+            <p className="text-muted-foreground">
+              {isRtl ? 'إدارة خطوط النقل وتعيين السائقين والمشرفين' : 'Manage transportation routes, assign drivers and supervisors'}
+            </p>
           </div>
           <Button onClick={handleAddNew}>
             <Plus className="h-4 w-4 ml-2" />
-            إضافة خط
+            {isRtl ? 'إضافة خط' : 'Add Route'}
           </Button>
         </div>
 
@@ -235,134 +356,203 @@ const Routes = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">إجمالي الخطوط</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                {isRtl ? 'إجمالي الخطوط' : 'Total Routes'}
+              </CardTitle>
               <Route className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{routes.length}</div>
+              <div className="text-2xl font-bold">{filteredRoutes.length}</div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">الخطوط النشطة</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                {isRtl ? 'الخطوط النشطة' : 'Active Routes'}
+              </CardTitle>
               <Bus className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {routes.filter((r: any) => r.is_active).length}
+                {filteredRoutes.filter((r: any) => r.is_active).length}
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">السائقين المعينين</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                {isRtl ? 'السائقين المعينين' : 'Assigned Drivers'}
+              </CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {routes.filter((r: any) => r.driver_id).length}
+                {filteredRoutes.filter((r: any) => r.driver_id).length}
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">إجمالي الطلاب</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                {isRtl ? 'إجمالي الطلاب' : 'Total Students'}
+              </CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {Object.values(assignmentCounts).reduce((a, b) => a + b, 0)}
+                {filteredRoutes.reduce((sum: number, r: any) => sum + (assignmentCounts[r.id] || 0), 0)}
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Search */}
-        <div className="relative max-w-sm">
-          <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="بحث بالاسم أو المدرسة..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pr-10"
-          />
-        </div>
+        {/* Tabs for Table/Map view */}
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <TabsList>
+              <TabsTrigger value="table">
+                {isRtl ? 'جدول' : 'Table'}
+              </TabsTrigger>
+              <TabsTrigger value="map">
+                <Map className="h-4 w-4 mr-2" />
+                {isRtl ? 'خريطة' : 'Map'}
+              </TabsTrigger>
+            </TabsList>
 
-        {/* Routes Table */}
-        <Card>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-right">اسم الخط</TableHead>
-                  <TableHead className="text-right">المدرسة</TableHead>
-                  <TableHead className="text-right">السائق</TableHead>
-                  <TableHead className="text-right">المشرف</TableHead>
-                  <TableHead className="text-right">نوع السيارة</TableHead>
-                  <TableHead className="text-right">المقاعد</TableHead>
-                  <TableHead className="text-right">الطلاب</TableHead>
-                  <TableHead className="text-right">الحالة</TableHead>
-                  <TableHead className="text-right">الإجراءات</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8">
-                      جاري التحميل...
-                    </TableCell>
-                  </TableRow>
-                ) : filteredRoutes.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8">
-                      لا توجد خطوط
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredRoutes.map((route: any) => (
-                    <TableRow key={route.id}>
-                      <TableCell className="font-medium">{route.name}</TableCell>
-                      <TableCell>{route.schools?.name}</TableCell>
-                      <TableCell>{route.drivers?.full_name || '-'}</TableCell>
-                      <TableCell>{route.supervisors?.full_name || '-'}</TableCell>
-                      <TableCell>{carTypeLabels[route.car_type]}</TableCell>
-                      <TableCell>{route.max_seats}</TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">
-                          {assignmentCounts[route.id] || 0} / {route.max_seats}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={route.is_active ? 'default' : 'secondary'}>
-                          {route.is_active ? 'نشط' : 'غير نشط'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEdit(route)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
+            {/* Search */}
+            <div className="relative max-w-sm">
+              <Search className={`absolute ${isRtl ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground`} />
+              <Input
+                placeholder={isRtl ? 'بحث بالاسم أو المدرسة...' : 'Search by name or school...'}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className={isRtl ? 'pr-10' : 'pl-10'}
+              />
+            </div>
+          </div>
+
+          <TabsContent value="table" className="mt-4">
+            <Card>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className={isRtl ? 'text-right' : 'text-left'}>
+                        {isRtl ? 'اسم الخط' : 'Route Name'}
+                      </TableHead>
+                      <TableHead className={isRtl ? 'text-right' : 'text-left'}>
+                        {isRtl ? 'المدرسة' : 'School'}
+                      </TableHead>
+                      <TableHead className={isRtl ? 'text-right' : 'text-left'}>
+                        {isRtl ? 'السائق' : 'Driver'}
+                      </TableHead>
+                      <TableHead className={isRtl ? 'text-right' : 'text-left'}>
+                        {isRtl ? 'المشرف' : 'Supervisor'}
+                      </TableHead>
+                      <TableHead className={isRtl ? 'text-right' : 'text-left'}>
+                        {isRtl ? 'نوع السيارة' : 'Car Type'}
+                      </TableHead>
+                      <TableHead className={isRtl ? 'text-right' : 'text-left'}>
+                        {isRtl ? 'المقاعد' : 'Seats'}
+                      </TableHead>
+                      <TableHead className={isRtl ? 'text-right' : 'text-left'}>
+                        {isRtl ? 'الطلاب' : 'Students'}
+                      </TableHead>
+                      <TableHead className={isRtl ? 'text-right' : 'text-left'}>
+                        {isRtl ? 'الحالة' : 'Status'}
+                      </TableHead>
+                      <TableHead className={isRtl ? 'text-right' : 'text-left'}>
+                        {isRtl ? 'الإجراءات' : 'Actions'}
+                      </TableHead>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+                  </TableHeader>
+                  <TableBody>
+                    {isLoading ? (
+                      <TableRow>
+                        <TableCell colSpan={9} className="text-center py-8">
+                          {isRtl ? 'جاري التحميل...' : 'Loading...'}
+                        </TableCell>
+                      </TableRow>
+                    ) : filteredRoutes.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={9} className="text-center py-8">
+                          {isRtl ? 'لا توجد خطوط' : 'No routes found'}
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredRoutes.map((route: any) => (
+                        <TableRow key={route.id}>
+                          <TableCell className="font-medium">{route.name}</TableCell>
+                          <TableCell>{route.schools?.name}</TableCell>
+                          <TableCell>{route.drivers?.full_name || '-'}</TableCell>
+                          <TableCell>{route.supervisors?.full_name || '-'}</TableCell>
+                          <TableCell>{carTypeLabels[route.car_type]}</TableCell>
+                          <TableCell>{route.max_seats}</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">
+                              {assignmentCounts[route.id] || 0} / {route.max_seats}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={route.is_active ? 'default' : 'secondary'}>
+                              {route.is_active ? (isRtl ? 'نشط' : 'Active') : (isRtl ? 'غير نشط' : 'Inactive')}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEdit(route)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="map" className="mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Map className="h-5 w-5" />
+                  {isRtl ? 'خريطة الخطوط' : 'Routes Map'}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <RouteMap
+                  students={mapStudents}
+                  schools={mapSchools}
+                  routes={mapRoutes}
+                  selectedRoute={mapSelectedRoute}
+                  onRouteClick={(route) => setMapSelectedRoute(route)}
+                  showControls={true}
+                  height="600px"
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
         {/* Add/Edit Dialog */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle>{selectedRoute ? 'تعديل الخط' : 'إضافة خط جديد'}</DialogTitle>
+              <DialogTitle>
+                {selectedRoute 
+                  ? (isRtl ? 'تعديل الخط' : 'Edit Route')
+                  : (isRtl ? 'إضافة خط جديد' : 'Add New Route')
+                }
+              </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">اسم الخط *</Label>
+                <Label htmlFor="name">{isRtl ? 'اسم الخط *' : 'Route Name *'}</Label>
                 <Input
                   id="name"
                   value={formData.name}
@@ -372,15 +562,15 @@ const Routes = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="school">المدرسة *</Label>
+                <Label htmlFor="school">{isRtl ? 'المدرسة *' : 'School *'}</Label>
                 <Select
                   value={formData.school_id}
                   onValueChange={(value) => setFormData({ ...formData, school_id: value })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="اختر المدرسة" />
+                    <SelectValue placeholder={isRtl ? 'اختر المدرسة' : 'Select school'} />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-background border border-border z-50">
                     {schools.map((school) => (
                       <SelectItem key={school.id} value={school.id}>
                         {school.name}
@@ -392,15 +582,15 @@ const Routes = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="driver">السائق</Label>
+                  <Label htmlFor="driver">{isRtl ? 'السائق' : 'Driver'}</Label>
                   <Select
                     value={formData.driver_id}
                     onValueChange={(value) => setFormData({ ...formData, driver_id: value })}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="اختر السائق" />
+                      <SelectValue placeholder={isRtl ? 'اختر السائق' : 'Select driver'} />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-background border border-border z-50">
                       {drivers.map((driver) => (
                         <SelectItem key={driver.id} value={driver.id}>
                           {driver.full_name}
@@ -411,15 +601,15 @@ const Routes = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="supervisor">المشرف</Label>
+                  <Label htmlFor="supervisor">{isRtl ? 'المشرف' : 'Supervisor'}</Label>
                   <Select
                     value={formData.supervisor_id}
                     onValueChange={(value) => setFormData({ ...formData, supervisor_id: value })}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="اختر المشرف" />
+                      <SelectValue placeholder={isRtl ? 'اختر المشرف' : 'Select supervisor'} />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-background border border-border z-50">
                       {supervisors.map((supervisor) => (
                         <SelectItem key={supervisor.id} value={supervisor.id}>
                           {supervisor.full_name}
@@ -432,7 +622,7 @@ const Routes = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="car_type">نوع السيارة</Label>
+                  <Label htmlFor="car_type">{isRtl ? 'نوع السيارة' : 'Car Type'}</Label>
                   <Select
                     value={formData.car_type}
                     onValueChange={(value: 'ac' | 'non_ac') => setFormData({ ...formData, car_type: value })}
@@ -440,15 +630,15 @@ const Routes = () => {
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ac">مكيف</SelectItem>
-                      <SelectItem value="non_ac">غير مكيف</SelectItem>
+                    <SelectContent className="bg-background border border-border z-50">
+                      <SelectItem value="ac">{isRtl ? 'مكيف' : 'AC'}</SelectItem>
+                      <SelectItem value="non_ac">{isRtl ? 'غير مكيف' : 'Non-AC'}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="max_seats">عدد المقاعد</Label>
+                  <Label htmlFor="max_seats">{isRtl ? 'عدد المقاعد' : 'Max Seats'}</Label>
                   <Input
                     id="max_seats"
                     type="number"
@@ -460,7 +650,7 @@ const Routes = () => {
               </div>
 
               <div className="flex items-center justify-between">
-                <Label htmlFor="is_active">نشط</Label>
+                <Label htmlFor="is_active">{isRtl ? 'نشط' : 'Active'}</Label>
                 <Switch
                   id="is_active"
                   checked={formData.is_active}
@@ -470,10 +660,13 @@ const Routes = () => {
 
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  إلغاء
+                  {isRtl ? 'إلغاء' : 'Cancel'}
                 </Button>
                 <Button type="submit" disabled={saveMutation.isPending}>
-                  {saveMutation.isPending ? 'جاري الحفظ...' : 'حفظ'}
+                  {saveMutation.isPending 
+                    ? (isRtl ? 'جاري الحفظ...' : 'Saving...')
+                    : (isRtl ? 'حفظ' : 'Save')
+                  }
                 </Button>
               </div>
             </form>
