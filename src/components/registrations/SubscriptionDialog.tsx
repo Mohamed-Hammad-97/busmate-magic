@@ -186,7 +186,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-background border border-border z-50">
-                {[1, 2, 3, 4, 6, 12].map((n) => (
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
                   <SelectItem key={n} value={n.toString()}>
                     {n} {n === 1 ? 'Payment' : 'Installments'}
                   </SelectItem>

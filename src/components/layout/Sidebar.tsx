@@ -13,6 +13,7 @@ import {
   MapPin,
   UserCog,
   ClipboardList,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -30,6 +31,7 @@ const navItems: NavItem[] = [
   { label: "Registrations", href: "/registrations", icon: ClipboardList, department: "customer_support" },
   { label: "Customers", href: "/customers", icon: Users, department: "customer_support" },
   { label: "Routes", href: "/routes", icon: MapPin, department: "operations" },
+  { label: "AI Route Planner", href: "/ai-routes", icon: Sparkles, department: "operations" },
   { label: "Drivers & Staff", href: "/staff", icon: Bus, department: "operations" },
   { label: "Payments", href: "/payments", icon: CreditCard, department: "finance" },
   { label: "Reports", href: "/reports", icon: BarChart3, department: "reports" },
