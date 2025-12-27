@@ -143,6 +143,7 @@ const Registrations: React.FC = () => {
               New Registration
             </Button>
           </div>
+        </div>
 
         {/* Stats */}
         <div className="grid gap-4 md:grid-cols-4">
@@ -262,11 +263,6 @@ const Registrations: React.FC = () => {
                           )}
                         </div>
                       </TableCell>
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -301,12 +297,6 @@ const Registrations: React.FC = () => {
             setSubscriptionOpen(false);
           }}
         />
-      </div>
-    </DashboardLayout>
-  );
-};
-
-export default Registrations;
       </div>
     </DashboardLayout>
   );
