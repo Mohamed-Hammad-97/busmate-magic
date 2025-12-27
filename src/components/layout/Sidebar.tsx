@@ -34,7 +34,7 @@ const navItems: NavItem[] = [
   { label: "AI Route Planner", href: "/ai-routes", icon: Sparkles, department: "operations" },
   { label: "Drivers & Staff", href: "/staff", icon: Bus, department: "operations" },
   { label: "Payments", href: "/payments", icon: CreditCard, department: "finance" },
-  { label: "Reports", href: "/reports", icon: BarChart3, department: "reports" },
+  { label: "Reports", href: "/reports", icon: BarChart3 },
   { label: "Employees", href: "/employees", icon: UserCog, adminOnly: true },
   { label: "Settings", href: "/settings", icon: Settings },
 ];
