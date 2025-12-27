@@ -4,11 +4,16 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { useMapboxToken } from '@/hooks/useMapboxToken';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from 'react-i18next';
-import { Circle, Trash2, Loader2, MousePointer2 } from 'lucide-react';
+import { MapPin, Trash2, Loader2, Check, X } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+
+interface PolygonPoint {
+  lat: number;
+  lng: number;
+}
 
 interface SearchArea {
-  center: { lat: number; lng: number };
-  radiusKm: number;
+  points: PolygonPoint[];
 }
 
 interface SchoolLocation {
@@ -25,30 +30,6 @@ interface DrawableAreaMapProps {
   height?: string;
 }
 
-// Generate circle coordinates
-function generateCircleCoordinates(
-  centerLng: number,
-  centerLat: number,
-  radiusKm: number,
-  points: number = 64
-): [number, number][] {
-  const coords: [number, number][] = [];
-  const earthRadius = 6371; // km
-
-  for (let i = 0; i <= points; i++) {
-    const angle = (i / points) * 2 * Math.PI;
-    const latOffset = (radiusKm / earthRadius) * (180 / Math.PI);
-    const lngOffset = latOffset / Math.cos((centerLat * Math.PI) / 180);
-
-    coords.push([
-      centerLng + lngOffset * Math.cos(angle),
-      centerLat + latOffset * Math.sin(angle),
-    ]);
-  }
-
-  return coords;
-}
-
 const DrawableAreaMap: React.FC<DrawableAreaMapProps> = ({
   school,
   onAreaChange,
@@ -61,10 +42,10 @@ const DrawableAreaMap: React.FC<DrawableAreaMapProps> = ({
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const schoolMarker = useRef<mapboxgl.Marker | null>(null);
-  const centerMarker = useRef<mapboxgl.Marker | null>(null);
+  const pointMarkers = useRef<mapboxgl.Marker[]>([]);
 
   const [isDrawing, setIsDrawing] = useState(false);
-  const [drawStart, setDrawStart] = useState<{ lng: number; lat: number } | null>(null);
+  const [tempPoints, setTempPoints] = useState<PolygonPoint[]>([]);
 
   // Initialize map
   useEffect(() => {
@@ -120,29 +101,28 @@ const DrawableAreaMap: React.FC<DrawableAreaMapProps> = ({
     });
   }, [school]);
 
-  // Update circle on map
-  useEffect(() => {
+  // Update polygon on map
+  const updatePolygon = useCallback((points: PolygonPoint[], isTemp: boolean = false) => {
     if (!map.current) return;
 
-    const sourceId = 'search-area';
-    const layerId = 'search-area-fill';
-    const outlineId = 'search-area-outline';
+    const sourceId = isTemp ? 'temp-polygon' : 'search-polygon';
+    const fillLayerId = isTemp ? 'temp-polygon-fill' : 'search-polygon-fill';
+    const outlineLayerId = isTemp ? 'temp-polygon-outline' : 'search-polygon-outline';
+    const lineLayerId = isTemp ? 'temp-polygon-line' : 'search-polygon-line';
 
-    const updateCircle = () => {
-      if (!map.current?.isStyleLoaded()) return;
+    // Remove existing layers and source
+    [fillLayerId, outlineLayerId, lineLayerId].forEach(id => {
+      if (map.current?.getLayer(id)) map.current.removeLayer(id);
+    });
+    if (map.current.getSource(sourceId)) map.current.removeSource(sourceId);
 
-      // Remove existing layers and source
-      if (map.current.getLayer(outlineId)) map.current.removeLayer(outlineId);
-      if (map.current.getLayer(layerId)) map.current.removeLayer(layerId);
-      if (map.current.getSource(sourceId)) map.current.removeSource(sourceId);
+    if (points.length < 2) return;
 
-      if (!searchArea) return;
-
-      const coordinates = generateCircleCoordinates(
-        searchArea.center.lng,
-        searchArea.center.lat,
-        searchArea.radiusKm
-      );
+    const coordinates = points.map(p => [p.lng, p.lat]);
+    
+    // Close the polygon if we have 3+ points
+    if (points.length >= 3) {
+      const closedCoords = [...coordinates, coordinates[0]];
 
       map.current.addSource(sourceId, {
         type: 'geojson',
@@ -151,105 +131,144 @@ const DrawableAreaMap: React.FC<DrawableAreaMapProps> = ({
           properties: {},
           geometry: {
             type: 'Polygon',
-            coordinates: [coordinates],
+            coordinates: [closedCoords],
           },
         },
       });
 
       map.current.addLayer({
-        id: layerId,
+        id: fillLayerId,
         type: 'fill',
         source: sourceId,
         paint: {
-          'fill-color': '#3B82F6',
+          'fill-color': isTemp ? '#F59E0B' : '#3B82F6',
           'fill-opacity': 0.15,
         },
       });
 
       map.current.addLayer({
-        id: outlineId,
+        id: outlineLayerId,
         type: 'line',
         source: sourceId,
         paint: {
-          'line-color': '#3B82F6',
+          'line-color': isTemp ? '#F59E0B' : '#3B82F6',
           'line-width': 2,
-          'line-dasharray': [2, 2],
+          'line-dasharray': isTemp ? [3, 3] : [1, 0],
+        },
+      });
+    } else {
+      // Just draw a line between points
+      map.current.addSource(sourceId, {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          properties: {},
+          geometry: {
+            type: 'LineString',
+            coordinates,
+          },
         },
       });
 
-      // Update center marker
-      if (centerMarker.current) centerMarker.current.remove();
-
-      const centerEl = document.createElement('div');
-      centerEl.style.cssText = `
-        width: 16px;
-        height: 16px;
-        background: #3B82F6;
-        border-radius: 50%;
-        border: 2px solid white;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-      `;
-
-      centerMarker.current = new mapboxgl.Marker(centerEl)
-        .setLngLat([searchArea.center.lng, searchArea.center.lat])
-        .addTo(map.current);
-    };
-
-    if (map.current.isStyleLoaded()) {
-      updateCircle();
-    } else {
-      map.current.on('load', updateCircle);
-    }
-
-    return () => {
-      if (centerMarker.current) {
-        centerMarker.current.remove();
-        centerMarker.current = null;
-      }
-    };
-  }, [searchArea]);
-
-  // Handle drawing
-  const handleMouseDown = useCallback(
-    (e: mapboxgl.MapMouseEvent) => {
-      if (!isDrawing) return;
-      setDrawStart({ lng: e.lngLat.lng, lat: e.lngLat.lat });
-    },
-    [isDrawing]
-  );
-
-  const handleMouseUp = useCallback(
-    (e: mapboxgl.MapMouseEvent) => {
-      if (!isDrawing || !drawStart) return;
-
-      const endLng = e.lngLat.lng;
-      const endLat = e.lngLat.lat;
-
-      // Calculate radius using Haversine
-      const R = 6371;
-      const dLat = ((endLat - drawStart.lat) * Math.PI) / 180;
-      const dLon = ((endLng - drawStart.lng) * Math.PI) / 180;
-      const a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos((drawStart.lat * Math.PI) / 180) *
-          Math.cos((endLat * Math.PI) / 180) *
-          Math.sin(dLon / 2) *
-          Math.sin(dLon / 2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      const radiusKm = Math.max(0.5, R * c);
-
-      onAreaChange({
-        center: { lat: drawStart.lat, lng: drawStart.lng },
-        radiusKm: Math.round(radiusKm * 10) / 10,
+      map.current.addLayer({
+        id: lineLayerId,
+        type: 'line',
+        source: sourceId,
+        paint: {
+          'line-color': isTemp ? '#F59E0B' : '#3B82F6',
+          'line-width': 2,
+          'line-dasharray': [3, 3],
+        },
       });
+    }
+  }, []);
 
-      setDrawStart(null);
-      setIsDrawing(false);
-    },
-    [isDrawing, drawStart, onAreaChange]
-  );
+  // Update point markers
+  const updatePointMarkers = useCallback((points: PolygonPoint[], isTemp: boolean = false) => {
+    // Clear existing markers
+    pointMarkers.current.forEach(m => m.remove());
+    pointMarkers.current = [];
 
-  // Add/remove drawing event listeners
+    if (!map.current) return;
+
+    points.forEach((point, idx) => {
+      const el = document.createElement('div');
+      el.style.cssText = `
+        width: 28px;
+        height: 28px;
+        background: ${isTemp ? '#F59E0B' : '#3B82F6'};
+        border-radius: 50%;
+        border: 3px solid white;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 12px;
+        font-weight: bold;
+        cursor: pointer;
+      `;
+      el.innerText = (idx + 1).toString();
+
+      const marker = new mapboxgl.Marker(el)
+        .setLngLat([point.lng, point.lat])
+        .addTo(map.current!);
+
+      pointMarkers.current.push(marker);
+    });
+  }, []);
+
+  // Draw saved polygon
+  useEffect(() => {
+    if (!map.current?.isStyleLoaded()) {
+      map.current?.on('load', () => {
+        if (searchArea && searchArea.points.length >= 3) {
+          updatePolygon(searchArea.points, false);
+          updatePointMarkers(searchArea.points, false);
+        }
+      });
+    } else {
+      if (searchArea && searchArea.points.length >= 3) {
+        updatePolygon(searchArea.points, false);
+        updatePointMarkers(searchArea.points, false);
+      } else if (!isDrawing) {
+        // Clear polygon if no search area
+        const sourceId = 'search-polygon';
+        ['search-polygon-fill', 'search-polygon-outline', 'search-polygon-line'].forEach(id => {
+          if (map.current?.getLayer(id)) map.current.removeLayer(id);
+        });
+        if (map.current?.getSource(sourceId)) map.current.removeSource(sourceId);
+        pointMarkers.current.forEach(m => m.remove());
+        pointMarkers.current = [];
+      }
+    }
+  }, [searchArea, isDrawing, updatePolygon, updatePointMarkers]);
+
+  // Draw temp polygon while drawing
+  useEffect(() => {
+    if (!map.current?.isStyleLoaded()) return;
+    
+    if (isDrawing && tempPoints.length > 0) {
+      updatePolygon(tempPoints, true);
+      updatePointMarkers(tempPoints, true);
+    } else {
+      // Clear temp layers
+      ['temp-polygon-fill', 'temp-polygon-outline', 'temp-polygon-line'].forEach(id => {
+        if (map.current?.getLayer(id)) map.current.removeLayer(id);
+      });
+      if (map.current?.getSource('temp-polygon')) map.current.removeSource('temp-polygon');
+    }
+  }, [tempPoints, isDrawing, updatePolygon, updatePointMarkers]);
+
+  // Handle map click for adding points
+  const handleMapClick = useCallback((e: mapboxgl.MapMouseEvent) => {
+    if (!isDrawing) return;
+    
+    const newPoint = { lat: e.lngLat.lat, lng: e.lngLat.lng };
+    setTempPoints(prev => [...prev, newPoint]);
+  }, [isDrawing]);
+
+  // Add/remove click listener
   useEffect(() => {
     if (!map.current) return;
 
@@ -257,26 +276,44 @@ const DrawableAreaMap: React.FC<DrawableAreaMapProps> = ({
 
     if (isDrawing) {
       mapInstance.getCanvas().style.cursor = 'crosshair';
-      mapInstance.on('mousedown', handleMouseDown);
-      mapInstance.on('mouseup', handleMouseUp);
+      mapInstance.on('click', handleMapClick);
     } else {
       mapInstance.getCanvas().style.cursor = '';
-      mapInstance.off('mousedown', handleMouseDown);
-      mapInstance.off('mouseup', handleMouseUp);
+      mapInstance.off('click', handleMapClick);
     }
 
     return () => {
-      mapInstance.off('mousedown', handleMouseDown);
-      mapInstance.off('mouseup', handleMouseUp);
+      mapInstance.off('click', handleMapClick);
     };
-  }, [isDrawing, handleMouseDown, handleMouseUp]);
+  }, [isDrawing, handleMapClick]);
+
+  const startDrawing = () => {
+    setIsDrawing(true);
+    setTempPoints([]);
+    onAreaChange(null);
+  };
+
+  const confirmPolygon = () => {
+    if (tempPoints.length >= 3) {
+      onAreaChange({ points: tempPoints });
+    }
+    setIsDrawing(false);
+    setTempPoints([]);
+  };
+
+  const cancelDrawing = () => {
+    setIsDrawing(false);
+    setTempPoints([]);
+  };
+
+  const undoLastPoint = () => {
+    setTempPoints(prev => prev.slice(0, -1));
+  };
 
   const clearArea = () => {
     onAreaChange(null);
-    if (centerMarker.current) {
-      centerMarker.current.remove();
-      centerMarker.current = null;
-    }
+    setTempPoints([]);
+    setIsDrawing(false);
   };
 
   if (tokenLoading) {
@@ -290,47 +327,75 @@ const DrawableAreaMap: React.FC<DrawableAreaMapProps> = ({
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap gap-2">
-        <Button
-          variant={isDrawing ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setIsDrawing(!isDrawing)}
-        >
-          {isDrawing ? (
-            <>
-              <MousePointer2 className="h-4 w-4 mr-2" />
-              {isRtl ? 'انقر واسحب لرسم الدائرة' : 'Click & drag to draw circle'}
-            </>
-          ) : (
-            <>
-              <Circle className="h-4 w-4 mr-2" />
+        {!isDrawing ? (
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={startDrawing}
+            >
+              <MapPin className="h-4 w-4 mr-2" />
               {isRtl ? 'رسم منطقة البحث' : 'Draw Search Area'}
-            </>
-          )}
-        </Button>
-        {searchArea && (
-          <Button variant="outline" size="sm" onClick={clearArea}>
-            <Trash2 className="h-4 w-4 mr-2" />
-            {isRtl ? 'مسح المنطقة' : 'Clear Area'}
-          </Button>
+            </Button>
+            {searchArea && (
+              <Button variant="outline" size="sm" onClick={clearArea}>
+                <Trash2 className="h-4 w-4 mr-2" />
+                {isRtl ? 'مسح المنطقة' : 'Clear Area'}
+              </Button>
+            )}
+          </>
+        ) : (
+          <>
+            <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+              <MapPin className="h-3 w-3 mr-1" />
+              {tempPoints.length} {isRtl ? 'نقاط' : 'points'}
+            </Badge>
+            <Button
+              variant="default"
+              size="sm"
+              onClick={confirmPolygon}
+              disabled={tempPoints.length < 3}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              <Check className="h-4 w-4 mr-2" />
+              {isRtl ? 'تأكيد المنطقة' : 'Confirm Area'}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={undoLastPoint}
+              disabled={tempPoints.length === 0}
+            >
+              {isRtl ? 'تراجع' : 'Undo'}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={cancelDrawing}
+            >
+              <X className="h-4 w-4 mr-2" />
+              {isRtl ? 'إلغاء' : 'Cancel'}
+            </Button>
+          </>
         )}
       </div>
 
-      {searchArea && (
+      {searchArea && searchArea.points.length >= 3 && (
         <div className="text-sm text-muted-foreground bg-blue-50 dark:bg-blue-950/30 p-2 rounded-lg border border-blue-200 dark:border-blue-800">
           {isRtl
-            ? `منطقة البحث: نصف قطر ${searchArea.radiusKm} كم`
-            : `Search area: ${searchArea.radiusKm} km radius`}
+            ? `منطقة البحث: ${searchArea.points.length} نقاط`
+            : `Search area: ${searchArea.points.length} point polygon`}
         </div>
       )}
 
       <div ref={mapContainer} className="w-full rounded-lg border border-border" style={{ height }} />
 
       {isDrawing && (
-        <p className="text-sm text-muted-foreground text-center">
+        <div className="text-sm text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 p-2 rounded-lg border border-amber-200 dark:border-amber-800 text-center">
           {isRtl
-            ? 'انقر على الخريطة لتحديد مركز الدائرة، ثم اسحب لتحديد نصف القطر'
-            : 'Click on map to set circle center, then drag to set radius'}
-        </p>
+            ? 'انقر على الخريطة لإضافة نقاط. تحتاج 3 نقاط على الأقل لتكوين المنطقة.'
+            : 'Click on the map to add points. You need at least 3 points to form an area.'}
+        </div>
       )}
     </div>
   );
