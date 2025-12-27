@@ -30,9 +30,11 @@ interface RouteSuggestion {
     pickup_order: number;
     lat: number;
     lng: number;
+    status: string;
   }[];
   estimatedDistance: number;
   studentCount: number;
+  pendingFeesCount: number;
 }
 
 const AIRoutes: React.FC = () => {
@@ -364,10 +366,17 @@ const AIRoutes: React.FC = () => {
                     <CardHeader className="pb-2">
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-lg">{suggestion.name}</CardTitle>
-                        <Badge variant="secondary">
-                          <Users className="h-3 w-3 mr-1" />
-                          {suggestion.studentCount}
-                        </Badge>
+                        <div className="flex gap-2">
+                          <Badge variant="secondary">
+                            <Users className="h-3 w-3 mr-1" />
+                            {suggestion.studentCount}
+                          </Badge>
+                          {suggestion.pendingFeesCount > 0 && (
+                            <Badge variant="outline" className="text-orange-600 border-orange-300">
+                              {suggestion.pendingFeesCount} {isRtl ? 'معلق' : 'pending'}
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                       <CardDescription>
                         <Route className="h-3 w-3 inline mr-1" />
@@ -381,7 +390,12 @@ const AIRoutes: React.FC = () => {
                             <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center font-medium">
                               {routeDirection === 'to_school' ? student.pickup_order : (suggestion.students.length - student.pickup_order + 1)}
                             </span>
-                            <span className="truncate">{student.student_name || student.parent_name}</span>
+                            <span className="truncate flex-1">{student.student_name || student.parent_name}</span>
+                            {student.status === 'pending_fees' && (
+                              <Badge variant="outline" className="text-xs text-orange-600 border-orange-300 px-1">
+                                {isRtl ? 'معلق' : 'Pending'}
+                              </Badge>
+                            )}
                           </div>
                         ))}
                       </div>

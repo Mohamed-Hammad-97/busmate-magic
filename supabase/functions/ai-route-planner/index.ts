@@ -11,6 +11,7 @@ interface RegistrationWithLocation {
   student_name: string;
   school_id: string;
   car_type: string;
+  status: string;
   parent_accounts: {
     parent_name: string;
     pickup_latitude: number;
@@ -144,7 +145,7 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     if (action === "suggest-routes") {
-      // Get unassigned registrations for the school
+      // Get all registrations for the school (pending_fees and complete, not cancelled)
       const { data: registrations, error: regError } = await supabase
         .from("registrations")
         .select(`
@@ -152,6 +153,7 @@ serve(async (req) => {
           student_name,
           school_id,
           car_type,
+          status,
           parent_accounts (
             parent_name,
             pickup_latitude,
@@ -166,7 +168,7 @@ serve(async (req) => {
         `)
         .eq("school_id", schoolId)
         .eq("car_type", carType)
-        .eq("status", "complete");
+        .neq("status", "cancelled");
 
       if (regError) throw regError;
 
@@ -191,6 +193,7 @@ serve(async (req) => {
         student_name: r.student_name,
         school_id: r.school_id,
         car_type: r.car_type,
+        status: r.status,
         parent_accounts: Array.isArray(r.parent_accounts) ? r.parent_accounts[0] : r.parent_accounts,
         schools: Array.isArray(r.schools) ? r.schools[0] : r.schools,
       }));
@@ -220,9 +223,11 @@ serve(async (req) => {
             pickup_order: order + 1,
             lat: s.parent_accounts.pickup_latitude,
             lng: s.parent_accounts.pickup_longitude,
+            status: s.status,
           })),
           estimatedDistance: Math.round(totalDistance * 10) / 10,
           studentCount: cluster.length,
+          pendingFeesCount: cluster.filter(s => s.status === 'pending_fees').length,
         };
       });
 
