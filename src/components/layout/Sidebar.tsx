@@ -15,6 +15,7 @@ import {
   UserCog,
   ClipboardList,
   Sparkles,
+  Navigation,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import seaterLogo from "@/assets/seater-logo.jpg";
@@ -35,6 +36,7 @@ const navItems: NavItem[] = [
   { label: "Registrations", href: "/registrations", icon: ClipboardList, department: "customer_support" },
   { label: "Customers", href: "/customers", icon: Users, department: "customer_support" },
   { label: "Routes", href: "/routes", icon: MapPin, department: "operations" },
+  { label: "Live Tracking", href: "/live-tracking", icon: Navigation, department: "operations" },
   { label: "AI Route Planner", href: "/ai-routes", icon: Sparkles, department: "operations" },
   { label: "Drivers & Staff", href: "/staff", icon: Bus, department: "operations" },
   { label: "Payments", href: "/payments", icon: CreditCard, department: "finance" },
@@ -56,6 +58,7 @@ export function Sidebar() {
       Registrations: t('nav.registrations'),
       Customers: t('nav.customers'),
       Routes: t('nav.routes'),
+      'Live Tracking': t('nav.liveTracking'),
       'AI Route Planner': t('nav.aiRoutes'),
       'Drivers & Staff': t('nav.staff'),
       Payments: t('nav.payments'),

@@ -13,9 +13,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Bus, LogOut, User, CreditCard, MapPin, School, Phone, Bell, CheckCircle, Clock, AlertCircle } from "lucide-react";
+import { Bus, LogOut, User, CreditCard, MapPin, School, Phone, Bell, CheckCircle, Clock, AlertCircle, Navigation } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
+import { ParentLiveTracking } from "@/components/tracking/ParentLiveTracking";
 
 export default function ParentDashboard() {
   const { parentAccount, signOut } = useParentAuth();
@@ -184,12 +185,21 @@ export default function ParentDashboard() {
         </div>
 
         {/* Main Content Tabs */}
-        <Tabs defaultValue="children" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3">
+        <Tabs defaultValue="tracking" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="tracking" className="gap-2">
+              <Navigation className="h-4 w-4" />
+              التتبع
+            </TabsTrigger>
             <TabsTrigger value="children">أبنائي</TabsTrigger>
             <TabsTrigger value="routes">المسارات</TabsTrigger>
             <TabsTrigger value="payments">المدفوعات</TabsTrigger>
           </TabsList>
+
+          {/* Live Tracking Tab */}
+          <TabsContent value="tracking">
+            <ParentLiveTracking />
+          </TabsContent>
 
           {/* Children Tab */}
           <TabsContent value="children" className="space-y-4">
