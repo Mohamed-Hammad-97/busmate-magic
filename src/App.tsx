@@ -4,7 +4,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ParentAuthProvider } from "@/contexts/ParentAuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { ParentProtectedRoute } from "@/components/auth/ParentProtectedRoute";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Schools from "./pages/Schools";
@@ -15,7 +17,10 @@ import RoutesPage from "./pages/Routes";
 import AIRoutes from "./pages/AIRoutes";
 import Payments from "./pages/Payments";
 import Staff from "./pages/Staff";
+import Reports from "./pages/Reports";
 import NotFound from "./pages/NotFound";
+import ParentAuth from "./pages/ParentAuth";
+import ParentDashboard from "./pages/ParentDashboard";
 
 const queryClient = new QueryClient();
 
@@ -29,7 +34,18 @@ const App = () => (
           {/* Public routes - no auth required */}
           <Route path="/register" element={<Register />} />
           
-          {/* Auth-wrapped routes */}
+          {/* Parent Portal routes */}
+          <Route path="/parent/*" element={
+            <ParentAuthProvider>
+              <Routes>
+                <Route path="/auth" element={<ParentAuth />} />
+                <Route path="/" element={<ParentProtectedRoute><ParentDashboard /></ParentProtectedRoute>} />
+                <Route path="*" element={<Navigate to="/parent" replace />} />
+              </Routes>
+            </ParentAuthProvider>
+          } />
+          
+          {/* Employee Auth-wrapped routes */}
           <Route path="/*" element={
             <AuthProvider>
               <Routes>
@@ -43,6 +59,7 @@ const App = () => (
                 <Route path="/ai-routes" element={<ProtectedRoute><AIRoutes /></ProtectedRoute>} />
                 <Route path="/payments" element={<ProtectedRoute><Payments /></ProtectedRoute>} />
                 <Route path="/staff" element={<ProtectedRoute><Staff /></ProtectedRoute>} />
+                <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </AuthProvider>
