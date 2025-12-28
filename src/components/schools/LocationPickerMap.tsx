@@ -1,15 +1,14 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { GoogleMap, useJsApiLoader, Marker, Autocomplete } from '@react-google-maps/api';
+import { GoogleMap, Marker, Autocomplete } from '@react-google-maps/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { MapPin, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface LocationPickerMapProps {
+export interface LocationPickerMapProps {
   initialLat?: number;
   initialLng?: number;
   onLocationChange: (lat: number, lng: number) => void;
-  googleMapsApiKey: string;
 }
 
 const containerStyle = {
@@ -17,20 +16,11 @@ const containerStyle = {
   height: '250px',
 };
 
-const libraries: ("places")[] = ["places"];
-
 const LocationPickerMap: React.FC<LocationPickerMapProps> = ({
   initialLat = 30.0444,
   initialLng = 31.2357,
   onLocationChange,
-  googleMapsApiKey,
 }) => {
-  const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey: googleMapsApiKey || '',
-    libraries,
-    language: 'ar',
-    region: 'EG',
-  });
 
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [markerPosition, setMarkerPosition] = useState({ lat: initialLat, lng: initialLng });
@@ -123,22 +113,6 @@ const LocationPickerMap: React.FC<LocationPickerMapProps> = ({
     setMarkerPosition({ lat: initialLat, lng: initialLng });
     map?.panTo({ lat: initialLat, lng: initialLng });
   }, [initialLat, initialLng, map]);
-
-  if (loadError) {
-    return (
-      <div className="w-full h-[250px] flex items-center justify-center bg-muted rounded-lg">
-        <p className="text-muted-foreground">Error loading Google Maps</p>
-      </div>
-    );
-  }
-
-  if (!isLoaded) {
-    return (
-      <div className="w-full h-[250px] flex items-center justify-center bg-muted rounded-lg">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-2">

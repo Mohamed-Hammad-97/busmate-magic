@@ -35,7 +35,7 @@ import { useToast } from '@/hooks/use-toast';
 import SchoolMap from '@/components/schools/SchoolMap';
 import LocationPickerMap from '@/components/schools/LocationPickerMap';
 import CitiesManagement from '@/components/schools/CitiesManagement';
-import { useMapboxToken } from '@/hooks/useMapboxToken';
+import { GoogleMapsProvider } from '@/components/maps/GoogleMapsProvider';
 import type { Tables } from '@/integrations/supabase/types';
 
 type School = Tables<'schools'>;
@@ -60,7 +60,7 @@ const Schools: React.FC = () => {
   });
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { token: mapboxToken, isLoading: tokenLoading } = useMapboxToken();
+  
 
   // Fetch schools
   const { data: schools = [], isLoading: schoolsLoading } = useQuery({
@@ -190,21 +190,12 @@ const Schools: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {tokenLoading ? (
-              <div className="h-[400px] flex items-center justify-center bg-muted rounded-lg">
-                <p className="text-muted-foreground">Loading map...</p>
-              </div>
-            ) : mapboxToken ? (
+            <GoogleMapsProvider>
               <SchoolMap
                 schools={schools}
-                mapboxToken={mapboxToken}
                 onSchoolClick={(school) => handleOpenDialog(school)}
               />
-            ) : (
-              <div className="h-[400px] flex items-center justify-center bg-muted rounded-lg">
-                <p className="text-muted-foreground">Mapbox token not configured</p>
-              </div>
-            )}
+            </GoogleMapsProvider>
           </CardContent>
         </Card>
 
@@ -314,18 +305,13 @@ const Schools: React.FC = () => {
 
               <div className="space-y-2">
                 <Label>Location *</Label>
-                {mapboxToken ? (
+                <GoogleMapsProvider>
                   <LocationPickerMap
-                    mapboxToken={mapboxToken}
                     initialLat={formData.latitude}
                     initialLng={formData.longitude}
                     onLocationChange={handleLocationChange}
                   />
-                ) : (
-                  <div className="h-[250px] flex items-center justify-center bg-muted rounded-lg">
-                    <p className="text-muted-foreground">Map loading...</p>
-                  </div>
-                )}
+                </GoogleMapsProvider>
                 <div className="flex gap-4 text-sm text-muted-foreground">
                   <span>Lat: {formData.latitude.toFixed(6)}</span>
                   <span>Lng: {formData.longitude.toFixed(6)}</span>

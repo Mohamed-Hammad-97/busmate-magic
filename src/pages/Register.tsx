@@ -14,7 +14,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import LocationPickerMap from '@/components/schools/LocationPickerMap';
-import { useMapboxToken } from '@/hooks/useMapboxToken';
+import { GoogleMapsProvider } from '@/components/maps/GoogleMapsProvider';
 import { Bus, CheckCircle2, GraduationCap } from 'lucide-react';
 import type { Enums } from '@/integrations/supabase/types';
 
@@ -43,7 +43,7 @@ interface FormData {
 
 const Register: React.FC = () => {
   const { toast } = useToast();
-  const { token: mapboxToken } = useMapboxToken();
+  
   const [submitted, setSubmitted] = useState(false);
   const [step, setStep] = useState(1);
 
@@ -319,20 +319,15 @@ const Register: React.FC = () => {
                 <CardDescription>Select the student pickup location on the map / حدد موقع استلام الطالب على الخريطة</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {mapboxToken ? (
+                <GoogleMapsProvider>
                   <LocationPickerMap
-                    mapboxToken={mapboxToken}
                     initialLat={formData.pickup_latitude}
                     initialLng={formData.pickup_longitude}
                     onLocationChange={(lat, lng) =>
                       setFormData((f) => ({ ...f, pickup_latitude: lat, pickup_longitude: lng }))
                     }
                   />
-                ) : (
-                  <div className="h-[300px] flex items-center justify-center bg-muted rounded-lg">
-                    <p className="text-muted-foreground">Loading map... / جاري تحميل الخريطة...</p>
-                  </div>
-                )}
+                </GoogleMapsProvider>
                 <div className="flex gap-4 justify-center text-sm text-muted-foreground">
                   <span>Latitude / خط العرض: {formData.pickup_latitude.toFixed(6)}</span>
                   <span>Longitude / خط الطول: {formData.pickup_longitude.toFixed(6)}</span>

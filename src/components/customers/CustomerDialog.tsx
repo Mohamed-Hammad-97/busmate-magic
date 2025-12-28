@@ -21,7 +21,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import type { Tables } from '@/integrations/supabase/types';
 import LocationPickerMap from '@/components/schools/LocationPickerMap';
-import { useMapboxToken } from '@/hooks/useMapboxToken';
+import { GoogleMapsProvider } from '@/components/maps/GoogleMapsProvider';
 
 type ParentAccount = Tables<'parent_accounts'>;
 
@@ -45,7 +45,7 @@ interface FormData {
 
 const CustomerDialog: React.FC<CustomerDialogProps> = ({ isOpen, onClose, customer }) => {
   const queryClient = useQueryClient();
-  const { token: mapboxToken } = useMapboxToken();
+  
 
   const [formData, setFormData] = useState<FormData>({
     parent_name: '',
@@ -270,18 +270,13 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({ isOpen, onClose, custom
                   <Input value={formData.pickup_longitude.toFixed(6)} readOnly />
                 </div>
               </div>
-              {mapboxToken ? (
+              <GoogleMapsProvider>
                 <LocationPickerMap
                   initialLat={formData.pickup_latitude}
                   initialLng={formData.pickup_longitude}
                   onLocationChange={handleLocationChange}
-                  mapboxToken={mapboxToken}
                 />
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  جاري تحميل الخريطة...
-                </div>
-              )}
+              </GoogleMapsProvider>
             </TabsContent>
           </Tabs>
 
