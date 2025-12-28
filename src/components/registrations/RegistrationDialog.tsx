@@ -22,7 +22,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import LocationPickerMap from '@/components/schools/LocationPickerMap';
-import { useMapboxToken } from '@/hooks/useMapboxToken';
+import { GoogleMapsProvider } from '@/components/maps/GoogleMapsProvider';
 import type { Tables, Enums } from '@/integrations/supabase/types';
 
 type Registration = Tables<'registrations'> & {
@@ -72,7 +72,7 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
 }) => {
   const { toast } = useToast();
   const { user } = useAuth();
-  const { token: mapboxToken } = useMapboxToken();
+  
   const isEditing = !!registration;
 
   const [parentData, setParentData] = useState<ParentFormData>({
@@ -389,20 +389,15 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
             <TabsContent value="location" className="space-y-4 mt-4">
               <div className="space-y-2">
                 <Label>Pickup Location *</Label>
-                {mapboxToken ? (
+                <GoogleMapsProvider>
                   <LocationPickerMap
-                    mapboxToken={mapboxToken}
                     initialLat={parentData.pickup_latitude}
                     initialLng={parentData.pickup_longitude}
                     onLocationChange={(lat, lng) =>
                       setParentData((p) => ({ ...p, pickup_latitude: lat, pickup_longitude: lng }))
                     }
                   />
-                ) : (
-                  <div className="h-[250px] flex items-center justify-center bg-muted rounded-lg">
-                    <p className="text-muted-foreground">Map loading...</p>
-                  </div>
-                )}
+                </GoogleMapsProvider>
                 <div className="flex gap-4 text-sm text-muted-foreground">
                   <span>Lat: {parentData.pickup_latitude.toFixed(6)}</span>
                   <span>Lng: {parentData.pickup_longitude.toFixed(6)}</span>

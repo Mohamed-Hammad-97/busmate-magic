@@ -1,14 +1,12 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
+import { GoogleMap, Marker, InfoWindow } from '@react-google-maps/api';
 import type { Tables } from '@/integrations/supabase/types';
-import { Loader2 } from 'lucide-react';
 
 type School = Tables<'schools'>;
 
-interface SchoolMapProps {
+export interface SchoolMapProps {
   schools: School[];
   onSchoolClick?: (school: School) => void;
-  googleMapsApiKey: string;
 }
 
 const containerStyle = {
@@ -21,12 +19,7 @@ const defaultCenter = {
   lng: 31.2357,
 };
 
-const SchoolMap: React.FC<SchoolMapProps> = ({ schools, onSchoolClick, googleMapsApiKey }) => {
-  const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey: googleMapsApiKey || '',
-    language: 'ar',
-    region: 'EG',
-  });
+const SchoolMap: React.FC<SchoolMapProps> = ({ schools, onSchoolClick }) => {
 
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [activeMarker, setActiveMarker] = useState<string | null>(null);
@@ -49,22 +42,6 @@ const SchoolMap: React.FC<SchoolMapProps> = ({ schools, onSchoolClick, googleMap
     });
     map.fitBounds(bounds, 50);
   }, [map, schools]);
-
-  if (loadError) {
-    return (
-      <div className="w-full h-[400px] flex items-center justify-center bg-muted rounded-lg">
-        <p className="text-muted-foreground">Error loading Google Maps</p>
-      </div>
-    );
-  }
-
-  if (!isLoaded) {
-    return (
-      <div className="w-full h-[400px] flex items-center justify-center bg-muted rounded-lg">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
 
   return (
     <div className="w-full h-[400px] rounded-lg border border-border overflow-hidden">
