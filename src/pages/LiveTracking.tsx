@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MapPin, Users, Map, List } from "lucide-react";
 import { useCity } from "@/contexts/CityContext";
+import { GoogleMapsProvider } from "@/components/maps/GoogleMapsProvider";
 
 export default function LiveTracking() {
   const { selectedCity } = useCity();
@@ -72,7 +73,9 @@ export default function LiveTracking() {
 
           {/* Map View - All buses */}
           <TabsContent value="map">
-            <OperationsMapView />
+            <GoogleMapsProvider>
+              <OperationsMapView />
+            </GoogleMapsProvider>
           </TabsContent>
 
           {/* Routes List View - View Only for Admin */}

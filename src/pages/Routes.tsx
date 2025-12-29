@@ -35,6 +35,7 @@ import { toast } from 'sonner';
 import { Plus, Search, Route, Bus, Users, Edit, Map, School } from 'lucide-react';
 import { useCity } from '@/contexts/CityContext';
 import RouteMap from '@/components/routes/RouteMap';
+import { GoogleMapsProvider } from '@/components/maps/GoogleMapsProvider';
 import type { Tables } from '@/integrations/supabase/types';
 
 type RouteType = Tables<'routes'>;
@@ -525,15 +526,17 @@ const Routes = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <RouteMap
-                  students={mapStudents}
-                  schools={mapSchools}
-                  routes={mapRoutes}
-                  selectedRoute={mapSelectedRoute}
-                  onRouteClick={(route) => setMapSelectedRoute(route)}
-                  showControls={true}
-                  height="600px"
-                />
+                <GoogleMapsProvider>
+                  <RouteMap
+                    students={mapStudents}
+                    schools={mapSchools}
+                    routes={mapRoutes}
+                    selectedRoute={mapSelectedRoute}
+                    onRouteClick={(route) => setMapSelectedRoute(route)}
+                    showControls={true}
+                    height="600px"
+                  />
+                </GoogleMapsProvider>
               </CardContent>
             </Card>
           </TabsContent>
