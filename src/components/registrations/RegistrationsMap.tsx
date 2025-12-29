@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
+import { GoogleMap, Marker, InfoWindow } from '@react-google-maps/api';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { School, MapPin, Users, Loader2 } from 'lucide-react';
 import type { Tables } from '@/integrations/supabase/types';
-import { useGoogleMapsToken } from '@/hooks/useGoogleMapsToken';
+import { useGoogleMaps } from '@/components/maps/GoogleMapsProvider';
 
 type Registration = Tables<'registrations'> & {
   parent_accounts: Tables<'parent_accounts'>;
@@ -26,13 +26,7 @@ const defaultCenter = {
 };
 
 const RegistrationsMap: React.FC<RegistrationsMapProps> = ({ registrations }) => {
-  const { token, isLoading: tokenLoading, error: tokenError } = useGoogleMapsToken();
-  
-  const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey: token || '',
-    language: 'ar',
-    region: 'EG',
-  });
+  const { isLoaded } = useGoogleMaps();
 
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [selectedSchool, setSelectedSchool] = useState<string | null>(null);
@@ -67,7 +61,8 @@ const RegistrationsMap: React.FC<RegistrationsMapProps> = ({ registrations }) =>
 
   // Fit bounds when filteredRegistrations change
   React.useEffect(() => {
-    if (!map || filteredRegistrations.length === 0 && !selectedSchool) return;
+    if (!map || !isLoaded || !window.google?.maps) return;
+    if (filteredRegistrations.length === 0 && !selectedSchool) return;
 
     const bounds = new google.maps.LatLngBounds();
     
@@ -90,7 +85,7 @@ const RegistrationsMap: React.FC<RegistrationsMapProps> = ({ registrations }) =>
     if (!bounds.isEmpty()) {
       map.fitBounds(bounds, 50);
     }
-  }, [map, filteredRegistrations, selectedSchool, schools]);
+  }, [map, filteredRegistrations, selectedSchool, schools, isLoaded]);
 
   const handleSchoolClick = (schoolId: string) => {
     setShowAllStudents(false);
@@ -103,22 +98,6 @@ const RegistrationsMap: React.FC<RegistrationsMapProps> = ({ registrations }) =>
     setShowAllStudents(true);
     setActiveMarker(null);
   };
-
-  if (tokenLoading) {
-    return (
-      <div className="h-[500px] flex items-center justify-center bg-muted rounded-lg">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (tokenError || !token || loadError) {
-    return (
-      <div className="h-[500px] flex items-center justify-center bg-muted rounded-lg">
-        <p className="text-muted-foreground">Google Maps API key not configured</p>
-      </div>
-    );
-  }
 
   if (!isLoaded) {
     return (
@@ -191,7 +170,7 @@ const RegistrationsMap: React.FC<RegistrationsMapProps> = ({ registrations }) =>
             }}
           >
             {/* School Marker */}
-            {selectedSchool && schools.find((s) => s.id === selectedSchool) && (
+            {selectedSchool && schools.find((s) => s.id === selectedSchool) && window.google?.maps && (
               <Marker
                 position={{
                   lat: schools.find((s) => s.id === selectedSchool)!.latitude,
@@ -221,6 +200,7 @@ const RegistrationsMap: React.FC<RegistrationsMapProps> = ({ registrations }) =>
             {/* Student Markers */}
             {filteredRegistrations.map((reg) => {
               if (!reg.parent_accounts) return null;
+              if (!window.google?.maps) return null;
               return (
                 <Marker
                   key={reg.id}

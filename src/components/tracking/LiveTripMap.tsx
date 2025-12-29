@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from "react";
-import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
-import { useGoogleMapsToken } from "@/hooks/useGoogleMapsToken";
+import { GoogleMap, Marker, InfoWindow } from '@react-google-maps/api';
+import { useGoogleMaps } from "@/components/maps/GoogleMapsProvider";
 import { Loader2 } from "lucide-react";
 import type { TripStudentStatus, LiveTrip } from "@/hooks/useLiveTrip";
 
@@ -36,13 +36,7 @@ export function LiveTripMap({
   showDriverLocation = true,
   isDriver = false,
 }: LiveTripMapProps) {
-  const { token, isLoading: tokenLoading } = useGoogleMapsToken();
-  
-  const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey: token || '',
-    language: 'ar',
-    region: 'EG',
-  });
+  const { isLoaded } = useGoogleMaps();
 
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [activeMarker, setActiveMarker] = useState<string | null>(null);
@@ -57,7 +51,7 @@ export function LiveTripMap({
 
   // Fit bounds to show all markers
   useEffect(() => {
-    if (!map) return;
+    if (!map || !isLoaded || !window.google?.maps) return;
 
     const bounds = new google.maps.LatLngBounds();
     let hasValidBounds = false;
@@ -89,23 +83,7 @@ export function LiveTripMap({
     if (hasValidBounds) {
       map.fitBounds(bounds, 50);
     }
-  }, [map, trip, students, showDriverLocation]);
-
-  if (tokenLoading) {
-    return (
-      <div className="flex items-center justify-center h-full bg-muted/20">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (loadError || !token) {
-    return (
-      <div className="flex items-center justify-center h-full bg-muted/20">
-        <p className="text-muted-foreground">Google Maps API key not configured</p>
-      </div>
-    );
-  }
+  }, [map, trip, students, showDriverLocation, isLoaded]);
 
   if (!isLoaded) {
     return (
@@ -132,7 +110,7 @@ export function LiveTripMap({
         }}
       >
         {/* School Marker */}
-        {trip?.routes?.schools && (
+        {trip?.routes?.schools && window.google?.maps && (
           <Marker
             position={{
               lat: trip.routes.schools.latitude,
@@ -161,7 +139,7 @@ export function LiveTripMap({
         )}
 
         {/* Driver Marker */}
-        {showDriverLocation && trip?.current_latitude && trip?.current_longitude && (
+        {showDriverLocation && trip?.current_latitude && trip?.current_longitude && window.google?.maps && (
           <Marker
             position={{
               lat: trip.current_latitude,
@@ -185,6 +163,7 @@ export function LiveTripMap({
           
           const parent = student.registrations.parent_accounts;
           if (!parent.pickup_latitude || !parent.pickup_longitude) return null;
+          if (!window.google?.maps) return null;
 
           const statusColor = STATUS_COLORS[student.status] || STATUS_COLORS.pending;
 

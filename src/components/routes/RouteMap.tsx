@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { GoogleMap, useJsApiLoader, Marker, InfoWindow, Polyline } from '@react-google-maps/api';
-import { useGoogleMapsToken } from '@/hooks/useGoogleMapsToken';
+import { GoogleMap, Marker, InfoWindow, Polyline } from '@react-google-maps/api';
+import { useGoogleMaps } from '@/components/maps/GoogleMapsProvider';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from 'react-i18next';
 import { Users, School, Route, Loader2 } from 'lucide-react';
@@ -68,13 +68,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
 }) => {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.language === 'ar';
-  const { token, isLoading: tokenLoading } = useGoogleMapsToken();
-
-  const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey: token || '',
-    language: 'ar',
-    region: 'EG',
-  });
+  const { isLoaded } = useGoogleMaps();
 
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [showStudents, setShowStudents] = useState(true);
@@ -97,7 +91,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
 
   // Fit bounds to show all markers
   useEffect(() => {
-    if (!map) return;
+    if (!map || !isLoaded || !window.google?.maps) return;
 
     const bounds = new google.maps.LatLngBounds();
     let hasPoints = false;
@@ -136,10 +130,10 @@ const RouteMap: React.FC<RouteMapProps> = ({
     if (hasPoints) {
       map.fitBounds(bounds, 50);
     }
-  }, [map, students, schools, routes, showStudents, showSchools, showRoutes]);
+  }, [map, students, schools, routes, showStudents, showSchools, showRoutes, isLoaded]);
 
   const focusOnRoute = (route: RouteData) => {
-    if (!map) return;
+    if (!map || !window.google?.maps) return;
 
     const bounds = new google.maps.LatLngBounds();
     route.students.forEach((s) => {
@@ -151,22 +145,6 @@ const RouteMap: React.FC<RouteMapProps> = ({
 
     map.fitBounds(bounds, 50);
   };
-
-  if (tokenLoading) {
-    return (
-      <div className="flex items-center justify-center bg-muted rounded-lg" style={{ height }}>
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (loadError || !token) {
-    return (
-      <div className="flex items-center justify-center bg-muted rounded-lg" style={{ height }}>
-        <p className="text-muted-foreground">Google Maps API key not configured</p>
-      </div>
-    );
-  }
 
   if (!isLoaded) {
     return (
@@ -225,6 +203,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
           {/* Standalone Student Markers */}
           {showStudents && students.map((student) => {
             if (!student.lat || !student.lng) return null;
+            if (!window.google?.maps) return null;
             return (
               <Marker
                 key={student.id}
@@ -256,28 +235,31 @@ const RouteMap: React.FC<RouteMapProps> = ({
           })}
 
           {/* School Markers */}
-          {showSchools && schools.map((school) => (
-            <Marker
-              key={school.id}
-              position={{ lat: school.latitude, lng: school.longitude }}
-              icon={{
-                url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-                  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
-                    <circle cx="16" cy="16" r="14" fill="#3B82F6" stroke="white" stroke-width="3"/>
-                    <path d="M8 14l8-5 8 5M10 17v6h12v-6M14 23v-3h4v3" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                `),
-                scaledSize: new google.maps.Size(32, 32),
-              }}
-              onClick={() => setActiveMarker(`school-${school.id}`)}
-            >
-              {activeMarker === `school-${school.id}` && (
-                <InfoWindow onCloseClick={() => setActiveMarker(null)}>
-                  <strong>{school.name}</strong>
-                </InfoWindow>
-              )}
-            </Marker>
-          ))}
+          {showSchools && schools.map((school) => {
+            if (!window.google?.maps) return null;
+            return (
+              <Marker
+                key={school.id}
+                position={{ lat: school.latitude, lng: school.longitude }}
+                icon={{
+                  url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+                      <circle cx="16" cy="16" r="14" fill="#3B82F6" stroke="white" stroke-width="3"/>
+                      <path d="M8 14l8-5 8 5M10 17v6h12v-6M14 23v-3h4v3" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  `),
+                  scaledSize: new google.maps.Size(32, 32),
+                }}
+                onClick={() => setActiveMarker(`school-${school.id}`)}
+              >
+                {activeMarker === `school-${school.id}` && (
+                  <InfoWindow onCloseClick={() => setActiveMarker(null)}>
+                    <strong>{school.name}</strong>
+                  </InfoWindow>
+                )}
+              </Marker>
+            );
+          })}
 
           {/* Route Lines and Markers */}
           {showRoutes && showRouteLine && routes.map((route, idx) => {
@@ -317,6 +299,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
                 {/* Route Student Markers */}
                 {sortedStudents.map((student) => {
                   if (!student.lat || !student.lng) return null;
+                  if (!window.google?.maps) return null;
                   return (
                     <Marker
                       key={`route-${route.id}-${student.id}`}
