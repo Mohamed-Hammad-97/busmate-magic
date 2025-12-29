@@ -20,6 +20,7 @@ import { Sparkles, MapPin, Users, Route, Loader2, CheckCircle2, Lightbulb, Arrow
 import { useCity } from '@/contexts/CityContext';
 import RouteMap from '@/components/routes/RouteMap';
 import DrawableAreaMap from '@/components/routes/DrawableAreaMap';
+import { GoogleMapsProvider } from '@/components/maps/GoogleMapsProvider';
 import type { Tables } from '@/integrations/supabase/types';
 
 interface PolygonPoint {
@@ -381,12 +382,14 @@ const AIRoutes: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <DrawableAreaMap
-                school={selectedSchoolData}
-                searchArea={searchArea}
-                onAreaChange={setSearchArea}
-                height="350px"
-              />
+              <GoogleMapsProvider>
+                <DrawableAreaMap
+                  school={selectedSchoolData}
+                  searchArea={searchArea}
+                  onAreaChange={setSearchArea}
+                  height="350px"
+                />
+              </GoogleMapsProvider>
             </CardContent>
           </Card>
         )}
@@ -490,22 +493,24 @@ const AIRoutes: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <RouteMap
-                  routes={mapRoutes}
-                  schools={selectedSchoolData ? [{
-                    id: selectedSchoolData.id,
-                    name: selectedSchoolData.name,
-                    latitude: selectedSchoolData.latitude,
-                    longitude: selectedSchoolData.longitude,
-                  }] : []}
-                  selectedRoute={selectedSuggestion ? mapRoutes.find(r => r.name === selectedSuggestion.name) : null}
-                  onRouteClick={(route) => {
-                    const suggestion = suggestions.find(s => s.name === route.name);
-                    setSelectedSuggestion(suggestion || null);
-                  }}
-                  showControls={false}
-                  height="500px"
-                />
+                <GoogleMapsProvider>
+                  <RouteMap
+                    routes={mapRoutes}
+                    schools={selectedSchoolData ? [{
+                      id: selectedSchoolData.id,
+                      name: selectedSchoolData.name,
+                      latitude: selectedSchoolData.latitude,
+                      longitude: selectedSchoolData.longitude,
+                    }] : []}
+                    selectedRoute={selectedSuggestion ? mapRoutes.find(r => r.name === selectedSuggestion.name) : null}
+                    onRouteClick={(route) => {
+                      const suggestion = suggestions.find(s => s.name === route.name);
+                      setSelectedSuggestion(suggestion || null);
+                    }}
+                    showControls={false}
+                    height="500px"
+                  />
+                </GoogleMapsProvider>
               </CardContent>
             </Card>
 
