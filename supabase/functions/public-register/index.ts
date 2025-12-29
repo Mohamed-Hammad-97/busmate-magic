@@ -1,0 +1,245 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+interface RegistrationData {
+  student_name: string;
+  parent_name: string;
+  national_id: string;
+  father_phone: string;
+  mother_phone?: string;
+  emergency_phone: string;
+  city: string;
+  job?: string;
+  pickup_latitude: number;
+  pickup_longitude: number;
+  school_id: string;
+  grade: string;
+  car_type: 'ac' | 'non_ac';
+  education_department: 'national' | 'ig' | 'american';
+}
+
+// Validation helpers
+function validatePhone(phone: string): boolean {
+  // Egyptian phone format: starts with 01, 11 digits total
+  return /^01[0-9]{9}$/.test(phone);
+}
+
+function validateNationalId(id: string): boolean {
+  // Egyptian national ID: 14 digits
+  return /^[0-9]{14}$/.test(id);
+}
+
+function sanitizeString(str: string): string {
+  // Remove potential SQL injection or XSS characters
+  return str.trim().replace(/[<>'"`;]/g, '');
+}
+
+serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  if (req.method !== "POST") {
+    return new Response(
+      JSON.stringify({ error: "Method not allowed" }),
+      { status: 405, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
+  try {
+    const data: RegistrationData = await req.json();
+    console.log("Received registration request for:", data.student_name);
+
+    // Validate required fields
+    if (!data.student_name?.trim()) {
+      return new Response(
+        JSON.stringify({ error: "Student name is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (!data.parent_name?.trim()) {
+      return new Response(
+        JSON.stringify({ error: "Parent name is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (!data.national_id?.trim()) {
+      return new Response(
+        JSON.stringify({ error: "National ID is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (!validateNationalId(data.national_id)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid national ID format (must be 14 digits)" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (!data.father_phone?.trim()) {
+      return new Response(
+        JSON.stringify({ error: "Father phone is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (!validatePhone(data.father_phone)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid father phone format (must be 01xxxxxxxxx)" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (!data.emergency_phone?.trim()) {
+      return new Response(
+        JSON.stringify({ error: "Emergency phone is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (!validatePhone(data.emergency_phone)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid emergency phone format (must be 01xxxxxxxxx)" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (data.mother_phone && !validatePhone(data.mother_phone)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid mother phone format (must be 01xxxxxxxxx)" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (!data.city?.trim()) {
+      return new Response(
+        JSON.stringify({ error: "City is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (!data.school_id?.trim()) {
+      return new Response(
+        JSON.stringify({ error: "School is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (!data.grade?.trim()) {
+      return new Response(
+        JSON.stringify({ error: "Grade is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (!['ac', 'non_ac'].includes(data.car_type)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid car type" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (!['national', 'ig', 'american'].includes(data.education_department)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid education department" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Create Supabase client with service role for secure insertion
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Verify school exists and is active
+    const { data: school, error: schoolError } = await supabase
+      .from('schools')
+      .select('id')
+      .eq('id', data.school_id)
+      .eq('is_active', true)
+      .single();
+
+    if (schoolError || !school) {
+      console.error("Invalid school:", schoolError);
+      return new Response(
+        JSON.stringify({ error: "Invalid or inactive school selected" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Check for duplicate national ID
+    const { data: existingParent } = await supabase
+      .from('parent_accounts')
+      .select('id')
+      .eq('national_id', data.national_id)
+      .single();
+
+    if (existingParent) {
+      console.log("National ID already registered:", data.national_id);
+      return new Response(
+        JSON.stringify({ error: "This national ID is already registered. Please contact support if you need assistance." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Create parent account with sanitized data
+    const { data: newParent, error: parentError } = await supabase
+      .from('parent_accounts')
+      .insert({
+        parent_name: sanitizeString(data.parent_name),
+        national_id: data.national_id,
+        father_phone: data.father_phone,
+        mother_phone: data.mother_phone || null,
+        emergency_phone: data.emergency_phone,
+        city: sanitizeString(data.city),
+        job: data.job ? sanitizeString(data.job) : null,
+        pickup_latitude: data.pickup_latitude,
+        pickup_longitude: data.pickup_longitude,
+      })
+      .select()
+      .single();
+
+    if (parentError) {
+      console.error("Error creating parent account:", parentError);
+      return new Response(
+        JSON.stringify({ error: "Failed to create parent account" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log("Created parent account:", newParent.id);
+
+    // Create registration
+    const { error: regError } = await supabase
+      .from('registrations')
+      .insert({
+        parent_id: newParent.id,
+        student_name: sanitizeString(data.student_name),
+        school_id: data.school_id,
+        grade: data.grade,
+        car_type: data.car_type,
+        education_department: data.education_department,
+        status: 'pending_fees',
+      });
+
+    if (regError) {
+      console.error("Error creating registration:", regError);
+      // Rollback: delete the parent account if registration fails
+      await supabase.from('parent_accounts').delete().eq('id', newParent.id);
+      return new Response(
+        JSON.stringify({ error: "Failed to create registration" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log("Registration completed successfully for:", data.student_name);
+
+    return new Response(
+      JSON.stringify({ success: true, message: "Registration submitted successfully" }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error("Registration error:", message);
+    return new Response(
+      JSON.stringify({ error: message }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+});
