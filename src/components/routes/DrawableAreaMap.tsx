@@ -1,6 +1,6 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { GoogleMap, useJsApiLoader, Marker, Polygon, Polyline } from '@react-google-maps/api';
-import { useGoogleMapsToken } from '@/hooks/useGoogleMapsToken';
+import React, { useState, useCallback, useEffect } from 'react';
+import { GoogleMap, Marker, Polygon, Polyline } from '@react-google-maps/api';
+import { useGoogleMaps } from '@/components/maps/GoogleMapsProvider';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from 'react-i18next';
 import { MapPin, Trash2, Loader2, Check, X } from 'lucide-react';
@@ -29,8 +29,6 @@ interface DrawableAreaMapProps {
   height?: string;
 }
 
-const libraries: ("drawing" | "geometry")[] = ["drawing", "geometry"];
-
 const DrawableAreaMap: React.FC<DrawableAreaMapProps> = ({
   school,
   onAreaChange,
@@ -39,14 +37,7 @@ const DrawableAreaMap: React.FC<DrawableAreaMapProps> = ({
 }) => {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.language === 'ar';
-  const { token, isLoading: tokenLoading } = useGoogleMapsToken();
-
-  const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey: token || '',
-    libraries,
-    language: 'ar',
-    region: 'EG',
-  });
+  const { isLoaded } = useGoogleMaps();
 
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -113,22 +104,6 @@ const DrawableAreaMap: React.FC<DrawableAreaMapProps> = ({
     setTempPoints([]);
     setIsDrawing(false);
   };
-
-  if (tokenLoading) {
-    return (
-      <div className="flex items-center justify-center bg-muted rounded-lg" style={{ height }}>
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (loadError || !token) {
-    return (
-      <div className="flex items-center justify-center bg-muted rounded-lg" style={{ height }}>
-        <p className="text-muted-foreground">Google Maps API key not configured</p>
-      </div>
-    );
-  }
 
   if (!isLoaded) {
     return (
@@ -243,7 +218,7 @@ const DrawableAreaMap: React.FC<DrawableAreaMapProps> = ({
           }}
         >
           {/* School Marker */}
-          {school && (
+          {school && window.google?.maps && (
             <Marker
               position={{ lat: school.latitude, lng: school.longitude }}
               icon={{
@@ -283,7 +258,7 @@ const DrawableAreaMap: React.FC<DrawableAreaMapProps> = ({
           )}
 
           {/* Point Markers while drawing */}
-          {isDrawing && tempPoints.map((point, idx) => (
+          {isDrawing && window.google?.maps && tempPoints.map((point, idx) => (
             <Marker
               key={idx}
               position={point}
@@ -306,7 +281,7 @@ const DrawableAreaMap: React.FC<DrawableAreaMapProps> = ({
           ))}
 
           {/* Saved polygon point markers */}
-          {!isDrawing && searchArea && searchArea.points.map((point, idx) => (
+          {!isDrawing && searchArea && window.google?.maps && searchArea.points.map((point, idx) => (
             <Marker
               key={idx}
               position={point}

@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from "react";
-import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
-import { useGoogleMapsToken } from "@/hooks/useGoogleMapsToken";
+import { GoogleMap, Marker, InfoWindow } from '@react-google-maps/api';
+import { useGoogleMaps } from "@/components/maps/GoogleMapsProvider";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Bus, Users, Phone, MapPin, Clock, X } from "lucide-react";
@@ -66,13 +66,7 @@ const defaultCenter = {
 };
 
 export function OperationsMapView() {
-  const { token, isLoading: tokenLoading } = useGoogleMapsToken();
-
-  const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey: token || '',
-    language: 'ar',
-    region: 'EG',
-  });
+  const { isLoaded } = useGoogleMaps();
 
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [selectedTrip, setSelectedTrip] = useState<ActiveTrip | null>(null);
@@ -141,7 +135,7 @@ export function OperationsMapView() {
 
   // Fit bounds to show all buses
   useEffect(() => {
-    if (!map || selectedTrip) return;
+    if (!map || selectedTrip || !isLoaded || !window.google?.maps) return;
 
     const bounds = new google.maps.LatLngBounds();
     let hasValidBounds = false;
@@ -156,7 +150,7 @@ export function OperationsMapView() {
     if (hasValidBounds) {
       map.fitBounds(bounds, 100);
     }
-  }, [map, activeTrips, selectedTrip]);
+  }, [map, activeTrips, selectedTrip, isLoaded]);
 
   // Center on selected trip
   useEffect(() => {
@@ -165,22 +159,6 @@ export function OperationsMapView() {
     map.panTo({ lat: selectedTrip.current_latitude, lng: selectedTrip.current_longitude });
     map.setZoom(14);
   }, [map, selectedTrip]);
-
-  if (tokenLoading) {
-    return (
-      <div className="flex items-center justify-center h-[600px] bg-muted/20 rounded-lg">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (loadError || !token) {
-    return (
-      <div className="flex items-center justify-center h-[600px] bg-muted/20 rounded-lg">
-        <p className="text-muted-foreground">Google Maps API key not configured</p>
-      </div>
-    );
-  }
 
   if (!isLoaded) {
     return (
@@ -209,6 +187,7 @@ export function OperationsMapView() {
         {/* Bus Markers */}
         {activeTrips.map((trip) => {
           if (!trip.current_latitude || !trip.current_longitude) return null;
+          if (!window.google?.maps) return null;
           
           const isSelected = selectedTrip?.id === trip.id;
 
