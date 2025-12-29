@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { MapPin, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useGoogleMaps } from '@/components/maps/GoogleMapsProvider';
 
 export interface LocationPickerMapProps {
   initialLat?: number;
@@ -21,7 +22,7 @@ const LocationPickerMap: React.FC<LocationPickerMapProps> = ({
   initialLng = 31.2357,
   onLocationChange,
 }) => {
-
+  const { isLoaded } = useGoogleMaps();
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [markerPosition, setMarkerPosition] = useState({ lat: initialLat, lng: initialLng });
   const [isLocating, setIsLocating] = useState(false);
@@ -113,6 +114,16 @@ const LocationPickerMap: React.FC<LocationPickerMapProps> = ({
     setMarkerPosition({ lat: initialLat, lng: initialLng });
     map?.panTo({ lat: initialLat, lng: initialLng });
   }, [initialLat, initialLng, map]);
+
+  if (!isLoaded) {
+    return (
+      <div className="space-y-2">
+        <div className="w-full h-[250px] rounded-lg border border-border overflow-hidden flex items-center justify-center bg-muted">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-2">

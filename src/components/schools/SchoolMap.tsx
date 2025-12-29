@@ -1,6 +1,7 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { GoogleMap, Marker, InfoWindow } from '@react-google-maps/api';
 import type { Tables } from '@/integrations/supabase/types';
+import { useGoogleMaps } from '@/components/maps/GoogleMapsProvider';
 
 type School = Tables<'schools'>;
 
@@ -20,7 +21,7 @@ const defaultCenter = {
 };
 
 const SchoolMap: React.FC<SchoolMapProps> = ({ schools, onSchoolClick }) => {
-
+  const { isLoaded } = useGoogleMaps();
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [activeMarker, setActiveMarker] = useState<string | null>(null);
 
@@ -32,16 +33,38 @@ const SchoolMap: React.FC<SchoolMapProps> = ({ schools, onSchoolClick }) => {
     setMap(null);
   }, []);
 
+  // Create icon only when Google Maps is loaded
+  const markerIcon = useMemo(() => {
+    if (!isLoaded || typeof google === 'undefined') return undefined;
+    return {
+      url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+          <circle cx="16" cy="16" r="14" fill="#3B82F6" stroke="white" stroke-width="3"/>
+          <path d="M8 14l8-5 8 5M10 17v6h12v-6M14 23v-3h4v3" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      `),
+      scaledSize: new google.maps.Size(32, 32),
+    };
+  }, [isLoaded]);
+
   // Fit bounds to show all schools
   useEffect(() => {
-    if (!map || schools.length === 0) return;
+    if (!map || schools.length === 0 || !isLoaded || typeof google === 'undefined') return;
 
     const bounds = new google.maps.LatLngBounds();
     schools.forEach((school) => {
       bounds.extend({ lat: school.latitude, lng: school.longitude });
     });
     map.fitBounds(bounds, 50);
-  }, [map, schools]);
+  }, [map, schools, isLoaded]);
+
+  if (!isLoaded) {
+    return (
+      <div className="w-full h-[400px] rounded-lg border border-border overflow-hidden flex items-center justify-center bg-muted">
+        <p className="text-muted-foreground">Loading map...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full h-[400px] rounded-lg border border-border overflow-hidden">
@@ -63,15 +86,7 @@ const SchoolMap: React.FC<SchoolMapProps> = ({ schools, onSchoolClick }) => {
           <Marker
             key={school.id}
             position={{ lat: school.latitude, lng: school.longitude }}
-            icon={{
-              url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
-                  <circle cx="16" cy="16" r="14" fill="#3B82F6" stroke="white" stroke-width="3"/>
-                  <path d="M8 14l8-5 8 5M10 17v6h12v-6M14 23v-3h4v3" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              `),
-              scaledSize: new google.maps.Size(32, 32),
-            }}
+            icon={markerIcon}
             onClick={() => {
               setActiveMarker(school.id);
               onSchoolClick?.(school);
