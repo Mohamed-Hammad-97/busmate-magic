@@ -92,37 +92,28 @@ const Register: React.FC = () => {
 
   const submitMutation = useMutation({
     mutationFn: async () => {
-      // Create parent account
-      const { data: newParent, error: parentError } = await supabase
-        .from('parent_accounts')
-        .insert({
+      // Use secure edge function for registration
+      const { data, error } = await supabase.functions.invoke('public-register', {
+        body: {
+          student_name: formData.student_name,
           parent_name: formData.parent_name,
           national_id: formData.national_id,
           father_phone: formData.father_phone,
-          mother_phone: formData.mother_phone || null,
+          mother_phone: formData.mother_phone || undefined,
           emergency_phone: formData.emergency_phone,
           city: formData.city,
-          job: formData.job || null,
+          job: formData.job || undefined,
           pickup_latitude: formData.pickup_latitude,
           pickup_longitude: formData.pickup_longitude,
-        })
-        .select()
-        .single();
-      if (parentError) throw parentError;
-
-      // Create registration
-      const { error: regError } = await supabase
-        .from('registrations')
-        .insert({
-          parent_id: newParent.id,
-          student_name: formData.student_name,
           school_id: formData.school_id,
           grade: formData.grade,
           car_type: formData.car_type,
           education_department: formData.education_department,
-          status: 'pending_fees',
-        });
-      if (regError) throw regError;
+        },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
     },
     onSuccess: () => {
       setSubmitted(true);
