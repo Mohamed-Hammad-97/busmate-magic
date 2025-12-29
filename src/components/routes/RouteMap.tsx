@@ -1,9 +1,9 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { GoogleMap, Marker, InfoWindow, Polyline } from '@react-google-maps/api';
+import { GoogleMap, Marker, InfoWindow, DirectionsRenderer } from '@react-google-maps/api';
 import { useGoogleMaps } from '@/components/maps/GoogleMapsProvider';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from 'react-i18next';
-import { Users, School, Route, Loader2 } from 'lucide-react';
+import { Users, School, Route, Loader2, ExternalLink } from 'lucide-react';
 
 interface Student {
   id: string;
@@ -75,6 +75,8 @@ const RouteMap: React.FC<RouteMapProps> = ({
   const [showSchools, setShowSchools] = useState(true);
   const [showRoutes, setShowRoutes] = useState(true);
   const [activeMarker, setActiveMarker] = useState<string | null>(null);
+  const [directionsResults, setDirectionsResults] = useState<Map<string, google.maps.DirectionsResult>>(new Map());
+  const [loadingRoutes, setLoadingRoutes] = useState<Set<string>>(new Set());
 
   const containerStyle = {
     width: '100%',
@@ -88,6 +90,80 @@ const RouteMap: React.FC<RouteMapProps> = ({
   const onUnmount = useCallback(() => {
     setMap(null);
   }, []);
+
+  // Calculate real directions for routes
+  useEffect(() => {
+    if (!isLoaded || !window.google?.maps || routes.length === 0 || !showRouteLine) return;
+
+    const directionsService = new google.maps.DirectionsService();
+
+    routes.forEach((route) => {
+      // Skip if already loaded or loading
+      if (directionsResults.has(route.id) || loadingRoutes.has(route.id)) return;
+
+      const sortedStudents = [...route.students]
+        .filter(s => s.lat && s.lng)
+        .sort((a, b) => (a.pickup_order || 0) - (b.pickup_order || 0));
+
+      if (sortedStudents.length === 0) return;
+
+      // Build waypoints
+      const waypoints: google.maps.DirectionsWaypoint[] = [];
+      let origin: google.maps.LatLngLiteral | null = null;
+      let destination: google.maps.LatLngLiteral | null = null;
+
+      if (sortedStudents.length === 1 && route.school) {
+        origin = { lat: sortedStudents[0].lat, lng: sortedStudents[0].lng };
+        destination = { lat: route.school.latitude, lng: route.school.longitude };
+      } else if (sortedStudents.length >= 2) {
+        origin = { lat: sortedStudents[0].lat, lng: sortedStudents[0].lng };
+        
+        if (route.school) {
+          destination = { lat: route.school.latitude, lng: route.school.longitude };
+          // Add intermediate students as waypoints
+          for (let i = 1; i < sortedStudents.length; i++) {
+            waypoints.push({
+              location: { lat: sortedStudents[i].lat, lng: sortedStudents[i].lng },
+              stopover: true,
+            });
+          }
+        } else {
+          destination = { lat: sortedStudents[sortedStudents.length - 1].lat, lng: sortedStudents[sortedStudents.length - 1].lng };
+          for (let i = 1; i < sortedStudents.length - 1; i++) {
+            waypoints.push({
+              location: { lat: sortedStudents[i].lat, lng: sortedStudents[i].lng },
+              stopover: true,
+            });
+          }
+        }
+      }
+
+      if (!origin || !destination) return;
+
+      setLoadingRoutes(prev => new Set(prev).add(route.id));
+
+      directionsService.route(
+        {
+          origin,
+          destination,
+          waypoints: waypoints.slice(0, 23), // Google limits to 25 waypoints total
+          travelMode: google.maps.TravelMode.DRIVING,
+          optimizeWaypoints: false, // Keep the pickup order
+        },
+        (result, status) => {
+          setLoadingRoutes(prev => {
+            const next = new Set(prev);
+            next.delete(route.id);
+            return next;
+          });
+
+          if (status === google.maps.DirectionsStatus.OK && result) {
+            setDirectionsResults(prev => new Map(prev).set(route.id, result));
+          }
+        }
+      );
+    });
+  }, [isLoaded, routes, showRouteLine, directionsResults, loadingRoutes]);
 
   // Fit bounds to show all markers
   useEffect(() => {
@@ -144,6 +220,51 @@ const RouteMap: React.FC<RouteMapProps> = ({
     }
 
     map.fitBounds(bounds, 50);
+  };
+
+  // Generate Google Maps URL for a route
+  const getGoogleMapsUrl = (route: RouteData): string => {
+    const sortedStudents = [...route.students]
+      .filter(s => s.lat && s.lng)
+      .sort((a, b) => (a.pickup_order || 0) - (b.pickup_order || 0));
+
+    if (sortedStudents.length === 0) return '';
+
+    const origin = `${sortedStudents[0].lat},${sortedStudents[0].lng}`;
+    
+    let destination = '';
+    if (route.school) {
+      destination = `${route.school.latitude},${route.school.longitude}`;
+    } else if (sortedStudents.length > 1) {
+      const last = sortedStudents[sortedStudents.length - 1];
+      destination = `${last.lat},${last.lng}`;
+    } else {
+      return `https://www.google.com/maps?q=${origin}`;
+    }
+
+    // Build waypoints (excluding first and last)
+    const waypointStudents = route.school 
+      ? sortedStudents.slice(1)
+      : sortedStudents.slice(1, -1);
+    
+    const waypoints = waypointStudents
+      .map(s => `${s.lat},${s.lng}`)
+      .join('|');
+
+    let url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&travelmode=driving`;
+    
+    if (waypoints) {
+      url += `&waypoints=${encodeURIComponent(waypoints)}`;
+    }
+
+    return url;
+  };
+
+  const openInGoogleMaps = (route: RouteData) => {
+    const url = getGoogleMapsUrl(route);
+    if (url) {
+      window.open(url, '_blank');
+    }
   };
 
   if (!isLoaded) {
@@ -261,42 +382,39 @@ const RouteMap: React.FC<RouteMapProps> = ({
             );
           })}
 
-          {/* Route Lines and Markers */}
+          {/* Route Directions (Real Roads) */}
           {showRoutes && showRouteLine && routes.map((route, idx) => {
             const color = route.color || ROUTE_COLORS[idx % ROUTE_COLORS.length];
             const isSelected = selectedRoute?.id === route.id;
+            const directions = directionsResults.get(route.id);
 
-            // Sort students by pickup_order
+            if (!directions) return null;
+
+            return (
+              <DirectionsRenderer
+                key={route.id}
+                directions={directions}
+                options={{
+                  suppressMarkers: true, // We'll show our own markers
+                  polylineOptions: {
+                    strokeColor: color,
+                    strokeWeight: isSelected ? 6 : 4,
+                    strokeOpacity: isSelected ? 1 : 0.8,
+                  },
+                }}
+              />
+            );
+          })}
+
+          {/* Route Student Markers */}
+          {showRoutes && routes.map((route, idx) => {
+            const color = route.color || ROUTE_COLORS[idx % ROUTE_COLORS.length];
             const sortedStudents = [...route.students].sort(
               (a, b) => (a.pickup_order || 0) - (b.pickup_order || 0)
             );
 
-            // Create path coordinates
-            const path: { lat: number; lng: number }[] = [];
-            sortedStudents.forEach((student) => {
-              if (student.lat && student.lng) {
-                path.push({ lat: student.lat, lng: student.lng });
-              }
-            });
-            if (route.school) {
-              path.push({ lat: route.school.latitude, lng: route.school.longitude });
-            }
-
             return (
-              <React.Fragment key={route.id}>
-                {/* Route Line */}
-                {path.length >= 2 && (
-                  <Polyline
-                    path={path}
-                    options={{
-                      strokeColor: color,
-                      strokeWeight: isSelected ? 5 : 3,
-                      strokeOpacity: isSelected ? 1 : 0.7,
-                    }}
-                  />
-                )}
-
-                {/* Route Student Markers */}
+              <React.Fragment key={`markers-${route.id}`}>
                 {sortedStudents.map((student) => {
                   if (!student.lat || !student.lng) return null;
                   if (!window.google?.maps) return null;
@@ -332,32 +450,51 @@ const RouteMap: React.FC<RouteMapProps> = ({
       {showRoutes && routes.length > 0 && (
         <div className="space-y-2">
           <h4 className="text-sm font-medium">{isRtl ? 'الخطوط' : 'Routes'}</h4>
-          <div className="grid gap-2 max-h-48 overflow-y-auto">
-            {routes.map((route, idx) => (
-              <button
-                key={route.id}
-                className={`flex items-center gap-3 p-2 rounded-lg border transition-colors text-left ${
-                  selectedRoute?.id === route.id
-                    ? 'border-primary bg-primary/10'
-                    : 'border-border hover:border-primary/50'
-                }`}
-                onClick={() => {
-                  onRouteClick?.(route);
-                  focusOnRoute(route);
-                }}
-              >
+          <div className="grid gap-2 max-h-64 overflow-y-auto">
+            {routes.map((route, idx) => {
+              const isLoading = loadingRoutes.has(route.id);
+              return (
                 <div
-                  className="w-4 h-4 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: route.color || ROUTE_COLORS[idx % ROUTE_COLORS.length] }}
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{route.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {route.students.length} {isRtl ? 'طالب' : 'students'}
-                  </p>
+                  key={route.id}
+                  className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
+                    selectedRoute?.id === route.id
+                      ? 'border-primary bg-primary/10'
+                      : 'border-border hover:border-primary/50'
+                  }`}
+                >
+                  <button
+                    className="flex items-center gap-3 flex-1 text-left"
+                    onClick={() => {
+                      onRouteClick?.(route);
+                      focusOnRoute(route);
+                    }}
+                  >
+                    <div
+                      className="w-4 h-4 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: route.color || ROUTE_COLORS[idx % ROUTE_COLORS.length] }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{route.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {route.students.length} {isRtl ? 'طالب' : 'students'}
+                        {isLoading && <span className="ml-2">({isRtl ? 'جاري التحميل...' : 'loading route...'})</span>}
+                      </p>
+                    </div>
+                  </button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openInGoogleMaps(route);
+                    }}
+                    title={isRtl ? 'فتح في خرائط جوجل' : 'Open in Google Maps'}
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </Button>
                 </div>
-              </button>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
