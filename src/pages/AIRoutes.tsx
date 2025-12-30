@@ -617,18 +617,16 @@ const AIRoutes: React.FC = () => {
                           )}
                         </Button>
                         {getGoogleMapsUrl(suggestion) && (
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const url = getGoogleMapsUrl(suggestion);
-                              if (url) window.open(url, '_blank');
-                            }}
+                          <a
+                            href={getGoogleMapsUrl(suggestion) || '#'}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 w-10"
                             title={isRtl ? 'فتح في خرائط جوجل' : 'Open in Google Maps'}
                           >
                             <ExternalLink className="h-4 w-4" />
-                          </Button>
+                          </a>
                         )}
                       </div>
                     </CardContent>
