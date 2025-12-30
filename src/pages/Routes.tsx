@@ -32,7 +32,17 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Plus, Search, Route, Bus, Users, Edit, Map, School } from 'lucide-react';
+import { Plus, Search, Route, Bus, Users, Edit, Map, School, Trash2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useCity } from '@/contexts/CityContext';
 import RouteMap from '@/components/routes/RouteMap';
 import { GoogleMapsProvider } from '@/components/maps/GoogleMapsProvider';
@@ -50,6 +60,8 @@ const Routes = () => {
   const [selectedRoute, setSelectedRoute] = useState<RouteType | null>(null);
   const [activeTab, setActiveTab] = useState<'table' | 'map'>('table');
   const [mapSelectedRoute, setMapSelectedRoute] = useState<any>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [routeToDelete, setRouteToDelete] = useState<RouteType | null>(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -221,6 +233,46 @@ const Routes = () => {
       console.error(error);
     },
   });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (routeId: string) => {
+      // First, delete all route assignments (this unassigns students)
+      const { error: assignmentsError } = await supabase
+        .from('route_assignments')
+        .delete()
+        .eq('route_id', routeId);
+      if (assignmentsError) throw assignmentsError;
+
+      // Then delete the route itself
+      const { error: routeError } = await supabase
+        .from('routes')
+        .delete()
+        .eq('id', routeId);
+      if (routeError) throw routeError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['routes'] });
+      queryClient.invalidateQueries({ queryKey: ['route-assignments-with-locations'] });
+      toast.success(isRtl ? 'تم حذف الخط وإلغاء تعيين الطلاب بنجاح' : 'Route deleted and students unassigned successfully');
+      setDeleteDialogOpen(false);
+      setRouteToDelete(null);
+    },
+    onError: (error) => {
+      toast.error(isRtl ? 'حدث خطأ أثناء حذف الخط' : 'Error deleting route');
+      console.error(error);
+    },
+  });
+
+  const handleDeleteClick = (route: RouteType) => {
+    setRouteToDelete(route);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (routeToDelete) {
+      deleteMutation.mutate(routeToDelete.id);
+    }
+  };
 
   const resetForm = () => {
     setFormData({
@@ -500,13 +552,23 @@ const Routes = () => {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEdit(route)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEdit(route)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteClick(route)}
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))
@@ -675,6 +737,38 @@ const Routes = () => {
             </form>
           </DialogContent>
         </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                {isRtl ? 'هل أنت متأكد من حذف هذا الخط؟' : 'Are you sure you want to delete this route?'}
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {isRtl 
+                  ? `سيتم حذف الخط "${routeToDelete?.name}" وإلغاء تعيين جميع الطلاب المسجلين فيه (${assignmentCounts[routeToDelete?.id || ''] || 0} طالب). سيظهر هؤلاء الطلاب مرة أخرى في اقتراحات إنشاء الخطوط بالذكاء الاصطناعي.`
+                  : `The route "${routeToDelete?.name}" will be deleted and all assigned students (${assignmentCounts[routeToDelete?.id || ''] || 0} students) will be unassigned. These students will appear again in the AI route generation suggestions.`
+                }
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>
+                {isRtl ? 'إلغاء' : 'Cancel'}
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmDelete}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                disabled={deleteMutation.isPending}
+              >
+                {deleteMutation.isPending 
+                  ? (isRtl ? 'جاري الحذف...' : 'Deleting...')
+                  : (isRtl ? 'حذف' : 'Delete')
+                }
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DashboardLayout>
   );
