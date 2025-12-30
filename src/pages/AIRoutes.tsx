@@ -16,7 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Sparkles, MapPin, Users, Route, Loader2, CheckCircle2, Lightbulb, ArrowRight, ArrowLeft, Plus, RefreshCw, Circle } from 'lucide-react';
+import { Sparkles, MapPin, Users, Route, Loader2, CheckCircle2, Lightbulb, ArrowRight, ArrowLeft, Plus, RefreshCw, Circle, ExternalLink } from 'lucide-react';
 import { useCity } from '@/contexts/CityContext';
 import RouteMap from '@/components/routes/RouteMap';
 import DrawableAreaMap from '@/components/routes/DrawableAreaMap';
@@ -113,6 +113,39 @@ const AIRoutes: React.FC = () => {
     schools.find(s => s.id === selectedSchool), 
     [schools, selectedSchool]
   );
+
+  // Generate Google Maps URL for a suggestion
+  const getGoogleMapsUrl = (suggestion: RouteSuggestion) => {
+    if (!selectedSchoolData || suggestion.students.length === 0) return null;
+    
+    const sortedStudents = [...suggestion.students].sort((a, b) => 
+      routeDirection === 'to_school' ? a.pickup_order - b.pickup_order : b.pickup_order - a.pickup_order
+    );
+    
+    if (routeDirection === 'to_school') {
+      // First student is origin, school is destination
+      const origin = `${sortedStudents[0].lat},${sortedStudents[0].lng}`;
+      const destination = `${selectedSchoolData.latitude},${selectedSchoolData.longitude}`;
+      const waypoints = sortedStudents.slice(1).map(s => `${s.lat},${s.lng}`).join('|');
+      
+      let url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&travelmode=driving`;
+      if (waypoints) {
+        url += `&waypoints=${encodeURIComponent(waypoints)}`;
+      }
+      return url;
+    } else {
+      // School is origin, first student (reversed order) is destination
+      const origin = `${selectedSchoolData.latitude},${selectedSchoolData.longitude}`;
+      const destination = `${sortedStudents[0].lat},${sortedStudents[0].lng}`;
+      const waypoints = sortedStudents.slice(1).map(s => `${s.lat},${s.lng}`).join('|');
+      
+      let url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&travelmode=driving`;
+      if (waypoints) {
+        url += `&waypoints=${encodeURIComponent(waypoints)}`;
+      }
+      return url;
+    }
+  };
 
   const { data: drivers = [] } = useQuery({
     queryKey: ['drivers-active'],
@@ -565,23 +598,39 @@ const AIRoutes: React.FC = () => {
                         ))}
                       </div>
 
-                      <Button
-                        className="w-full"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          createRouteMutation.mutate({ suggestion });
-                        }}
-                        disabled={createRouteMutation.isPending}
-                      >
-                        {createRouteMutation.isPending ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <>
-                            <CheckCircle2 className="h-4 w-4 mr-2" />
-                            {isRtl ? 'إنشاء الخط' : 'Create Route'}
-                          </>
+                      <div className="flex gap-2">
+                        <Button
+                          className="flex-1"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            createRouteMutation.mutate({ suggestion });
+                          }}
+                          disabled={createRouteMutation.isPending}
+                        >
+                          {createRouteMutation.isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <>
+                              <CheckCircle2 className="h-4 w-4 mr-2" />
+                              {isRtl ? 'إنشاء الخط' : 'Create Route'}
+                            </>
+                          )}
+                        </Button>
+                        {getGoogleMapsUrl(suggestion) && (
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const url = getGoogleMapsUrl(suggestion);
+                              if (url) window.open(url, '_blank');
+                            }}
+                            title={isRtl ? 'فتح في خرائط جوجل' : 'Open in Google Maps'}
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </Button>
                         )}
-                      </Button>
+                      </div>
                     </CardContent>
                   </Card>
                 ))}
