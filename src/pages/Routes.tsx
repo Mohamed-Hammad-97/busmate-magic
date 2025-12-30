@@ -32,7 +32,7 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Plus, Search, Route, Bus, Users, Edit, Map, School, Trash2 } from 'lucide-react';
+import { Plus, Search, Route, Bus, Users, Edit, Map, School, Trash2, ExternalLink } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -387,6 +387,27 @@ const Routes = () => {
     });
   }, [filteredRoutes, routeAssignments]);
 
+  // Generate Google Maps URL for a route
+  const getGoogleMapsUrl = (route: any) => {
+    const routeData = mapRoutes.find((r) => r.id === route.id);
+    if (!routeData || !routeData.school || routeData.students.length === 0) return null;
+
+    const sortedStudents = [...routeData.students].sort((a, b) => 
+      (a.pickup_order || 0) - (b.pickup_order || 0)
+    );
+
+    // First student is origin, school is destination
+    const origin = `${sortedStudents[0].lat},${sortedStudents[0].lng}`;
+    const destination = `${routeData.school.latitude},${routeData.school.longitude}`;
+    const waypoints = sortedStudents.slice(1).map((s) => `${s.lat},${s.lng}`).join('|');
+
+    let url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&travelmode=driving`;
+    if (waypoints) {
+      url += `&waypoints=${encodeURIComponent(waypoints)}`;
+    }
+    return url;
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -560,6 +581,17 @@ const Routes = () => {
                               >
                                 <Edit className="h-4 w-4" />
                               </Button>
+                              {getGoogleMapsUrl(route) && (
+                                <a
+                                  href={getGoogleMapsUrl(route) || '#'}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 hover:bg-accent hover:text-accent-foreground h-9 w-9"
+                                  title={isRtl ? 'فتح في خرائط جوجل' : 'Open in Google Maps'}
+                                >
+                                  <ExternalLink className="h-4 w-4" />
+                                </a>
+                              )}
                               <Button
                                 variant="ghost"
                                 size="sm"
