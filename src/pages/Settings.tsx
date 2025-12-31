@@ -60,6 +60,7 @@ const Settings = () => {
     departments: [] as Department[],
     is_active: true,
     user_id: '',
+    password: '',
   });
 
   const { data: employees = [], isLoading } = useQuery({
@@ -77,6 +78,7 @@ const Settings = () => {
   const saveEmployeeMutation = useMutation({
     mutationFn: async () => {
       if (selectedEmployee) {
+        // Update existing employee
         const { error } = await supabase
           .from('employees')
           .update({
@@ -89,12 +91,32 @@ const Settings = () => {
           .eq('id', selectedEmployee.id);
         if (error) throw error;
       } else {
-        // For new employee, we need a user_id - this would normally come from auth
-        const { error } = await supabase.from('employees').insert({
-          ...employeeForm,
-          user_id: employeeForm.user_id || crypto.randomUUID(), // Placeholder
+        // Create new employee via edge function
+        if (!employeeForm.password || employeeForm.password.length < 6) {
+          throw new Error(i18n.language === 'ar' ? 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' : 'Password must be at least 6 characters');
+        }
+        
+        const { data: sessionData } = await supabase.auth.getSession();
+        const response = await supabase.functions.invoke('create-employee', {
+          body: {
+            email: employeeForm.email,
+            full_name: employeeForm.full_name,
+            phone: employeeForm.phone,
+            departments: employeeForm.departments,
+            password: employeeForm.password,
+          },
+          headers: {
+            Authorization: `Bearer ${sessionData.session?.access_token}`,
+          },
         });
-        if (error) throw error;
+        
+        if (response.error) {
+          throw new Error(response.error.message);
+        }
+        
+        if (response.data?.error) {
+          throw new Error(response.data.error);
+        }
       }
     },
     onSuccess: () => {
@@ -103,8 +125,8 @@ const Settings = () => {
       setIsEmployeeDialogOpen(false);
       resetEmployeeForm();
     },
-    onError: (error) => {
-      toast.error('Error saving employee');
+    onError: (error: Error) => {
+      toast.error(error.message || 'Error saving employee');
       console.error(error);
     },
   });
@@ -117,6 +139,7 @@ const Settings = () => {
       departments: [],
       is_active: true,
       user_id: '',
+      password: '',
     });
     setSelectedEmployee(null);
   };
@@ -130,6 +153,7 @@ const Settings = () => {
       departments: employee.departments as Department[],
       is_active: employee.is_active,
       user_id: employee.user_id,
+      password: '',
     });
     setIsEmployeeDialogOpen(true);
   };
@@ -329,6 +353,19 @@ const Settings = () => {
                   onChange={(e) => setEmployeeForm({ ...employeeForm, phone: e.target.value })}
                 />
               </div>
+              {!selectedEmployee && (
+                <div className="space-y-2">
+                  <Label htmlFor="emp_password">{isRtl ? 'كلمة المرور' : 'Password'} *</Label>
+                  <Input
+                    id="emp_password"
+                    type="password"
+                    value={employeeForm.password}
+                    onChange={(e) => setEmployeeForm({ ...employeeForm, password: e.target.value })}
+                    placeholder={isRtl ? '6 أحرف على الأقل' : 'At least 6 characters'}
+                    required
+                  />
+                </div>
+              )}
               <div className="space-y-2">
                 <Label>{t('settings.departments')}</Label>
                 <div className="grid grid-cols-2 gap-2">
