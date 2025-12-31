@@ -20,7 +20,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import seaterLogo from "@/assets/seater-logo.jpg";
-import { LanguageSwitcher } from "./LanguageSwitcher";
 import { CitySelector } from "./CitySelector";
 
 interface NavItem {
@@ -116,10 +115,6 @@ export function Sidebar() {
           <CitySelector />
         </div>
 
-        {/* Language Switcher */}
-        <div className="px-3 py-2 border-t border-sidebar-border">
-          <LanguageSwitcher />
-        </div>
 
         {/* User section */}
         <div className="border-t border-sidebar-border p-4">
