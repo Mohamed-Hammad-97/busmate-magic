@@ -190,10 +190,12 @@ const Settings = () => {
               <SettingsIcon className="h-4 w-4" />
               {t('settings.general')}
             </TabsTrigger>
-            <TabsTrigger value="employees" className="gap-2">
-              <Users className="h-4 w-4" />
-              {t('settings.employees')}
-            </TabsTrigger>
+            {isSuperAdmin && (
+              <TabsTrigger value="employees" className="gap-2">
+                <Users className="h-4 w-4" />
+                {t('settings.employees')}
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="general" className="space-y-4">
@@ -219,6 +221,7 @@ const Settings = () => {
             </Card>
           </TabsContent>
 
+          {isSuperAdmin && (
           <TabsContent value="employees" className="space-y-4">
             <Card>
               <CardHeader>
@@ -309,6 +312,7 @@ const Settings = () => {
               </CardContent>
             </Card>
           </TabsContent>
+          )}
         </Tabs>
 
         {/* Employee Dialog */}
