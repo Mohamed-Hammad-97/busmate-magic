@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '@/contexts/AuthContext';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -49,6 +50,7 @@ const departmentLabels: Record<Department, { en: string; ar: string }> = {
 
 const Settings = () => {
   const { t, i18n } = useTranslation();
+  const { isSuperAdmin } = useAuth();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [isEmployeeDialogOpen, setIsEmployeeDialogOpen] = useState(false);
@@ -227,10 +229,12 @@ const Settings = () => {
                       {isRtl ? 'إدارة حسابات الموظفين وصلاحياتهم' : 'Manage employee accounts and permissions'}
                     </CardDescription>
                   </div>
-                  <Button onClick={() => { resetEmployeeForm(); setIsEmployeeDialogOpen(true); }}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    {t('settings.addEmployee')}
-                  </Button>
+                  {isSuperAdmin && (
+                    <Button onClick={() => { resetEmployeeForm(); setIsEmployeeDialogOpen(true); }}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      {t('settings.addEmployee')}
+                    </Button>
+                  )}
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
