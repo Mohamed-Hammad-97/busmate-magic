@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
@@ -30,6 +31,7 @@ import CustomerDetails from '@/components/customers/CustomerDetails';
 type ParentAccount = Tables<'parent_accounts'>;
 
 const Customers = () => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { selectedCity } = useCity();
   const [searchTerm, setSearchTerm] = useState('');
@@ -106,12 +108,12 @@ const Customers = () => {
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">إدارة العملاء</h1>
-            <p className="text-muted-foreground">إدارة حسابات أولياء الأمور ومعلومات الاتصال</p>
+            <h1 className="text-3xl font-bold text-foreground">{t('customers.title')}</h1>
+            <p className="text-muted-foreground">{t('customers.description')}</p>
           </div>
           <Button onClick={handleAddNew}>
             <Plus className="h-4 w-4 ml-2" />
-            إضافة عميل
+            {t('customers.addCustomer')}
           </Button>
         </div>
 
@@ -119,7 +121,7 @@ const Customers = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">إجمالي العملاء</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('customers.totalCustomers')}</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -128,7 +130,7 @@ const Customers = () => {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">المدن</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('customers.cities')}</CardTitle>
               <MapPin className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -139,7 +141,7 @@ const Customers = () => {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">إجمالي التسجيلات</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('customers.totalRegistrations')}</CardTitle>
               <Phone className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -154,7 +156,7 @@ const Customers = () => {
         <div className="relative max-w-sm">
           <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="بحث بالاسم أو الرقم القومي أو الهاتف..."
+            placeholder={t('customers.searchPlaceholder')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pr-10"
@@ -167,25 +169,25 @@ const Customers = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-right">اسم ولي الأمر</TableHead>
-                  <TableHead className="text-right">الرقم القومي</TableHead>
-                  <TableHead className="text-right">هاتف الأب</TableHead>
-                  <TableHead className="text-right">المدينة</TableHead>
-                  <TableHead className="text-right">التسجيلات</TableHead>
-                  <TableHead className="text-right">الإجراءات</TableHead>
+                  <TableHead className="text-right">{t('customers.parentName')}</TableHead>
+                  <TableHead className="text-right">{t('customers.nationalId')}</TableHead>
+                  <TableHead className="text-right">{t('customers.fatherPhone')}</TableHead>
+                  <TableHead className="text-right">{t('common.city')}</TableHead>
+                  <TableHead className="text-right">{t('customers.registrations')}</TableHead>
+                  <TableHead className="text-right">{t('common.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-8">
-                      جاري التحميل...
+                      {t('common.loading')}
                     </TableCell>
                   </TableRow>
                 ) : filteredCustomers.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-8">
-                      لا يوجد عملاء
+                      {t('customers.noCustomers')}
                     </TableCell>
                   </TableRow>
                 ) : (

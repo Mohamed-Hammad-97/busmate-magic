@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -29,7 +30,7 @@ import {
   DollarSign
 } from "lucide-react";
 import { format, subDays, startOfMonth, endOfMonth } from "date-fns";
-import { ar } from "date-fns/locale";
+import { ar, enUS } from "date-fns/locale";
 import {
   ChartContainer,
   ChartTooltip,
@@ -40,6 +41,8 @@ import { FinancialReports } from "@/components/reports/FinancialReports";
 import { useCity } from "@/contexts/CityContext";
 
 const Reports = () => {
+  const { t, i18n } = useTranslation();
+  const dateLocale = i18n.language === 'ar' ? ar : enUS;
   const { selectedCity } = useCity();
   const [dateRange, setDateRange] = useState({
     start: format(startOfMonth(new Date()), "yyyy-MM-dd"),
@@ -203,65 +206,65 @@ const Reports = () => {
   }, {});
 
   const severityChartData = [
-    { name: "منخفض", value: incidentsBySeverity["low"] || 0, color: "hsl(var(--success))" },
-    { name: "متوسط", value: incidentsBySeverity["medium"] || 0, color: "hsl(var(--warning))" },
-    { name: "عالي", value: incidentsBySeverity["high"] || 0, color: "hsl(var(--destructive))" },
+    { name: t('reports.low'), value: incidentsBySeverity["low"] || 0, color: "hsl(var(--success))" },
+    { name: t('reports.medium'), value: incidentsBySeverity["medium"] || 0, color: "hsl(var(--warning))" },
+    { name: t('reports.high'), value: incidentsBySeverity["high"] || 0, color: "hsl(var(--destructive))" },
   ];
 
   const chartConfig = {
-    paid: { label: "مدفوع", color: "hsl(var(--success))" },
-    pending: { label: "معلق", color: "hsl(var(--warning))" },
+    paid: { label: t('payments.paid'), color: "hsl(var(--success))" },
+    pending: { label: t('payments.pending'), color: "hsl(var(--warning))" },
   };
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">التقارير والتحليلات</h1>
-          <p className="text-muted-foreground">لوحة تحكم شاملة للأداء والإحصائيات</p>
+          <h1 className="text-3xl font-bold text-foreground">{t('reports.title')}</h1>
+          <p className="text-muted-foreground">{t('reports.description')}</p>
         </div>
 
         {/* KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">نسبة الالتزام بالمواعيد</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('reports.onTimePercentage')}</CardTitle>
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{onTimePercentage}%</div>
-              <p className="text-xs text-muted-foreground">{onTimeTrips} من {totalTrips} رحلة</p>
+              <p className="text-xs text-muted-foreground">{onTimeTrips} {t('reports.tripsOf')} {totalTrips} {t('reports.trips')}</p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">نسبة الحضور</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('reports.attendanceRate')}</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{attendanceRate}%</div>
-              <p className="text-xs text-muted-foreground">{presentCount} من {totalAttendance} سجل</p>
+              <p className="text-xs text-muted-foreground">{presentCount} {t('reports.tripsOf')} {totalAttendance} {t('reports.records')}</p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">نسبة التحصيل</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('reports.collectionRate')}</CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-green-600">{collectionRate}%</div>
-              <p className="text-xs text-muted-foreground">{paidPayments.toLocaleString()} من {totalPayments.toLocaleString()} ج.م</p>
+              <p className="text-xs text-muted-foreground">{paidPayments.toLocaleString()} / {totalPayments.toLocaleString()} EGP</p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">الحوادث</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('reports.incidents')}</CardTitle>
               <AlertCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{incidents.length}</div>
               <p className="text-xs text-muted-foreground">
-                {incidents.filter((i: any) => !i.resolved).length} غير محلول
+                {incidents.filter((i: any) => !i.resolved).length} {t('reports.unresolved')}
               </p>
             </CardContent>
           </Card>
@@ -271,8 +274,8 @@ const Reports = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
-              <CardTitle>تحليل الإيرادات الشهرية</CardTitle>
-              <CardDescription>المدفوعات المحصلة والمعلقة</CardDescription>
+              <CardTitle>{t('reports.revenueAnalysis')}</CardTitle>
+              <CardDescription>{t('reports.revenueDescription')}</CardDescription>
             </CardHeader>
             <CardContent>
               <ChartContainer config={chartConfig} className="h-[300px]">
@@ -280,8 +283,8 @@ const Reports = () => {
                   <XAxis dataKey="month" />
                   <YAxis />
                   <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="paid" fill="hsl(var(--success))" name="مدفوع" />
-                  <Bar dataKey="pending" fill="hsl(var(--warning))" name="معلق" />
+                  <Bar dataKey="paid" fill="hsl(var(--success))" name={t('payments.paid')} />
+                  <Bar dataKey="pending" fill="hsl(var(--warning))" name={t('payments.pending')} />
                 </BarChart>
               </ChartContainer>
             </CardContent>
@@ -289,8 +292,8 @@ const Reports = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle>تصنيف الحوادث</CardTitle>
-              <CardDescription>حسب درجة الخطورة</CardDescription>
+              <CardTitle>{t('reports.incidentClassification')}</CardTitle>
+              <CardDescription>{t('reports.incidentDescription')}</CardDescription>
             </CardHeader>
             <CardContent>
               <ChartContainer config={chartConfig} className="h-[300px]">
@@ -321,11 +324,11 @@ const Reports = () => {
           <TabsList>
             <TabsTrigger value="financial" className="flex items-center gap-2">
               <DollarSign className="h-4 w-4" />
-              التقارير المالية
+              {t('reports.financialReports')}
             </TabsTrigger>
-            <TabsTrigger value="trips">سجل الرحلات</TabsTrigger>
-            <TabsTrigger value="attendance">الحضور</TabsTrigger>
-            <TabsTrigger value="incidents">الحوادث</TabsTrigger>
+            <TabsTrigger value="trips">{t('reports.tripLogs')}</TabsTrigger>
+            <TabsTrigger value="attendance">{t('reports.attendance')}</TabsTrigger>
+            <TabsTrigger value="incidents">{t('reports.incidentReports')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="financial">
@@ -336,7 +339,7 @@ const Reports = () => {
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle>سجل الرحلات اليومية</CardTitle>
+                  <CardTitle>{t('reports.dailyTripLogs')}</CardTitle>
                   <div className="flex gap-2">
                     <Input
                       type="date"
@@ -357,18 +360,18 @@ const Reports = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="text-right">التاريخ</TableHead>
-                      <TableHead className="text-right">المسار</TableHead>
-                      <TableHead className="text-right">وقت المغادرة</TableHead>
-                      <TableHead className="text-right">وقت الوصول</TableHead>
-                      <TableHead className="text-right">ملاحظات</TableHead>
+                      <TableHead className="text-right">{t('reports.tripDate')}</TableHead>
+                      <TableHead className="text-right">{t('reports.route')}</TableHead>
+                      <TableHead className="text-right">{t('reports.departureTime')}</TableHead>
+                      <TableHead className="text-right">{t('reports.arrivalTime')}</TableHead>
+                      <TableHead className="text-right">{t('reports.notes')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {tripLogs.slice(0, 20).map((trip: any) => (
                       <TableRow key={trip.id}>
                         <TableCell>
-                          {format(new Date(trip.trip_date), "dd MMM yyyy", { locale: ar })}
+                          {format(new Date(trip.trip_date), "dd MMM yyyy", { locale: dateLocale })}
                         </TableCell>
                         <TableCell>{trip.routes?.name || "-"}</TableCell>
                         <TableCell>{trip.departure_time || "-"}</TableCell>
@@ -387,17 +390,17 @@ const Reports = () => {
           <TabsContent value="attendance">
             <Card>
               <CardHeader>
-                <CardTitle>سجل الحضور</CardTitle>
+                <CardTitle>{t('reports.attendanceRecord')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="text-right">الطالب</TableHead>
-                      <TableHead className="text-right">التاريخ</TableHead>
-                      <TableHead className="text-right">المسار</TableHead>
-                      <TableHead className="text-right">الحالة</TableHead>
-                      <TableHead className="text-right">ملاحظات</TableHead>
+                      <TableHead className="text-right">{t('reports.student')}</TableHead>
+                      <TableHead className="text-right">{t('reports.tripDate')}</TableHead>
+                      <TableHead className="text-right">{t('reports.route')}</TableHead>
+                      <TableHead className="text-right">{t('common.status')}</TableHead>
+                      <TableHead className="text-right">{t('reports.notes')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -406,14 +409,14 @@ const Reports = () => {
                         <TableCell>{record.registrations?.student_name || "-"}</TableCell>
                         <TableCell>
                           {record.trip_logs?.trip_date 
-                            ? format(new Date(record.trip_logs.trip_date), "dd MMM yyyy", { locale: ar })
+                            ? format(new Date(record.trip_logs.trip_date), "dd MMM yyyy", { locale: dateLocale })
                             : "-"
                           }
                         </TableCell>
                         <TableCell>{record.trip_logs?.routes?.name || "-"}</TableCell>
                         <TableCell>
                           <Badge variant={record.present ? "default" : "destructive"}>
-                            {record.present ? "حاضر" : "غائب"}
+                            {record.present ? t('reports.present') : t('reports.absent')}
                           </Badge>
                         </TableCell>
                         <TableCell className="max-w-[200px] truncate">

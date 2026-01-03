@@ -1,5 +1,6 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { OperationsMapView } from "@/components/tracking/OperationsMapView";
@@ -11,6 +12,7 @@ import { useCity } from "@/contexts/CityContext";
 import { GoogleMapsProvider } from "@/components/maps/GoogleMapsProvider";
 
 export default function LiveTracking() {
+  const { t } = useTranslation();
   const { selectedCity } = useCity();
 
   const { data: routes = [], isLoading } = useQuery({
@@ -55,19 +57,19 @@ export default function LiveTracking() {
     <DashboardLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold">التتبع المباشر</h1>
-          <p className="text-muted-foreground">إدارة الرحلات وتتبع الباصات</p>
+          <h1 className="text-2xl font-bold">{t('liveTracking.title')}</h1>
+          <p className="text-muted-foreground">{t('liveTracking.description')}</p>
         </div>
 
         <Tabs defaultValue="map" className="space-y-4">
           <TabsList>
             <TabsTrigger value="map" className="gap-2">
               <Map className="h-4 w-4" />
-              خريطة الباصات
+              {t('liveTracking.busMap')}
             </TabsTrigger>
             <TabsTrigger value="routes" className="gap-2">
               <List className="h-4 w-4" />
-              قائمة المسارات
+              {t('liveTracking.routesList')}
             </TabsTrigger>
           </TabsList>
 
@@ -78,7 +80,6 @@ export default function LiveTracking() {
             </GoogleMapsProvider>
           </TabsContent>
 
-          {/* Routes List View - View Only for Admin */}
           <TabsContent value="routes">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {routes.map((route) => {
@@ -91,7 +92,7 @@ export default function LiveTracking() {
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-base">{route.name}</CardTitle>
                         {isActive && (
-                          <Badge className="bg-green-500">Active / نشط</Badge>
+                          <Badge className="bg-green-500">{t('liveTracking.active')}</Badge>
                         )}
                       </div>
                     </CardHeader>
@@ -102,24 +103,24 @@ export default function LiveTracking() {
                       </div>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Users className="h-4 w-4" />
-                        {studentCount} Students / طالب
+                        {studentCount} {t('liveTracking.students')}
                       </div>
                       {route.drivers && (
                         <div className="text-sm text-muted-foreground">
-                          Driver / السائق: {route.drivers.full_name}
+                          {t('liveTracking.driver')}: {route.drivers.full_name}
                         </div>
                       )}
                       {route.supervisors && (
                         <div className="text-sm text-muted-foreground">
-                          Supervisor / المشرف: {route.supervisors.full_name}
+                          {t('liveTracking.supervisor')}: {route.supervisors.full_name}
                         </div>
                       )}
                       <div className="flex items-center gap-2 text-sm">
                         <Badge variant={route.car_type === 'ac' ? 'default' : 'secondary'}>
-                          {route.car_type === 'ac' ? 'AC / مكيف' : 'Non-AC / بدون تكييف'}
+                          {route.car_type === 'ac' ? t('liveTracking.ac') : t('liveTracking.nonAc')}
                         </Badge>
                         <Badge variant="outline">
-                          {route.max_seats} Seats / مقعد
+                          {route.max_seats} {t('liveTracking.seats')}
                         </Badge>
                       </div>
                     </CardContent>

@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
@@ -25,13 +26,15 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Search, CreditCard, CheckCircle, Clock, AlertCircle, Check, Eye, Hash, Download } from 'lucide-react';
 import { format } from 'date-fns';
-import { ar } from 'date-fns/locale';
+import { ar, enUS } from 'date-fns/locale';
 import { PaymentProfileDialog } from '@/components/payments/PaymentProfileDialog';
 import { PaymentReminders } from '@/components/payments/PaymentReminders';
 import { InvoiceGenerator } from '@/components/payments/InvoiceGenerator';
 import { useCity } from '@/contexts/CityContext';
 
 const Payments = () => {
+  const { t, i18n } = useTranslation();
+  const dateLocale = i18n.language === 'ar' ? ar : enUS;
   const queryClient = useQueryClient();
   const { selectedCity } = useCity();
   const [searchTerm, setSearchTerm] = useState('');
@@ -100,10 +103,10 @@ const Payments = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
-      toast.success('تم تسجيل الدفع بنجاح');
+      toast.success(t('payments.paymentSuccess'));
     },
     onError: (error) => {
-      toast.error('حدث خطأ أثناء تسجيل الدفع');
+      toast.error(t('payments.paymentError'));
       console.error(error);
     },
   });
@@ -181,14 +184,14 @@ const Payments = () => {
   });
 
   const statusLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: React.ReactNode }> = {
-    paid: { label: 'مدفوع', variant: 'default', icon: <CheckCircle className="h-4 w-4" /> },
-    pending: { label: 'في الانتظار', variant: 'secondary', icon: <Clock className="h-4 w-4" /> },
-    overdue: { label: 'متأخر', variant: 'destructive', icon: <AlertCircle className="h-4 w-4" /> },
+    paid: { label: t('payments.paid'), variant: 'default', icon: <CheckCircle className="h-4 w-4" /> },
+    pending: { label: t('payments.pending'), variant: 'secondary', icon: <Clock className="h-4 w-4" /> },
+    overdue: { label: t('payments.overdue'), variant: 'destructive', icon: <AlertCircle className="h-4 w-4" /> },
   };
 
   const subscriptionTypeLabels: Record<string, string> = {
-    monthly: 'شهري',
-    yearly: 'سنوي',
+    monthly: t('payments.monthly'),
+    yearly: t('payments.yearly'),
   };
 
   const stats = {
@@ -225,8 +228,8 @@ const Payments = () => {
     <DashboardLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">إدارة المدفوعات</h1>
-          <p className="text-muted-foreground">متابعة الأقساط والمدفوعات</p>
+          <h1 className="text-3xl font-bold text-foreground">{t('payments.title')}</h1>
+          <p className="text-muted-foreground">{t('payments.description')}</p>
         </div>
 
         {/* Payment Reminders */}
@@ -239,38 +242,38 @@ const Payments = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">إجمالي المستحق</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('payments.totalDue')}</CardTitle>
               <CreditCard className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.total.toLocaleString()} ج.م</div>
+              <div className="text-2xl font-bold">{stats.total.toLocaleString()} EGP</div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">المدفوع</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('payments.paid')}</CardTitle>
               <CheckCircle className="h-4 w-4 text-green-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">{stats.paid.toLocaleString()} ج.م</div>
+              <div className="text-2xl font-bold text-green-600">{stats.paid.toLocaleString()} EGP</div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">في الانتظار</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('payments.pending')}</CardTitle>
               <Clock className="h-4 w-4 text-yellow-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">{stats.pending.toLocaleString()} ج.م</div>
+              <div className="text-2xl font-bold text-yellow-600">{stats.pending.toLocaleString()} EGP</div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">متأخر</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('payments.overdue')}</CardTitle>
               <AlertCircle className="h-4 w-4 text-red-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-600">{stats.overdue.toLocaleString()} ج.م</div>
+              <div className="text-2xl font-bold text-red-600">{stats.overdue.toLocaleString()} EGP</div>
             </CardContent>
           </Card>
         </div>
@@ -278,15 +281,15 @@ const Payments = () => {
         {/* Payment Status Tabs */}
         <Tabs value={paymentTab} onValueChange={setPaymentTab}>
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="all">الكل</TabsTrigger>
+            <TabsTrigger value="all">{t('common.all')}</TabsTrigger>
             <TabsTrigger value="fully_paid" className="flex items-center gap-2">
-              مدفوع بالكامل
+              {t('payments.fullyPaid')}
               <Badge variant="outline" className="text-xs">
                 {tabStats.fullyPaidCount}
               </Badge>
             </TabsTrigger>
             <TabsTrigger value="partial" className="flex items-center gap-2">
-              دفع جزئي
+              {t('payments.partialPayment')}
               <Badge variant="outline" className="text-xs">
                 {tabStats.partialCount}
               </Badge>
@@ -298,9 +301,9 @@ const Payments = () => {
             <Card className="mt-4 bg-green-50 dark:bg-green-900/20 border-green-200">
               <CardContent className="pt-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-green-700 dark:text-green-300">إجمالي المدفوع بالكامل:</span>
+                  <span className="text-green-700 dark:text-green-300">{t('payments.paidAmount')}:</span>
                   <span className="font-bold text-green-700 dark:text-green-300">
-                    {tabStats.fullyPaidAmount.toLocaleString()} ج.م ({tabStats.fullyPaidCount} تسجيل)
+                    {tabStats.fullyPaidAmount.toLocaleString()} EGP ({tabStats.fullyPaidCount} {t('payments.registrationsCount')})
                   </span>
                 </div>
               </CardContent>
@@ -311,15 +314,15 @@ const Payments = () => {
             <Card className="mt-4 bg-orange-50 dark:bg-orange-900/20 border-orange-200">
               <CardContent className="pt-4 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-orange-700 dark:text-orange-300">المدفوع حتى الآن:</span>
+                  <span className="text-orange-700 dark:text-orange-300">{t('payments.paidSoFar')}:</span>
                   <span className="font-bold text-orange-700 dark:text-orange-300">
-                    {tabStats.partialPaidAmount.toLocaleString()} ج.م
+                    {tabStats.partialPaidAmount.toLocaleString()} EGP
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-orange-700 dark:text-orange-300">المتبقي:</span>
+                  <span className="text-orange-700 dark:text-orange-300">{t('payments.remaining')}:</span>
                   <span className="font-bold text-red-600 dark:text-red-400">
-                    {tabStats.partialRemainingAmount.toLocaleString()} ج.م
+                    {tabStats.partialRemainingAmount.toLocaleString()} EGP
                   </span>
                 </div>
               </CardContent>
@@ -332,7 +335,7 @@ const Payments = () => {
               <div className="relative max-w-sm">
                 <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="بحث باسم ولي الأمر أو الطالب..."
+                  placeholder={t('common.search') + '...'}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pr-10"
@@ -340,20 +343,20 @@ const Payments = () => {
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="حالة الدفع" />
+                  <SelectValue placeholder={t('payments.paymentStatus')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">الكل</SelectItem>
-                  <SelectItem value="paid">مدفوع</SelectItem>
-                  <SelectItem value="pending">في الانتظار</SelectItem>
-                  <SelectItem value="overdue">متأخر</SelectItem>
+                  <SelectItem value="all">{t('common.all')}</SelectItem>
+                  <SelectItem value="paid">{t('payments.paid')}</SelectItem>
+                  <SelectItem value="pending">{t('payments.pending')}</SelectItem>
+                  <SelectItem value="overdue">{t('payments.overdue')}</SelectItem>
                 </SelectContent>
               </Select>
               <div className="relative w-[180px]">
                 <Hash className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="number"
-                  placeholder="عدد الأقساط..."
+                  placeholder={t('payments.installments') + '...'}
                   value={installmentFilter}
                   onChange={(e) => setInstallmentFilter(e.target.value)}
                   className="pr-10"
@@ -369,28 +372,28 @@ const Payments = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="text-right">ولي الأمر</TableHead>
-                      <TableHead className="text-right">الطالب</TableHead>
-                      <TableHead className="text-right">نوع الاشتراك</TableHead>
-                      <TableHead className="text-right">عدد الأقساط</TableHead>
-                      <TableHead className="text-right">رقم القسط</TableHead>
-                      <TableHead className="text-right">المبلغ</TableHead>
-                      <TableHead className="text-right">تاريخ الاستحقاق</TableHead>
-                      <TableHead className="text-right">الحالة</TableHead>
-                      <TableHead className="text-right">الإجراءات</TableHead>
+                      <TableHead className="text-right">{t('payments.parentName')}</TableHead>
+                      <TableHead className="text-right">{t('payments.studentName')}</TableHead>
+                      <TableHead className="text-right">{t('payments.subscriptionType')}</TableHead>
+                      <TableHead className="text-right">{t('payments.installments')}</TableHead>
+                      <TableHead className="text-right">{t('payments.installmentNumber')}</TableHead>
+                      <TableHead className="text-right">{t('payments.amount')}</TableHead>
+                      <TableHead className="text-right">{t('payments.dueDate')}</TableHead>
+                      <TableHead className="text-right">{t('common.status')}</TableHead>
+                      <TableHead className="text-right">{t('common.actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {isLoading ? (
                       <TableRow>
                         <TableCell colSpan={9} className="text-center py-8">
-                          جاري التحميل...
+                          {t('common.loading')}
                         </TableCell>
                       </TableRow>
                     ) : filteredPayments.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={9} className="text-center py-8">
-                          لا توجد مدفوعات
+                          {t('payments.noPayments')}
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -409,9 +412,9 @@ const Payments = () => {
                             {payment.subscriptions?.number_of_installments || '-'}
                           </TableCell>
                           <TableCell>{payment.installment_number}</TableCell>
-                          <TableCell>{Number(payment.amount).toLocaleString()} ج.م</TableCell>
+                          <TableCell>{Number(payment.amount).toLocaleString()} EGP</TableCell>
                           <TableCell>
-                            {format(new Date(payment.due_date), 'dd MMM yyyy', { locale: ar })}
+                            {format(new Date(payment.due_date), 'dd MMM yyyy', { locale: dateLocale })}
                           </TableCell>
                           <TableCell>
                             <Badge

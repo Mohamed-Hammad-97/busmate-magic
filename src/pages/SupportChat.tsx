@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
@@ -20,7 +21,7 @@ import {
   CheckCircle, Search, ArrowLeft, Phone
 } from "lucide-react";
 import { format } from "date-fns";
-import { ar } from "date-fns/locale";
+import { ar, enUS } from "date-fns/locale";
 
 interface Message {
   id: string;
@@ -45,6 +46,8 @@ interface Conversation {
 }
 
 export default function SupportChat() {
+  const { t, i18n } = useTranslation();
+  const dateLocale = i18n.language === 'ar' ? ar : enUS;
   const { user, employee } = useAuth();
   const queryClient = useQueryClient();
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
@@ -202,8 +205,8 @@ export default function SupportChat() {
       <div className="h-[calc(100vh-8rem)]">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-2xl font-bold">الدعم والمحادثات</h1>
-            <p className="text-muted-foreground">إدارة محادثات أولياء الأمور</p>
+            <h1 className="text-2xl font-bold">{t('supportChat.title')}</h1>
+            <p className="text-muted-foreground">{t('supportChat.description')}</p>
           </div>
         </div>
 
@@ -215,7 +218,7 @@ export default function SupportChat() {
                 <div className="relative">
                   <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="بحث..."
+                    placeholder={t('supportChat.searchPlaceholder')}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pr-10"
@@ -223,13 +226,13 @@ export default function SupportChat() {
                 </div>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger>
-                    <SelectValue placeholder="الحالة" />
+                    <SelectValue placeholder={t('common.status')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">الكل</SelectItem>
-                    <SelectItem value="open">مفتوح</SelectItem>
-                    <SelectItem value="pending">في الانتظار</SelectItem>
-                    <SelectItem value="closed">مغلق</SelectItem>
+                    <SelectItem value="all">{t('common.all')}</SelectItem>
+                    <SelectItem value="open">{t('supportChat.open')}</SelectItem>
+                    <SelectItem value="pending">{t('payments.pending')}</SelectItem>
+                    <SelectItem value="closed">{t('supportChat.closed')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -242,7 +245,7 @@ export default function SupportChat() {
               ) : filteredConversations.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-4">
                   <MessageCircle className="h-12 w-12 mb-3 opacity-50" />
-                  <p>لا توجد محادثات</p>
+                  <p>{t('supportChat.noConversations')}</p>
                 </div>
               ) : (
                 <ScrollArea className="h-full">
@@ -262,18 +265,18 @@ export default function SupportChat() {
                               conv.status === "pending" ? "secondary" : "outline"
                             }
                           >
-                            {conv.status === "open" ? "مفتوح" : 
-                             conv.status === "pending" ? "في الانتظار" : "مغلق"}
+                            {conv.status === "open" ? t('supportChat.open') : 
+                             conv.status === "pending" ? t('payments.pending') : t('supportChat.closed')}
                           </Badge>
                           <div className="text-right">
                             <p className="font-medium">{conv.parent_accounts?.parent_name}</p>
                             <p className="text-sm text-muted-foreground truncate max-w-[150px]">
-                              {conv.subject || "بدون عنوان"}
+                              {conv.subject || t('supportChat.noSubject')}
                             </p>
                           </div>
                         </div>
                         <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span>{format(new Date(conv.last_message_at), "HH:mm dd/MM", { locale: ar })}</span>
+                          <span>{format(new Date(conv.last_message_at), "HH:mm dd/MM", { locale: dateLocale })}</span>
                           <span dir="ltr">{conv.parent_accounts?.father_phone}</span>
                         </div>
                       </button>
@@ -284,12 +287,11 @@ export default function SupportChat() {
             </CardContent>
           </Card>
 
-          {/* Chat Area */}
           <Card className="lg:col-span-2 flex flex-col">
             {!selectedConversation ? (
               <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
                 <MessageCircle className="h-16 w-16 mb-4 opacity-30" />
-                <p>اختر محادثة للبدء</p>
+                <p>{t('supportChat.selectConversation')}</p>
               </div>
             ) : (
               <>
@@ -310,7 +312,7 @@ export default function SupportChat() {
                           {selectedConv?.parent_accounts?.parent_name}
                         </CardTitle>
                         <p className="text-sm text-muted-foreground">
-                          {selectedConv?.subject || "بدون عنوان"}
+                          {selectedConv?.subject || t('supportChat.noSubject')}
                         </p>
                       </div>
                     </div>
@@ -328,9 +330,9 @@ export default function SupportChat() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="open">مفتوح</SelectItem>
-                          <SelectItem value="pending">في الانتظار</SelectItem>
-                          <SelectItem value="closed">مغلق</SelectItem>
+                          <SelectItem value="open">{t('supportChat.open')}</SelectItem>
+                          <SelectItem value="pending">{t('payments.pending')}</SelectItem>
+                          <SelectItem value="closed">{t('supportChat.closed')}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -344,7 +346,7 @@ export default function SupportChat() {
                     </div>
                   ) : messages.length === 0 ? (
                     <div className="text-center text-muted-foreground py-8">
-                      <p>لا توجد رسائل بعد</p>
+                      <p>{t('supportChat.noMessages')}</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -364,7 +366,7 @@ export default function SupportChat() {
                             <div className={`flex items-center gap-1 text-xs mt-1 ${
                               msg.sender_type === "employee" ? "text-primary-foreground/70" : "text-muted-foreground"
                             }`}>
-                              <span>{format(new Date(msg.created_at), "HH:mm", { locale: ar })}</span>
+                              <span>{format(new Date(msg.created_at), "HH:mm", { locale: dateLocale })}</span>
                               {msg.sender_type === "employee" && msg.is_read && (
                                 <CheckCircle className="h-3 w-3" />
                               )}
@@ -386,7 +388,7 @@ export default function SupportChat() {
                     className="flex gap-2"
                   >
                     <Input
-                      placeholder="اكتب ردك..."
+                      placeholder={t('supportChat.writeReply')}
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
                       disabled={sendMessage.isPending || selectedConv?.status === "closed"}
@@ -405,7 +407,7 @@ export default function SupportChat() {
                   </form>
                   {selectedConv?.status === "closed" && (
                     <p className="text-sm text-muted-foreground mt-2 text-center">
-                      هذه المحادثة مغلقة. قم بتغيير الحالة للرد.
+                      {t('supportChat.conversationClosed')}
                     </p>
                   )}
                 </div>
