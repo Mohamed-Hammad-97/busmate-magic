@@ -36,6 +36,7 @@ Deno.serve(async (req) => {
     const { data: { user: caller }, error: callerError } = await supabaseAdmin.auth.getUser(token)
     
     if (callerError || !caller) {
+      console.error('Auth error:', callerError?.message)
       return new Response(
         JSON.stringify({ error: 'Invalid token' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -43,11 +44,15 @@ Deno.serve(async (req) => {
     }
 
     // Check if caller has super_admin role
-    const { data: callerRole } = await supabaseAdmin
+    const { data: callerRole, error: roleError } = await supabaseAdmin
       .from('user_roles')
       .select('role')
       .eq('user_id', caller.id)
       .single()
+
+    if (roleError) {
+      console.error('Role check error:', roleError)
+    }
 
     if (!callerRole || callerRole.role !== 'super_admin') {
       return new Response(
@@ -77,8 +82,9 @@ Deno.serve(async (req) => {
     })
 
     if (authError) {
+      console.error('Auth user creation error:', authError.message)
       return new Response(
-        JSON.stringify({ error: authError.message }),
+        JSON.stringify({ error: 'Failed to create user account' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -98,24 +104,25 @@ Deno.serve(async (req) => {
       })
 
     if (employeeError) {
+      console.error('Employee creation error:', employeeError)
       // Rollback: delete the auth user if employee creation fails
       await supabaseAdmin.auth.admin.deleteUser(userId)
       return new Response(
-        JSON.stringify({ error: employeeError.message }),
+        JSON.stringify({ error: 'Failed to create employee record' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
     // Create user_role record with 'employee' role
-    const { error: roleError } = await supabaseAdmin
+    const { error: userRoleError } = await supabaseAdmin
       .from('user_roles')
       .insert({
         user_id: userId,
         role: 'employee',
       })
 
-    if (roleError) {
-      console.error('Failed to create user role:', roleError)
+    if (userRoleError) {
+      console.error('Failed to create user role:', userRoleError)
       // Don't rollback for this, the employee is already created
     }
 
@@ -125,10 +132,9 @@ Deno.serve(async (req) => {
     )
 
   } catch (error: unknown) {
-    console.error('Error:', error)
-    const message = error instanceof Error ? error.message : 'Unknown error'
+    console.error('Error:', error instanceof Error ? error.message : 'Unknown error')
     return new Response(
-      JSON.stringify({ error: message }),
+      JSON.stringify({ error: 'An unexpected error occurred' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
