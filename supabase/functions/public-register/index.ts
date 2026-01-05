@@ -198,7 +198,7 @@ serve(async (req) => {
     if (parentError) {
       console.error("Error creating parent account:", parentError);
       return new Response(
-        JSON.stringify({ error: "Failed to create parent account" }),
+        JSON.stringify({ error: "Failed to create parent account. Please try again." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -223,7 +223,7 @@ serve(async (req) => {
       // Rollback: delete the parent account if registration fails
       await supabase.from('parent_accounts').delete().eq('id', newParent.id);
       return new Response(
-        JSON.stringify({ error: "Failed to create registration" }),
+        JSON.stringify({ error: "Failed to create registration. Please try again." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -235,10 +235,9 @@ serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error("Registration error:", message);
+    console.error("Registration error:", error instanceof Error ? error.message : 'Unknown error');
     return new Response(
-      JSON.stringify({ error: message }),
+      JSON.stringify({ error: "An unexpected error occurred. Please try again." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

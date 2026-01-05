@@ -30,7 +30,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, UserPlus, User, Phone, Key, Eye, EyeOff, Trash2 } from "lucide-react";
+import { Loader2, Plus, UserPlus, User, Phone, Key, Eye, EyeOff } from "lucide-react";
 import { z } from "zod";
 
 const phoneSchema = z.string().regex(/^01[0125]\d{8}$/, "رقم الهاتف غير صالح");
@@ -136,39 +136,18 @@ export function DriverAccountsManagement({ cityFilter }: DriverAccountsManagemen
     setIsLoading(true);
 
     try {
-      // Create Supabase auth user
-      const formattedPhone = phone.replace(/\D/g, "");
-      const email = `driver_${formattedPhone}@seater.app`;
-
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
+      // Use server-side edge function for secure account creation
+      const { data, error } = await supabase.functions.invoke('create-driver-account', {
+        body: {
+          phone,
+          password,
+          accountType,
+          personId: selectedPersonId,
         },
       });
 
-      if (authError) throw authError;
-      if (!authData.user) throw new Error("Failed to create user");
-
-      // Create driver account
-      const accountData: any = {
-        user_id: authData.user.id,
-        phone,
-        is_active: true,
-      };
-
-      if (accountType === "driver") {
-        accountData.driver_id = selectedPersonId;
-      } else {
-        accountData.supervisor_id = selectedPersonId;
-      }
-
-      const { error: insertError } = await supabase
-        .from("driver_accounts")
-        .insert(accountData);
-
-      if (insertError) throw insertError;
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       toast({
         title: "تم إنشاء الحساب",
