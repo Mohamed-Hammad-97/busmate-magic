@@ -9,28 +9,37 @@ export const useGoogleMapsToken = () => {
   useEffect(() => {
     const fetchToken = async () => {
       try {
+        console.log('useGoogleMapsToken: Starting to fetch token...');
+        
         // First try environment variable
         const envToken = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
         if (envToken) {
+          console.log('useGoogleMapsToken: Found env token');
           setToken(envToken);
           setIsLoading(false);
           return;
         }
 
-        // Fallback: fetch from edge function
+        console.log('useGoogleMapsToken: No env token, fetching from edge function...');
+        
+        // Fetch from edge function
         const { data, error: fetchError } = await supabase.functions.invoke('get-google-maps-key');
         
+        console.log('useGoogleMapsToken: Edge function response:', { data, fetchError });
+        
         if (fetchError) {
+          console.error('useGoogleMapsToken: Error fetching key:', fetchError);
           setError('Failed to load Google Maps API key');
-          console.error('Error fetching Google Maps key:', fetchError);
         } else if (data?.apiKey) {
+          console.log('useGoogleMapsToken: Successfully got API key');
           setToken(data.apiKey);
         } else {
+          console.error('useGoogleMapsToken: No API key in response');
           setError('Google Maps API key not configured');
         }
       } catch (err) {
+        console.error('useGoogleMapsToken: Exception:', err);
         setError('Failed to load Google Maps API key');
-        console.error('Error:', err);
       } finally {
         setIsLoading(false);
       }
