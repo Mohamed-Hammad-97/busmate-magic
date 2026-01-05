@@ -773,6 +773,39 @@ export type Database = {
         }
         Relationships: []
       }
+      sensitive_data_access_log: {
+        Row: {
+          accessed_at: string
+          action: string
+          id: string
+          ip_address: string | null
+          record_id: string
+          table_name: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          accessed_at?: string
+          action?: string
+          id?: string
+          ip_address?: string | null
+          record_id: string
+          table_name: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          accessed_at?: string
+          action?: string
+          id?: string
+          ip_address?: string | null
+          record_id?: string
+          table_name?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
           created_at: string
@@ -1039,6 +1072,10 @@ export type Database = {
       }
       is_driver_or_supervisor: { Args: { _user_id: string }; Returns: boolean }
       is_employee: { Args: { _user_id: string }; Returns: boolean }
+      log_sensitive_data_access: {
+        Args: { p_record_id: string; p_table_name: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "super_admin" | "employee"

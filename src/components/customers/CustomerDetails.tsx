@@ -22,6 +22,19 @@ interface CustomerDetailsProps {
 }
 
 const CustomerDetails: React.FC<CustomerDetailsProps> = ({ isOpen, onClose, customer }) => {
+  // Log access to sensitive parent data for audit trail
+  React.useEffect(() => {
+    const logAccess = async () => {
+      if (isOpen && customer?.id) {
+        await supabase.rpc('log_sensitive_data_access', {
+          p_table_name: 'parent_accounts',
+          p_record_id: customer.id
+        });
+      }
+    };
+    logAccess().catch(console.error);
+  }, [isOpen, customer?.id]);
+
   const { data: registrations = [] } = useQuery({
     queryKey: ['customer-registrations', customer?.id],
     queryFn: async () => {
