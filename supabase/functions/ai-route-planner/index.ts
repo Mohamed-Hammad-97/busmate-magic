@@ -160,13 +160,68 @@ serve(async (req) => {
   }
 
   try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+
+    // Authentication check
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      console.error("Missing Authorization header");
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Create client with user's auth token to verify identity
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+    if (authError || !user) {
+      console.error("Auth error:", authError?.message || "No user found");
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Authorization check - require operations department or super_admin role
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+    
+    const { data: employee, error: empError } = await supabaseAdmin
+      .from("employees")
+      .select("departments")
+      .eq("user_id", user.id)
+      .single();
+
+    const { data: userRole } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .single();
+
+    const hasOperationsAccess = employee?.departments?.includes("operations");
+    const isSuperAdmin = userRole?.role === "super_admin";
+
+    if (!hasOperationsAccess && !isSuperAdmin) {
+      console.error("Authorization failed: User lacks operations department access");
+      return new Response(
+        JSON.stringify({ error: "Forbidden: Operations access required" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log(`Authorized user ${user.id} accessing ai-route-planner`);
+
     // Parse body ONCE - it can only be consumed once
     const body = await req.json();
     const { action, schoolId, carType, maxSeatsPerRoute, routeId, suggestion, driverId, supervisorId, searchArea } = body;
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // Use admin client for database operations
+    const supabase = supabaseAdmin;
 
     if (action === "suggest-routes") {
       // Get all registrations for the school (pending_fees and complete, not cancelled)
