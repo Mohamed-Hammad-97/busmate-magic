@@ -1,7 +1,7 @@
 project_id = "cfkipvshbozcofsbpfln"
 
 [functions.ai-route-planner]
-verify_jwt = false
+verify_jwt = true
 
 [functions.create-driver-account]
 verify_jwt = true
