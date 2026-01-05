@@ -35,6 +35,7 @@ import RegistrationDetails from '@/components/registrations/RegistrationDetails'
 import SubscriptionDialog from '@/components/registrations/SubscriptionDialog';
 import RegistrationsMap from '@/components/registrations/RegistrationsMap';
 import { ShareButton } from '@/components/shared/ShareButton';
+import { GoogleMapsProvider } from '@/components/maps/GoogleMapsProvider';
 import { useCity } from '@/contexts/CityContext';
 import type { Tables, Enums } from '@/integrations/supabase/types';
 
@@ -349,7 +350,9 @@ const Registrations: React.FC = () => {
               </DialogTitle>
             </DialogHeader>
             <div className="flex-1 overflow-hidden">
-              <RegistrationsMap registrations={filteredRegistrations} />
+              <GoogleMapsProvider>
+                <RegistrationsMap registrations={filteredRegistrations} />
+              </GoogleMapsProvider>
             </div>
           </DialogContent>
         </Dialog>
