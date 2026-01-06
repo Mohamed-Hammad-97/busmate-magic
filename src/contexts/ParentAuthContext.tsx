@@ -80,41 +80,65 @@ export function ParentAuthProvider({ children }: { children: React.ReactNode }) 
   }, []);
 
   const sendOtp = async (phone: string) => {
-    // Format phone for Egypt (+2)
-    const formattedPhone = phone.startsWith("+") ? phone : `+2${phone}`;
-    
-    const { error } = await supabase.auth.signInWithOtp({
-      phone: formattedPhone,
-    });
-    return { error: error as Error | null };
+    try {
+      // Clean phone number
+      const cleanPhone = phone.replace(/\s/g, "").replace(/^0/, "");
+      
+      const { data, error } = await supabase.functions.invoke("send-otp", {
+        body: { phone: cleanPhone },
+      });
+
+      if (error) {
+        console.error("Error sending OTP:", error);
+        return { error: new Error(error.message || "فشل في إرسال رمز التحقق") };
+      }
+
+      if (data?.error) {
+        return { error: new Error(data.error) };
+      }
+
+      return { error: null };
+    } catch (error) {
+      console.error("Error in sendOtp:", error);
+      return { error: error as Error };
+    }
   };
 
   const verifyOtp = async (phone: string, token: string) => {
-    const formattedPhone = phone.startsWith("+") ? phone : `+2${phone}`;
-    
-    const { data, error } = await supabase.auth.verifyOtp({
-      phone: formattedPhone,
-      token,
-      type: "sms",
-    });
-
-    if (!error && data.user) {
-      // Link user to parent_account by phone
-      const { data: existingParent } = await supabase
-        .from("parent_accounts")
-        .select("id, user_id")
-        .eq("father_phone", phone)
-        .maybeSingle();
+    try {
+      // Clean phone number
+      const cleanPhone = phone.replace(/\s/g, "").replace(/^0/, "");
       
-      if (existingParent && !existingParent.user_id) {
-        await supabase
-          .from("parent_accounts")
-          .update({ user_id: data.user.id })
-          .eq("id", existingParent.id);
-      }
-    }
+      const { data, error } = await supabase.functions.invoke("verify-otp", {
+        body: { phone: cleanPhone, code: token },
+      });
 
-    return { error: error as Error | null };
+      if (error) {
+        console.error("Error verifying OTP:", error);
+        return { error: new Error(error.message || "فشل في التحقق من الرمز") };
+      }
+
+      if (data?.error) {
+        return { error: new Error(data.error) };
+      }
+
+      if (data?.success && data?.user_id) {
+        // Fetch parent account after successful verification
+        await fetchParentAccount(data.user_id);
+        
+        // Refresh the session to get the updated auth state
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (sessionData.session) {
+          setSession(sessionData.session);
+          setUser(sessionData.session.user);
+        }
+      }
+
+      return { error: null };
+    } catch (error) {
+      console.error("Error in verifyOtp:", error);
+      return { error: error as Error };
+    }
   };
 
   const signOut = async () => {
