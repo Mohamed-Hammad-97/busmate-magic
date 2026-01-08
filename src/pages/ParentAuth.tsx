@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Navigate } from "react-router-dom";
 import { useParentAuth } from "@/contexts/ParentAuthContext";
 import { Button } from "@/components/ui/button";
@@ -7,10 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { useToast } from "@/hooks/use-toast";
-import { Bus, Loader2, Phone, ArrowLeft } from "lucide-react";
+import { Loader2, Phone, ArrowLeft, RefreshCw } from "lucide-react";
 import { z } from "zod";
 
 const phoneSchema = z.string().regex(/^01[0125]\d{8}$/, "رقم الهاتف غير صالح");
+const RESEND_COOLDOWN = 120; // 2 minutes in seconds
 
 export default function ParentAuth() {
   const { user, parentAccount, isLoading: authLoading, sendOtp, verifyOtp } = useParentAuth();
@@ -20,6 +21,30 @@ export default function ParentAuth() {
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [error, setError] = useState("");
+  const [resendTimer, setResendTimer] = useState(0);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, []);
+
+  // Start countdown timer
+  const startResendTimer = () => {
+    setResendTimer(RESEND_COOLDOWN);
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      setResendTimer((prev) => {
+        if (prev <= 1) {
+          if (timerRef.current) clearInterval(timerRef.current);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
 
   // Redirect if already logged in
   if (!authLoading && user && parentAccount) {
@@ -48,6 +73,7 @@ export default function ParentAuth() {
       });
     } else {
       setStep("otp");
+      startResendTimer();
       toast({
         title: "تم إرسال رمز التحقق",
         description: `تم إرسال رمز التحقق إلى ${phone}`,
@@ -159,12 +185,44 @@ export default function ParentAuth() {
                   تأكيد
                 </Button>
                 <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={async () => {
+                    setIsLoading(true);
+                    const { error } = await sendOtp(phone);
+                    setIsLoading(false);
+                    if (error) {
+                      toast({
+                        variant: "destructive",
+                        title: "خطأ",
+                        description: error.message,
+                      });
+                    } else {
+                      startResendTimer();
+                      toast({
+                        title: "تم إعادة إرسال الرمز",
+                        description: `تم إرسال رمز جديد إلى ${phone}`,
+                      });
+                      setOtp("");
+                    }
+                  }}
+                  disabled={isLoading || resendTimer > 0}
+                >
+                  <RefreshCw className="ml-2 h-4 w-4" />
+                  {resendTimer > 0 
+                    ? `إعادة الإرسال بعد ${Math.floor(resendTimer / 60)}:${(resendTimer % 60).toString().padStart(2, '0')}`
+                    : "إعادة إرسال الرمز"
+                  }
+                </Button>
+                <Button 
                   variant="ghost" 
                   className="w-full"
                   onClick={() => {
                     setStep("phone");
                     setOtp("");
                     setError("");
+                    setResendTimer(0);
+                    if (timerRef.current) clearInterval(timerRef.current);
                   }}
                 >
                   <ArrowLeft className="ml-2 h-4 w-4" />
