@@ -88,7 +88,7 @@ const handler = async (req: Request): Promise<Response> => {
       recipients: cequensPhone,
     };
 
-    console.log("Sending SMS to:", cequensPhone);
+    console.log("Sending SMS to:", cequensPhone, "from sender:", senderName);
 
     const smsResponse = await fetch("https://apis.cequens.com/sms/v1/messages", {
       method: "POST",
