@@ -32,7 +32,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Clean phone number - remove spaces and ensure it starts with country code
     const cleanPhone = phone.replace(/\s/g, "").replace(/^0/, "");
-    const formattedPhone = cleanPhone.startsWith("+") ? cleanPhone : `+2${cleanPhone}`;
+    const formattedPhone = cleanPhone.startsWith("+") ? cleanPhone : `+20${cleanPhone}`;
     
     // For CEQUENS, we need the number without + prefix
     const cequensPhone = formattedPhone.replace("+", "");
