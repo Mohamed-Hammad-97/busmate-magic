@@ -4,7 +4,7 @@ project_id = "cfkipvshbozcofsbpfln"
 verify_jwt = true
 
 [functions.create-driver-account]
-verify_jwt = true
+verify_jwt = false
 
 [functions.create-employee]
 verify_jwt = false
