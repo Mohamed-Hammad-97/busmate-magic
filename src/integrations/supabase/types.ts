@@ -1084,6 +1084,8 @@ export type Database = {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["department"][]
       }
+      get_user_driver_id: { Args: { _user_id: string }; Returns: string }
+      get_user_supervisor_id: { Args: { _user_id: string }; Returns: string }
       has_department: {
         Args: {
           _department: Database["public"]["Enums"]["department"]
