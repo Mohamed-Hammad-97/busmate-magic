@@ -375,6 +375,49 @@ const HomepageAdmin = () => {
                     onChange={(e) => setSettingsForm({ ...settingsForm, about_text: e.target.value })}
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label>About Section Image</Label>
+                  <p className="text-sm text-muted-foreground">Leave empty to use the second gallery image as fallback</p>
+                <ImageUploadInput
+                    value={settingsForm.about_image || ""}
+                    onChange={(url) => setSettingsForm({ ...settingsForm, about_image: url })}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>SEO Settings</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">These settings control how your website appears in search engines and when shared on social media.</p>
+                <div className="space-y-2">
+                  <Label>Page Title</Label>
+                  <Input
+                    placeholder="Seater - Smart School & Corporate Transportation"
+                    value={settingsForm.seo_title || ""}
+                    onChange={(e) => setSettingsForm({ ...settingsForm, seo_title: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Meta Description</Label>
+                  <Textarea
+                    rows={3}
+                    placeholder="A brief description of your website for search engines..."
+                    value={settingsForm.seo_description || ""}
+                    onChange={(e) => setSettingsForm({ ...settingsForm, seo_description: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Keywords</Label>
+                  <Input
+                    placeholder="school bus, transportation, fleet management, GPS tracking"
+                    value={settingsForm.seo_keywords || ""}
+                    onChange={(e) => setSettingsForm({ ...settingsForm, seo_keywords: e.target.value })}
+                  />
+                  <p className="text-xs text-muted-foreground">Separate keywords with commas</p>
+                </div>
               </CardContent>
             </Card>
 

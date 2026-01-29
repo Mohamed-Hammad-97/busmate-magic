@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { Helmet } from "react-helmet-async";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -168,7 +169,18 @@ const Home = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <>
+      {/* SEO Meta Tags */}
+      <Helmet>
+        <title>{getSetting("seo_title", "Seater - Smart School & Corporate Transportation")}</title>
+        <meta name="description" content={getSetting("seo_description", "Smart, Reliable, and Effortless Transportation for Schools, Businesses, and Individuals.")} />
+        <meta name="keywords" content={getSetting("seo_keywords", "school bus, transportation, fleet management, GPS tracking")} />
+        <meta property="og:title" content={getSetting("seo_title", "Seater - Smart School & Corporate Transportation")} />
+        <meta property="og:description" content={getSetting("seo_description", "Smart, Reliable, and Effortless Transportation for Schools, Businesses, and Individuals.")} />
+        <meta name="twitter:title" content={getSetting("seo_title", "Seater - Smart School & Corporate Transportation")} />
+        <meta name="twitter:description" content={getSetting("seo_description", "Smart, Reliable, and Effortless Transportation for Schools, Businesses, and Individuals.")} />
+      </Helmet>
+      <div className="min-h-screen bg-background">
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -214,10 +226,6 @@ const Home = () => {
         
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-2xl space-y-8">
-            <div className="inline-flex items-center gap-2 bg-primary/10 backdrop-blur-sm text-primary px-4 py-2 rounded-full text-sm font-medium">
-              <Bus className="h-4 w-4" />
-              Mobile App for Corporate & Schools
-            </div>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
               {getSetting("hero_title", "Smart, Reliable, and Effortless Transportation").split(",")[0]},{" "}
               <span className="text-primary">
@@ -288,15 +296,37 @@ const Home = () => {
       {/* About Section */}
       <section id="about" className="py-20 px-4">
         <div className="container mx-auto">
-          <div className="max-w-3xl mx-auto text-center space-y-6">
-            <h2 className="text-3xl md:text-4xl font-bold">{getSetting("about_title", "About Seater")}</h2>
-            <p className="text-lg text-muted-foreground leading-relaxed">
-              {getSetting("about_text", "At Seater, we're redefining transportation with passion, innovation, and a vision for a sustainable future.")}
-            </p>
-            <div className="flex justify-center gap-4 pt-4">
-              <Button variant="outline" size="lg" className="gap-2">
-                Learn More <ChevronRight className="h-4 w-4" />
-              </Button>
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* About Image */}
+            <div className="relative">
+              {hasSetting("about_image") ? (
+                <div className="rounded-2xl overflow-hidden shadow-xl">
+                  <img 
+                    src={getSetting("about_image")} 
+                    alt="About Seater" 
+                    className="w-full h-auto object-cover aspect-[4/3]"
+                  />
+                </div>
+              ) : gallery && gallery.length > 1 ? (
+                <div className="rounded-2xl overflow-hidden shadow-xl">
+                  <img 
+                    src={gallery[1].image_url} 
+                    alt={gallery[1].alt_text || "About Seater"} 
+                    className="w-full h-auto object-cover aspect-[4/3]"
+                  />
+                </div>
+              ) : (
+                <div className="rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 aspect-[4/3] flex items-center justify-center">
+                  <Bus className="h-24 w-24 text-primary/30" />
+                </div>
+              )}
+            </div>
+            {/* About Content */}
+            <div className="space-y-6">
+              <h2 className="text-3xl md:text-4xl font-bold">{getSetting("about_title", "About Seater")}</h2>
+              <p className="text-lg text-muted-foreground leading-relaxed">
+                {getSetting("about_text", "At Seater, we're redefining transportation with passion, innovation, and a vision for a sustainable future.")}
+              </p>
             </div>
           </div>
         </div>
@@ -592,7 +622,8 @@ const Home = () => {
           </div>
         </div>
       </footer>
-    </div>
+      </div>
+    </>
   );
 };
 
