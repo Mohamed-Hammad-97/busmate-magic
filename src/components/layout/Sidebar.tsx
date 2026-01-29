@@ -17,6 +17,7 @@ import {
   Sparkles,
   Navigation,
   MessageCircle,
+  Globe,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import seaterLogo from "@/assets/seater-logo.jpg";
@@ -42,6 +43,7 @@ const navItems: NavItem[] = [
   { label: "Payments", href: "/payments", icon: CreditCard, department: "finance" },
   { label: "Support Chat", href: "/support-chat", icon: MessageCircle, department: "customer_support" },
   { label: "Reports", href: "/reports", icon: BarChart3 },
+  { label: "Homepage", href: "/homepage-admin", icon: Globe, adminOnly: true },
   { label: "Employees", href: "/employees", icon: UserCog, adminOnly: true },
   { label: "Settings", href: "/settings", icon: Settings },
 ];
@@ -65,6 +67,7 @@ export function Sidebar() {
       Payments: t('nav.payments'),
       'Support Chat': t('nav.supportChat'),
       Reports: t('nav.reports'),
+      Homepage: 'Homepage',
       Employees: t('settings.employees'),
       Settings: t('nav.settings'),
     };
