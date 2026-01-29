@@ -296,10 +296,10 @@ const Home = () => {
       {/* About Section */}
       <section id="about" className="py-20 px-4">
         <div className="container mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* About Image */}
-            <div className="relative">
-              {hasSetting("about_image") ? (
+          <div className={`grid ${hasSetting("about_image") ? 'lg:grid-cols-2' : 'lg:grid-cols-1 max-w-3xl mx-auto'} gap-12 items-center`}>
+            {/* About Image - only show if about_image is set */}
+            {hasSetting("about_image") && (
+              <div className="relative">
                 <div className="rounded-2xl overflow-hidden shadow-xl">
                   <img 
                     src={getSetting("about_image")} 
@@ -307,22 +307,10 @@ const Home = () => {
                     className="w-full h-auto object-cover aspect-[4/3]"
                   />
                 </div>
-              ) : gallery && gallery.length > 1 ? (
-                <div className="rounded-2xl overflow-hidden shadow-xl">
-                  <img 
-                    src={gallery[1].image_url} 
-                    alt={gallery[1].alt_text || "About Seater"} 
-                    className="w-full h-auto object-cover aspect-[4/3]"
-                  />
-                </div>
-              ) : (
-                <div className="rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 aspect-[4/3] flex items-center justify-center">
-                  <Bus className="h-24 w-24 text-primary/30" />
-                </div>
-              )}
-            </div>
+              </div>
+            )}
             {/* About Content */}
-            <div className="space-y-6">
+            <div className={`space-y-6 ${!hasSetting("about_image") ? 'text-center' : ''}`}>
               <h2 className="text-3xl md:text-4xl font-bold">{getSetting("about_title", "About Seater")}</h2>
               <p className="text-lg text-muted-foreground leading-relaxed">
                 {getSetting("about_text", "At Seater, we're redefining transportation with passion, innovation, and a vision for a sustainable future.")}
