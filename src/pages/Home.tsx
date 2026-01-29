@@ -155,6 +155,12 @@ const Home = () => {
   ];
 
   const getSetting = (key: string, fallback: string = "") => settings?.[key] || fallback;
+  
+  // Helper to check if a setting has a value (not empty)
+  const hasSetting = (key: string) => {
+    const value = settings?.[key];
+    return value !== undefined && value !== null && value.trim() !== "";
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -224,27 +230,27 @@ const Home = () => {
                   <div className="text-muted-foreground text-sm">App coming soon...</div>
                 )}
               </div>
-              {(getSetting("stats_users") || getSetting("stats_schools") || getSetting("stats_cities")) && (
+              {(hasSetting("stats_users") || hasSetting("stats_schools") || hasSetting("stats_cities")) && (
                 <div className="flex items-center gap-8 pt-4">
-                  {getSetting("stats_users") && (
+                  {hasSetting("stats_users") && (
                     <>
                       <div>
                         <p className="text-3xl font-bold text-primary">{getSetting("stats_users")}</p>
                         <p className="text-sm text-muted-foreground">Active Users</p>
                       </div>
-                      {(getSetting("stats_schools") || getSetting("stats_cities")) && <div className="w-px h-12 bg-border"></div>}
+                      {(hasSetting("stats_schools") || hasSetting("stats_cities")) && <div className="w-px h-12 bg-border"></div>}
                     </>
                   )}
-                  {getSetting("stats_schools") && (
+                  {hasSetting("stats_schools") && (
                     <>
                       <div>
                         <p className="text-3xl font-bold text-primary">{getSetting("stats_schools")}</p>
                         <p className="text-sm text-muted-foreground">Schools</p>
                       </div>
-                      {getSetting("stats_cities") && <div className="w-px h-12 bg-border"></div>}
+                      {hasSetting("stats_cities") && <div className="w-px h-12 bg-border"></div>}
                     </>
                   )}
-                  {getSetting("stats_cities") && (
+                  {hasSetting("stats_cities") && (
                     <div>
                       <p className="text-3xl font-bold text-primary">{getSetting("stats_cities")}</p>
                       <p className="text-sm text-muted-foreground">Cities</p>
