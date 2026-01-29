@@ -304,7 +304,7 @@ const Home = () => {
                   <img 
                     src={getSetting("about_image")} 
                     alt="About Seater" 
-                    className="w-full h-auto object-cover aspect-[4/3]"
+                    className="w-full h-full object-contain"
                   />
                 </div>
               </div>
