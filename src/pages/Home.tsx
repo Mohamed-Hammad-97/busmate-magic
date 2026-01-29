@@ -19,7 +19,12 @@ import {
   MapPinned,
   ChevronRight,
   Apple,
-  PlayCircle
+  PlayCircle,
+  Facebook,
+  Twitter,
+  Instagram,
+  Linkedin,
+  Youtube
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import seaterLogo from "@/assets/seater-logo.jpg";
@@ -511,6 +516,43 @@ const Home = () => {
               <p className="text-primary-foreground/80 text-sm">
                 Smart, Reliable, and Effortless Transportation for Schools, Businesses, and Individuals.
               </p>
+              {/* Social Media Links */}
+              {(hasSetting("social_facebook") || hasSetting("social_twitter") || hasSetting("social_instagram") || hasSetting("social_linkedin") || hasSetting("social_youtube") || hasSetting("social_tiktok")) && (
+                <div className="flex items-center gap-3 pt-2">
+                  {hasSetting("social_facebook") && (
+                    <a href={getSetting("social_facebook")} target="_blank" rel="noopener noreferrer" className="hover:text-primary-foreground/80 transition-colors">
+                      <Facebook className="h-5 w-5" />
+                    </a>
+                  )}
+                  {hasSetting("social_twitter") && (
+                    <a href={getSetting("social_twitter")} target="_blank" rel="noopener noreferrer" className="hover:text-primary-foreground/80 transition-colors">
+                      <Twitter className="h-5 w-5" />
+                    </a>
+                  )}
+                  {hasSetting("social_instagram") && (
+                    <a href={getSetting("social_instagram")} target="_blank" rel="noopener noreferrer" className="hover:text-primary-foreground/80 transition-colors">
+                      <Instagram className="h-5 w-5" />
+                    </a>
+                  )}
+                  {hasSetting("social_linkedin") && (
+                    <a href={getSetting("social_linkedin")} target="_blank" rel="noopener noreferrer" className="hover:text-primary-foreground/80 transition-colors">
+                      <Linkedin className="h-5 w-5" />
+                    </a>
+                  )}
+                  {hasSetting("social_youtube") && (
+                    <a href={getSetting("social_youtube")} target="_blank" rel="noopener noreferrer" className="hover:text-primary-foreground/80 transition-colors">
+                      <Youtube className="h-5 w-5" />
+                    </a>
+                  )}
+                  {hasSetting("social_tiktok") && (
+                    <a href={getSetting("social_tiktok")} target="_blank" rel="noopener noreferrer" className="hover:text-primary-foreground/80 transition-colors">
+                      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+                      </svg>
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
             <div>
               <h5 className="font-semibold mb-4">Quick Links</h5>
