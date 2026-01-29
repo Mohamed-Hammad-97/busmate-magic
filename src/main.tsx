@@ -1,4 +1,5 @@
 import { createRoot } from "react-dom/client";
+import { HelmetProvider } from "react-helmet-async";
 import App from "./App.tsx";
 import "./index.css";
 import "./i18n";
@@ -8,4 +9,8 @@ const storedLang = localStorage.getItem('i18nextLng') || 'ar';
 document.documentElement.dir = storedLang === 'ar' ? 'rtl' : 'ltr';
 document.documentElement.lang = storedLang;
 
-createRoot(document.getElementById("root")!).render(<App />);
+createRoot(document.getElementById("root")!).render(
+  <HelmetProvider>
+    <App />
+  </HelmetProvider>
+);
