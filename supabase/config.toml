@@ -1,5 +1,8 @@
 project_id = "cfkipvshbozcofsbpfln"
 
+[functions.rds-setup-schema]
+verify_jwt = false
+
 [functions.ai-route-planner]
 verify_jwt = false
 
