@@ -196,101 +196,91 @@ const Home = () => {
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="pt-32 pb-20 px-4 bg-gradient-to-br from-primary/5 via-background to-primary/10">
-        <div className="container mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-8">
-              <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium">
-                <Bus className="h-4 w-4" />
-                Mobile App for Corporate & Schools
-              </div>
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
-                {getSetting("hero_title", "Smart, Reliable, and Effortless Transportation").split(",")[0]},{" "}
-                <span className="text-primary">
-                  {getSetting("hero_title", "Smart, Reliable, and Effortless Transportation").split(",").slice(1).join(",")}
-                </span>
-              </h1>
-              <p className="text-xl text-muted-foreground max-w-lg">
-                {getSetting("hero_subtitle", "Book your ride. Track every trip. Manage your fleet — all in one place.")}
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4">
-                {getSetting("app_store_url") && (
-                  <a href={getSetting("app_store_url")} target="_blank" rel="noopener noreferrer">
-                    <Button size="lg" className="gap-2 w-full sm:w-auto">
-                      <Apple className="h-5 w-5" />
-                      Download on App Store
-                    </Button>
-                  </a>
-                )}
-                {getSetting("google_play_url") && (
-                  <a href={getSetting("google_play_url")} target="_blank" rel="noopener noreferrer">
-                    <Button size="lg" variant="outline" className="gap-2 w-full sm:w-auto">
-                      <PlayCircle className="h-5 w-5" />
-                      Get it on Google Play
-                    </Button>
-                  </a>
-                )}
-                {!getSetting("app_store_url") && !getSetting("google_play_url") && (
-                  <div className="text-muted-foreground text-sm">App coming soon...</div>
-                )}
-              </div>
-              {(hasSetting("stats_users") || hasSetting("stats_schools") || hasSetting("stats_cities")) && (
-                <div className="flex items-center gap-8 pt-4">
-                  {hasSetting("stats_users") && (
-                    <>
-                      <div>
-                        <p className="text-3xl font-bold text-primary">{getSetting("stats_users")}</p>
-                        <p className="text-sm text-muted-foreground">Active Users</p>
-                      </div>
-                      {(hasSetting("stats_schools") || hasSetting("stats_cities")) && <div className="w-px h-12 bg-border"></div>}
-                    </>
-                  )}
-                  {hasSetting("stats_schools") && (
-                    <>
-                      <div>
-                        <p className="text-3xl font-bold text-primary">{getSetting("stats_schools")}</p>
-                        <p className="text-sm text-muted-foreground">Schools</p>
-                      </div>
-                      {hasSetting("stats_cities") && <div className="w-px h-12 bg-border"></div>}
-                    </>
-                  )}
-                  {hasSetting("stats_cities") && (
+      {/* Hero Section with Background Gallery */}
+      <section className="relative min-h-[90vh] flex items-center pt-20">
+        {/* Background Gallery Image */}
+        {gallery && gallery.length > 0 ? (
+          <div className="absolute inset-0 z-0">
+            <img 
+              src={gallery[0].image_url} 
+              alt={gallery[0].alt_text || gallery[0].title || "Hero background"} 
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-background via-background/95 to-background/70"></div>
+          </div>
+        ) : (
+          <div className="absolute inset-0 z-0 bg-gradient-to-br from-primary/5 via-background to-primary/10"></div>
+        )}
+        
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="max-w-2xl space-y-8">
+            <div className="inline-flex items-center gap-2 bg-primary/10 backdrop-blur-sm text-primary px-4 py-2 rounded-full text-sm font-medium">
+              <Bus className="h-4 w-4" />
+              Mobile App for Corporate & Schools
+            </div>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
+              {getSetting("hero_title", "Smart, Reliable, and Effortless Transportation").split(",")[0]},{" "}
+              <span className="text-primary">
+                {getSetting("hero_title", "Smart, Reliable, and Effortless Transportation").split(",").slice(1).join(",")}
+              </span>
+            </h1>
+            <p className="text-xl text-muted-foreground max-w-lg">
+              {getSetting("hero_subtitle", "Book your ride. Track every trip. Manage your fleet — all in one place.")}
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4">
+              {getSetting("app_store_url") && (
+                <a href={getSetting("app_store_url")} target="_blank" rel="noopener noreferrer">
+                  <Button size="lg" className="gap-2 w-full sm:w-auto">
+                    <Apple className="h-5 w-5" />
+                    Download on App Store
+                  </Button>
+                </a>
+              )}
+              {getSetting("google_play_url") && (
+                <a href={getSetting("google_play_url")} target="_blank" rel="noopener noreferrer">
+                  <Button size="lg" variant="outline" className="gap-2 w-full sm:w-auto bg-background/50 backdrop-blur-sm">
+                    <PlayCircle className="h-5 w-5" />
+                    Get it on Google Play
+                  </Button>
+                </a>
+              )}
+              {!getSetting("app_store_url") && !getSetting("google_play_url") && (
+                <Link to="/register">
+                  <Button size="lg" className="gap-2">
+                    Get Started
+                    <ChevronRight className="h-5 w-5" />
+                  </Button>
+                </Link>
+              )}
+            </div>
+            {(hasSetting("stats_users") || hasSetting("stats_schools") || hasSetting("stats_cities")) && (
+              <div className="flex items-center gap-8 pt-4 bg-background/50 backdrop-blur-sm rounded-xl p-4 w-fit">
+                {hasSetting("stats_users") && (
+                  <>
                     <div>
-                      <p className="text-3xl font-bold text-primary">{getSetting("stats_cities")}</p>
-                      <p className="text-sm text-muted-foreground">Cities</p>
+                      <p className="text-3xl font-bold text-primary">{getSetting("stats_users")}</p>
+                      <p className="text-sm text-muted-foreground">Active Users</p>
                     </div>
-                  )}
-                </div>
-              )}
-            </div>
-            <div className="relative">
-              {gallery && gallery.length > 0 ? (
-                <div className="grid grid-cols-2 gap-4">
-                  {gallery.slice(0, 4).map((img, index) => (
-                    <div 
-                      key={img.id} 
-                      className={`rounded-2xl overflow-hidden ${index === 0 ? "col-span-2" : ""}`}
-                    >
-                      <img 
-                        src={img.image_url} 
-                        alt={img.alt_text || img.title || "Gallery"} 
-                        className="w-full h-full object-cover aspect-video"
-                      />
+                    {(hasSetting("stats_schools") || hasSetting("stats_cities")) && <div className="w-px h-12 bg-border"></div>}
+                  </>
+                )}
+                {hasSetting("stats_schools") && (
+                  <>
+                    <div>
+                      <p className="text-3xl font-bold text-primary">{getSetting("stats_schools")}</p>
+                      <p className="text-sm text-muted-foreground">Schools</p>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-primary/5 rounded-3xl blur-3xl"></div>
-                  <div className="relative bg-gradient-to-br from-primary/10 to-primary/5 rounded-3xl p-8 border">
-                    <div className="aspect-[4/3] rounded-2xl bg-gradient-to-br from-primary/20 to-background flex items-center justify-center">
-                      <Bus className="h-32 w-32 text-primary/50" />
-                    </div>
+                    {hasSetting("stats_cities") && <div className="w-px h-12 bg-border"></div>}
+                  </>
+                )}
+                {hasSetting("stats_cities") && (
+                  <div>
+                    <p className="text-3xl font-bold text-primary">{getSetting("stats_cities")}</p>
+                    <p className="text-sm text-muted-foreground">Cities</p>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </section>
