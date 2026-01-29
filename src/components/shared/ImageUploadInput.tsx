@@ -159,11 +159,11 @@ export const ImageUploadInput = ({
       {/* Preview */}
       {value && (
         <div className="relative">
-          <div className="aspect-video bg-muted rounded-lg overflow-hidden border">
+          <div className="relative aspect-video bg-muted rounded-lg overflow-hidden border">
             <img
               src={value}
               alt="Preview"
-              className="w-full h-full object-contain"
+              className="absolute inset-0 block w-full h-full object-contain"
               onError={(e) => {
                 (e.target as HTMLImageElement).style.display = "none";
               }}
