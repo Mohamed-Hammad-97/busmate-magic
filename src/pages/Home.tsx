@@ -169,7 +169,9 @@ const Home = () => {
             <a href="#about" className="text-muted-foreground hover:text-primary transition-colors">About</a>
             <a href="#features" className="text-muted-foreground hover:text-primary transition-colors">Features</a>
             <a href="#services" className="text-muted-foreground hover:text-primary transition-colors">Services</a>
-            <a href="#partners" className="text-muted-foreground hover:text-primary transition-colors">Partners</a>
+            {partners && partners.length > 0 && (
+              <a href="#partners" className="text-muted-foreground hover:text-primary transition-colors">Partners</a>
+            )}
             <a href="#contact" className="text-muted-foreground hover:text-primary transition-colors">Contact</a>
           </div>
           <div className="flex items-center gap-3">
@@ -222,22 +224,34 @@ const Home = () => {
                   <div className="text-muted-foreground text-sm">App coming soon...</div>
                 )}
               </div>
-              <div className="flex items-center gap-8 pt-4">
-                <div>
-                  <p className="text-3xl font-bold text-primary">{getSetting("stats_users", "10K+")}</p>
-                  <p className="text-sm text-muted-foreground">Active Users</p>
+              {(getSetting("stats_users") || getSetting("stats_schools") || getSetting("stats_cities")) && (
+                <div className="flex items-center gap-8 pt-4">
+                  {getSetting("stats_users") && (
+                    <>
+                      <div>
+                        <p className="text-3xl font-bold text-primary">{getSetting("stats_users")}</p>
+                        <p className="text-sm text-muted-foreground">Active Users</p>
+                      </div>
+                      {(getSetting("stats_schools") || getSetting("stats_cities")) && <div className="w-px h-12 bg-border"></div>}
+                    </>
+                  )}
+                  {getSetting("stats_schools") && (
+                    <>
+                      <div>
+                        <p className="text-3xl font-bold text-primary">{getSetting("stats_schools")}</p>
+                        <p className="text-sm text-muted-foreground">Schools</p>
+                      </div>
+                      {getSetting("stats_cities") && <div className="w-px h-12 bg-border"></div>}
+                    </>
+                  )}
+                  {getSetting("stats_cities") && (
+                    <div>
+                      <p className="text-3xl font-bold text-primary">{getSetting("stats_cities")}</p>
+                      <p className="text-sm text-muted-foreground">Cities</p>
+                    </div>
+                  )}
                 </div>
-                <div className="w-px h-12 bg-border"></div>
-                <div>
-                  <p className="text-3xl font-bold text-primary">{getSetting("stats_schools", "500+")}</p>
-                  <p className="text-sm text-muted-foreground">Schools</p>
-                </div>
-                <div className="w-px h-12 bg-border"></div>
-                <div>
-                  <p className="text-3xl font-bold text-primary">{getSetting("stats_cities", "50+")}</p>
-                  <p className="text-sm text-muted-foreground">Cities</p>
-                </div>
-              </div>
+              )}
             </div>
             <div className="relative">
               {gallery && gallery.length > 0 ? (
@@ -337,18 +351,18 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Partners Section */}
-      <section id="partners" className="py-20 px-4 bg-muted/30">
-        <div className="container mx-auto">
-          <div className="text-center space-y-4 mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold">Our Partners & Clients</h2>
-            <p className="text-lg text-muted-foreground">
-              Trusted by industry leaders and innovative companies worldwide
-            </p>
-          </div>
-          <div className="grid grid-cols-3 md:grid-cols-5 gap-6">
-            {partners && partners.length > 0 ? (
-              partners.map((partner) => (
+      {/* Partners Section - Only show if there are partners */}
+      {partners && partners.length > 0 && (
+        <section id="partners" className="py-20 px-4 bg-muted/30">
+          <div className="container mx-auto">
+            <div className="text-center space-y-4 mb-16">
+              <h2 className="text-3xl md:text-4xl font-bold">Our Partners & Clients</h2>
+              <p className="text-lg text-muted-foreground">
+                Trusted by industry leaders and innovative companies worldwide
+              </p>
+            </div>
+            <div className="grid grid-cols-3 md:grid-cols-5 gap-6">
+              {partners.map((partner) => (
                 <a
                   key={partner.id}
                   href={partner.website_url || "#"}
@@ -365,23 +379,11 @@ const Home = () => {
                     </div>
                   )}
                 </a>
-              ))
-            ) : (
-              Array.from({ length: 10 }).map((_, index) => (
-                <div 
-                  key={index} 
-                  className="aspect-[3/2] bg-background rounded-xl border flex items-center justify-center p-4"
-                >
-                  <div className="text-center">
-                    <Building2 className="h-8 w-8 text-muted-foreground/50 mx-auto mb-2" />
-                    <span className="text-xs text-muted-foreground">Partner {index + 1}</span>
-                  </div>
-                </div>
-              ))
-            )}
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Contact Section */}
       <section id="contact" className="py-20 px-4">
