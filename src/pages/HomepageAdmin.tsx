@@ -407,6 +407,65 @@ const HomepageAdmin = () => {
 
             <Card>
               <CardHeader>
+                <CardTitle>Social Media Links</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">Leave empty to hide the icon. Icons will only appear in the footer when at least one link is provided.</p>
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label>Facebook</Label>
+                    <Input
+                      placeholder="https://facebook.com/..."
+                      value={settingsForm.social_facebook || ""}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, social_facebook: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Twitter / X</Label>
+                    <Input
+                      placeholder="https://twitter.com/..."
+                      value={settingsForm.social_twitter || ""}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, social_twitter: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Instagram</Label>
+                    <Input
+                      placeholder="https://instagram.com/..."
+                      value={settingsForm.social_instagram || ""}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, social_instagram: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>LinkedIn</Label>
+                    <Input
+                      placeholder="https://linkedin.com/company/..."
+                      value={settingsForm.social_linkedin || ""}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, social_linkedin: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>YouTube</Label>
+                    <Input
+                      placeholder="https://youtube.com/..."
+                      value={settingsForm.social_youtube || ""}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, social_youtube: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>TikTok</Label>
+                    <Input
+                      placeholder="https://tiktok.com/@..."
+                      value={settingsForm.social_tiktok || ""}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, social_tiktok: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
                 <CardTitle>Contact Information - Cairo</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
