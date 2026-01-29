@@ -30,6 +30,7 @@ import ParentDashboard from "./pages/ParentDashboard";
 import DriverAuth from "./pages/DriverAuth";
 import DriverDashboard from "./pages/DriverDashboard";
 import SupportChat from "./pages/SupportChat";
+import HomepageAdmin from "./pages/HomepageAdmin";
 
 const queryClient = new QueryClient();
 
@@ -85,6 +86,7 @@ const App = () => (
                 <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
                 <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                 <Route path="/employees" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+                <Route path="/homepage-admin" element={<ProtectedRoute><HomepageAdmin /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
               </CityProvider>

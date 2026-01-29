@@ -1,7 +1,11 @@
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 import { 
   Bus, 
   MapPin, 
@@ -20,7 +24,106 @@ import {
 import { Link } from "react-router-dom";
 import seaterLogo from "@/assets/seater-logo.jpg";
 
+interface HomepageSetting {
+  key: string;
+  value: string | null;
+}
+
+interface Partner {
+  id: string;
+  name: string;
+  logo_url: string | null;
+  website_url: string | null;
+}
+
+interface GalleryImage {
+  id: string;
+  title: string | null;
+  image_url: string;
+  alt_text: string | null;
+}
+
 const Home = () => {
+  const [contactForm, setContactForm] = useState({
+    name: "",
+    email: "",
+    subject: "",
+    message: "",
+  });
+
+  // Fetch settings
+  const { data: settings } = useQuery({
+    queryKey: ["homepage-settings-public"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("homepage_settings")
+        .select("key, value");
+      if (error) throw error;
+      const settingsMap: Record<string, string> = {};
+      (data as HomepageSetting[]).forEach((s) => {
+        settingsMap[s.key] = s.value || "";
+      });
+      return settingsMap;
+    },
+  });
+
+  // Fetch partners
+  const { data: partners } = useQuery({
+    queryKey: ["homepage-partners-public"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("homepage_partners")
+        .select("id, name, logo_url, website_url")
+        .order("display_order");
+      if (error) throw error;
+      return data as Partner[];
+    },
+  });
+
+  // Fetch gallery
+  const { data: gallery } = useQuery({
+    queryKey: ["homepage-gallery-public"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("homepage_gallery")
+        .select("id, title, image_url, alt_text")
+        .order("display_order");
+      if (error) throw error;
+      return data as GalleryImage[];
+    },
+  });
+
+  // Submit contact form
+  const submitContactMutation = useMutation({
+    mutationFn: async (form: typeof contactForm) => {
+      const { error } = await supabase
+        .from("contact_submissions")
+        .insert({
+          name: form.name,
+          email: form.email,
+          subject: form.subject || null,
+          message: form.message,
+        });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Message sent successfully! We'll get back to you soon.");
+      setContactForm({ name: "", email: "", subject: "", message: "" });
+    },
+    onError: (error) => {
+      toast.error("Failed to send message: " + error.message);
+    },
+  });
+
+  const handleContactSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!contactForm.name || !contactForm.email || !contactForm.message) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+    submitContactMutation.mutate(contactForm);
+  };
+
   const features = [
     {
       icon: DollarSign,
@@ -51,11 +154,7 @@ const Home = () => {
     { icon: MapPin, title: "Tracking Service", description: "Real-time GPS tracking solutions" }
   ];
 
-  const partners = [
-    "Partner 1", "Partner 2", "Partner 3", "Partner 4", "Partner 5", 
-    "Partner 6", "Partner 7", "Partner 8", "Partner 9", "Partner 10",
-    "Partner 11", "Partner 12", "Partner 13", "Partner 14", "Partner 15"
-  ];
+  const getSetting = (key: string, fallback: string = "") => settings?.[key] || fallback;
 
   return (
     <div className="min-h-screen bg-background">
@@ -94,47 +193,78 @@ const Home = () => {
                 Mobile App for Corporate & Schools
               </div>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
-                Smart, Reliable, and{" "}
-                <span className="text-primary">Effortless Transportation</span>
+                {getSetting("hero_title", "Smart, Reliable, and Effortless Transportation").split(",")[0]},{" "}
+                <span className="text-primary">
+                  {getSetting("hero_title", "Smart, Reliable, and Effortless Transportation").split(",").slice(1).join(",")}
+                </span>
               </h1>
               <p className="text-xl text-muted-foreground max-w-lg">
-                Book your ride. Track every trip. Manage your fleet — all in one place. 
-                For Schools, Businesses, and Individuals.
+                {getSetting("hero_subtitle", "Book your ride. Track every trip. Manage your fleet — all in one place.")}
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button size="lg" className="gap-2">
-                  <Apple className="h-5 w-5" />
-                  Download on App Store
-                </Button>
-                <Button size="lg" variant="outline" className="gap-2">
-                  <PlayCircle className="h-5 w-5" />
-                  Get it on Google Play
-                </Button>
+                {getSetting("app_store_url") && (
+                  <a href={getSetting("app_store_url")} target="_blank" rel="noopener noreferrer">
+                    <Button size="lg" className="gap-2 w-full sm:w-auto">
+                      <Apple className="h-5 w-5" />
+                      Download on App Store
+                    </Button>
+                  </a>
+                )}
+                {getSetting("google_play_url") && (
+                  <a href={getSetting("google_play_url")} target="_blank" rel="noopener noreferrer">
+                    <Button size="lg" variant="outline" className="gap-2 w-full sm:w-auto">
+                      <PlayCircle className="h-5 w-5" />
+                      Get it on Google Play
+                    </Button>
+                  </a>
+                )}
+                {!getSetting("app_store_url") && !getSetting("google_play_url") && (
+                  <div className="text-muted-foreground text-sm">App coming soon...</div>
+                )}
               </div>
               <div className="flex items-center gap-8 pt-4">
                 <div>
-                  <p className="text-3xl font-bold text-primary">10K+</p>
+                  <p className="text-3xl font-bold text-primary">{getSetting("stats_users", "10K+")}</p>
                   <p className="text-sm text-muted-foreground">Active Users</p>
                 </div>
                 <div className="w-px h-12 bg-border"></div>
                 <div>
-                  <p className="text-3xl font-bold text-primary">500+</p>
+                  <p className="text-3xl font-bold text-primary">{getSetting("stats_schools", "500+")}</p>
                   <p className="text-sm text-muted-foreground">Schools</p>
                 </div>
                 <div className="w-px h-12 bg-border"></div>
                 <div>
-                  <p className="text-3xl font-bold text-primary">50+</p>
+                  <p className="text-3xl font-bold text-primary">{getSetting("stats_cities", "50+")}</p>
                   <p className="text-sm text-muted-foreground">Cities</p>
                 </div>
               </div>
             </div>
             <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-primary/5 rounded-3xl blur-3xl"></div>
-              <div className="relative bg-gradient-to-br from-primary/10 to-primary/5 rounded-3xl p-8 border">
-                <div className="aspect-[4/3] rounded-2xl bg-gradient-to-br from-primary/20 to-background flex items-center justify-center">
-                  <Bus className="h-32 w-32 text-primary/50" />
+              {gallery && gallery.length > 0 ? (
+                <div className="grid grid-cols-2 gap-4">
+                  {gallery.slice(0, 4).map((img, index) => (
+                    <div 
+                      key={img.id} 
+                      className={`rounded-2xl overflow-hidden ${index === 0 ? "col-span-2" : ""}`}
+                    >
+                      <img 
+                        src={img.image_url} 
+                        alt={img.alt_text || img.title || "Gallery"} 
+                        className="w-full h-full object-cover aspect-video"
+                      />
+                    </div>
+                  ))}
                 </div>
-              </div>
+              ) : (
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-primary/5 rounded-3xl blur-3xl"></div>
+                  <div className="relative bg-gradient-to-br from-primary/10 to-primary/5 rounded-3xl p-8 border">
+                    <div className="aspect-[4/3] rounded-2xl bg-gradient-to-br from-primary/20 to-background flex items-center justify-center">
+                      <Bus className="h-32 w-32 text-primary/50" />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -144,12 +274,9 @@ const Home = () => {
       <section id="about" className="py-20 px-4">
         <div className="container mx-auto">
           <div className="max-w-3xl mx-auto text-center space-y-6">
-            <h2 className="text-3xl md:text-4xl font-bold">About Seater</h2>
+            <h2 className="text-3xl md:text-4xl font-bold">{getSetting("about_title", "About Seater")}</h2>
             <p className="text-lg text-muted-foreground leading-relaxed">
-              At Seater, we're redefining transportation with passion, innovation, and a vision for a 
-              sustainable future. From schools and parents to corporate clients, we deliver safe, 
-              reliable, and comfortable rides, giving families peace of mind and businesses travel 
-              they can trust.
+              {getSetting("about_text", "At Seater, we're redefining transportation with passion, innovation, and a vision for a sustainable future.")}
             </p>
             <div className="flex justify-center gap-4 pt-4">
               <Button variant="outline" size="lg" className="gap-2">
@@ -220,17 +347,38 @@ const Home = () => {
             </p>
           </div>
           <div className="grid grid-cols-3 md:grid-cols-5 gap-6">
-            {partners.map((partner, index) => (
-              <div 
-                key={index} 
-                className="aspect-[3/2] bg-background rounded-xl border flex items-center justify-center p-4 hover:shadow-md transition-shadow"
-              >
-                <div className="text-center">
-                  <Building2 className="h-8 w-8 text-muted-foreground/50 mx-auto mb-2" />
-                  <span className="text-xs text-muted-foreground">{partner}</span>
+            {partners && partners.length > 0 ? (
+              partners.map((partner) => (
+                <a
+                  key={partner.id}
+                  href={partner.website_url || "#"}
+                  target={partner.website_url ? "_blank" : undefined}
+                  rel="noopener noreferrer"
+                  className="aspect-[3/2] bg-background rounded-xl border flex items-center justify-center p-4 hover:shadow-md transition-shadow"
+                >
+                  {partner.logo_url ? (
+                    <img src={partner.logo_url} alt={partner.name} className="max-h-full max-w-full object-contain" />
+                  ) : (
+                    <div className="text-center">
+                      <Building2 className="h-8 w-8 text-muted-foreground/50 mx-auto mb-2" />
+                      <span className="text-xs text-muted-foreground">{partner.name}</span>
+                    </div>
+                  )}
+                </a>
+              ))
+            ) : (
+              Array.from({ length: 10 }).map((_, index) => (
+                <div 
+                  key={index} 
+                  className="aspect-[3/2] bg-background rounded-xl border flex items-center justify-center p-4"
+                >
+                  <div className="text-center">
+                    <Building2 className="h-8 w-8 text-muted-foreground/50 mx-auto mb-2" />
+                    <span className="text-xs text-muted-foreground">Partner {index + 1}</span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </section>
@@ -247,15 +395,45 @@ const Home = () => {
           <div className="grid lg:grid-cols-2 gap-12">
             {/* Contact Form */}
             <Card className="border-0 shadow-lg">
-              <CardContent className="p-8 space-y-6">
-                <h3 className="text-2xl font-semibold">Send us a message</h3>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <Input placeholder="Your Name" />
-                  <Input placeholder="Your Email" type="email" />
-                </div>
-                <Input placeholder="Subject" />
-                <Textarea placeholder="Your Message" rows={5} />
-                <Button size="lg" className="w-full">Send Message</Button>
+              <CardContent className="p-8">
+                <form onSubmit={handleContactSubmit} className="space-y-6">
+                  <h3 className="text-2xl font-semibold">Send us a message</h3>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <Input 
+                      placeholder="Your Name *" 
+                      value={contactForm.name}
+                      onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
+                      required
+                    />
+                    <Input 
+                      placeholder="Your Email *" 
+                      type="email" 
+                      value={contactForm.email}
+                      onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <Input 
+                    placeholder="Subject" 
+                    value={contactForm.subject}
+                    onChange={(e) => setContactForm({ ...contactForm, subject: e.target.value })}
+                  />
+                  <Textarea 
+                    placeholder="Your Message *" 
+                    rows={5} 
+                    value={contactForm.message}
+                    onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
+                    required
+                  />
+                  <Button 
+                    type="submit" 
+                    size="lg" 
+                    className="w-full"
+                    disabled={submitContactMutation.isPending}
+                  >
+                    {submitContactMutation.isPending ? "Sending..." : "Send Message"}
+                  </Button>
+                </form>
               </CardContent>
             </Card>
 
@@ -271,15 +449,15 @@ const Home = () => {
                   <div className="space-y-3 text-muted-foreground">
                     <p className="flex items-center gap-3">
                       <MapPin className="h-4 w-4 shrink-0" />
-                      5th Settlement, New Cairo, Egypt
+                      {getSetting("cairo_address", "5th Settlement, New Cairo, Egypt")}
                     </p>
                     <p className="flex items-center gap-3">
                       <Phone className="h-4 w-4 shrink-0" />
-                      +20 123 456 7890
+                      {getSetting("cairo_phone", "+20 123 456 7890")}
                     </p>
                     <p className="flex items-center gap-3">
                       <Mail className="h-4 w-4 shrink-0" />
-                      cairo@seater.com
+                      {getSetting("cairo_email", "cairo@seater.com")}
                     </p>
                   </div>
                 </CardContent>
@@ -295,15 +473,15 @@ const Home = () => {
                   <div className="space-y-3 text-muted-foreground">
                     <p className="flex items-center gap-3">
                       <MapPin className="h-4 w-4 shrink-0" />
-                      Smouha, Alexandria, Egypt
+                      {getSetting("alex_address", "Smouha, Alexandria, Egypt")}
                     </p>
                     <p className="flex items-center gap-3">
                       <Phone className="h-4 w-4 shrink-0" />
-                      +20 123 456 7891
+                      {getSetting("alex_phone", "+20 123 456 7891")}
                     </p>
                     <p className="flex items-center gap-3">
                       <Mail className="h-4 w-4 shrink-0" />
-                      alex@seater.com
+                      {getSetting("alex_email", "alex@seater.com")}
                     </p>
                   </div>
                 </CardContent>
@@ -347,14 +525,25 @@ const Home = () => {
             <div>
               <h5 className="font-semibold mb-4">Download App</h5>
               <div className="space-y-3">
-                <Button variant="secondary" size="sm" className="w-full gap-2">
-                  <Apple className="h-4 w-4" />
-                  App Store
-                </Button>
-                <Button variant="secondary" size="sm" className="w-full gap-2">
-                  <PlayCircle className="h-4 w-4" />
-                  Google Play
-                </Button>
+                {getSetting("app_store_url") && (
+                  <a href={getSetting("app_store_url")} target="_blank" rel="noopener noreferrer">
+                    <Button variant="secondary" size="sm" className="w-full gap-2">
+                      <Apple className="h-4 w-4" />
+                      App Store
+                    </Button>
+                  </a>
+                )}
+                {getSetting("google_play_url") && (
+                  <a href={getSetting("google_play_url")} target="_blank" rel="noopener noreferrer">
+                    <Button variant="secondary" size="sm" className="w-full gap-2 mt-2">
+                      <PlayCircle className="h-4 w-4" />
+                      Google Play
+                    </Button>
+                  </a>
+                )}
+                {!getSetting("app_store_url") && !getSetting("google_play_url") && (
+                  <p className="text-sm text-primary-foreground/60">Coming soon...</p>
+                )}
               </div>
             </div>
           </div>
