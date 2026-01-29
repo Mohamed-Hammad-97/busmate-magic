@@ -10,6 +10,7 @@ import { CityProvider } from "@/contexts/CityContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { ParentProtectedRoute } from "@/components/auth/ParentProtectedRoute";
 import { DriverProtectedRoute } from "@/components/auth/DriverProtectedRoute";
+import Home from "./pages/Home";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Schools from "./pages/Schools";
@@ -40,6 +41,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           {/* Public routes - no auth required */}
+          <Route path="/" element={<Home />} />
           <Route path="/register" element={<Register />} />
           
           {/* Parent Portal routes */}
@@ -69,7 +71,6 @@ const App = () => (
             <AuthProvider>
               <CityProvider>
               <Routes>
-                <Route path="/" element={<Navigate to="/dashboard" replace />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                 <Route path="/schools" element={<ProtectedRoute><Schools /></ProtectedRoute>} />
