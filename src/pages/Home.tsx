@@ -206,7 +206,7 @@ const Home = () => {
               alt={gallery[0].alt_text || gallery[0].title || "Hero background"} 
               className="w-full h-full object-cover"
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-background via-background/95 to-background/70"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/60 to-transparent"></div>
           </div>
         ) : (
           <div className="absolute inset-0 z-0 bg-gradient-to-br from-primary/5 via-background to-primary/10"></div>
