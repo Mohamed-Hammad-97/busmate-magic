@@ -299,8 +299,8 @@ const Home = () => {
           <div className={`grid ${hasSetting("about_image") ? 'lg:grid-cols-2' : 'lg:grid-cols-1 max-w-3xl mx-auto'} gap-12 items-center`}>
             {/* About Image - only show if about_image is set */}
             {hasSetting("about_image") && (
-              <div className="relative">
-                <div className="rounded-2xl overflow-hidden shadow-xl">
+              <div className="relative flex justify-center">
+                <div className="rounded-2xl overflow-hidden shadow-xl max-w-sm">
                   <img 
                     src={getSetting("about_image")} 
                     alt="About Seater" 
