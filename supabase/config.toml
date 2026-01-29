@@ -29,3 +29,15 @@ verify_jwt = false
 
 [functions.verify-otp]
 verify_jwt = false
+
+[functions.rds-auth-signup]
+verify_jwt = false
+
+[functions.rds-auth-login]
+verify_jwt = false
+
+[functions.rds-auth-refresh]
+verify_jwt = false
+
+[functions.rds-auth-me]
+verify_jwt = false
