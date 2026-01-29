@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { ImageUploadInput } from "@/components/shared/ImageUploadInput";
 import { 
   Save, 
   Plus, 
@@ -720,14 +721,12 @@ const PartnerForm = ({
           required
         />
       </div>
-      <div className="space-y-2">
-        <Label>Logo URL</Label>
-        <Input
-          value={form.logo_url}
-          onChange={(e) => setForm({ ...form, logo_url: e.target.value })}
-          placeholder="https://..."
-        />
-      </div>
+      <ImageUploadInput
+        label="Logo"
+        value={form.logo_url}
+        onChange={(url) => setForm({ ...form, logo_url: url })}
+        folder="partners"
+      />
       <div className="space-y-2">
         <Label>Website URL</Label>
         <Input
@@ -789,15 +788,13 @@ const GalleryForm = ({
           onChange={(e) => setForm({ ...form, title: e.target.value })}
         />
       </div>
-      <div className="space-y-2">
-        <Label>Image URL *</Label>
-        <Input
-          value={form.image_url}
-          onChange={(e) => setForm({ ...form, image_url: e.target.value })}
-          placeholder="https://..."
-          required
-        />
-      </div>
+      <ImageUploadInput
+        label="Image"
+        value={form.image_url}
+        onChange={(url) => setForm({ ...form, image_url: url })}
+        folder="gallery"
+        required
+      />
       <div className="space-y-2">
         <Label>Alt Text</Label>
         <Input
