@@ -828,6 +828,7 @@ const PartnerForm = ({
         value={form.logo_url}
         onChange={(url) => setForm({ ...form, logo_url: url })}
         folder="partners"
+        previewVariant="logo"
       />
       <div className="space-y-2">
         <Label>Website URL</Label>
