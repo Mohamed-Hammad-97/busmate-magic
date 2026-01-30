@@ -586,7 +586,7 @@ const HomepageAdmin = () => {
                     Add Partner
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-md w-full overflow-hidden">
+                <DialogContent className="max-w-[95vw] sm:max-w-md w-full">
                   <DialogHeader>
                     <DialogTitle>{editingPartner ? "Edit Partner" : "Add Partner"}</DialogTitle>
                   </DialogHeader>
@@ -814,7 +814,7 @@ const PartnerForm = ({
   });
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full overflow-hidden">
       <div className="space-y-2">
         <Label>Name *</Label>
         <Input
