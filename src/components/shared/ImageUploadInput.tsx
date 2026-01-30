@@ -15,6 +15,7 @@ interface ImageUploadInputProps {
   folder?: string;
   accept?: string;
   required?: boolean;
+  previewVariant?: "video" | "logo";
 }
 
 export const ImageUploadInput = ({
@@ -25,6 +26,7 @@ export const ImageUploadInput = ({
   folder = "images",
   accept = "image/*",
   required = false,
+  previewVariant = "video",
 }: ImageUploadInputProps) => {
   const [isUploading, setIsUploading] = useState(false);
   const [inputMode, setInputMode] = useState<"upload" | "url">(value?.startsWith("http") && !value.includes(bucket) ? "url" : "upload");
@@ -159,16 +161,29 @@ export const ImageUploadInput = ({
       {/* Preview */}
       {value && (
         <div className="relative">
-          <div className="relative aspect-video bg-muted rounded-lg overflow-hidden border">
-            <img
-              src={value}
-              alt="Preview"
-              className="absolute inset-0 block w-full h-full object-contain"
-              onError={(e) => {
-                (e.target as HTMLImageElement).style.display = "none";
-              }}
-            />
-          </div>
+          {previewVariant === "logo" ? (
+            <div className="bg-muted rounded-lg overflow-hidden border h-48 w-full flex items-center justify-center p-3">
+              <img
+                src={value}
+                alt="Preview"
+                className="max-w-full max-h-full w-auto h-auto object-contain"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = "none";
+                }}
+              />
+            </div>
+          ) : (
+            <div className="relative aspect-video bg-muted rounded-lg overflow-hidden border">
+              <img
+                src={value}
+                alt="Preview"
+                className="absolute inset-0 block w-full h-full object-contain"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = "none";
+                }}
+              />
+            </div>
+          )}
           <Button
             type="button"
             variant="destructive"
