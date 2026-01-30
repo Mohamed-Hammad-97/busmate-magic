@@ -586,7 +586,7 @@ const HomepageAdmin = () => {
                     Add Partner
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="max-w-md w-full overflow-hidden">
                   <DialogHeader>
                     <DialogTitle>{editingPartner ? "Edit Partner" : "Add Partner"}</DialogTitle>
                   </DialogHeader>
