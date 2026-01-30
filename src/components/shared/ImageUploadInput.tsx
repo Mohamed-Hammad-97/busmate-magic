@@ -162,7 +162,7 @@ export const ImageUploadInput = ({
       {value && (
         <div className="relative">
           {previewVariant === "logo" ? (
-            <div className="bg-muted rounded-lg overflow-hidden border h-48 w-full flex items-center justify-center p-3">
+            <div className="bg-muted rounded-lg overflow-hidden border h-48 w-full max-w-md mx-auto flex items-center justify-center p-3">
               <img
                 src={value}
                 alt="Preview"
