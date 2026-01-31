@@ -436,10 +436,9 @@ const Home = () => {
                     )}
                     <div className="p-6 space-y-3">
                       <h3 className="text-xl font-semibold">{service.title}</h3>
-                      <p className="text-sm text-muted-foreground">{service.description}</p>
                       {service.enabled && (
                         <Button size="sm" className="w-full gap-2">
-                          {t('homepage.nav.getStarted')}
+                          {t('homepage.services.moreDetails')}
                           <ChevronRight className="h-4 w-4" />
                         </Button>
                       )}

@@ -495,6 +495,8 @@ const resources = {
             title: 'Tracking Service',
             description: 'Real-time GPS tracking solutions',
           },
+          moreDetails: 'More Details',
+          getStarted: 'Get Started',
         },
         partners: {
           title: 'Our Partners & Clients',
@@ -1036,6 +1038,8 @@ const resources = {
             title: 'خدمة التتبع',
             description: 'حلول التتبع المباشر عبر GPS',
           },
+          moreDetails: 'المزيد من التفاصيل',
+          getStarted: 'ابدأ الآن',
         },
         partners: {
           title: 'شركاؤنا وعملاؤنا',
