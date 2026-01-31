@@ -283,9 +283,17 @@ const HomepageAdmin = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Homepage Management</h1>
-          <p className="text-muted-foreground">Manage your landing page content</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Homepage Management</h1>
+            <p className="text-muted-foreground">Manage your landing page content</p>
+          </div>
+          <a href="/" target="_blank" rel="noopener noreferrer">
+            <Button variant="outline" className="gap-2">
+              <Eye className="h-4 w-4" />
+              View Website
+            </Button>
+          </a>
         </div>
 
         <Tabs defaultValue="settings">
