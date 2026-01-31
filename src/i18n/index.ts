@@ -1020,7 +1020,7 @@ const resources = {
           },
         },
         services: {
-          title: 'خدمات سيتر',
+          title: 'خدمات Seater',
           subtitle: 'احجز رحلتك الآن',
           schoolBus: {
             title: 'باص مدرسي',
