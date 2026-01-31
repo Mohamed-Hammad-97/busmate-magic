@@ -1,7 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { GraduationCap, Building2, User } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { GraduationCap, Building2, User, ArrowLeft } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import seaterLogo from '@/assets/seater-logo.jpg';
 import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher';
@@ -40,6 +41,16 @@ const Register: React.FC = () => {
         <LanguageSwitcher />
       </div>
       <div className="max-w-4xl mx-auto">
+        <div className="mb-6">
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/')}
+            className="gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            {t('register.backToWebsite')}
+          </Button>
+        </div>
         <div className="text-center mb-12">
           <div className="flex flex-col items-center mb-4">
             <img src={seaterLogo} alt="Seater" className="h-20 w-auto mb-2" />
