@@ -34,6 +34,8 @@ const ServiceDetails: React.FC = () => {
     titleKey: string; 
     descriptionKey: string;
     imageKey: string;
+    nameEnKey: string;
+    nameArKey: string;
     descriptionEnKey: string;
     descriptionArKey: string;
     registerPath: string;
@@ -43,6 +45,8 @@ const ServiceDetails: React.FC = () => {
       titleKey: 'register.types.student.title',
       descriptionKey: 'register.types.student.description',
       imageKey: 'service_student_image',
+      nameEnKey: 'service_student_name_en',
+      nameArKey: 'service_student_name_ar',
       descriptionEnKey: 'service_student_description_en',
       descriptionArKey: 'service_student_description_ar',
       registerPath: '/register/student',
@@ -52,6 +56,8 @@ const ServiceDetails: React.FC = () => {
       titleKey: 'register.types.corporate.title',
       descriptionKey: 'register.types.corporate.description',
       imageKey: 'service_corporate_image',
+      nameEnKey: 'service_corporate_name_en',
+      nameArKey: 'service_corporate_name_ar',
       descriptionEnKey: 'service_corporate_description_en',
       descriptionArKey: 'service_corporate_description_ar',
       registerPath: '/register/corporate',
@@ -61,6 +67,8 @@ const ServiceDetails: React.FC = () => {
       titleKey: 'register.types.private.title',
       descriptionKey: 'register.types.private.description',
       imageKey: 'service_private_image',
+      nameEnKey: 'service_private_name_en',
+      nameArKey: 'service_private_name_ar',
       descriptionEnKey: 'service_private_description_en',
       descriptionArKey: 'service_private_description_ar',
       registerPath: '/register/private',
@@ -79,6 +87,9 @@ const ServiceDetails: React.FC = () => {
 
   const Icon = config.icon;
   const customImage = settings?.[config.imageKey];
+  const nameEn = settings?.[config.nameEnKey];
+  const nameAr = settings?.[config.nameArKey];
+  const serviceName = isRtl && nameAr ? nameAr : (nameEn || t(config.titleKey));
   const descriptionEn = settings?.[config.descriptionEnKey];
   const descriptionAr = settings?.[config.descriptionArKey];
   const description = isRtl && descriptionAr ? descriptionAr : descriptionEn || t(config.descriptionKey);
@@ -104,7 +115,7 @@ const ServiceDetails: React.FC = () => {
           <div className="flex flex-col items-center mb-4">
             <img src={seaterLogo} alt="Seater" className="h-20 w-auto mb-2" />
           </div>
-          <h1 className="text-3xl font-bold">{t(config.titleKey)}</h1>
+          <h1 className="text-3xl font-bold">{serviceName}</h1>
         </div>
 
         <Card className="overflow-hidden">
@@ -112,7 +123,7 @@ const ServiceDetails: React.FC = () => {
             <div className="w-full h-64 md:h-80 overflow-hidden">
               <img 
                 src={customImage} 
-                alt={t(config.titleKey)}
+                alt={serviceName}
                 className="w-full h-full object-cover"
               />
             </div>
