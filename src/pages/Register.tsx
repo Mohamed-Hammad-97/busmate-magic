@@ -47,7 +47,7 @@ const Register: React.FC = () => {
             onClick={() => navigate('/')}
             className="gap-2"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
             {t('register.backToWebsite')}
           </Button>
         </div>

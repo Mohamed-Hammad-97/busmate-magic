@@ -170,7 +170,7 @@ Notes: ${formData.notes || 'N/A'}
             onClick={() => navigate('/register')}
             className="gap-2"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
             {t('register.backToChoice')}
           </Button>
         </div>
