@@ -996,11 +996,11 @@ const resources = {
           cities: 'مدينة',
         },
         about: {
-          defaultTitle: 'عن سيتر',
-          defaultText: 'في سيتر، نعيد تعريف النقل بشغف وابتكار ورؤية لمستقبل مستدام.',
+          defaultTitle: 'عن Seater',
+          defaultText: 'في Seater، نعيد تعريف النقل بشغف وابتكار ورؤية لمستقبل مستدام.',
         },
         features: {
-          title: 'لماذا سيتر',
+          title: 'لماذا Seater',
           subtitle: 'اكتشف طرقاً للشعور بالراحة والأمان',
           affordable: {
             title: 'باقات ميسورة التكلفة',
@@ -1072,7 +1072,7 @@ const resources = {
           register: 'التسجيل',
           downloadApp: 'تحميل التطبيق',
           comingSoon: 'قريباً...',
-          copyright: '© 2025 سيتر. جميع الحقوق محفوظة.',
+          copyright: '© 2025 Seater. جميع الحقوق محفوظة.',
         },
       },
       // Auth
