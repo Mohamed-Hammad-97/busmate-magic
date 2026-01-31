@@ -370,20 +370,41 @@ const HomepageAdmin = () => {
                 <CardTitle>About Section</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>About Title</Label>
-                  <Input
-                    value={settingsForm.about_title || ""}
-                    onChange={(e) => setSettingsForm({ ...settingsForm, about_title: e.target.value })}
-                  />
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>About Title (English)</Label>
+                    <Input
+                      value={settingsForm.about_title || ""}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, about_title: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>About Title (Arabic)</Label>
+                    <Input
+                      dir="rtl"
+                      value={settingsForm.about_title_ar || ""}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, about_title_ar: e.target.value })}
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>About Text</Label>
-                  <Textarea
-                    rows={4}
-                    value={settingsForm.about_text || ""}
-                    onChange={(e) => setSettingsForm({ ...settingsForm, about_text: e.target.value })}
-                  />
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>About Text (English)</Label>
+                    <Textarea
+                      rows={4}
+                      value={settingsForm.about_text || ""}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, about_text: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>About Text (Arabic)</Label>
+                    <Textarea
+                      rows={4}
+                      dir="rtl"
+                      value={settingsForm.about_text_ar || ""}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, about_text_ar: e.target.value })}
+                    />
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label>About Section Image</Label>

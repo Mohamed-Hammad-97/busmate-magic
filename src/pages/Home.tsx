@@ -313,9 +313,17 @@ const Home = () => {
             )}
             {/* About Content */}
             <div className={`space-y-6 ${!hasSetting("about_image") ? 'text-center' : ''}`}>
-              <h2 className="text-3xl md:text-4xl font-bold">{getSetting("about_title", t('homepage.about.defaultTitle'))}</h2>
+              <h2 className="text-3xl md:text-4xl font-bold">
+                {isRtl 
+                  ? getSetting("about_title_ar", getSetting("about_title", t('homepage.about.defaultTitle')))
+                  : getSetting("about_title", t('homepage.about.defaultTitle'))
+                }
+              </h2>
               <p className="text-lg text-muted-foreground leading-relaxed">
-                {getSetting("about_text", t('homepage.about.defaultText'))}
+                {isRtl 
+                  ? getSetting("about_text_ar", getSetting("about_text", t('homepage.about.defaultText')))
+                  : getSetting("about_text", t('homepage.about.defaultText'))
+                }
               </p>
             </div>
           </div>
