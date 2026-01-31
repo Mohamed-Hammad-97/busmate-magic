@@ -417,6 +417,139 @@ const HomepageAdmin = () => {
               </CardContent>
             </Card>
 
+            {/* Services Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Services Settings</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <p className="text-sm text-muted-foreground">Configure each service card on the homepage. Enable a service to make it clickable with a "Get Started" button.</p>
+                
+                {/* Student Service */}
+                <div className="border rounded-lg p-4 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-semibold">Student Transportation</h4>
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="student-enabled" className="text-sm">Enabled</Label>
+                      <Switch
+                        id="student-enabled"
+                        checked={settingsForm.service_student_enabled === "true"}
+                        onCheckedChange={(checked) => setSettingsForm({ ...settingsForm, service_student_enabled: checked ? "true" : "false" })}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Service Image</Label>
+                    <ImageUploadInput
+                      value={settingsForm.service_student_image || ""}
+                      onChange={(url) => setSettingsForm({ ...settingsForm, service_student_image: url })}
+                    />
+                  </div>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Description (English)</Label>
+                      <Textarea
+                        rows={2}
+                        value={settingsForm.service_student_description_en || ""}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, service_student_description_en: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Description (Arabic)</Label>
+                      <Textarea
+                        rows={2}
+                        dir="rtl"
+                        value={settingsForm.service_student_description_ar || ""}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, service_student_description_ar: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Corporate Service */}
+                <div className="border rounded-lg p-4 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-semibold">Corporate Transportation</h4>
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="corporate-enabled" className="text-sm">Enabled</Label>
+                      <Switch
+                        id="corporate-enabled"
+                        checked={settingsForm.service_corporate_enabled === "true"}
+                        onCheckedChange={(checked) => setSettingsForm({ ...settingsForm, service_corporate_enabled: checked ? "true" : "false" })}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Service Image</Label>
+                    <ImageUploadInput
+                      value={settingsForm.service_corporate_image || ""}
+                      onChange={(url) => setSettingsForm({ ...settingsForm, service_corporate_image: url })}
+                    />
+                  </div>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Description (English)</Label>
+                      <Textarea
+                        rows={2}
+                        value={settingsForm.service_corporate_description_en || ""}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, service_corporate_description_en: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Description (Arabic)</Label>
+                      <Textarea
+                        rows={2}
+                        dir="rtl"
+                        value={settingsForm.service_corporate_description_ar || ""}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, service_corporate_description_ar: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Private Service */}
+                <div className="border rounded-lg p-4 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-semibold">Private Transportation</h4>
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="private-enabled" className="text-sm">Enabled</Label>
+                      <Switch
+                        id="private-enabled"
+                        checked={settingsForm.service_private_enabled === "true"}
+                        onCheckedChange={(checked) => setSettingsForm({ ...settingsForm, service_private_enabled: checked ? "true" : "false" })}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Service Image</Label>
+                    <ImageUploadInput
+                      value={settingsForm.service_private_image || ""}
+                      onChange={(url) => setSettingsForm({ ...settingsForm, service_private_image: url })}
+                    />
+                  </div>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Description (English)</Label>
+                      <Textarea
+                        rows={2}
+                        value={settingsForm.service_private_description_en || ""}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, service_private_description_en: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Description (Arabic)</Label>
+                      <Textarea
+                        rows={2}
+                        dir="rtl"
+                        value={settingsForm.service_private_description_ar || ""}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, service_private_description_ar: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader>
                 <CardTitle>SEO Settings</CardTitle>
