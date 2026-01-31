@@ -247,6 +247,7 @@ const resources = {
         description: 'Register for school bus transportation service',
         chooseType: 'Choose your registration type',
         backToChoice: 'Back',
+        backToWebsite: 'Back to Website',
         error: 'Error',
         types: {
           student: {
@@ -787,6 +788,7 @@ const resources = {
         description: 'التسجيل في خدمة النقل المدرسي',
         chooseType: 'اختر نوع التسجيل',
         backToChoice: 'رجوع',
+        backToWebsite: 'العودة للموقع',
         error: 'خطأ',
         types: {
           student: {
