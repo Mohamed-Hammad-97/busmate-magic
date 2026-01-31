@@ -176,6 +176,19 @@ const Home = () => {
     return settings?.[`service_${key}_image`] || "";
   };
 
+  const hasCustomDescription = (key: string) => {
+    const enKey = `service_${key}_description_en`;
+    const customDesc = settings?.[enKey];
+    return customDesc && customDesc.trim() !== "";
+  };
+
+  const getServiceLink = (key: string) => {
+    if (hasCustomDescription(key)) {
+      return `/services/${key}`;
+    }
+    return `/register/${key}`;
+  };
+
   const services = [
     { 
       key: 'student',
@@ -184,7 +197,7 @@ const Home = () => {
       description: getServiceDescription('student', 'homepage.services.schoolBus.description'),
       image: getServiceImage('student'),
       enabled: isServiceEnabled('student'),
-      link: '/register/student'
+      link: getServiceLink('student')
     },
     { 
       key: 'corporate',
@@ -193,7 +206,7 @@ const Home = () => {
       description: getServiceDescription('corporate', 'homepage.services.corporate.description'),
       image: getServiceImage('corporate'),
       enabled: isServiceEnabled('corporate'),
-      link: '/register/corporate'
+      link: getServiceLink('corporate')
     },
     { 
       key: 'private',
@@ -202,7 +215,7 @@ const Home = () => {
       description: getServiceDescription('private', 'homepage.services.private.description'),
       image: getServiceImage('private'),
       enabled: isServiceEnabled('private'),
-      link: '/register/private'
+      link: getServiceLink('private')
     }
   ];
   const getSetting = (key: string, fallback: string = "") => settings?.[key] || fallback;
