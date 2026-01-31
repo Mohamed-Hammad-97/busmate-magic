@@ -5,12 +5,17 @@ import { useTranslation } from 'react-i18next';
 import StudentRegistrationForm from '@/components/registration/StudentRegistrationForm';
 import CorporateRegistrationForm from '@/components/registration/CorporateRegistrationForm';
 import seaterLogo from '@/assets/seater-logo.jpg';
+import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher';
 
 const Register: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.language === 'ar';
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-primary/10 to-background py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-b from-primary/10 to-background py-8 px-4" dir={isRtl ? 'rtl' : 'ltr'}>
+      <div className="absolute top-4 right-4">
+        <LanguageSwitcher />
+      </div>
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-8">
           <div className="flex flex-col items-center mb-4">
