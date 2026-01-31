@@ -288,12 +288,14 @@ const HomepageAdmin = () => {
             <h1 className="text-3xl font-bold">Homepage Management</h1>
             <p className="text-muted-foreground">Manage your landing page content</p>
           </div>
-          <a href="/" target="_blank" rel="noopener noreferrer">
-            <Button variant="outline" className="gap-2">
-              <Eye className="h-4 w-4" />
-              View Website
-            </Button>
-          </a>
+          <Button 
+            variant="outline" 
+            className="gap-2"
+            onClick={() => window.open(window.location.origin, '_blank')}
+          >
+            <Eye className="h-4 w-4" />
+            View Website
+          </Button>
         </div>
 
         <Tabs defaultValue="settings">
