@@ -52,8 +52,8 @@ interface GalleryImage {
 }
 
 const Home = () => {
-  const { t } = useTranslation();
-  
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.language === 'ar';
   
   const [contactForm, setContactForm] = useState({
     name: "",
@@ -218,9 +218,9 @@ const Home = () => {
             <img 
               src={gallery[0].image_url} 
               alt={gallery[0].alt_text || gallery[0].title || "Hero background"} 
-              className="w-full h-full object-cover"
+              className={`w-full h-full object-cover ${isRtl ? 'scale-x-[-1]' : ''}`}
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-background/70 via-background/40 to-transparent"></div>
+            <div className={`absolute inset-0 bg-gradient-to-r ${isRtl ? 'from-transparent via-background/40 to-background/70' : 'from-background/70 via-background/40 to-transparent'}`}></div>
           </div>
         ) : (
           <div className="absolute inset-0 z-0 bg-gradient-to-br from-primary/5 via-background to-primary/10"></div>
@@ -306,7 +306,7 @@ const Home = () => {
                   <img 
                     src={getSetting("about_image")} 
                     alt="About Seater" 
-                    className="w-full h-auto object-contain"
+                    className={`w-full h-auto object-contain ${isRtl ? 'scale-x-[-1]' : ''}`}
                   />
                 </div>
               </div>
