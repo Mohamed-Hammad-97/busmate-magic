@@ -18,6 +18,9 @@ import Dashboard from "./pages/Dashboard";
 import Schools from "./pages/Schools";
 import Registrations from "./pages/Registrations";
 import Register from "./pages/Register";
+import RegisterStudent from "./pages/RegisterStudent";
+import RegisterCorporate from "./pages/RegisterCorporate";
+import RegisterPrivate from "./pages/RegisterPrivate";
 import Customers from "./pages/Customers";
 import RoutesPage from "./pages/Routes";
 import AIRoutes from "./pages/AIRoutes";
@@ -60,6 +63,9 @@ const App = () => (
           {/* Public routes - no auth required */}
           <Route path="/" element={<Home />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/register/student" element={<RegisterStudent />} />
+          <Route path="/register/corporate" element={<RegisterCorporate />} />
+          <Route path="/register/private" element={<RegisterPrivate />} />
           
           {/* Parent Portal routes */}
           <Route path="/parent/*" element={
