@@ -17,8 +17,7 @@ const loginSchema = z.object({
 });
 
 export default function Auth() {
-  const { t, i18n } = useTranslation();
-  const isRtl = i18n.language === 'ar';
+  const { t } = useTranslation();
   const { user, isEmployee, signIn, isLoading: authLoading } = useAuth();
   const location = useLocation();
   const { toast } = useToast();
@@ -72,7 +71,7 @@ export default function Auth() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4" dir={isRtl ? 'rtl' : 'ltr'}>
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="absolute top-4 right-4">
         <LanguageSwitcher />
       </div>

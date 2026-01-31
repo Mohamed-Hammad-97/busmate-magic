@@ -52,8 +52,8 @@ interface GalleryImage {
 }
 
 const Home = () => {
-  const { t, i18n } = useTranslation();
-  const isRtl = i18n.language === 'ar';
+  const { t } = useTranslation();
+  
   
   const [contactForm, setContactForm] = useState({
     name: "",
@@ -184,7 +184,7 @@ const Home = () => {
         <meta name="twitter:title" content={getSetting("seo_title", "Seater - Smart School & Corporate Transportation")} />
         <meta name="twitter:description" content={getSetting("seo_description", "Smart, Reliable, and Effortless Transportation for Schools, Businesses, and Individuals.")} />
       </Helmet>
-      <div className="min-h-screen bg-background" dir={isRtl ? 'rtl' : 'ltr'}>
+      <div className="min-h-screen bg-background">
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
