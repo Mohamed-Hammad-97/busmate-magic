@@ -8,11 +8,10 @@ import seaterLogo from '@/assets/seater-logo.jpg';
 import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher';
 
 const Register: React.FC = () => {
-  const { t, i18n } = useTranslation();
-  const isRtl = i18n.language === 'ar';
+  const { t } = useTranslation();
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-primary/10 to-background py-8 px-4" dir={isRtl ? 'rtl' : 'ltr'}>
+    <div className="min-h-screen bg-gradient-to-b from-primary/10 to-background py-8 px-4">
       <div className="absolute top-4 right-4">
         <LanguageSwitcher />
       </div>
