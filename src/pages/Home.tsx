@@ -198,9 +198,6 @@ const Home = () => {
             <a href="#contact" className="text-muted-foreground hover:text-primary transition-colors">Contact</a>
           </div>
           <div className="flex items-center gap-3">
-            <Link to="/auth">
-              <Button variant="outline">Login</Button>
-            </Link>
             <Link to="/register">
               <Button>Get Started</Button>
             </Link>
