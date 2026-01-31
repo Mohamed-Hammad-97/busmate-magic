@@ -342,7 +342,7 @@ const Home = () => {
                 <Link to="/register">
                   <Button size="lg" className="gap-2">
                     {t('homepage.nav.getStarted')}
-                    <ChevronRight className="h-5 w-5" />
+                    <ChevronRight className="h-5 w-5 rtl:rotate-180" />
                   </Button>
                 </Link>
               )}
@@ -472,7 +472,7 @@ const Home = () => {
                       {service.enabled && (
                         <Button size="sm" className="w-full gap-2">
                           {t('homepage.services.moreDetails')}
-                          <ChevronRight className="h-4 w-4" />
+                          <ChevronRight className="h-4 w-4 rtl:rotate-180" />
                         </Button>
                       )}
                     </div>
