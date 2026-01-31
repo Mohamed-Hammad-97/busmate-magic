@@ -306,7 +306,7 @@ const Home = () => {
                   <img 
                     src={getSetting("about_image")} 
                     alt="About Seater" 
-                    className={`w-full h-auto object-contain ${isRtl ? 'scale-x-[-1]' : ''}`}
+                    className="w-full h-auto object-contain"
                   />
                 </div>
               </div>
