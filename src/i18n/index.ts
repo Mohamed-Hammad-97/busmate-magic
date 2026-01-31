@@ -242,11 +242,26 @@ const resources = {
         finance: 'Finance',
         reportsAccess: 'Reports',
       },
-      // Registration
       register: {
         title: 'New Registration',
         description: 'Register for school bus transportation service',
+        chooseType: 'Choose your registration type',
+        backToChoice: 'Back',
         error: 'Error',
+        types: {
+          student: {
+            title: 'Student Registration',
+            description: 'Register your child for school bus transportation',
+          },
+          corporate: {
+            title: 'Corporate Registration',
+            description: 'Transportation solutions for your business',
+          },
+          private: {
+            title: 'Private Request',
+            description: 'Customized private transportation service',
+          },
+        },
         tabs: {
           student: 'Student',
           corporate: 'Corporate',
@@ -365,6 +380,55 @@ const resources = {
             title: 'Request Received!',
             message: 'Thank you for your corporate registration request. Our sales team will contact you within 24 hours to discuss your transportation needs.',
             companyLabel: 'Company',
+          },
+        },
+        private: {
+          step1: {
+            title: 'Personal Information',
+            description: 'Enter your contact and trip details',
+          },
+          step2: {
+            title: 'Pickup Location',
+            description: 'Select your pickup location on the map',
+          },
+          fields: {
+            fullName: 'Full Name',
+            phone: 'Phone',
+            email: 'Email',
+            city: 'City',
+            destination: 'Destination',
+            frequency: 'Trip Frequency',
+            passengersCount: 'Number of Passengers',
+            notes: 'Additional Notes',
+          },
+          placeholders: {
+            fullName: 'Your full name',
+            email: 'email@example.com',
+            city: 'Select city',
+            destination: 'Where do you want to go?',
+            frequency: 'Select frequency',
+            passengersCount: 'Select count',
+            notes: 'Any special requirements...',
+          },
+          options: {
+            daily: 'Daily',
+            weekly: 'Weekly',
+            monthly: 'Monthly',
+            oneTime: 'One-time',
+          },
+          validation: {
+            fullName: 'Please enter your name',
+            phone: 'Please enter your phone',
+            email: 'Please enter your email',
+            city: 'Please select city',
+            destination: 'Please enter destination',
+            frequency: 'Please select frequency',
+          },
+          success: {
+            title: 'Request Received!',
+            message: 'Thank you for your private transportation request. Our team will contact you within 24 hours to discuss your needs.',
+            nameLabel: 'Name',
+            backHome: 'Back to Home',
           },
         },
       },
@@ -721,7 +785,23 @@ const resources = {
       register: {
         title: 'تسجيل جديد',
         description: 'التسجيل في خدمة النقل المدرسي',
+        chooseType: 'اختر نوع التسجيل',
+        backToChoice: 'رجوع',
         error: 'خطأ',
+        types: {
+          student: {
+            title: 'تسجيل طالب',
+            description: 'سجل طفلك في خدمة النقل المدرسي',
+          },
+          corporate: {
+            title: 'تسجيل شركات',
+            description: 'حلول النقل لشركتك',
+          },
+          private: {
+            title: 'طلب خاص',
+            description: 'خدمة نقل خاصة مخصصة',
+          },
+        },
         tabs: {
           student: 'طالب',
           corporate: 'شركات',
@@ -840,6 +920,55 @@ const resources = {
             title: 'تم استلام الطلب!',
             message: 'شكراً لطلب تسجيل الشركات. سيتواصل معكم فريق المبيعات خلال 24 ساعة لمناقشة احتياجات النقل الخاصة بكم.',
             companyLabel: 'الشركة',
+          },
+        },
+        private: {
+          step1: {
+            title: 'المعلومات الشخصية',
+            description: 'أدخل بيانات التواصل وتفاصيل الرحلة',
+          },
+          step2: {
+            title: 'موقع الاستلام',
+            description: 'حدد موقع الاستلام على الخريطة',
+          },
+          fields: {
+            fullName: 'الاسم الكامل',
+            phone: 'الهاتف',
+            email: 'البريد الإلكتروني',
+            city: 'المدينة',
+            destination: 'الوجهة',
+            frequency: 'تكرار الرحلة',
+            passengersCount: 'عدد الركاب',
+            notes: 'ملاحظات إضافية',
+          },
+          placeholders: {
+            fullName: 'اسمك الكامل',
+            email: 'email@example.com',
+            city: 'اختر المدينة',
+            destination: 'إلى أين تريد الذهاب؟',
+            frequency: 'اختر التكرار',
+            passengersCount: 'اختر العدد',
+            notes: 'أي متطلبات خاصة...',
+          },
+          options: {
+            daily: 'يومي',
+            weekly: 'أسبوعي',
+            monthly: 'شهري',
+            oneTime: 'مرة واحدة',
+          },
+          validation: {
+            fullName: 'يرجى إدخال اسمك',
+            phone: 'يرجى إدخال رقم الهاتف',
+            email: 'يرجى إدخال البريد الإلكتروني',
+            city: 'يرجى اختيار المدينة',
+            destination: 'يرجى إدخال الوجهة',
+            frequency: 'يرجى اختيار التكرار',
+          },
+          success: {
+            title: 'تم استلام الطلب!',
+            message: 'شكراً لطلب النقل الخاص. سيتواصل معكم فريقنا خلال 24 ساعة لمناقشة احتياجاتكم.',
+            nameLabel: 'الاسم',
+            backHome: 'العودة للرئيسية',
           },
         },
       },
