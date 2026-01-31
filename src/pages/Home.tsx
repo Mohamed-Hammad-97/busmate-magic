@@ -302,7 +302,7 @@ const Home = () => {
             {/* About Image - only show if about_image is set */}
             {hasSetting("about_image") && (
               <div className="relative flex justify-center">
-                <div className="rounded-2xl overflow-hidden shadow-xl max-w-md w-full">
+                <div className="rounded-2xl overflow-hidden shadow-xl max-w-xs w-full">
                   <img 
                     src={getSetting("about_image")} 
                     alt="About Seater" 
