@@ -158,11 +158,61 @@ const Home = () => {
     }
   ];
 
+  // Dynamic services based on admin settings
+  const getServiceDescription = (key: string, fallbackKey: string) => {
+    const enKey = `service_${key}_description_en`;
+    const arKey = `service_${key}_description_ar`;
+    const customDesc = isRtl 
+      ? (settings?.[arKey] || settings?.[enKey])
+      : settings?.[enKey];
+    return customDesc && customDesc.trim() !== "" ? customDesc : t(fallbackKey);
+  };
+
+  const isServiceEnabled = (key: string) => {
+    return settings?.[`service_${key}_enabled`] === "true";
+  };
+
+  const getServiceImage = (key: string) => {
+    return settings?.[`service_${key}_image`] || "";
+  };
+
   const services = [
-    { icon: Bus, title: t('homepage.services.schoolBus.title'), description: t('homepage.services.schoolBus.description') },
-    { icon: Building2, title: t('homepage.services.corporate.title'), description: t('homepage.services.corporate.description') },
-    { icon: Car, title: t('homepage.services.private.title'), description: t('homepage.services.private.description') },
-    { icon: MapPin, title: t('homepage.services.tracking.title'), description: t('homepage.services.tracking.description') }
+    { 
+      key: 'student',
+      icon: Bus, 
+      title: t('homepage.services.schoolBus.title'), 
+      description: getServiceDescription('student', 'homepage.services.schoolBus.description'),
+      image: getServiceImage('student'),
+      enabled: isServiceEnabled('student'),
+      link: '/register/student'
+    },
+    { 
+      key: 'corporate',
+      icon: Building2, 
+      title: t('homepage.services.corporate.title'), 
+      description: getServiceDescription('corporate', 'homepage.services.corporate.description'),
+      image: getServiceImage('corporate'),
+      enabled: isServiceEnabled('corporate'),
+      link: '/register/corporate'
+    },
+    { 
+      key: 'private',
+      icon: Car, 
+      title: t('homepage.services.private.title'), 
+      description: getServiceDescription('private', 'homepage.services.private.description'),
+      image: getServiceImage('private'),
+      enabled: isServiceEnabled('private'),
+      link: '/register/private'
+    },
+    { 
+      key: 'tracking',
+      icon: MapPin, 
+      title: t('homepage.services.tracking.title'), 
+      description: t('homepage.services.tracking.description'),
+      image: '',
+      enabled: false,
+      link: ''
+    }
   ];
   const getSetting = (key: string, fallback: string = "") => settings?.[key] || fallback;
   
@@ -363,19 +413,45 @@ const Home = () => {
             <p className="text-lg text-muted-foreground">{t('homepage.services.subtitle')}</p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {services.map((service, index) => (
-              <Card key={index} className="group cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-2 overflow-hidden">
-                <CardContent className="p-0">
-                  <div className="h-40 bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center group-hover:from-primary group-hover:to-primary/80 transition-all duration-300">
-                    <service.icon className="h-16 w-16 text-primary group-hover:text-primary-foreground transition-colors" />
-                  </div>
-                  <div className="p-6 space-y-2">
-                    <h3 className="text-xl font-semibold">{service.title}</h3>
-                    <p className="text-sm text-muted-foreground">{service.description}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+            {services.map((service, index) => {
+              const cardContent = (
+                <Card key={index} className={`group hover:shadow-xl transition-all duration-300 hover:-translate-y-2 overflow-hidden ${service.enabled ? 'cursor-pointer' : ''}`}>
+                  <CardContent className="p-0">
+                    {service.image ? (
+                      <div className="h-40 overflow-hidden">
+                        <img 
+                          src={service.image} 
+                          alt={service.title} 
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      </div>
+                    ) : (
+                      <div className="h-40 bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center group-hover:from-primary group-hover:to-primary/80 transition-all duration-300">
+                        <service.icon className="h-16 w-16 text-primary group-hover:text-primary-foreground transition-colors" />
+                      </div>
+                    )}
+                    <div className="p-6 space-y-3">
+                      <h3 className="text-xl font-semibold">{service.title}</h3>
+                      <p className="text-sm text-muted-foreground">{service.description}</p>
+                      {service.enabled && (
+                        <Button size="sm" className="w-full gap-2">
+                          {t('homepage.nav.getStarted')}
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+
+              return service.enabled ? (
+                <Link key={index} to={service.link}>
+                  {cardContent}
+                </Link>
+              ) : (
+                <div key={index}>{cardContent}</div>
+              );
+            })}
           </div>
         </div>
       </section>
