@@ -203,15 +203,6 @@ const Home = () => {
       image: getServiceImage('private'),
       enabled: isServiceEnabled('private'),
       link: '/register/private'
-    },
-    { 
-      key: 'tracking',
-      icon: MapPin, 
-      title: t('homepage.services.tracking.title'), 
-      description: t('homepage.services.tracking.description'),
-      image: '',
-      enabled: false,
-      link: ''
     }
   ];
   const getSetting = (key: string, fallback: string = "") => settings?.[key] || fallback;
