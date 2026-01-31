@@ -21,6 +21,7 @@ import Register from "./pages/Register";
 import RegisterStudent from "./pages/RegisterStudent";
 import RegisterCorporate from "./pages/RegisterCorporate";
 import RegisterPrivate from "./pages/RegisterPrivate";
+import ServiceDetails from "./pages/ServiceDetails";
 import Customers from "./pages/Customers";
 import RoutesPage from "./pages/Routes";
 import AIRoutes from "./pages/AIRoutes";
@@ -66,6 +67,7 @@ const App = () => (
           <Route path="/register/student" element={<RegisterStudent />} />
           <Route path="/register/corporate" element={<RegisterCorporate />} />
           <Route path="/register/private" element={<RegisterPrivate />} />
+          <Route path="/services/:serviceType" element={<ServiceDetails />} />
           
           {/* Parent Portal routes */}
           <Route path="/parent/*" element={
