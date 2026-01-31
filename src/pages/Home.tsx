@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Helmet } from "react-helmet-async";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -29,6 +30,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import seaterLogo from "@/assets/seater-logo.jpg";
+import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 
 interface HomepageSetting {
   key: string;
@@ -50,6 +52,9 @@ interface GalleryImage {
 }
 
 const Home = () => {
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.language === 'ar';
+  
   const [contactForm, setContactForm] = useState({
     name: "",
     email: "",
@@ -113,18 +118,18 @@ const Home = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Message sent successfully! We'll get back to you soon.");
+      toast.success(t('homepage.contact.successMessage'));
       setContactForm({ name: "", email: "", subject: "", message: "" });
     },
     onError: (error) => {
-      toast.error("Failed to send message: " + error.message);
+      toast.error(t('homepage.contact.errorMessage') + ": " + error.message);
     },
   });
 
   const handleContactSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!contactForm.name || !contactForm.email || !contactForm.message) {
-      toast.error("Please fill in all required fields");
+      toast.error(t('homepage.contact.fillRequired'));
       return;
     }
     submitContactMutation.mutate(contactForm);
@@ -133,33 +138,32 @@ const Home = () => {
   const features = [
     {
       icon: DollarSign,
-      title: "Affordable Packages",
-      description: "We offer a range of affordable packages with exclusive features tailored to our customers' needs."
+      title: t('homepage.features.affordable.title'),
+      description: t('homepage.features.affordable.description')
     },
     {
       icon: MapPin,
-      title: "Real-Time Tracking",
-      description: "Track every ride live with GPS for complete peace of mind. Always know your child's journey."
+      title: t('homepage.features.tracking.title'),
+      description: t('homepage.features.tracking.description')
     },
     {
       icon: Navigation,
-      title: "Nationwide Coverage",
-      description: "Reliable service across Egypt, soon expanding across the MENA region."
+      title: t('homepage.features.coverage.title'),
+      description: t('homepage.features.coverage.description')
     },
     {
       icon: Shield,
-      title: "Safe and Secure",
-      description: "Verified drivers, caring supervisors, and 24/7 support ensure every journey is safe."
+      title: t('homepage.features.safe.title'),
+      description: t('homepage.features.safe.description')
     }
   ];
 
   const services = [
-    { icon: Bus, title: "School Bus", description: "Safe and reliable school transportation" },
-    { icon: Building2, title: "Corporate Booking", description: "Professional fleet for businesses" },
-    { icon: Car, title: "Private Request", description: "Customized private transportation" },
-    { icon: MapPin, title: "Tracking Service", description: "Real-time GPS tracking solutions" }
+    { icon: Bus, title: t('homepage.services.schoolBus.title'), description: t('homepage.services.schoolBus.description') },
+    { icon: Building2, title: t('homepage.services.corporate.title'), description: t('homepage.services.corporate.description') },
+    { icon: Car, title: t('homepage.services.private.title'), description: t('homepage.services.private.description') },
+    { icon: MapPin, title: t('homepage.services.tracking.title'), description: t('homepage.services.tracking.description') }
   ];
-
   const getSetting = (key: string, fallback: string = "") => settings?.[key] || fallback;
   
   // Helper to check if a setting has a value (not empty)
@@ -180,7 +184,7 @@ const Home = () => {
         <meta name="twitter:title" content={getSetting("seo_title", "Seater - Smart School & Corporate Transportation")} />
         <meta name="twitter:description" content={getSetting("seo_description", "Smart, Reliable, and Effortless Transportation for Schools, Businesses, and Individuals.")} />
       </Helmet>
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background" dir={isRtl ? 'rtl' : 'ltr'}>
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -189,17 +193,18 @@ const Home = () => {
             <span className="text-xl font-bold text-primary">Seater</span>
           </Link>
           <div className="hidden md:flex items-center gap-8">
-            <a href="#about" className="text-muted-foreground hover:text-primary transition-colors">About</a>
-            <a href="#features" className="text-muted-foreground hover:text-primary transition-colors">Features</a>
-            <a href="#services" className="text-muted-foreground hover:text-primary transition-colors">Services</a>
+            <a href="#about" className="text-muted-foreground hover:text-primary transition-colors">{t('homepage.nav.about')}</a>
+            <a href="#features" className="text-muted-foreground hover:text-primary transition-colors">{t('homepage.nav.features')}</a>
+            <a href="#services" className="text-muted-foreground hover:text-primary transition-colors">{t('homepage.nav.services')}</a>
             {partners && partners.length > 0 && (
-              <a href="#partners" className="text-muted-foreground hover:text-primary transition-colors">Partners</a>
+              <a href="#partners" className="text-muted-foreground hover:text-primary transition-colors">{t('homepage.nav.partners')}</a>
             )}
-            <a href="#contact" className="text-muted-foreground hover:text-primary transition-colors">Contact</a>
+            <a href="#contact" className="text-muted-foreground hover:text-primary transition-colors">{t('homepage.nav.contact')}</a>
           </div>
           <div className="flex items-center gap-3">
+            <LanguageSwitcher />
             <Link to="/register">
-              <Button>Get Started</Button>
+              <Button>{t('homepage.nav.getStarted')}</Button>
             </Link>
           </div>
         </div>
@@ -224,20 +229,20 @@ const Home = () => {
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-2xl space-y-8">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
-              {getSetting("hero_title", "Smart, Reliable, and Effortless Transportation").split(",")[0]},{" "}
+              {getSetting("hero_title", t('homepage.hero.defaultTitle')).split(",")[0]},{" "}
               <span className="text-primary">
-                {getSetting("hero_title", "Smart, Reliable, and Effortless Transportation").split(",").slice(1).join(",")}
+                {getSetting("hero_title", t('homepage.hero.defaultTitle')).split(",").slice(1).join(",")}
               </span>
             </h1>
             <p className="text-xl text-muted-foreground max-w-lg">
-              {getSetting("hero_subtitle", "Book your ride. Track every trip. Manage your fleet — all in one place.")}
+              {getSetting("hero_subtitle", t('homepage.hero.defaultSubtitle'))}
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               {getSetting("app_store_url") && (
                 <a href={getSetting("app_store_url")} target="_blank" rel="noopener noreferrer">
                   <Button size="lg" className="gap-2 w-full sm:w-auto">
                     <Apple className="h-5 w-5" />
-                    Download on App Store
+                    {t('homepage.hero.downloadAppStore')}
                   </Button>
                 </a>
               )}
@@ -245,14 +250,14 @@ const Home = () => {
                 <a href={getSetting("google_play_url")} target="_blank" rel="noopener noreferrer">
                   <Button size="lg" variant="outline" className="gap-2 w-full sm:w-auto bg-background/50 backdrop-blur-sm">
                     <PlayCircle className="h-5 w-5" />
-                    Get it on Google Play
+                    {t('homepage.hero.downloadPlayStore')}
                   </Button>
                 </a>
               )}
               {!getSetting("app_store_url") && !getSetting("google_play_url") && (
                 <Link to="/register">
                   <Button size="lg" className="gap-2">
-                    Get Started
+                    {t('homepage.nav.getStarted')}
                     <ChevronRight className="h-5 w-5" />
                   </Button>
                 </Link>
@@ -264,7 +269,7 @@ const Home = () => {
                   <>
                     <div>
                       <p className="text-3xl font-bold text-primary">{getSetting("stats_users")}</p>
-                      <p className="text-sm text-muted-foreground">Active Users</p>
+                      <p className="text-sm text-muted-foreground">{t('homepage.hero.activeUsers')}</p>
                     </div>
                     {(hasSetting("stats_schools") || hasSetting("stats_cities")) && <div className="w-px h-12 bg-border"></div>}
                   </>
@@ -273,7 +278,7 @@ const Home = () => {
                   <>
                     <div>
                       <p className="text-3xl font-bold text-primary">{getSetting("stats_schools")}</p>
-                      <p className="text-sm text-muted-foreground">Schools</p>
+                      <p className="text-sm text-muted-foreground">{t('homepage.hero.schools')}</p>
                     </div>
                     {hasSetting("stats_cities") && <div className="w-px h-12 bg-border"></div>}
                   </>
@@ -281,7 +286,7 @@ const Home = () => {
                 {hasSetting("stats_cities") && (
                   <div>
                     <p className="text-3xl font-bold text-primary">{getSetting("stats_cities")}</p>
-                    <p className="text-sm text-muted-foreground">Cities</p>
+                    <p className="text-sm text-muted-foreground">{t('homepage.hero.cities')}</p>
                   </div>
                 )}
               </div>
@@ -308,9 +313,9 @@ const Home = () => {
             )}
             {/* About Content */}
             <div className={`space-y-6 ${!hasSetting("about_image") ? 'text-center' : ''}`}>
-              <h2 className="text-3xl md:text-4xl font-bold">{getSetting("about_title", "About Seater")}</h2>
+              <h2 className="text-3xl md:text-4xl font-bold">{getSetting("about_title", t('homepage.about.defaultTitle'))}</h2>
               <p className="text-lg text-muted-foreground leading-relaxed">
-                {getSetting("about_text", "At Seater, we're redefining transportation with passion, innovation, and a vision for a sustainable future.")}
+                {getSetting("about_text", t('homepage.about.defaultText'))}
               </p>
             </div>
           </div>
@@ -321,9 +326,9 @@ const Home = () => {
       <section id="features" className="py-20 px-4 bg-muted/30">
         <div className="container mx-auto">
           <div className="text-center space-y-4 mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold">Why Seater</h2>
+            <h2 className="text-3xl md:text-4xl font-bold">{t('homepage.features.title')}</h2>
             <p className="text-lg text-muted-foreground">
-              Discover ways to feel at ease and secure
+              {t('homepage.features.subtitle')}
             </p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -346,8 +351,8 @@ const Home = () => {
       <section id="services" className="py-20 px-4">
         <div className="container mx-auto">
           <div className="text-center space-y-4 mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold">Seater Services</h2>
-            <p className="text-lg text-muted-foreground">Let's get you a ride</p>
+            <h2 className="text-3xl md:text-4xl font-bold">{t('homepage.services.title')}</h2>
+            <p className="text-lg text-muted-foreground">{t('homepage.services.subtitle')}</p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {services.map((service, index) => (
@@ -372,9 +377,9 @@ const Home = () => {
         <section id="partners" className="py-20 px-4 bg-muted/30">
           <div className="container mx-auto">
             <div className="text-center space-y-4 mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold">Our Partners & Clients</h2>
+              <h2 className="text-3xl md:text-4xl font-bold">{t('homepage.partners.title')}</h2>
               <p className="text-lg text-muted-foreground">
-                Trusted by industry leaders and innovative companies worldwide
+                {t('homepage.partners.subtitle')}
               </p>
             </div>
             <div className="grid grid-cols-3 md:grid-cols-5 gap-6">
@@ -405,9 +410,9 @@ const Home = () => {
       <section id="contact" className="py-20 px-4">
         <div className="container mx-auto">
           <div className="text-center space-y-4 mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold">Contact Us</h2>
+            <h2 className="text-3xl md:text-4xl font-bold">{t('homepage.contact.title')}</h2>
             <p className="text-lg text-muted-foreground">
-              Get in touch with our team
+              {t('homepage.contact.subtitle')}
             </p>
           </div>
           <div className="grid lg:grid-cols-2 gap-12">
@@ -415,16 +420,16 @@ const Home = () => {
             <Card className="border-0 shadow-lg">
               <CardContent className="p-8">
                 <form onSubmit={handleContactSubmit} className="space-y-6">
-                  <h3 className="text-2xl font-semibold">Send us a message</h3>
+                  <h3 className="text-2xl font-semibold">{t('homepage.contact.sendMessage')}</h3>
                   <div className="grid md:grid-cols-2 gap-4">
                     <Input 
-                      placeholder="Your Name *" 
+                      placeholder={t('homepage.contact.yourName')} 
                       value={contactForm.name}
                       onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
                       required
                     />
                     <Input 
-                      placeholder="Your Email *" 
+                      placeholder={t('homepage.contact.yourEmail')} 
                       type="email" 
                       value={contactForm.email}
                       onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
@@ -432,12 +437,12 @@ const Home = () => {
                     />
                   </div>
                   <Input 
-                    placeholder="Subject" 
+                    placeholder={t('homepage.contact.subject')} 
                     value={contactForm.subject}
                     onChange={(e) => setContactForm({ ...contactForm, subject: e.target.value })}
                   />
                   <Textarea 
-                    placeholder="Your Message *" 
+                    placeholder={t('homepage.contact.yourMessage')} 
                     rows={5} 
                     value={contactForm.message}
                     onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
@@ -449,7 +454,7 @@ const Home = () => {
                     className="w-full"
                     disabled={submitContactMutation.isPending}
                   >
-                    {submitContactMutation.isPending ? "Sending..." : "Send Message"}
+                    {submitContactMutation.isPending ? t('homepage.contact.sending') : t('homepage.contact.send')}
                   </Button>
                 </form>
               </CardContent>
@@ -462,7 +467,7 @@ const Home = () => {
                 <CardContent className="p-6 space-y-4">
                   <h4 className="text-xl font-semibold flex items-center gap-2">
                     <MapPinned className="h-5 w-5 text-primary" />
-                    Cairo Office
+                    {t('homepage.contact.cairoOffice')}
                   </h4>
                   <div className="space-y-3 text-muted-foreground">
                     <p className="flex items-center gap-3">
@@ -486,7 +491,7 @@ const Home = () => {
                 <CardContent className="p-6 space-y-4">
                   <h4 className="text-xl font-semibold flex items-center gap-2">
                     <MapPinned className="h-5 w-5 text-primary" />
-                    Alexandria Office
+                    {t('homepage.contact.alexandriaOffice')}
                   </h4>
                   <div className="space-y-3 text-muted-foreground">
                     <p className="flex items-center gap-3">
@@ -519,7 +524,7 @@ const Home = () => {
                 <span className="text-xl font-bold">Seater</span>
               </div>
               <p className="text-primary-foreground/80 text-sm">
-                Smart, Reliable, and Effortless Transportation for Schools, Businesses, and Individuals.
+                {t('homepage.footer.tagline')}
               </p>
               {/* Social Media Links */}
               {(hasSetting("social_facebook") || hasSetting("social_twitter") || hasSetting("social_instagram") || hasSetting("social_linkedin") || hasSetting("social_youtube") || hasSetting("social_tiktok")) && (
@@ -560,25 +565,25 @@ const Home = () => {
               )}
             </div>
             <div>
-              <h5 className="font-semibold mb-4">Quick Links</h5>
+              <h5 className="font-semibold mb-4">{t('homepage.footer.quickLinks')}</h5>
               <ul className="space-y-2 text-sm text-primary-foreground/80">
-                <li><a href="#about" className="hover:text-primary-foreground transition-colors">About Us</a></li>
-                <li><a href="#services" className="hover:text-primary-foreground transition-colors">Services</a></li>
-                <li><a href="#partners" className="hover:text-primary-foreground transition-colors">Partners</a></li>
-                <li><a href="#contact" className="hover:text-primary-foreground transition-colors">Contact</a></li>
+                <li><a href="#about" className="hover:text-primary-foreground transition-colors">{t('homepage.footer.aboutUs')}</a></li>
+                <li><a href="#services" className="hover:text-primary-foreground transition-colors">{t('homepage.nav.services')}</a></li>
+                <li><a href="#partners" className="hover:text-primary-foreground transition-colors">{t('homepage.nav.partners')}</a></li>
+                <li><a href="#contact" className="hover:text-primary-foreground transition-colors">{t('homepage.nav.contact')}</a></li>
               </ul>
             </div>
             <div>
-              <h5 className="font-semibold mb-4">Portals</h5>
+              <h5 className="font-semibold mb-4">{t('homepage.footer.portals')}</h5>
               <ul className="space-y-2 text-sm text-primary-foreground/80">
-                <li><Link to="/auth" className="hover:text-primary-foreground transition-colors">Employee Login</Link></li>
-                <li><Link to="/parent/auth" className="hover:text-primary-foreground transition-colors">Parent Portal</Link></li>
-                <li><Link to="/driver/login" className="hover:text-primary-foreground transition-colors">Driver Portal</Link></li>
-                <li><Link to="/register" className="hover:text-primary-foreground transition-colors">Register</Link></li>
+                <li><Link to="/auth" className="hover:text-primary-foreground transition-colors">{t('homepage.footer.employeeLogin')}</Link></li>
+                <li><Link to="/parent/auth" className="hover:text-primary-foreground transition-colors">{t('homepage.footer.parentPortal')}</Link></li>
+                <li><Link to="/driver/login" className="hover:text-primary-foreground transition-colors">{t('homepage.footer.driverPortal')}</Link></li>
+                <li><Link to="/register" className="hover:text-primary-foreground transition-colors">{t('homepage.footer.register')}</Link></li>
               </ul>
             </div>
             <div>
-              <h5 className="font-semibold mb-4">Download App</h5>
+              <h5 className="font-semibold mb-4">{t('homepage.footer.downloadApp')}</h5>
               <div className="space-y-3">
                 {getSetting("app_store_url") && (
                   <a href={getSetting("app_store_url")} target="_blank" rel="noopener noreferrer">
@@ -597,13 +602,13 @@ const Home = () => {
                   </a>
                 )}
                 {!getSetting("app_store_url") && !getSetting("google_play_url") && (
-                  <p className="text-sm text-primary-foreground/60">Coming soon...</p>
+                  <p className="text-sm text-primary-foreground/60">{t('homepage.footer.comingSoon')}</p>
                 )}
               </div>
             </div>
           </div>
           <div className="border-t border-primary-foreground/20 mt-8 pt-8 text-center text-sm text-primary-foreground/60">
-            <p>© 2025 Seater. All rights reserved.</p>
+            <p>{t('homepage.footer.copyright')}</p>
           </div>
         </div>
       </footer>

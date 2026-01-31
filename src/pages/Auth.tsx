@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { Bus, Loader2 } from "lucide-react";
 import { z } from "zod";
+import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -15,6 +17,8 @@ const loginSchema = z.object({
 });
 
 export default function Auth() {
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.language === 'ar';
   const { user, isEmployee, signIn, isLoading: authLoading } = useAuth();
   const location = useLocation();
   const { toast } = useToast();
@@ -51,9 +55,9 @@ export default function Auth() {
     if (error) {
       toast({
         variant: "destructive",
-        title: "Login failed",
+        title: t('auth.loginFailed'),
         description: error.message === "Invalid login credentials" 
-          ? "Invalid email or password. Please try again."
+          ? t('auth.invalidCredentials')
           : error.message,
       });
     }
@@ -68,24 +72,27 @@ export default function Auth() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4" dir={isRtl ? 'rtl' : 'ltr'}>
+      <div className="absolute top-4 right-4">
+        <LanguageSwitcher />
+      </div>
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
             <div className="flex items-center gap-2">
               <Bus className="h-10 w-10 text-primary" />
-              <span className="text-2xl font-bold">BusTrack</span>
+              <span className="text-2xl font-bold">Seater</span>
             </div>
           </div>
-          <CardTitle>Welcome</CardTitle>
+          <CardTitle>{t('auth.welcome')}</CardTitle>
           <CardDescription>
-            School Bus Transportation Management System
+            {t('auth.systemTitle')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="login-email">Email</Label>
+              <Label htmlFor="login-email">{t('auth.email')}</Label>
               <Input
                 id="login-email"
                 type="email"
@@ -100,7 +107,7 @@ export default function Auth() {
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="login-password">Password</Label>
+              <Label htmlFor="login-password">{t('auth.password')}</Label>
               <Input
                 id="login-password"
                 type="password"
@@ -115,7 +122,7 @@ export default function Auth() {
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Login
+              {t('auth.login')}
             </Button>
           </form>
         </CardContent>
