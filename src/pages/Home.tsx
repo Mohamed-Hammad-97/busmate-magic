@@ -168,6 +168,24 @@ const Home = () => {
     return customDesc && customDesc.trim() !== "" ? customDesc : t(fallbackKey);
   };
 
+  const getServiceShortDescription = (key: string, fallbackKey: string) => {
+    const enKey = `service_${key}_short_en`;
+    const arKey = `service_${key}_short_ar`;
+    const customDesc = isRtl 
+      ? (settings?.[arKey] || settings?.[enKey])
+      : settings?.[enKey];
+    return customDesc && customDesc.trim() !== "" ? customDesc : t(fallbackKey);
+  };
+
+  const getServiceName = (key: string, fallbackKey: string) => {
+    const enKey = `service_${key}_name_en`;
+    const arKey = `service_${key}_name_ar`;
+    const customName = isRtl 
+      ? (settings?.[arKey] || settings?.[enKey])
+      : settings?.[enKey];
+    return customName && customName.trim() !== "" ? customName : t(fallbackKey);
+  };
+
   const isServiceEnabled = (key: string) => {
     return settings?.[`service_${key}_enabled`] === "true";
   };
@@ -178,6 +196,12 @@ const Home = () => {
 
   const hasCustomDescription = (key: string) => {
     const enKey = `service_${key}_description_en`;
+    const customDesc = settings?.[enKey];
+    return customDesc && customDesc.trim() !== "";
+  };
+
+  const hasShortDescription = (key: string) => {
+    const enKey = `service_${key}_short_en`;
     const customDesc = settings?.[enKey];
     return customDesc && customDesc.trim() !== "";
   };
@@ -193,28 +217,34 @@ const Home = () => {
     { 
       key: 'student',
       icon: Bus, 
-      title: t('homepage.services.schoolBus.title'), 
+      title: getServiceName('student', 'homepage.services.schoolBus.title'), 
+      shortDescription: getServiceShortDescription('student', 'homepage.services.schoolBus.description'),
       description: getServiceDescription('student', 'homepage.services.schoolBus.description'),
       image: getServiceImage('student'),
       enabled: isServiceEnabled('student'),
+      hasShort: hasShortDescription('student'),
       link: getServiceLink('student')
     },
     { 
       key: 'corporate',
       icon: Building2, 
-      title: t('homepage.services.corporate.title'), 
+      title: getServiceName('corporate', 'homepage.services.corporate.title'), 
+      shortDescription: getServiceShortDescription('corporate', 'homepage.services.corporate.description'),
       description: getServiceDescription('corporate', 'homepage.services.corporate.description'),
       image: getServiceImage('corporate'),
       enabled: isServiceEnabled('corporate'),
+      hasShort: hasShortDescription('corporate'),
       link: getServiceLink('corporate')
     },
     { 
       key: 'private',
       icon: Car, 
-      title: t('homepage.services.private.title'), 
+      title: getServiceName('private', 'homepage.services.private.title'), 
+      shortDescription: getServiceShortDescription('private', 'homepage.services.private.description'),
       description: getServiceDescription('private', 'homepage.services.private.description'),
       image: getServiceImage('private'),
       enabled: isServiceEnabled('private'),
+      hasShort: hasShortDescription('private'),
       link: getServiceLink('private')
     }
   ];
@@ -436,6 +466,9 @@ const Home = () => {
                     )}
                     <div className="p-6 space-y-3">
                       <h3 className="text-xl font-semibold">{service.title}</h3>
+                      {service.hasShort && (
+                        <p className="text-sm text-muted-foreground">{service.shortDescription}</p>
+                      )}
                       {service.enabled && (
                         <Button size="sm" className="w-full gap-2">
                           {t('homepage.services.moreDetails')}

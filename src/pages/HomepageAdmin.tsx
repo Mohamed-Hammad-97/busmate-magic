@@ -438,6 +438,44 @@ const HomepageAdmin = () => {
                       />
                     </div>
                   </div>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Custom Name (English)</Label>
+                      <Input
+                        placeholder="School Bus"
+                        value={settingsForm.service_student_name_en || ""}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, service_student_name_en: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Custom Name (Arabic)</Label>
+                      <Input
+                        dir="rtl"
+                        placeholder="باص مدرسي"
+                        value={settingsForm.service_student_name_ar || ""}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, service_student_name_ar: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Short Description (English) - shown on card</Label>
+                      <Input
+                        placeholder="Safe and reliable school transportation"
+                        value={settingsForm.service_student_short_en || ""}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, service_student_short_en: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Short Description (Arabic) - shown on card</Label>
+                      <Input
+                        dir="rtl"
+                        placeholder="نقل مدرسي آمن وموثوق"
+                        value={settingsForm.service_student_short_ar || ""}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, service_student_short_ar: e.target.value })}
+                      />
+                    </div>
+                  </div>
                   <div className="space-y-2">
                     <Label>Service Image</Label>
                     <ImageUploadInput
@@ -447,7 +485,7 @@ const HomepageAdmin = () => {
                   </div>
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Description (English)</Label>
+                      <Label>Full Description (English) - shown on details page</Label>
                       <Textarea
                         rows={2}
                         value={settingsForm.service_student_description_en || ""}
@@ -455,7 +493,7 @@ const HomepageAdmin = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Description (Arabic)</Label>
+                      <Label>Full Description (Arabic) - shown on details page</Label>
                       <Textarea
                         rows={2}
                         dir="rtl"
@@ -479,6 +517,44 @@ const HomepageAdmin = () => {
                       />
                     </div>
                   </div>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Custom Name (English)</Label>
+                      <Input
+                        placeholder="Corporate Booking"
+                        value={settingsForm.service_corporate_name_en || ""}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, service_corporate_name_en: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Custom Name (Arabic)</Label>
+                      <Input
+                        dir="rtl"
+                        placeholder="حجز للشركات"
+                        value={settingsForm.service_corporate_name_ar || ""}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, service_corporate_name_ar: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Short Description (English) - shown on card</Label>
+                      <Input
+                        placeholder="Professional fleet for businesses"
+                        value={settingsForm.service_corporate_short_en || ""}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, service_corporate_short_en: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Short Description (Arabic) - shown on card</Label>
+                      <Input
+                        dir="rtl"
+                        placeholder="أسطول احترافي للشركات"
+                        value={settingsForm.service_corporate_short_ar || ""}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, service_corporate_short_ar: e.target.value })}
+                      />
+                    </div>
+                  </div>
                   <div className="space-y-2">
                     <Label>Service Image</Label>
                     <ImageUploadInput
@@ -488,7 +564,7 @@ const HomepageAdmin = () => {
                   </div>
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Description (English)</Label>
+                      <Label>Full Description (English) - shown on details page</Label>
                       <Textarea
                         rows={2}
                         value={settingsForm.service_corporate_description_en || ""}
@@ -496,7 +572,7 @@ const HomepageAdmin = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Description (Arabic)</Label>
+                      <Label>Full Description (Arabic) - shown on details page</Label>
                       <Textarea
                         rows={2}
                         dir="rtl"
@@ -520,6 +596,44 @@ const HomepageAdmin = () => {
                       />
                     </div>
                   </div>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Custom Name (English)</Label>
+                      <Input
+                        placeholder="Private Request"
+                        value={settingsForm.service_private_name_en || ""}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, service_private_name_en: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Custom Name (Arabic)</Label>
+                      <Input
+                        dir="rtl"
+                        placeholder="طلب خاص"
+                        value={settingsForm.service_private_name_ar || ""}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, service_private_name_ar: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Short Description (English) - shown on card</Label>
+                      <Input
+                        placeholder="Customized private transportation"
+                        value={settingsForm.service_private_short_en || ""}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, service_private_short_en: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Short Description (Arabic) - shown on card</Label>
+                      <Input
+                        dir="rtl"
+                        placeholder="نقل خاص مخصص"
+                        value={settingsForm.service_private_short_ar || ""}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, service_private_short_ar: e.target.value })}
+                      />
+                    </div>
+                  </div>
                   <div className="space-y-2">
                     <Label>Service Image</Label>
                     <ImageUploadInput
@@ -529,7 +643,7 @@ const HomepageAdmin = () => {
                   </div>
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Description (English)</Label>
+                      <Label>Full Description (English) - shown on details page</Label>
                       <Textarea
                         rows={2}
                         value={settingsForm.service_private_description_en || ""}
@@ -537,7 +651,7 @@ const HomepageAdmin = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Description (Arabic)</Label>
+                      <Label>Full Description (Arabic) - shown on details page</Label>
                       <Textarea
                         rows={2}
                         dir="rtl"
