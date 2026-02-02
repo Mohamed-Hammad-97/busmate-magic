@@ -449,8 +449,8 @@ const resources = {
           downloadAppStore: 'Download on App Store',
           downloadPlayStore: 'Get it on Google Play',
           activeUsers: 'Active Users',
-          schools: '+100 Schools',
-          cities: '3 Cities',
+          schools: 'Schools',
+          cities: 'Cities',
         },
         about: {
           defaultTitle: 'About Seater',
@@ -992,8 +992,8 @@ const resources = {
           downloadAppStore: 'تحميل من App Store',
           downloadPlayStore: 'تحميل من Google Play',
           activeUsers: 'مستخدم نشط',
-          schools: '+١٠٠ مدرسة',
-          cities: '٣ مدن',
+          schools: 'مدرسة',
+          cities: 'مدن',
         },
         about: {
           defaultTitle: 'عن Seater',
