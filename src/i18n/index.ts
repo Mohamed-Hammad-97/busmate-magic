@@ -444,13 +444,13 @@ const resources = {
           getStarted: 'Get Started',
         },
         hero: {
-          defaultTitle: 'Smart, Reliable, and Effortless Transportation',
+          defaultTitle: 'Smart, Reliable and Affordable Transportation',
           defaultSubtitle: 'Book your ride. Track every trip. Manage your fleet — all in one place.',
           downloadAppStore: 'Download on App Store',
           downloadPlayStore: 'Get it on Google Play',
           activeUsers: 'Active Users',
-          schools: 'Schools',
-          cities: 'Cities',
+          schools: '+100 Schools',
+          cities: '3 Cities',
         },
         about: {
           defaultTitle: 'About Seater',
@@ -987,13 +987,13 @@ const resources = {
           getStarted: 'ابدأ الآن',
         },
         hero: {
-          defaultTitle: 'نقل ذكي وموثوق وسهل',
+          defaultTitle: 'نقل ذكي وموثوق وبأسعار مناسبة',
           defaultSubtitle: 'احجز رحلتك. تتبع كل رحلة. أدر أسطولك — كل ذلك في مكان واحد.',
           downloadAppStore: 'تحميل من App Store',
           downloadPlayStore: 'تحميل من Google Play',
           activeUsers: 'مستخدم نشط',
-          schools: 'مدرسة',
-          cities: 'مدينة',
+          schools: '+١٠٠ مدرسة',
+          cities: '٣ مدن',
         },
         about: {
           defaultTitle: 'عن Seater',
