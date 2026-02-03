@@ -451,6 +451,7 @@ const resources = {
           activeUsers: 'Active Users',
           schools: 'Schools',
           cities: 'Cities',
+          premiumBadge: 'Premium Transportation Services',
         },
         about: {
           defaultTitle: 'About Seater',
@@ -994,6 +995,7 @@ const resources = {
           activeUsers: 'مستخدم نشط',
           schools: 'مدرسة',
           cities: 'مدن',
+          premiumBadge: 'خدمات نقل مميزة',
         },
         about: {
           defaultTitle: 'عن Seater',
