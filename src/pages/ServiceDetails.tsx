@@ -195,8 +195,27 @@ const ServiceDetails: React.FC = () => {
                       {/* Phone Notch */}
                       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-6 bg-foreground rounded-b-2xl z-20"></div>
                       
-                      {/* Phone Content */}
-                      {customImage ? (
+                      {/* Phone Content - Corporate specific */}
+                      {serviceType === 'corporate' ? (
+                        <div className="w-full h-full bg-gradient-to-b from-primary via-primary to-blue-600 p-4 pt-10">
+                          <h3 className="text-white text-xl font-bold text-center mb-4">Work Bus</h3>
+                          <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-6 mb-6">
+                            <div className="w-20 h-14 bg-white/30 rounded-lg mx-auto mb-2"></div>
+                          </div>
+                          <p className="text-white/90 text-center text-xs leading-relaxed mb-6">
+                            Book your seat for your journey from home to work daily with monthly subscription.
+                          </p>
+                          <div className="bg-white rounded-full py-2 px-6 text-center">
+                            <span className="text-primary text-sm font-semibold">Get Started</span>
+                          </div>
+                          {/* Decorative dots */}
+                          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-1 opacity-30">
+                            {[...Array(8)].map((_, i) => (
+                              <div key={i} className="w-1.5 h-1.5 bg-white rounded-full"></div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : customImage ? (
                         <img 
                           src={customImage} 
                           alt={serviceName}
@@ -214,39 +233,102 @@ const ServiceDetails: React.FC = () => {
                   <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-3/4 h-8 bg-foreground/10 rounded-full blur-xl"></div>
                 </div>
 
-                {/* Secondary Phone (Left) */}
+                {/* Secondary Phone (Left) - Services Grid */}
                 <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 md:-translate-x-8 w-48 md:w-56 transform -rotate-12 hover:rotate-0 transition-transform duration-500 opacity-60">
                   <div className="bg-foreground/80 rounded-[2rem] p-1.5 shadow-xl">
-                    <div className="bg-muted rounded-[1.7rem] overflow-hidden aspect-[9/19]">
-                      <div className={`w-full h-full bg-gradient-to-br from-muted to-muted-foreground/10 flex items-center justify-center`}>
-                        <div className="space-y-3 p-4 w-full">
-                          <div className="h-3 bg-foreground/10 rounded w-3/4"></div>
-                          <div className="h-3 bg-foreground/10 rounded w-1/2"></div>
-                          <div className="h-20 bg-foreground/5 rounded-xl mt-4"></div>
-                          <div className="h-8 bg-primary/20 rounded-lg"></div>
+                    <div className="bg-background rounded-[1.7rem] overflow-hidden aspect-[9/19]">
+                      {serviceType === 'corporate' ? (
+                        <div className="w-full h-full bg-muted p-3 pt-8">
+                          <h4 className="text-primary text-lg font-bold mb-1">Seater</h4>
+                          <p className="text-foreground text-xs font-medium mb-3">Our Services</p>
+                          <div className="grid grid-cols-2 gap-2 mb-3">
+                            <div className="bg-background rounded-xl p-2 shadow-sm">
+                              <div className="w-8 h-6 bg-primary/10 rounded mb-1 mx-auto"></div>
+                              <p className="text-[8px] text-center text-foreground">School Bus</p>
+                            </div>
+                            <div className="bg-background rounded-xl p-2 shadow-sm">
+                              <div className="w-8 h-6 bg-blue-100 rounded mb-1 mx-auto"></div>
+                              <p className="text-[8px] text-center text-foreground">Tracking</p>
+                            </div>
+                            <div className="bg-background rounded-xl p-2 shadow-sm">
+                              <div className="w-8 h-6 bg-muted-foreground/10 rounded mb-1 mx-auto"></div>
+                              <p className="text-[8px] text-center text-foreground">Work Bus</p>
+                            </div>
+                            <div className="bg-background rounded-xl p-2 shadow-sm">
+                              <div className="w-8 h-6 bg-muted-foreground/10 rounded mb-1 mx-auto"></div>
+                              <p className="text-[8px] text-center text-foreground">Special</p>
+                            </div>
+                          </div>
+                          <div className="bg-background rounded-xl p-2 shadow-sm">
+                            <p className="text-[8px] font-medium text-foreground mb-1">Safety First</p>
+                            <div className="flex items-center gap-1 mb-1">
+                              <div className="w-4 h-4 bg-primary/10 rounded-full"></div>
+                              <p className="text-[6px] text-muted-foreground">Daily sanitization</p>
+                            </div>
+                          </div>
                         </div>
-                      </div>
+                      ) : (
+                        <div className={`w-full h-full bg-gradient-to-br from-muted to-muted-foreground/10 flex items-center justify-center`}>
+                          <div className="space-y-3 p-4 w-full">
+                            <div className="h-3 bg-foreground/10 rounded w-3/4"></div>
+                            <div className="h-3 bg-foreground/10 rounded w-1/2"></div>
+                            <div className="h-20 bg-foreground/5 rounded-xl mt-4"></div>
+                            <div className="h-8 bg-primary/20 rounded-lg"></div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
 
-                {/* Tertiary Phone (Right) */}
+                {/* Tertiary Phone (Right) - Map/Tracking */}
                 <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 md:translate-x-8 w-48 md:w-56 transform rotate-12 hover:rotate-0 transition-transform duration-500 opacity-60">
                   <div className="bg-foreground/80 rounded-[2rem] p-1.5 shadow-xl">
-                    <div className="bg-muted rounded-[1.7rem] overflow-hidden aspect-[9/19]">
-                      <div className={`w-full h-full bg-gradient-to-br from-muted to-muted-foreground/10 flex items-center justify-center`}>
-                        <div className="space-y-3 p-4 w-full">
-                          <div className="flex items-center gap-2 mb-4">
-                            <div className="h-10 w-10 bg-primary/20 rounded-full"></div>
-                            <div className="flex-1 space-y-2">
-                              <div className="h-2 bg-foreground/10 rounded w-3/4"></div>
-                              <div className="h-2 bg-foreground/10 rounded w-1/2"></div>
+                    <div className="bg-background rounded-[1.7rem] overflow-hidden aspect-[9/19]">
+                      {serviceType === 'corporate' ? (
+                        <div className="w-full h-full relative">
+                          {/* Map placeholder */}
+                          <div className="w-full h-3/5 bg-gradient-to-b from-green-100 to-green-50 relative">
+                            <div className="absolute top-3 left-3 bg-white rounded-lg px-2 py-1 shadow-sm">
+                              <p className="text-[6px] text-primary">📍 Office</p>
+                            </div>
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                              <div className="w-8 h-6 bg-white rounded shadow-md flex items-center justify-center">
+                                <span className="text-[8px]">🚐</span>
+                              </div>
+                              <div className="bg-primary text-white text-[6px] rounded px-1 py-0.5 -mt-1 text-center">
+                                15 min
+                              </div>
                             </div>
                           </div>
-                          <div className="h-24 bg-foreground/5 rounded-xl"></div>
-                          <div className="h-8 bg-primary/20 rounded-lg"></div>
+                          {/* Driver card */}
+                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-primary to-blue-500 rounded-t-3xl p-3">
+                            <p className="text-white/80 text-[7px] text-center mb-2">Next arrival in 5 mins</p>
+                            <div className="bg-white rounded-xl p-2 flex items-center gap-2">
+                              <div className="w-8 h-8 bg-muted rounded-full"></div>
+                              <div className="flex-1">
+                                <p className="text-[8px] font-medium text-foreground">Mohamed Ahmed</p>
+                                <p className="text-[6px] text-primary">Toyota Hiace</p>
+                              </div>
+                              <div className="text-[8px] text-amber-500">⭐ 4.9</div>
+                            </div>
+                          </div>
                         </div>
-                      </div>
+                      ) : (
+                        <div className={`w-full h-full bg-gradient-to-br from-muted to-muted-foreground/10 flex items-center justify-center`}>
+                          <div className="space-y-3 p-4 w-full">
+                            <div className="flex items-center gap-2 mb-4">
+                              <div className="h-10 w-10 bg-primary/20 rounded-full"></div>
+                              <div className="flex-1 space-y-2">
+                                <div className="h-2 bg-foreground/10 rounded w-3/4"></div>
+                                <div className="h-2 bg-foreground/10 rounded w-1/2"></div>
+                              </div>
+                            </div>
+                            <div className="h-24 bg-foreground/5 rounded-xl"></div>
+                            <div className="h-8 bg-primary/20 rounded-lg"></div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
