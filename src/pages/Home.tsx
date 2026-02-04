@@ -482,19 +482,13 @@ const Home = () => {
               </div>
             )}
             {/* About Content */}
-            <div className={`space-y-8 ${!hasSetting("about_image") ? 'text-center' : ''}`}>
-              <div className="space-y-4">
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium">
-                  <Sparkles className="h-4 w-4" />
-                  {t('homepage.nav.about')}
-                </div>
-                <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight">
-                  {isRtl 
-                    ? getSetting("about_title_ar", getSetting("about_title", t('homepage.about.defaultTitle')))
-                    : getSetting("about_title", t('homepage.about.defaultTitle'))
-                  }
-                </h2>
-              </div>
+            <div className={`space-y-6 ${!hasSetting("about_image") ? 'text-center' : ''}`}>
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight">
+                {isRtl 
+                  ? getSetting("about_title_ar", getSetting("about_title", t('homepage.about.defaultTitle')))
+                  : getSetting("about_title", t('homepage.about.defaultTitle'))
+                }
+              </h2>
               <p className="text-lg text-muted-foreground leading-relaxed">
                 {isRtl 
                   ? getSetting("about_text_ar", getSetting("about_text", t('homepage.about.defaultText')))
@@ -520,10 +514,6 @@ const Home = () => {
         
         <div className="container mx-auto relative">
           <div className="text-center space-y-4 mb-16">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium">
-              <Shield className="h-4 w-4" />
-              {t('homepage.nav.features')}
-            </div>
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold">{t('homepage.features.title')}</h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               {t('homepage.features.subtitle')}
@@ -547,51 +537,75 @@ const Home = () => {
       </section>
 
       {/* Premium Services Section */}
-      <section id="services" className="py-24 px-4 relative">
-        <div className="container mx-auto">
+      <section id="services" className="py-24 px-4 relative overflow-hidden">
+        {/* Background decoration */}
+        <div className="absolute inset-0 bg-gradient-to-b from-muted/30 via-background to-muted/30"></div>
+        <div className="absolute top-20 right-10 w-72 h-72 bg-primary/5 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 left-10 w-72 h-72 bg-primary/5 rounded-full blur-3xl"></div>
+        
+        <div className="container mx-auto relative">
           <div className="text-center space-y-4 mb-16">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium">
-              <Bus className="h-4 w-4" />
-              {t('homepage.nav.services')}
-            </div>
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold">{t('homepage.services.title')}</h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">{t('homepage.services.subtitle')}</p>
           </div>
+          
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {services.map((service, index) => {
               const cardContent = (
-                <Card key={index} className={`group hover-lift overflow-hidden border-0 shadow-lg hover:shadow-2xl transition-all duration-500 ${service.enabled ? 'cursor-pointer' : ''}`}>
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                  <CardContent className="p-0 relative">
-                    {service.image ? (
-                      <div className="h-48 overflow-hidden relative">
-                        <img 
-                          src={service.image} 
-                          alt={service.title} 
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent"></div>
-                      </div>
-                    ) : (
-                      <div className="h-48 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent flex items-center justify-center relative overflow-hidden">
-                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,hsl(var(--primary)/0.1),transparent_70%)]"></div>
-                        <service.icon className="h-20 w-20 text-primary/80 group-hover:scale-110 group-hover:text-primary transition-all duration-500" />
-                      </div>
-                    )}
-                    <div className="p-8 space-y-4">
-                      <h3 className="text-2xl font-semibold group-hover:text-primary transition-colors">{service.title}</h3>
-                      {service.hasShort && (
-                        <p className="text-muted-foreground leading-relaxed">{service.shortDescription}</p>
+                <div key={index} className={`group relative ${service.enabled ? 'cursor-pointer' : ''}`}>
+                  {/* Card Container */}
+                  <div className="relative bg-card rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-border/50">
+                    {/* Image Section */}
+                    <div className="relative h-56 overflow-hidden">
+                      {service.image ? (
+                        <>
+                          <img 
+                            src={service.image} 
+                            alt={service.title} 
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-card via-card/20 to-transparent"></div>
+                        </>
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-primary/20 via-primary/10 to-primary/5 flex items-center justify-center">
+                          <div className="relative">
+                            <div className="absolute inset-0 bg-primary/20 rounded-full blur-2xl scale-150"></div>
+                            <service.icon className="relative h-24 w-24 text-primary/70 group-hover:text-primary group-hover:scale-110 transition-all duration-500" />
+                          </div>
+                        </div>
                       )}
+                      
+                      {/* Floating Icon Badge */}
+                      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 z-10">
+                        <div className="bg-primary rounded-2xl p-4 shadow-xl shadow-primary/30 group-hover:scale-110 transition-transform duration-300">
+                          <service.icon className="h-6 w-6 text-primary-foreground" />
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Content Section */}
+                    <div className="p-8 pt-10 text-center space-y-4">
+                      <h3 className="text-2xl font-bold group-hover:text-primary transition-colors duration-300">
+                        {service.title}
+                      </h3>
+                      
+                      {service.hasShort && (
+                        <p className="text-muted-foreground leading-relaxed line-clamp-2">
+                          {service.shortDescription}
+                        </p>
+                      )}
+                      
                       {service.enabled && (
-                        <Button className="w-full gap-2 mt-2 shadow-md hover:shadow-lg transition-all duration-300">
-                          {t('homepage.services.moreDetails')}
-                          <ChevronRight className="h-4 w-4 rtl:rotate-180 group-hover:translate-x-1 transition-transform" />
-                        </Button>
+                        <div className="pt-2">
+                          <Button className="gap-2 px-8 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300 group-hover:gap-4">
+                            {t('homepage.services.moreDetails')}
+                            <ChevronRight className="h-4 w-4 rtl:rotate-180 transition-transform" />
+                          </Button>
+                        </div>
                       )}
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               );
 
               return service.enabled ? (
@@ -612,10 +626,6 @@ const Home = () => {
           <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-border to-transparent"></div>
           <div className="container mx-auto">
             <div className="text-center space-y-4 mb-16">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium">
-                <Building2 className="h-4 w-4" />
-                {t('homepage.nav.partners')}
-              </div>
               <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold">{t('homepage.partners.title')}</h2>
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
                 {t('homepage.partners.subtitle')}
@@ -649,10 +659,6 @@ const Home = () => {
       <section id="contact" className="py-24 px-4 relative">
         <div className="container mx-auto">
           <div className="text-center space-y-4 mb-16">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium">
-              <Mail className="h-4 w-4" />
-              {t('homepage.nav.contact')}
-            </div>
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold">{t('homepage.contact.title')}</h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               {t('homepage.contact.subtitle')}

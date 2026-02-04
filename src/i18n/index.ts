@@ -498,6 +498,8 @@ const resources = {
           },
           moreDetails: 'More Details',
           getStarted: 'Get Started',
+          readyToStart: 'Ready to get started?',
+          joinNow: 'Join thousands of satisfied customers',
         },
         partners: {
           title: 'Our Partners & Clients',
@@ -1042,6 +1044,8 @@ const resources = {
           },
           moreDetails: 'المزيد من التفاصيل',
           getStarted: 'ابدأ الآن',
+          readyToStart: 'هل أنت مستعد للبدء؟',
+          joinNow: 'انضم لآلاف العملاء الراضين',
         },
         partners: {
           title: 'شركاؤنا وعملاؤنا',
