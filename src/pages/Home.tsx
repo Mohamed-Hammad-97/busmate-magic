@@ -366,11 +366,6 @@ const Home = () => {
         
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-2xl space-y-8 animate-fade-in-up">
-            {/* Premium badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 backdrop-blur-sm">
-              <Sparkles className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium text-primary">{t('homepage.hero.premiumBadge') || 'Premium Transportation Services'}</span>
-            </div>
 
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight tracking-tight">
               {getSetting("hero_title", t('homepage.hero.defaultTitle')).split(",")[0]},{" "}
