@@ -14,6 +14,9 @@ import privateScreen2 from '@/assets/private-screen-2.png';
 import schoolScreen1 from '@/assets/school-screen-1.png';
 import schoolScreen2 from '@/assets/school-screen-2.png';
 import schoolScreen3 from '@/assets/school-screen-3.png';
+import corporateScreen1 from '@/assets/corporate-screen-1.png';
+import corporateScreen2 from '@/assets/corporate-screen-2.png';
+import corporateScreen3 from '@/assets/corporate-screen-3.png';
 
 const ServiceDetails: React.FC = () => {
   const { serviceType } = useParams<{ serviceType: string }>();
@@ -238,141 +241,28 @@ const ServiceDetails: React.FC = () => {
                   </div>
                 </div>
               ) : (
-                /* Corporate Service - Original Phone Mockups */
-                <div className="relative w-full max-w-lg aspect-square flex items-center justify-center">
-                  {/* Main Phone */}
-                  <div className="relative z-10 w-64 md:w-72 transform hover:scale-105 transition-transform duration-500">
-                    <div className="bg-foreground rounded-[2.5rem] p-2 shadow-2xl">
-                      <div className="bg-background rounded-[2rem] overflow-hidden aspect-[9/19] relative">
-                        {/* Phone Notch */}
-                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-6 bg-foreground rounded-b-2xl z-20"></div>
-                        
-                        {/* Phone Content - Corporate specific */}
-                        <div className="w-full h-full bg-gradient-to-b from-primary via-primary to-primary/80 p-4 pt-10">
-                          <h3 className="text-primary-foreground text-xl font-bold text-center mb-4">Work Bus</h3>
-                          <div className="bg-primary-foreground/20 backdrop-blur-sm rounded-2xl p-6 mb-6">
-                            <div className="w-20 h-14 bg-primary-foreground/30 rounded-lg mx-auto mb-2"></div>
-                          </div>
-                          <p className="text-primary-foreground/90 text-center text-xs leading-relaxed mb-6">
-                            Book your seat for your journey from home to work daily with monthly subscription.
-                          </p>
-                          <div className="bg-background rounded-full py-2 px-6 text-center">
-                            <span className="text-primary text-sm font-semibold">Get Started</span>
-                          </div>
-                          {/* Decorative dots */}
-                          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-1 opacity-30">
-                            {[...Array(8)].map((_, i) => (
-                              <div key={i} className="w-1.5 h-1.5 bg-primary-foreground rounded-full"></div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Phone Reflection */}
-                    <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-3/4 h-8 bg-foreground/10 rounded-full blur-xl"></div>
+                /* Corporate Service - 3 images like school */
+                <div className="relative w-full flex items-center justify-center gap-3 md:gap-5 p-4">
+                  <div className="transform hover:scale-105 transition-transform duration-500 animate-fade-in -rotate-3 hover:rotate-0">
+                    <img 
+                      src={corporateScreen1} 
+                      alt="Corporate - Services"
+                      className="w-36 md:w-44 lg:w-52 rounded-3xl shadow-2xl"
+                    />
                   </div>
-
-                  {/* Secondary Phone (Left) - Services Grid */}
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 md:-translate-x-8 w-48 md:w-56 transform -rotate-12 hover:rotate-0 transition-transform duration-500 opacity-60">
-                    <div className="bg-foreground/80 rounded-[2rem] p-1.5 shadow-xl">
-                      <div className="bg-background rounded-[1.7rem] overflow-hidden aspect-[9/19]">
-                        <div className="w-full h-full bg-muted p-3 pt-8">
-                          <h4 className="text-primary text-lg font-bold mb-1">Seater</h4>
-                          <p className="text-foreground text-xs font-medium mb-3">Our Services</p>
-                          <div className="grid grid-cols-2 gap-2 mb-3">
-                            <div className="bg-background rounded-xl p-2 shadow-sm">
-                              <div className="w-8 h-6 bg-primary/10 rounded mb-1 mx-auto"></div>
-                              <p className="text-[8px] text-center text-foreground">School Bus</p>
-                            </div>
-                            <div className="bg-background rounded-xl p-2 shadow-sm">
-                              <div className="w-8 h-6 bg-primary/10 rounded mb-1 mx-auto"></div>
-                              <p className="text-[8px] text-center text-foreground">Tracking</p>
-                            </div>
-                            <div className="bg-background rounded-xl p-2 shadow-sm">
-                              <div className="w-8 h-6 bg-muted-foreground/10 rounded mb-1 mx-auto"></div>
-                              <p className="text-[8px] text-center text-foreground">Work Bus</p>
-                            </div>
-                            <div className="bg-background rounded-xl p-2 shadow-sm">
-                              <div className="w-8 h-6 bg-muted-foreground/10 rounded mb-1 mx-auto"></div>
-                              <p className="text-[8px] text-center text-foreground">Special</p>
-                            </div>
-                          </div>
-                          <div className="bg-background rounded-xl p-2 shadow-sm">
-                            <p className="text-[8px] font-medium text-foreground mb-1">Safety First</p>
-                            <div className="flex items-center gap-1 mb-1">
-                              <div className="w-4 h-4 bg-primary/10 rounded-full"></div>
-                              <p className="text-[6px] text-muted-foreground">Daily sanitization</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                  <div className="transform hover:scale-105 transition-transform duration-500 animate-fade-in z-10" style={{ animationDelay: '0.15s' }}>
+                    <img 
+                      src={corporateScreen2} 
+                      alt="Corporate - Live Tracking"
+                      className="w-40 md:w-48 lg:w-56 rounded-3xl shadow-2xl"
+                    />
                   </div>
-
-                  {/* Tertiary Phone (Right) - Map/Tracking */}
-                  <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 md:translate-x-8 w-48 md:w-56 transform rotate-12 hover:rotate-0 transition-transform duration-500 opacity-60">
-                    <div className="bg-foreground/80 rounded-[2rem] p-1.5 shadow-xl">
-                      <div className="bg-background rounded-[1.7rem] overflow-hidden aspect-[9/19]">
-                        <div className="w-full h-full relative">
-                          {/* Map placeholder */}
-                          <div className="w-full h-3/5 bg-gradient-to-b from-primary/10 to-primary/5 relative">
-                            <div className="absolute top-3 left-3 bg-background rounded-lg px-2 py-1 shadow-sm">
-                              <p className="text-[6px] text-primary">📍 Office</p>
-                            </div>
-                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-                              <div className="w-8 h-6 bg-background rounded shadow-md flex items-center justify-center">
-                                <span className="text-[8px]">🚐</span>
-                              </div>
-                              <div className="bg-primary text-primary-foreground text-[6px] rounded px-1 py-0.5 -mt-1 text-center">
-                                15 min
-                              </div>
-                            </div>
-                          </div>
-                          {/* Driver card */}
-                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-primary to-primary/80 rounded-t-3xl p-3">
-                            <p className="text-primary-foreground/80 text-[7px] text-center mb-2">Next arrival in 5 mins</p>
-                            <div className="bg-background rounded-xl p-2 flex items-center gap-2">
-                              <div className="w-8 h-8 bg-muted rounded-full"></div>
-                              <div className="flex-1">
-                                <p className="text-[8px] font-medium text-foreground">Mohamed Ahmed</p>
-                                <p className="text-[6px] text-primary">Toyota Hiace</p>
-                              </div>
-                              <div className="text-[8px] text-amber-500">⭐ 4.9</div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Floating Elements */}
-                  <div className="absolute top-4 right-4 md:top-8 md:right-16 animate-float">
-                    <div className="bg-card rounded-xl p-3 shadow-xl border border-border/50">
-                      <div className="flex items-center gap-2">
-                        <div className={`h-8 w-8 rounded-lg bg-gradient-to-br ${config.gradient} flex items-center justify-center`}>
-                          <CheckCircle2 className="h-4 w-4 text-primary-foreground" />
-                        </div>
-                        <div>
-                          <p className="text-xs font-medium">Active</p>
-                          <p className="text-[10px] text-muted-foreground">Service Ready</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="absolute bottom-4 left-4 md:bottom-8 md:left-16 animate-float" style={{ animationDelay: '1s' }}>
-                    <div className="bg-card rounded-xl p-3 shadow-xl border border-border/50">
-                      <div className="flex items-center gap-2">
-                        <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                          <Icon className="h-4 w-4 text-primary" />
-                        </div>
-                        <div>
-                          <p className="text-xs font-medium">{serviceName}</p>
-                          <p className="text-[10px] text-muted-foreground">Premium Service</p>
-                        </div>
-                      </div>
-                    </div>
+                  <div className="transform hover:scale-105 transition-transform duration-500 animate-fade-in rotate-3 hover:rotate-0" style={{ animationDelay: '0.3s' }}>
+                    <img 
+                      src={corporateScreen3} 
+                      alt="Corporate - Work Bus"
+                      className="w-36 md:w-44 lg:w-52 rounded-3xl shadow-2xl"
+                    />
                   </div>
                 </div>
               )}
