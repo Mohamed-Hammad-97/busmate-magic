@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,8 +15,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import LocationPickerMap from '@/components/schools/LocationPickerMap';
 import { GoogleMapsProvider } from '@/components/maps/GoogleMapsProvider';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, Building2, MapPin } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 
 interface CorporateFormData {
   company_name: string;
@@ -35,6 +35,7 @@ interface CorporateFormData {
 const CorporateRegistrationForm: React.FC = () => {
   const { t } = useTranslation();
   const { toast } = useToast();
+  const navigate = useNavigate();
   
   const [submitted, setSubmitted] = useState(false);
   const [step, setStep] = useState(1);
@@ -129,86 +130,109 @@ Notes: ${formData.notes || 'N/A'}
 
   if (submitted) {
     return (
-      <Card className="max-w-md w-full text-center mx-auto">
-        <CardContent className="pt-8 pb-8 space-y-4">
-          <CheckCircle2 className="h-16 w-16 mx-auto text-green-500" />
-          <h2 className="text-2xl font-bold">{t('register.corporate.success.title')}</h2>
-          <p className="text-muted-foreground">
-            {t('register.corporate.success.message')}
-          </p>
-          <p className="text-sm text-muted-foreground">
-            {t('register.corporate.success.companyLabel')}: {formData.company_name}
-          </p>
-        </CardContent>
-      </Card>
+      <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-8 text-center space-y-6 max-w-md mx-auto animate-fade-in">
+        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-500/10 text-green-500 mb-4">
+          <CheckCircle2 className="h-10 w-10" />
+        </div>
+        <h2 className="text-2xl font-bold">{t('register.corporate.success.title')}</h2>
+        <p className="text-muted-foreground">
+          {t('register.corporate.success.message')}
+        </p>
+        <p className="text-sm text-muted-foreground">
+          {t('register.corporate.success.companyLabel')}: <span className="font-medium text-foreground">{formData.company_name}</span>
+        </p>
+        <Button onClick={() => navigate('/')} className="w-full" size="lg">
+          {t('register.private.success.backHome') || 'Back to Home'}
+        </Button>
+      </div>
     );
   }
 
   return (
     <div>
-      {/* Steps */}
-      <div className="flex justify-center gap-4 mb-8">
-        {[1, 2].map((s) => (
-          <div
-            key={s}
-            className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-colors ${
-              step >= s ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-            }`}
-          >
-            {s}
-          </div>
+      {/* Steps Indicator */}
+      <div className="flex justify-center items-center gap-4 mb-10">
+        {[
+          { num: 1, icon: Building2, label: t('register.corporate.step1.title') },
+          { num: 2, icon: MapPin, label: t('register.corporate.step2.title') },
+        ].map((s, index) => (
+          <React.Fragment key={s.num}>
+            <div className="flex flex-col items-center gap-2">
+              <div
+                className={`w-12 h-12 rounded-full flex items-center justify-center font-bold transition-all duration-300 ${
+                  step >= s.num 
+                    ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-lg' 
+                    : 'bg-muted text-muted-foreground'
+                }`}
+              >
+                <s.icon className="h-5 w-5" />
+              </div>
+              <span className={`text-xs font-medium ${step >= s.num ? 'text-foreground' : 'text-muted-foreground'}`}>
+                {s.label}
+              </span>
+            </div>
+            {index < 1 && (
+              <div className={`w-16 h-0.5 mb-6 ${step > s.num ? 'bg-emerald-500' : 'bg-muted'}`}></div>
+            )}
+          </React.Fragment>
         ))}
       </div>
 
       <form onSubmit={handleSubmit}>
         {step === 1 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('register.corporate.step1.title')}</CardTitle>
-              <CardDescription>{t('register.corporate.step1.description')}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-6 md:p-8 space-y-6 animate-fade-in">
+            <div className="space-y-1">
+              <h3 className="text-xl font-semibold">{t('register.corporate.step1.title')}</h3>
+              <p className="text-sm text-muted-foreground">{t('register.corporate.step1.description')}</p>
+            </div>
+
+            <div className="space-y-4">
               <div className="space-y-2">
-                <Label>{t('register.corporate.fields.companyName')} *</Label>
+                <Label className="text-sm font-medium">{t('register.corporate.fields.companyName')} *</Label>
                 <Input
                   value={formData.company_name}
                   onChange={(e) => setFormData((f) => ({ ...f, company_name: e.target.value }))}
                   placeholder={t('register.corporate.placeholders.companyName')}
+                  className="h-12 bg-muted/50 border-border/50 focus:bg-background transition-colors"
                 />
               </div>
+
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>{t('register.corporate.fields.contactPerson')} *</Label>
+                  <Label className="text-sm font-medium">{t('register.corporate.fields.contactPerson')} *</Label>
                   <Input
                     value={formData.contact_person}
                     onChange={(e) => setFormData((f) => ({ ...f, contact_person: e.target.value }))}
                     placeholder={t('register.corporate.placeholders.contactPerson')}
+                    className="h-12 bg-muted/50 border-border/50 focus:bg-background transition-colors"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>{t('register.corporate.fields.email')} *</Label>
+                  <Label className="text-sm font-medium">{t('register.corporate.fields.email')} *</Label>
                   <Input
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData((f) => ({ ...f, email: e.target.value }))}
                     placeholder={t('register.corporate.placeholders.email')}
+                    className="h-12 bg-muted/50 border-border/50 focus:bg-background transition-colors"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>{t('register.corporate.fields.phone')} *</Label>
+                  <Label className="text-sm font-medium">{t('register.corporate.fields.phone')} *</Label>
                   <Input
                     value={formData.phone}
                     onChange={(e) => setFormData((f) => ({ ...f, phone: e.target.value }))}
                     placeholder="01xxxxxxxxx"
+                    className="h-12 bg-muted/50 border-border/50 focus:bg-background transition-colors"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>{t('register.corporate.fields.employeesCount')} *</Label>
+                  <Label className="text-sm font-medium">{t('register.corporate.fields.employeesCount')} *</Label>
                   <Select
                     value={formData.employees_count}
                     onValueChange={(v) => setFormData((f) => ({ ...f, employees_count: v }))}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-12 bg-muted/50 border-border/50 focus:bg-background transition-colors">
                       <SelectValue placeholder={t('register.corporate.placeholders.employeesCount')} />
                     </SelectTrigger>
                     <SelectContent className="bg-background border border-border z-50">
@@ -221,12 +245,12 @@ Notes: ${formData.notes || 'N/A'}
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>{t('register.corporate.fields.city')} *</Label>
+                  <Label className="text-sm font-medium">{t('register.corporate.fields.city')} *</Label>
                   <Select
                     value={formData.city}
                     onValueChange={(v) => setFormData((f) => ({ ...f, city: v }))}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-12 bg-muted/50 border-border/50 focus:bg-background transition-colors">
                       <SelectValue placeholder={t('register.corporate.placeholders.city')} />
                     </SelectTrigger>
                     <SelectContent className="bg-background border border-border z-50">
@@ -239,62 +263,67 @@ Notes: ${formData.notes || 'N/A'}
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>{t('register.corporate.fields.address')}</Label>
+                  <Label className="text-sm font-medium">{t('register.corporate.fields.address')}</Label>
                   <Input
                     value={formData.address}
                     onChange={(e) => setFormData((f) => ({ ...f, address: e.target.value }))}
                     placeholder={t('register.corporate.placeholders.address')}
+                    className="h-12 bg-muted/50 border-border/50 focus:bg-background transition-colors"
                   />
                 </div>
               </div>
+
               <div className="space-y-2">
-                <Label>{t('register.corporate.fields.notes')}</Label>
+                <Label className="text-sm font-medium">{t('register.corporate.fields.notes')}</Label>
                 <Textarea
                   value={formData.notes}
                   onChange={(e) => setFormData((f) => ({ ...f, notes: e.target.value }))}
                   placeholder={t('register.corporate.placeholders.notes')}
                   rows={3}
+                  className="bg-muted/50 border-border/50 focus:bg-background transition-colors"
                 />
               </div>
-              <div className="flex justify-end pt-4">
-                <Button type="button" onClick={() => setStep(2)}>
-                  {t('register.common.next')}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+            </div>
+
+            <div className="flex justify-end pt-4">
+              <Button type="button" onClick={() => setStep(2)} size="lg" className="px-8">
+                {t('register.common.next')}
+              </Button>
+            </div>
+          </div>
         )}
 
         {step === 2 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('register.corporate.step2.title')}</CardTitle>
-              <CardDescription>{t('register.corporate.step2.description')}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <GoogleMapsProvider>
-                <LocationPickerMap
-                  initialLat={formData.pickup_latitude}
-                  initialLng={formData.pickup_longitude}
-                  onLocationChange={(lat, lng) =>
-                    setFormData((f) => ({ ...f, pickup_latitude: lat, pickup_longitude: lng }))
-                  }
-                />
-              </GoogleMapsProvider>
-              <div className="flex gap-4 justify-center text-sm text-muted-foreground">
-                <span>{t('register.common.latitude')}: {formData.pickup_latitude.toFixed(6)}</span>
-                <span>{t('register.common.longitude')}: {formData.pickup_longitude.toFixed(6)}</span>
-              </div>
-              <div className="flex justify-between pt-4">
-                <Button type="button" variant="outline" onClick={() => setStep(1)}>
-                  {t('register.common.previous')}
-                </Button>
-                <Button type="submit" disabled={submitMutation.isPending}>
-                  {submitMutation.isPending ? t('register.common.submitting') : t('register.common.submit')}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-6 md:p-8 space-y-6 animate-fade-in">
+            <div className="space-y-1">
+              <h3 className="text-xl font-semibold">{t('register.corporate.step2.title')}</h3>
+              <p className="text-sm text-muted-foreground">{t('register.corporate.step2.description')}</p>
+            </div>
+
+            <GoogleMapsProvider>
+              <LocationPickerMap
+                initialLat={formData.pickup_latitude}
+                initialLng={formData.pickup_longitude}
+                onLocationChange={(lat, lng) =>
+                  setFormData((f) => ({ ...f, pickup_latitude: lat, pickup_longitude: lng }))
+                }
+              />
+            </GoogleMapsProvider>
+
+            <div className="flex gap-4 justify-center text-sm text-muted-foreground bg-muted/50 rounded-xl p-3">
+              <span>{t('register.common.latitude')}: <span className="font-medium text-foreground">{formData.pickup_latitude.toFixed(6)}</span></span>
+              <span>{t('register.common.longitude')}: <span className="font-medium text-foreground">{formData.pickup_longitude.toFixed(6)}</span></span>
+            </div>
+
+            <div className="flex justify-between pt-4">
+              <Button type="button" variant="outline" onClick={() => setStep(1)} size="lg" className="px-8">
+                {t('register.common.previous')}
+              </Button>
+              <Button type="submit" disabled={submitMutation.isPending} size="lg" className="px-8">
+                {submitMutation.isPending ? t('register.common.submitting') : t('register.common.submit')}
+              </Button>
+            </div>
+          </div>
         )}
       </form>
     </div>

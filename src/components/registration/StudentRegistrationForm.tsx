@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,9 +14,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import LocationPickerMap from '@/components/schools/LocationPickerMap';
 import { GoogleMapsProvider } from '@/components/maps/GoogleMapsProvider';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, User, MapPin, GraduationCap } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { Enums } from '@/integrations/supabase/types';
+import { useNavigate } from 'react-router-dom';
 
 const gradeOptions = [
   'KG1', 'KG2', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4',
@@ -45,6 +45,7 @@ interface FormData {
 const StudentRegistrationForm: React.FC = () => {
   const { t } = useTranslation();
   const { toast } = useToast();
+  const navigate = useNavigate();
   
   const [submitted, setSubmitted] = useState(false);
   const [step, setStep] = useState(1);
@@ -165,109 +166,136 @@ const StudentRegistrationForm: React.FC = () => {
 
   if (submitted) {
     return (
-      <Card className="max-w-md w-full text-center mx-auto">
-        <CardContent className="pt-8 pb-8 space-y-4">
-          <CheckCircle2 className="h-16 w-16 mx-auto text-green-500" />
-          <h2 className="text-2xl font-bold">{t('register.student.success.title')}</h2>
-          <p className="text-muted-foreground">
-            {t('register.student.success.message')}
-          </p>
-          <p className="text-sm text-muted-foreground">
-            {t('register.student.success.studentLabel')}: {formData.student_name}
-          </p>
-        </CardContent>
-      </Card>
+      <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-8 text-center space-y-6 max-w-md mx-auto animate-fade-in">
+        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-500/10 text-green-500 mb-4">
+          <CheckCircle2 className="h-10 w-10" />
+        </div>
+        <h2 className="text-2xl font-bold">{t('register.student.success.title')}</h2>
+        <p className="text-muted-foreground">
+          {t('register.student.success.message')}
+        </p>
+        <p className="text-sm text-muted-foreground">
+          {t('register.student.success.studentLabel')}: <span className="font-medium text-foreground">{formData.student_name}</span>
+        </p>
+        <Button onClick={() => navigate('/')} className="w-full" size="lg">
+          {t('register.private.success.backHome') || 'Back to Home'}
+        </Button>
+      </div>
     );
   }
 
   return (
     <div>
-      {/* Steps */}
-      <div className="flex justify-center gap-4 mb-8">
-        {[1, 2, 3].map((s) => (
-          <div
-            key={s}
-            className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-colors ${
-              step >= s ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-            }`}
-          >
-            {s}
-          </div>
+      {/* Steps Indicator */}
+      <div className="flex justify-center items-center gap-4 mb-10">
+        {[
+          { num: 1, icon: User, label: t('register.student.step1.title') },
+          { num: 2, icon: MapPin, label: t('register.student.step2.title') },
+          { num: 3, icon: GraduationCap, label: t('register.student.step3.title') },
+        ].map((s, index) => (
+          <React.Fragment key={s.num}>
+            <div className="flex flex-col items-center gap-2">
+              <div
+                className={`w-12 h-12 rounded-full flex items-center justify-center font-bold transition-all duration-300 ${
+                  step >= s.num 
+                    ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg' 
+                    : 'bg-muted text-muted-foreground'
+                }`}
+              >
+                <s.icon className="h-5 w-5" />
+              </div>
+              <span className={`text-xs font-medium hidden sm:block ${step >= s.num ? 'text-foreground' : 'text-muted-foreground'}`}>
+                {s.label}
+              </span>
+            </div>
+            {index < 2 && (
+              <div className={`w-12 md:w-16 h-0.5 mb-6 ${step > s.num ? 'bg-blue-500' : 'bg-muted'}`}></div>
+            )}
+          </React.Fragment>
         ))}
       </div>
 
       <form onSubmit={handleSubmit}>
         {step === 1 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('register.student.step1.title')}</CardTitle>
-              <CardDescription>{t('register.student.step1.description')}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-6 md:p-8 space-y-6 animate-fade-in">
+            <div className="space-y-1">
+              <h3 className="text-xl font-semibold">{t('register.student.step1.title')}</h3>
+              <p className="text-sm text-muted-foreground">{t('register.student.step1.description')}</p>
+            </div>
+
+            <div className="space-y-4">
               <div className="space-y-2">
-                <Label>{t('register.student.fields.studentName')} *</Label>
+                <Label className="text-sm font-medium">{t('register.student.fields.studentName')} *</Label>
                 <Input
                   value={formData.student_name}
                   onChange={(e) => setFormData((f) => ({ ...f, student_name: e.target.value }))}
                   placeholder={t('register.student.placeholders.studentName')}
+                  className="h-12 bg-muted/50 border-border/50 focus:bg-background transition-colors"
                 />
               </div>
+
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>{t('register.student.fields.parentName')} *</Label>
+                  <Label className="text-sm font-medium">{t('register.student.fields.parentName')} *</Label>
                   <Input
                     value={formData.parent_name}
                     onChange={(e) => setFormData((f) => ({ ...f, parent_name: e.target.value }))}
                     placeholder={t('register.student.placeholders.parentName')}
+                    className="h-12 bg-muted/50 border-border/50 focus:bg-background transition-colors"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>{t('register.student.fields.nationalId')} *</Label>
+                  <Label className="text-sm font-medium">{t('register.student.fields.nationalId')} *</Label>
                   <Input
                     value={formData.national_id}
                     onChange={(e) => setFormData((f) => ({ ...f, national_id: e.target.value }))}
                     placeholder={t('register.student.placeholders.nationalId')}
+                    className="h-12 bg-muted/50 border-border/50 focus:bg-background transition-colors"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>{t('register.student.fields.fatherPhone')} *</Label>
+                  <Label className="text-sm font-medium">{t('register.student.fields.fatherPhone')} *</Label>
                   <Input
                     value={formData.father_phone}
                     onChange={(e) => setFormData((f) => ({ ...f, father_phone: e.target.value }))}
                     placeholder="01xxxxxxxxx"
+                    className="h-12 bg-muted/50 border-border/50 focus:bg-background transition-colors"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>{t('register.student.fields.motherPhone')}</Label>
+                  <Label className="text-sm font-medium">{t('register.student.fields.motherPhone')}</Label>
                   <Input
                     value={formData.mother_phone}
                     onChange={(e) => setFormData((f) => ({ ...f, mother_phone: e.target.value }))}
                     placeholder="01xxxxxxxxx"
+                    className="h-12 bg-muted/50 border-border/50 focus:bg-background transition-colors"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>{t('register.student.fields.emergencyPhone')} *</Label>
+                  <Label className="text-sm font-medium">{t('register.student.fields.emergencyPhone')} *</Label>
                   <Input
                     value={formData.emergency_phone}
                     onChange={(e) => setFormData((f) => ({ ...f, emergency_phone: e.target.value }))}
                     placeholder="01xxxxxxxxx"
+                    className="h-12 bg-muted/50 border-border/50 focus:bg-background transition-colors"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>{t('register.student.fields.occupation')}</Label>
+                  <Label className="text-sm font-medium">{t('register.student.fields.occupation')}</Label>
                   <Input
                     value={formData.job}
                     onChange={(e) => setFormData((f) => ({ ...f, job: e.target.value }))}
                     placeholder={t('register.student.placeholders.occupation')}
+                    className="h-12 bg-muted/50 border-border/50 focus:bg-background transition-colors"
                   />
                 </div>
                 <div className="space-y-2 sm:col-span-2">
-                  <Label>{t('register.student.fields.city')} *</Label>
+                  <Label className="text-sm font-medium">{t('register.student.fields.city')} *</Label>
                   <Select
                     value={formData.city}
                     onValueChange={(v) => setFormData((f) => ({ ...f, city: v }))}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-12 bg-muted/50 border-border/50 focus:bg-background transition-colors">
                       <SelectValue placeholder={t('register.student.placeholders.city')} />
                     </SelectTrigger>
                     <SelectContent className="bg-background border border-border z-50">
@@ -280,133 +308,135 @@ const StudentRegistrationForm: React.FC = () => {
                   </Select>
                 </div>
               </div>
-              <div className="flex justify-end pt-4">
-                <Button type="button" onClick={() => setStep(2)}>
-                  {t('register.common.next')}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+            </div>
+
+            <div className="flex justify-end pt-4">
+              <Button type="button" onClick={() => setStep(2)} size="lg" className="px-8">
+                {t('register.common.next')}
+              </Button>
+            </div>
+          </div>
         )}
 
         {step === 2 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('register.student.step2.title')}</CardTitle>
-              <CardDescription>{t('register.student.step2.description')}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <GoogleMapsProvider>
-                <LocationPickerMap
-                  initialLat={formData.pickup_latitude}
-                  initialLng={formData.pickup_longitude}
-                  onLocationChange={(lat, lng) =>
-                    setFormData((f) => ({ ...f, pickup_latitude: lat, pickup_longitude: lng }))
-                  }
-                />
-              </GoogleMapsProvider>
-              <div className="flex gap-4 justify-center text-sm text-muted-foreground">
-                <span>{t('register.common.latitude')}: {formData.pickup_latitude.toFixed(6)}</span>
-                <span>{t('register.common.longitude')}: {formData.pickup_longitude.toFixed(6)}</span>
-              </div>
-              <div className="flex justify-between pt-4">
-                <Button type="button" variant="outline" onClick={() => setStep(1)}>
-                  {t('register.common.previous')}
-                </Button>
-                <Button type="button" onClick={() => setStep(3)}>
-                  {t('register.common.next')}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-6 md:p-8 space-y-6 animate-fade-in">
+            <div className="space-y-1">
+              <h3 className="text-xl font-semibold">{t('register.student.step2.title')}</h3>
+              <p className="text-sm text-muted-foreground">{t('register.student.step2.description')}</p>
+            </div>
+
+            <GoogleMapsProvider>
+              <LocationPickerMap
+                initialLat={formData.pickup_latitude}
+                initialLng={formData.pickup_longitude}
+                onLocationChange={(lat, lng) =>
+                  setFormData((f) => ({ ...f, pickup_latitude: lat, pickup_longitude: lng }))
+                }
+              />
+            </GoogleMapsProvider>
+
+            <div className="flex gap-4 justify-center text-sm text-muted-foreground bg-muted/50 rounded-xl p-3">
+              <span>{t('register.common.latitude')}: <span className="font-medium text-foreground">{formData.pickup_latitude.toFixed(6)}</span></span>
+              <span>{t('register.common.longitude')}: <span className="font-medium text-foreground">{formData.pickup_longitude.toFixed(6)}</span></span>
+            </div>
+
+            <div className="flex justify-between pt-4">
+              <Button type="button" variant="outline" onClick={() => setStep(1)} size="lg" className="px-8">
+                {t('register.common.previous')}
+              </Button>
+              <Button type="button" onClick={() => setStep(3)} size="lg" className="px-8">
+                {t('register.common.next')}
+              </Button>
+            </div>
+          </div>
         )}
 
         {step === 3 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('register.student.step3.title')}</CardTitle>
-              <CardDescription>{t('register.student.step3.description')}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>{t('register.student.fields.school')} *</Label>
-                  <Select
-                    value={formData.school_id}
-                    onValueChange={(v) => setFormData((f) => ({ ...f, school_id: v }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={t('register.student.placeholders.school')} />
-                    </SelectTrigger>
-                    <SelectContent className="bg-background border border-border z-50">
-                      {schools.map((school) => (
-                        <SelectItem key={school.id} value={school.id}>
-                          {school.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>{t('register.student.fields.grade')} *</Label>
-                  <Select
-                    value={formData.grade}
-                    onValueChange={(v) => setFormData((f) => ({ ...f, grade: v }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={t('register.student.placeholders.grade')} />
-                    </SelectTrigger>
-                    <SelectContent className="bg-background border border-border z-50">
-                      {gradeOptions.map((grade) => (
-                        <SelectItem key={grade} value={grade}>
-                          {grade}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>{t('register.student.fields.educationDepartment')} *</Label>
-                  <Select
-                    value={formData.education_department}
-                    onValueChange={(v) => setFormData((f) => ({ ...f, education_department: v as Enums<'education_department'> }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-background border border-border z-50">
-                      <SelectItem value="national">{t('register.student.options.national')}</SelectItem>
-                      <SelectItem value="ig">{t('register.student.options.ig')}</SelectItem>
-                      <SelectItem value="american">{t('register.student.options.american')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>{t('register.student.fields.carType')} *</Label>
-                  <Select
-                    value={formData.car_type}
-                    onValueChange={(v) => setFormData((f) => ({ ...f, car_type: v as Enums<'car_type'> }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-background border border-border z-50">
-                      <SelectItem value="ac">{t('register.student.options.ac')}</SelectItem>
-                      <SelectItem value="non_ac">{t('register.student.options.nonAc')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+          <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-6 md:p-8 space-y-6 animate-fade-in">
+            <div className="space-y-1">
+              <h3 className="text-xl font-semibold">{t('register.student.step3.title')}</h3>
+              <p className="text-sm text-muted-foreground">{t('register.student.step3.description')}</p>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">{t('register.student.fields.school')} *</Label>
+                <Select
+                  value={formData.school_id}
+                  onValueChange={(v) => setFormData((f) => ({ ...f, school_id: v }))}
+                >
+                  <SelectTrigger className="h-12 bg-muted/50 border-border/50 focus:bg-background transition-colors">
+                    <SelectValue placeholder={t('register.student.placeholders.school')} />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border border-border z-50">
+                    {schools.map((school) => (
+                      <SelectItem key={school.id} value={school.id}>
+                        {school.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <div className="flex justify-between pt-4">
-                <Button type="button" variant="outline" onClick={() => setStep(2)}>
-                  {t('register.common.previous')}
-                </Button>
-                <Button type="submit" disabled={submitMutation.isPending}>
-                  {submitMutation.isPending ? t('register.common.submitting') : t('register.common.submit')}
-                </Button>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">{t('register.student.fields.grade')} *</Label>
+                <Select
+                  value={formData.grade}
+                  onValueChange={(v) => setFormData((f) => ({ ...f, grade: v }))}
+                >
+                  <SelectTrigger className="h-12 bg-muted/50 border-border/50 focus:bg-background transition-colors">
+                    <SelectValue placeholder={t('register.student.placeholders.grade')} />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border border-border z-50">
+                    {gradeOptions.map((grade) => (
+                      <SelectItem key={grade} value={grade}>
+                        {grade}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            </CardContent>
-          </Card>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">{t('register.student.fields.educationDepartment')} *</Label>
+                <Select
+                  value={formData.education_department}
+                  onValueChange={(v) => setFormData((f) => ({ ...f, education_department: v as Enums<'education_department'> }))}
+                >
+                  <SelectTrigger className="h-12 bg-muted/50 border-border/50 focus:bg-background transition-colors">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border border-border z-50">
+                    <SelectItem value="national">{t('register.student.options.national')}</SelectItem>
+                    <SelectItem value="ig">{t('register.student.options.ig')}</SelectItem>
+                    <SelectItem value="american">{t('register.student.options.american')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">{t('register.student.fields.carType')} *</Label>
+                <Select
+                  value={formData.car_type}
+                  onValueChange={(v) => setFormData((f) => ({ ...f, car_type: v as Enums<'car_type'> }))}
+                >
+                  <SelectTrigger className="h-12 bg-muted/50 border-border/50 focus:bg-background transition-colors">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border border-border z-50">
+                    <SelectItem value="ac">{t('register.student.options.ac')}</SelectItem>
+                    <SelectItem value="non_ac">{t('register.student.options.nonAc')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="flex justify-between pt-4">
+              <Button type="button" variant="outline" onClick={() => setStep(2)} size="lg" className="px-8">
+                {t('register.common.previous')}
+              </Button>
+              <Button type="submit" disabled={submitMutation.isPending} size="lg" className="px-8">
+                {submitMutation.isPending ? t('register.common.submitting') : t('register.common.submit')}
+              </Button>
+            </div>
+          </div>
         )}
       </form>
     </div>
