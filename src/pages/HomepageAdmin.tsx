@@ -1241,6 +1241,27 @@ const SubmissionDetails = ({
       <div>
         <Label className="text-muted-foreground">Message</Label>
         <p className="p-3 bg-muted rounded-lg text-sm">{submission.message}</p>
+        {(() => {
+          const coordMatch = submission.message.match(/Pickup Location:\s*([-\d.]+),\s*([-\d.]+)/i);
+          if (coordMatch) {
+            const lat = coordMatch[1];
+            const lng = coordMatch[2];
+            return (
+              <div className="mt-2 rounded-lg overflow-hidden border">
+                <iframe
+                  width="100%"
+                  height="200"
+                  style={{ border: 0 }}
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  src={`https://www.google.com/maps?q=${lat},${lng}&z=15&output=embed`}
+                  title="Pickup Location"
+                />
+              </div>
+            );
+          }
+          return null;
+        })()}
       </div>
       <div>
         <Label className="text-muted-foreground">Submitted</Label>
