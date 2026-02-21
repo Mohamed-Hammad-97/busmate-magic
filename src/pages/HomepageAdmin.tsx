@@ -27,8 +27,19 @@ import {
   Eye,
   Clock,
   CheckCircle,
-  XCircle
+  XCircle,
+  User,
+  Mail,
+  MapPin,
+  Phone,
+  Calendar,
+  FileText,
+  Hash,
+  Car,
+  Building
 } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 import { format } from "date-fns";
 
 interface HomepageSetting {
@@ -1040,17 +1051,25 @@ const HomepageAdmin = () => {
                               <Eye className="h-4 w-4" />
                             </Button>
                           </DialogTrigger>
-                          <DialogContent className="max-w-lg">
-                            <DialogHeader>
-                              <DialogTitle>Contact Submission</DialogTitle>
+                          <DialogContent className="max-w-2xl max-h-[90vh] p-0 overflow-hidden">
+                            <DialogHeader className="p-6 pb-4 border-b bg-muted/30">
+                              <DialogTitle className="flex items-center gap-2 text-lg">
+                                <MessageSquare className="h-5 w-5 text-primary" />
+                                Contact Submission
+                              </DialogTitle>
+                              <p className="text-sm text-muted-foreground">
+                                Submitted {format(new Date(submission.created_at), "PPpp")}
+                              </p>
                             </DialogHeader>
-                            <SubmissionDetails
-                              submission={submission}
-                              onUpdate={(status, notes) =>
-                                updateSubmissionMutation.mutate({ id: submission.id, status, notes })
-                              }
-                              isPending={updateSubmissionMutation.isPending}
-                            />
+                            <ScrollArea className="max-h-[70vh]">
+                              <SubmissionDetails
+                                submission={submission}
+                                onUpdate={(status, notes) =>
+                                  updateSubmissionMutation.mutate({ id: submission.id, status, notes })
+                                }
+                                isPending={updateSubmissionMutation.isPending}
+                              />
+                            </ScrollArea>
                           </DialogContent>
                         </Dialog>
                       </TableCell>
@@ -1209,7 +1228,28 @@ const GalleryForm = ({
   );
 };
 
-// Submission Details Component
+// Helper to parse structured message fields
+const parseMessageFields = (message: string) => {
+  const fields: Record<string, string> = {};
+  const patterns = [
+    { key: 'fullName', regex: /Full Name:\s*(.+?)(?:\s+(?:Phone|Email|City|Destination|Frequency|Number|Pickup|Notes):|$)/i },
+    { key: 'phone', regex: /Phone:\s*(.+?)(?:\s+(?:Email|City|Destination|Frequency|Number|Pickup|Notes):|$)/i },
+    { key: 'email', regex: /Email:\s*(.+?)(?:\s+(?:City|Destination|Frequency|Number|Pickup|Notes):|$)/i },
+    { key: 'city', regex: /City:\s*(.+?)(?:\s+(?:Destination|Frequency|Number|Pickup|Notes):|$)/i },
+    { key: 'destination', regex: /Destination:\s*(.+?)(?:\s+(?:Frequency|Number|Pickup|Notes):|$)/i },
+    { key: 'frequency', regex: /Frequency:\s*(.+?)(?:\s+(?:Number|Pickup|Notes):|$)/i },
+    { key: 'passengers', regex: /Number of Passengers:\s*(.+?)(?:\s+(?:Pickup|Notes):|$)/i },
+    { key: 'pickup', regex: /Pickup Location:\s*(.+?)(?:\s+Notes:|$)/i },
+    { key: 'notes', regex: /Notes:\s*(.+)$/i },
+  ];
+  patterns.forEach(({ key, regex }) => {
+    const match = message.match(regex);
+    if (match) fields[key] = match[1].trim();
+  });
+  return fields;
+};
+
+
 const SubmissionDetails = ({
   submission,
   onUpdate,
@@ -1222,76 +1262,178 @@ const SubmissionDetails = ({
   const [status, setStatus] = useState(submission.status);
   const [notes, setNotes] = useState(submission.notes || "");
 
+  const parsed = parseMessageFields(submission.message);
+  const hasStructuredData = Object.keys(parsed).length > 2;
+
+  // Extract coordinates for map
+  const coordMatch = submission.message.match(/Pickup Location:\s*([-\d.]+),\s*([-\d.]+)/i);
+
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label className="text-muted-foreground">Name</Label>
-          <p className="font-medium">{submission.name}</p>
-        </div>
-        <div>
-          <Label className="text-muted-foreground">Email</Label>
-          <p className="font-medium">{submission.email}</p>
-        </div>
-      </div>
-      <div>
-        <Label className="text-muted-foreground">Subject</Label>
-        <p className="font-medium">{submission.subject || "-"}</p>
-      </div>
-      <div>
-        <Label className="text-muted-foreground">Message</Label>
-        <p className="p-3 bg-muted rounded-lg text-sm">{submission.message}</p>
-        {(() => {
-          const coordMatch = submission.message.match(/Pickup Location:\s*([-\d.]+),\s*([-\d.]+)/i);
-          if (coordMatch) {
-            const lat = coordMatch[1];
-            const lng = coordMatch[2];
-            return (
-              <div className="mt-2 rounded-lg overflow-hidden border">
-                <iframe
-                  width="100%"
-                  height="200"
-                  style={{ border: 0 }}
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  src={`https://www.google.com/maps?q=${lat},${lng}&z=15&output=embed`}
-                  title="Pickup Location"
-                />
+    <div className="p-6 space-y-6">
+      {/* Contact Info Card */}
+      <div className="rounded-xl border bg-card p-4 space-y-4">
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+          <User className="h-4 w-4" />
+          Contact Information
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+            <User className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+            <div className="min-w-0">
+              <p className="text-xs text-muted-foreground">Name</p>
+              <p className="font-medium truncate">{hasStructuredData ? parsed.fullName || submission.name : submission.name}</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+            <Mail className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+            <div className="min-w-0">
+              <p className="text-xs text-muted-foreground">Email</p>
+              <p className="font-medium truncate">{parsed.email || submission.email}</p>
+            </div>
+          </div>
+          {parsed.phone && (
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+              <Phone className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground">Phone</p>
+                <a href={`tel:${parsed.phone}`} className="font-medium text-primary hover:underline">{parsed.phone}</a>
               </div>
-            );
-          }
-          return null;
-        })()}
+            </div>
+          )}
+          {parsed.city && (
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+              <Building className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground">City</p>
+                <p className="font-medium">{parsed.city}</p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
-      <div>
-        <Label className="text-muted-foreground">Submitted</Label>
-        <p className="font-medium">{format(new Date(submission.created_at), "PPpp")}</p>
+
+      {/* Trip Details Card (if structured data) */}
+      {hasStructuredData && (parsed.destination || parsed.frequency || parsed.passengers) && (
+        <>
+          <Separator />
+          <div className="rounded-xl border bg-card p-4 space-y-4">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+              <Car className="h-4 w-4" />
+              Trip Details
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {parsed.destination && (
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+                  <MapPin className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-xs text-muted-foreground">Destination</p>
+                    <p className="font-medium">{parsed.destination}</p>
+                  </div>
+                </div>
+              )}
+              {parsed.frequency && (
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+                  <Calendar className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-xs text-muted-foreground">Frequency</p>
+                    <p className="font-medium capitalize">{parsed.frequency}</p>
+                  </div>
+                </div>
+              )}
+              {parsed.passengers && (
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+                  <Hash className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-xs text-muted-foreground">Passengers</p>
+                    <p className="font-medium">{parsed.passengers}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Pickup Location Map */}
+      {coordMatch && (
+        <>
+          <Separator />
+          <div className="rounded-xl border bg-card p-4 space-y-3">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
+              Pickup Location
+            </h3>
+            <div className="rounded-lg overflow-hidden border">
+              <iframe
+                width="100%"
+                height="250"
+                style={{ border: 0 }}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                src={`https://www.google.com/maps?q=${coordMatch[1]},${coordMatch[2]}&z=15&output=embed`}
+                title="Pickup Location"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground text-center">
+              {coordMatch[1]}, {coordMatch[2]}
+            </p>
+          </div>
+        </>
+      )}
+
+      {/* Raw Message (for non-structured or additional notes) */}
+      {(!hasStructuredData || parsed.notes) && (
+        <>
+          <Separator />
+          <div className="rounded-xl border bg-card p-4 space-y-3">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              {hasStructuredData ? "Additional Notes" : "Message"}
+            </h3>
+            <p className="p-3 bg-muted/50 rounded-lg text-sm leading-relaxed whitespace-pre-wrap">
+              {hasStructuredData ? (parsed.notes || "N/A") : submission.message}
+            </p>
+          </div>
+        </>
+      )}
+
+      <Separator />
+
+      {/* Admin Actions */}
+      <div className="rounded-xl border bg-card p-4 space-y-4">
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+          <Settings className="h-4 w-4" />
+          Admin Actions
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label className="text-xs">Status</Label>
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="new">New</SelectItem>
+                <SelectItem value="in_progress">In Progress</SelectItem>
+                <SelectItem value="resolved">Resolved</SelectItem>
+                <SelectItem value="closed">Closed</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2 sm:col-span-2">
+            <Label className="text-xs">Internal Notes</Label>
+            <Textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Add notes about this submission..."
+              className="min-h-[80px]"
+            />
+          </div>
+        </div>
+        <Button className="w-full" onClick={() => onUpdate(status, notes)} disabled={isPending}>
+          {isPending ? "Saving..." : "Update Submission"}
+        </Button>
       </div>
-      <div className="space-y-2">
-        <Label>Status</Label>
-        <Select value={status} onValueChange={setStatus}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="new">New</SelectItem>
-            <SelectItem value="in_progress">In Progress</SelectItem>
-            <SelectItem value="resolved">Resolved</SelectItem>
-            <SelectItem value="closed">Closed</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="space-y-2">
-        <Label>Internal Notes</Label>
-        <Textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder="Add notes about this submission..."
-        />
-      </div>
-      <Button className="w-full" onClick={() => onUpdate(status, notes)} disabled={isPending}>
-        {isPending ? "Saving..." : "Update Submission"}
-      </Button>
     </div>
   );
 };
