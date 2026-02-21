@@ -125,11 +125,8 @@ export default function Auth() {
           </div>
 
           {/* Form Header */}
-          <div className="text-center lg:text-left space-y-2">
+          <div className="text-center lg:text-left">
             <h2 className="text-3xl font-bold">{t('auth.welcome')}</h2>
-            <p className="text-muted-foreground">
-              {t('auth.loginDescription') || 'Enter your credentials to access your account'}
-            </p>
           </div>
 
           {/* Login Form */}
