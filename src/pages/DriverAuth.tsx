@@ -123,11 +123,8 @@ export default function DriverAuth() {
           </div>
 
           {/* Form Header */}
-          <div className="text-center space-y-2">
+          <div className="text-center">
             <h2 className="text-3xl font-bold">تسجيل الدخول</h2>
-            <p className="text-muted-foreground">
-              أدخل بيانات الدخول الخاصة بك
-            </p>
           </div>
 
           {/* Login Form */}
