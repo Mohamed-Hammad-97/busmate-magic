@@ -167,11 +167,21 @@ const RegistrationDetails: React.FC<RegistrationDetailsProps> = ({
                     {registration.car_type === 'ac' ? t('registrations.ac') : t('registrations.nonAc')}
                   </Badge>
                 </div>
-                <div className="flex justify-between">
+                <div>
                   <span className="text-muted-foreground">{t('registrations.pickupLocation')}</span>
-                  <span className="font-medium text-xs">
-                    {parent?.pickup_latitude.toFixed(4)}, {parent?.pickup_longitude.toFixed(4)}
-                  </span>
+                  {parent?.pickup_latitude && parent?.pickup_longitude && (
+                    <div className="mt-2 rounded-lg overflow-hidden border">
+                      <iframe
+                        width="100%"
+                        height="200"
+                        style={{ border: 0 }}
+                        loading="lazy"
+                        referrerPolicy="no-referrer-when-downgrade"
+                        src={`https://www.google.com/maps?q=${parent.pickup_latitude},${parent.pickup_longitude}&z=15&output=embed`}
+                        title="Pickup Location"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
