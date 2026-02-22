@@ -74,19 +74,19 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Create a stable email for this parent
+    const parentEmail = `parent_${parentAccount.id}@parent.seaterapp.local`;
+    const tempPassword = crypto.randomUUID();
+
     // Check if parent already has a user account
     let userId = parentAccount.user_id;
 
     if (!userId) {
-      // Create a new auth user for this parent using phone
-      const formattedPhone = `+2${cleanPhone.replace(/^0/, "")}`;
-      
-      // Create user with a random password (they'll use OTP to login)
-      const tempPassword = crypto.randomUUID();
-      
+      // Create a new auth user for this parent
       const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        phone: formattedPhone,
-        phone_confirm: true,
+        email: parentEmail,
+        password: tempPassword,
+        email_confirm: true,
         user_metadata: {
           parent_name: parentAccount.parent_name,
           parent_account_id: parentAccount.id,
@@ -108,6 +108,27 @@ const handler = async (req: Request): Promise<Response> => {
         .from("parent_accounts")
         .update({ user_id: userId })
         .eq("id", parentAccount.id);
+      
+      console.log("Created new auth user for parent:", parentAccount.id, "userId:", userId);
+    } else {
+      // User exists, update password so we can sign in
+      const { error: updateError } = await supabase.auth.admin.updateUserById(userId, {
+        password: tempPassword,
+      });
+
+      if (updateError) {
+        console.error("Error updating user password:", updateError);
+        return new Response(
+          JSON.stringify({ error: "Failed to prepare login" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Get the user's email (it might have been set differently)
+      const { data: userData } = await supabase.auth.admin.getUserById(userId);
+      if (userData?.user?.email) {
+        // Use existing email
+      }
     }
 
     // Delete used OTP
@@ -116,20 +137,30 @@ const handler = async (req: Request): Promise<Response> => {
       .delete()
       .eq("id", otpRecord.id);
 
-    // Generate a magic link for seamless login
-    const tempEmail = `parent_${parentAccount.id}@parent.seaterapp.local`;
-    
-    const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
-      type: "magiclink",
-      email: tempEmail,
-      options: {
-        redirectTo: `${Deno.env.get("SUPABASE_URL")}/auth/v1/callback`,
-      },
+    // Sign in to get a real session
+    const { data: userData } = await supabase.auth.admin.getUserById(userId);
+    const userEmail = userData?.user?.email || parentEmail;
+
+    // Use signInWithPassword via a separate client with anon key to generate real tokens
+    const anonClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!
+    );
+
+    const { data: signInData, error: signInError } = await anonClient.auth.signInWithPassword({
+      email: userEmail,
+      password: tempPassword,
     });
 
-    if (linkError) {
-      console.error("Error generating link:", linkError);
+    if (signInError || !signInData.session) {
+      console.error("Error signing in:", signInError);
+      return new Response(
+        JSON.stringify({ error: "Failed to establish session" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
+
+    console.log("OTP verified and session created for parent:", parentAccount.id);
 
     return new Response(
       JSON.stringify({
@@ -137,7 +168,12 @@ const handler = async (req: Request): Promise<Response> => {
         verified: true,
         user_id: userId,
         parent_account_id: parentAccount.id,
-        token: linkData?.properties?.hashed_token,
+        session: {
+          access_token: signInData.session.access_token,
+          refresh_token: signInData.session.refresh_token,
+          expires_in: signInData.session.expires_in,
+          token_type: signInData.session.token_type,
+        },
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
