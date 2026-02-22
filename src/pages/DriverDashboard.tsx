@@ -11,6 +11,7 @@ import {
   Bus, LogOut, User, MapPin, Users, Play, Clock, 
   CheckCircle, Navigation, Phone
 } from "lucide-react";
+import { GoogleMapsProvider } from "@/components/maps/GoogleMapsProvider";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 
@@ -281,10 +282,12 @@ export default function DriverDashboard() {
       <Dialog open={!!selectedRouteId} onOpenChange={() => setSelectedRouteId(null)}>
         <DialogContent className="max-w-4xl h-[95vh] p-0">
           {selectedRouteId && (
-            <DriverTripInterface
-              routeId={selectedRouteId}
-              onClose={() => setSelectedRouteId(null)}
-            />
+            <GoogleMapsProvider>
+              <DriverTripInterface
+                routeId={selectedRouteId}
+                onClose={() => setSelectedRouteId(null)}
+              />
+            </GoogleMapsProvider>
           )}
         </DialogContent>
       </Dialog>

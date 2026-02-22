@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useLiveTripRealtime, useParentNotifications, type LiveTrip, type TripStudentStatus } from "@/hooks/useLiveTrip";
+import { useParentNotifications, type LiveTrip, type TripStudentStatus } from "@/hooks/useLiveTrip";
 import { useParentAuth } from "@/contexts/ParentAuthContext";
 import { LiveTripMap } from "./LiveTripMap";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -133,10 +133,47 @@ export function ParentLiveTracking() {
     refetchInterval: 5000,
   });
 
-  // Subscribe to realtime updates for each active trip
-  activeTrips.forEach((trip) => {
-    useLiveTripRealtime(trip.id);
-  });
+  // Subscribe to realtime updates for active trips
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (activeTrips.length === 0) return;
+
+    const channels = activeTrips.map((trip) => {
+      const channel = supabase
+        .channel(`parent-live-trip-${trip.id}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "live_trips",
+            filter: `id=eq.${trip.id}`,
+          },
+          () => {
+            queryClient.invalidateQueries({ queryKey: ["parent-active-trips"] });
+          }
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "trip_student_status",
+            filter: `live_trip_id=eq.${trip.id}`,
+          },
+          () => {
+            queryClient.invalidateQueries({ queryKey: ["parent-student-statuses"] });
+          }
+        )
+        .subscribe();
+      return channel;
+    });
+
+    return () => {
+      channels.forEach((ch) => supabase.removeChannel(ch));
+    };
+  }, [activeTrips.map((t) => t.id).join(","), queryClient]);
 
   const unreadNotifications = notifications.filter((n) => !n.read_at);
 
