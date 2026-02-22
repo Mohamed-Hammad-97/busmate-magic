@@ -1,11 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -14,15 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
-import { toast } from 'sonner';
-import { Plus, Search, Users, MapPin, Phone, Edit, Eye } from 'lucide-react';
+import { Plus, Search, Users, MapPin, Phone, Edit, Eye, TrendingUp, UserCheck, Building2 } from 'lucide-react';
 import { useCity } from '@/contexts/CityContext';
 import type { Tables } from '@/integrations/supabase/types';
 import CustomerDialog from '@/components/customers/CustomerDialog';
@@ -32,7 +23,6 @@ type ParentAccount = Tables<'parent_accounts'>;
 
 const Customers = () => {
   const { t } = useTranslation();
-  const queryClient = useQueryClient();
   const { selectedCity } = useCity();
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -51,7 +41,6 @@ const Customers = () => {
     },
   });
 
-  // Filter customers by city
   const customers = useMemo(() => {
     if (selectedCity === 'all') return allCustomers;
     const cityMapping: Record<string, string[]> = {
@@ -72,7 +61,7 @@ const Customers = () => {
         .from('registrations')
         .select('parent_id');
       if (error) throw error;
-      
+
       const counts: Record<string, number> = {};
       data.forEach((reg) => {
         counts[reg.parent_id] = (counts[reg.parent_id] || 0) + 1;
@@ -103,139 +92,217 @@ const Customers = () => {
     setIsDialogOpen(true);
   };
 
+  const totalCustomers = customers.length;
+  const uniqueCities = new Set(customers.map((c) => c.city)).size;
+  const totalRegistrations = Object.values(registrationCounts).reduce((a, b) => a + b, 0);
+  const withPassword = customers.filter((c) => c.has_password).length;
+
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">{t('customers.title')}</h1>
-            <p className="text-muted-foreground">{t('customers.description')}</p>
+      <div className="space-y-8">
+        {/* Premium Header */}
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 animate-fade-in">
+          <div className="space-y-1">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
+                <Users className="h-6 w-6" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight text-foreground">{t('customers.title')}</h1>
+                <p className="text-sm text-muted-foreground">{t('customers.description')}</p>
+              </div>
+            </div>
           </div>
-          <Button onClick={handleAddNew}>
-            <Plus className="h-4 w-4 ml-2" />
+          <Button onClick={handleAddNew} size="sm" className="gap-2 shadow-md hover:shadow-lg transition-all">
+            <Plus className="h-4 w-4" />
             {t('customers.addCustomer')}
           </Button>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">{t('customers.totalCustomers')}</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{customers.length}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">{t('customers.cities')}</CardTitle>
-              <MapPin className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {new Set(customers.map((c) => c.city)).size}
+        {/* Premium Stats Grid */}
+        <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+          {/* Total Customers */}
+          <div className="group relative overflow-hidden rounded-2xl border border-border/50 bg-card p-5 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
+            <div className="relative">
+              <div className="flex items-center justify-between mb-3">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Users className="h-4 w-4 text-primary" />
+                </div>
+                <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
               </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">{t('customers.totalRegistrations')}</CardTitle>
-              <Phone className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {Object.values(registrationCounts).reduce((a, b) => a + b, 0)}
+              <p className="text-3xl font-bold tracking-tight text-foreground">{totalCustomers}</p>
+              <p className="text-xs text-muted-foreground mt-1">{t('customers.totalCustomers')}</p>
+            </div>
+          </div>
+
+          {/* Cities */}
+          <div className="group relative overflow-hidden rounded-2xl border border-border/50 bg-card p-5 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-info/5 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
+            <div className="relative">
+              <div className="flex items-center justify-between mb-3">
+                <div className="p-2 rounded-lg bg-info/10">
+                  <Building2 className="h-4 w-4 text-info" />
+                </div>
               </div>
-            </CardContent>
-          </Card>
+              <p className="text-3xl font-bold tracking-tight text-foreground">{uniqueCities}</p>
+              <p className="text-xs text-muted-foreground mt-1">{t('customers.cities')}</p>
+            </div>
+          </div>
+
+          {/* Total Registrations */}
+          <div className="group relative overflow-hidden rounded-2xl border border-border/50 bg-card p-5 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-success/5 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
+            <div className="relative">
+              <div className="flex items-center justify-between mb-3">
+                <div className="p-2 rounded-lg bg-success/10">
+                  <Phone className="h-4 w-4 text-success" />
+                </div>
+              </div>
+              <p className="text-3xl font-bold tracking-tight text-foreground">{totalRegistrations}</p>
+              <p className="text-xs text-muted-foreground mt-1">{t('customers.totalRegistrations')}</p>
+            </div>
+          </div>
+
+          {/* Active Accounts */}
+          <div className="group relative overflow-hidden rounded-2xl border border-border/50 bg-card p-5 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-warning/5 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
+            <div className="relative">
+              <div className="flex items-center justify-between mb-3">
+                <div className="p-2 rounded-lg bg-warning/10">
+                  <UserCheck className="h-4 w-4 text-warning" />
+                </div>
+              </div>
+              <p className="text-3xl font-bold tracking-tight text-foreground">{withPassword}</p>
+              <p className="text-xs text-muted-foreground mt-1">Active Accounts</p>
+            </div>
+          </div>
         </div>
 
-        {/* Search */}
-        <div className="relative max-w-sm">
-          <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder={t('customers.searchPlaceholder')}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pr-10"
-          />
+        {/* Search Bar */}
+        <div className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder={t('customers.searchPlaceholder')}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 h-11 bg-card border-border/50 focus:border-primary/50 rounded-xl transition-all"
+            />
+          </div>
         </div>
 
-        {/* Customers Table */}
-        <Card>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-right">{t('customers.parentName')}</TableHead>
-                  <TableHead className="text-right">{t('customers.nationalId')}</TableHead>
-                  <TableHead className="text-right">{t('customers.fatherPhone')}</TableHead>
-                  <TableHead className="text-right">{t('common.city')}</TableHead>
-                  <TableHead className="text-right">{t('customers.registrations')}</TableHead>
-                  <TableHead className="text-right">{t('common.actions')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8">
-                      {t('common.loading')}
-                    </TableCell>
+        {/* Premium Table */}
+        <div className="rounded-2xl border border-border/50 bg-card overflow-hidden shadow-sm animate-fade-in" style={{ animationDelay: '0.3s' }}>
+          <div className="px-6 py-4 border-b border-border/50 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-1.5 rounded-lg bg-primary/10">
+                <Users className="h-4 w-4 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-foreground">All Customers</h2>
+                <p className="text-xs text-muted-foreground">{filteredCustomers.length} records found</p>
+              </div>
+            </div>
+          </div>
+
+          {isLoading ? (
+            <div className="p-16 text-center">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-4 animate-pulse">
+                <Users className="h-6 w-6 text-primary" />
+              </div>
+              <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
+            </div>
+          ) : filteredCustomers.length === 0 ? (
+            <div className="p-16 text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-muted/50 mb-4">
+                <Users className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <p className="text-sm font-medium text-foreground mb-1">{t('customers.noCustomers')}</p>
+              <p className="text-xs text-muted-foreground mb-4">Add your first customer to get started</p>
+              <Button size="sm" onClick={handleAddNew} className="gap-2">
+                <Plus className="h-4 w-4" />
+                {t('customers.addCustomer')}
+              </Button>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/30 hover:bg-muted/30">
+                    <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('customers.parentName')}</TableHead>
+                    <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('customers.nationalId')}</TableHead>
+                    <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('customers.fatherPhone')}</TableHead>
+                    <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('common.city')}</TableHead>
+                    <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('customers.registrations')}</TableHead>
+                    <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</TableHead>
+                    <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground text-right">{t('common.actions')}</TableHead>
                   </TableRow>
-                ) : filteredCustomers.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8">
-                      {t('customers.noCustomers')}
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredCustomers.map((customer) => (
-                    <TableRow key={customer.id}>
-                      <TableCell className="font-medium">{customer.parent_name}</TableCell>
-                      <TableCell>{customer.national_id}</TableCell>
-                      <TableCell dir="ltr" className="text-right">{customer.father_phone}</TableCell>
-                      <TableCell>{customer.city}</TableCell>
+                </TableHeader>
+                <TableBody>
+                  {filteredCustomers.map((customer) => (
+                    <TableRow
+                      key={customer.id}
+                      className="group hover:bg-muted/20 transition-colors duration-150 cursor-pointer"
+                      onClick={() => handleViewDetails(customer)}
+                    >
                       <TableCell>
-                        <Badge variant="secondary">
-                          {registrationCounts[customer.id] || 0}
-                        </Badge>
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
+                            {customer.parent_name[0].toUpperCase()}
+                          </div>
+                          <span className="font-medium text-sm text-foreground">{customer.parent_name}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground font-mono">{customer.national_id}</TableCell>
+                      <TableCell dir="ltr" className="text-sm text-muted-foreground text-right">{customer.father_phone}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          <MapPin className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-sm text-muted-foreground">{customer.city}</span>
+                        </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleViewDetails(customer)}
-                          >
-                            <Eye className="h-4 w-4" />
+                        <span className="text-xs font-medium bg-primary/10 text-primary px-2.5 py-1 rounded-full">
+                          {registrationCounts[customer.id] || 0} students
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        {customer.has_password ? (
+                          <div className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border bg-success/10 text-success border-success/20">
+                            <UserCheck className="h-3 w-3" />
+                            Active
+                          </div>
+                        ) : (
+                          <div className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border bg-muted/50 text-muted-foreground border-border/50">
+                            No Account
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary" onClick={() => handleViewDetails(customer)}>
+                            <Eye className="h-3.5 w-3.5" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEdit(customer)}
-                          >
-                            <Edit className="h-4 w-4" />
+                          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary" onClick={() => handleEdit(customer)}>
+                            <Edit className="h-3.5 w-3.5" />
                           </Button>
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </div>
 
-        {/* Customer Dialog */}
+        {/* Dialogs */}
         <CustomerDialog
           isOpen={isDialogOpen}
           onClose={() => setIsDialogOpen(false)}
           customer={selectedCustomer}
         />
-
-        {/* Customer Details Dialog */}
         <CustomerDetails
           isOpen={isDetailsOpen}
           onClose={() => setIsDetailsOpen(false)}
