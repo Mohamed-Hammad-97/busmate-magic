@@ -24,6 +24,8 @@ export default function ParentAuth() {
   const [error, setError] = useState("");
   const [resendTimer, setResendTimer] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const sendingRef = useRef(false);
+  const verifyingRef = useRef(false);
 
   // Cleanup timer on unmount
   useEffect(() => {
@@ -54,6 +56,7 @@ export default function ParentAuth() {
 
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (sendingRef.current) return;
     setError("");
 
     const result = phoneSchema.safeParse(phone);
@@ -62,9 +65,11 @@ export default function ParentAuth() {
       return;
     }
 
+    sendingRef.current = true;
     setIsLoading(true);
     const { error } = await sendOtp(phone);
     setIsLoading(false);
+    sendingRef.current = false;
 
     if (error) {
       toast({
@@ -83,14 +88,13 @@ export default function ParentAuth() {
   };
 
   const handleVerifyOtp = async () => {
-    if (otp.length !== 6) {
-      setError("يرجى إدخال رمز التحقق كاملاً");
-      return;
-    }
+    if (otp.length !== 6 || verifyingRef.current) return;
 
+    verifyingRef.current = true;
     setIsLoading(true);
     const { error } = await verifyOtp(phone, otp);
     setIsLoading(false);
+    verifyingRef.current = false;
 
     if (error) {
       toast({
@@ -255,9 +259,12 @@ export default function ParentAuth() {
                   variant="outline" 
                   className="w-full h-12"
                   onClick={async () => {
+                    if (sendingRef.current) return;
+                    sendingRef.current = true;
                     setIsLoading(true);
                     const { error } = await sendOtp(phone);
                     setIsLoading(false);
+                    sendingRef.current = false;
                     if (error) {
                       toast({
                         variant: "destructive",
