@@ -395,20 +395,41 @@ const HomepageAdmin = () => {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4 pt-6">
-                <div className="space-y-2">
-                  <Label>Hero Title</Label>
-                  <Input
-                    value={settingsForm.hero_title || ""}
-                    onChange={(e) => setSettingsForm({ ...settingsForm, hero_title: e.target.value })}
-                    className="h-11"
-                  />
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Hero Title (English)</Label>
+                    <Input
+                      value={settingsForm.hero_title || ""}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, hero_title: e.target.value })}
+                      className="h-11"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Hero Title (Arabic)</Label>
+                    <Input
+                      dir="rtl"
+                      value={settingsForm.hero_title_ar || ""}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, hero_title_ar: e.target.value })}
+                      className="h-11"
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>Hero Subtitle</Label>
-                  <Textarea
-                    value={settingsForm.hero_subtitle || ""}
-                    onChange={(e) => setSettingsForm({ ...settingsForm, hero_subtitle: e.target.value })}
-                  />
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Hero Subtitle (English)</Label>
+                    <Textarea
+                      value={settingsForm.hero_subtitle || ""}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, hero_subtitle: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Hero Subtitle (Arabic)</Label>
+                    <Textarea
+                      dir="rtl"
+                      value={settingsForm.hero_subtitle_ar || ""}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, hero_subtitle_ar: e.target.value })}
+                    />
+                  </div>
                 </div>
                 <div className="grid md:grid-cols-3 gap-4">
                   <div className="space-y-2">
