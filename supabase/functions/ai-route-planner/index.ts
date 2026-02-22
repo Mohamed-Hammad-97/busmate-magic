@@ -179,14 +179,17 @@ serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     });
 
-    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
-    if (authError || !user) {
-      console.error("Auth error:", authError?.message || "No user found");
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: authError } = await supabaseAuth.auth.getClaims(token);
+    if (authError || !claimsData?.claims) {
+      console.error("Auth error:", authError?.message || "No claims found");
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    const user = { id: claimsData.claims.sub as string };
 
     // Authorization check - require operations department or super_admin role
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
@@ -225,7 +228,7 @@ serve(async (req) => {
 
     if (action === "suggest-routes") {
       // Get all registrations for the school (pending_fees and complete, not cancelled)
-      const { data: registrations, error: regError } = await supabase
+      let regQuery = supabase
         .from("registrations")
         .select(`
           id,
@@ -246,8 +249,13 @@ serve(async (req) => {
           )
         `)
         .eq("school_id", schoolId)
-        .eq("car_type", carType)
         .neq("status", "cancelled");
+
+      if (carType !== "both") {
+        regQuery = regQuery.eq("car_type", carType);
+      }
+
+      const { data: registrations, error: regError } = await regQuery;
 
       if (regError) throw regError;
 
@@ -270,7 +278,7 @@ serve(async (req) => {
       }
 
       // Check existing routes that have available capacity
-      const { data: existingRoutes, error: routesError } = await supabase
+      let routesQuery = supabase
         .from("routes")
         .select(`
           id,
@@ -286,8 +294,13 @@ serve(async (req) => {
           )
         `)
         .eq("school_id", schoolId)
-        .eq("car_type", carType)
         .eq("is_active", true);
+
+      if (carType !== "both") {
+        routesQuery = routesQuery.eq("car_type", carType);
+      }
+
+      const { data: existingRoutes, error: routesError } = await routesQuery;
 
       if (routesError) throw routesError;
 
