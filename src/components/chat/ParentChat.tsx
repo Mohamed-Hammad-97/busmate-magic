@@ -9,42 +9,77 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { 
   MessageCircle, Send, Loader2, Plus, ArrowLeft, 
-  Phone as PhoneIcon, ExternalLink 
+  Phone as PhoneIcon, User, ArrowRight
 } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
-
-interface Message {
-  id: string;
-  message: string;
-  sender_type: string;
-  sender_id: string;
-  is_read: boolean;
-  created_at: string;
-}
-
-interface Conversation {
-  id: string;
-  subject: string | null;
-  status: string;
-  last_message_at: string;
-  created_at: string;
-}
 
 const WHATSAPP_NUMBER = "201000000000"; // Replace with actual company WhatsApp
 
 export function ParentChat() {
   const { parentAccount, user } = useParentAuth();
   const queryClient = useQueryClient();
-  const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [newSubject, setNewSubject] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Fetch conversations
+  // Fetch conversations where this parent is a participant
   const { data: conversations = [], isLoading: loadingConversations } = useQuery({
-    queryKey: ["parent-conversations", parentAccount?.id],
+    queryKey: ["parent-unified-conversations", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      
+      // Get conversation IDs where parent is participant
+      const { data: participantData } = await supabase
+        .from("conversation_participants")
+        .select("conversation_id")
+        .eq("user_id", user.id);
+
+      if (!participantData || participantData.length === 0) return [];
+
+      const conversationIds = participantData.map((p) => p.conversation_id);
+      const { data: convos } = await supabase
+        .from("unified_conversations")
+        .select("*")
+        .in("id", conversationIds)
+        .order("last_message_at", { ascending: false });
+
+      // Enrich with last message and unread count
+      const enriched = await Promise.all(
+        (convos || []).map(async (convo) => {
+          const { data: lastMsg } = await supabase
+            .from("unified_messages")
+            .select("message, created_at, sender_name")
+            .eq("conversation_id", convo.id)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          const { count } = await supabase
+            .from("unified_messages")
+            .select("*", { count: "exact", head: true })
+            .eq("conversation_id", convo.id)
+            .eq("is_read", false)
+            .neq("sender_id", user.id);
+
+          return {
+            ...convo,
+            lastMessage: lastMsg,
+            unreadCount: count || 0,
+          };
+        })
+      );
+
+      return enriched;
+    },
+    enabled: !!user?.id,
+  });
+
+  // Also fetch legacy conversations from chat_conversations
+  const { data: legacyConversations = [] } = useQuery({
+    queryKey: ["parent-legacy-conversations", parentAccount?.id],
     queryFn: async () => {
       if (!parentAccount?.id) return [];
       const { data, error } = await supabase
@@ -53,103 +88,154 @@ export function ParentChat() {
         .eq("parent_id", parentAccount.id)
         .order("last_message_at", { ascending: false });
       if (error) throw error;
-      return data as Conversation[];
+      return (data || []).map((c) => ({ ...c, isLegacy: true }));
     },
     enabled: !!parentAccount?.id,
   });
 
   // Fetch messages for selected conversation
+  const selectedConvo = conversations.find((c) => c.id === selectedConversationId);
+  const isLegacySelected = !selectedConvo && legacyConversations.find((c: any) => c.id === selectedConversationId);
+
   const { data: messages = [], isLoading: loadingMessages } = useQuery({
-    queryKey: ["conversation-messages", selectedConversation],
+    queryKey: ["parent-chat-messages", selectedConversationId, !!isLegacySelected],
     queryFn: async () => {
-      if (!selectedConversation) return [];
-      const { data, error } = await supabase
-        .from("chat_messages")
+      if (!selectedConversationId) return [];
+      
+      if (isLegacySelected) {
+        const { data } = await supabase
+          .from("chat_messages")
+          .select("*")
+          .eq("conversation_id", selectedConversationId)
+          .order("created_at", { ascending: true });
+        return (data || []).map((m) => ({ ...m, sender_name: m.sender_type === "parent" ? parentAccount?.parent_name : "الدعم", isLegacy: true }));
+      }
+
+      const { data } = await supabase
+        .from("unified_messages")
         .select("*")
-        .eq("conversation_id", selectedConversation)
+        .eq("conversation_id", selectedConversationId)
         .order("created_at", { ascending: true });
-      if (error) throw error;
-      return data as Message[];
+      return data || [];
     },
-    enabled: !!selectedConversation,
+    enabled: !!selectedConversationId,
   });
 
-  // Subscribe to realtime messages
+  // Real-time subscription
   useEffect(() => {
-    if (!selectedConversation) return;
-
+    if (!selectedConversationId) return;
+    
+    const table = isLegacySelected ? "chat_messages" : "unified_messages";
     const channel = supabase
-      .channel(`messages-${selectedConversation}`)
+      .channel(`parent-chat-${selectedConversationId}`)
       .on(
         "postgres_changes",
         {
           event: "INSERT",
           schema: "public",
-          table: "chat_messages",
-          filter: `conversation_id=eq.${selectedConversation}`,
+          table,
+          filter: `conversation_id=eq.${selectedConversationId}`,
         },
         () => {
-          queryClient.invalidateQueries({ queryKey: ["conversation-messages", selectedConversation] });
+          queryClient.invalidateQueries({ queryKey: ["parent-chat-messages", selectedConversationId] });
+          queryClient.invalidateQueries({ queryKey: ["parent-unified-conversations"] });
+          queryClient.invalidateQueries({ queryKey: ["parent-legacy-conversations"] });
         }
       )
       .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [selectedConversationId, isLegacySelected, queryClient]);
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [selectedConversation, queryClient]);
+  // Mark messages as read
+  useEffect(() => {
+    if (!selectedConversationId || !user?.id) return;
+    const table = isLegacySelected ? "chat_messages" : "unified_messages";
+    supabase
+      .from(table)
+      .update({ is_read: true })
+      .eq("conversation_id", selectedConversationId)
+      .neq("sender_id", user.id)
+      .eq("is_read", false)
+      .then(() => {
+        queryClient.invalidateQueries({ queryKey: ["parent-unified-conversations"] });
+      });
+  }, [selectedConversationId, messages, user?.id, isLegacySelected, queryClient]);
 
-  // Scroll to bottom when new messages arrive
+  // Scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Create conversation
+  // Send message (unified)
+  const sendMessage = useMutation({
+    mutationFn: async () => {
+      if (!newMessage.trim() || !selectedConversationId || !user?.id) return;
+
+      if (isLegacySelected) {
+        await supabase.from("chat_messages").insert({
+          conversation_id: selectedConversationId,
+          sender_type: "parent",
+          sender_id: user.id,
+          message: newMessage.trim(),
+        });
+        await supabase
+          .from("chat_conversations")
+          .update({ last_message_at: new Date().toISOString() })
+          .eq("id", selectedConversationId);
+      } else {
+        await supabase.from("unified_messages").insert({
+          conversation_id: selectedConversationId,
+          sender_id: user.id,
+          sender_type: "parent",
+          sender_name: parentAccount?.parent_name || "ولي الأمر",
+          message: newMessage.trim(),
+        });
+        await supabase
+          .from("unified_conversations")
+          .update({ last_message_at: new Date().toISOString() })
+          .eq("id", selectedConversationId);
+      }
+    },
+    onSuccess: () => {
+      setNewMessage("");
+      queryClient.invalidateQueries({ queryKey: ["parent-chat-messages", selectedConversationId] });
+      queryClient.invalidateQueries({ queryKey: ["parent-unified-conversations"] });
+      queryClient.invalidateQueries({ queryKey: ["parent-legacy-conversations"] });
+    },
+  });
+
+  // Create new conversation (customer_supervisor type)
   const createConversation = useMutation({
     mutationFn: async () => {
-      if (!parentAccount?.id) throw new Error("No parent account");
-      const { data, error } = await supabase
-        .from("chat_conversations")
+      if (!user?.id) throw new Error("No user");
+      
+      const { data: convo, error } = await supabase
+        .from("unified_conversations")
         .insert({
-          parent_id: parentAccount.id,
+          type: "customer_supervisor" as any,
           subject: newSubject || "محادثة جديدة",
+          created_by: user.id,
         })
         .select()
         .single();
       if (error) throw error;
-      return data;
+
+      // Add parent as participant
+      await supabase.from("conversation_participants").insert({
+        conversation_id: convo.id,
+        user_id: user.id,
+        participant_type: "parent",
+        participant_ref_id: parentAccount?.id,
+        can_send: true,
+      });
+
+      return convo;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["parent-conversations"] });
-      setSelectedConversation(data.id);
+      queryClient.invalidateQueries({ queryKey: ["parent-unified-conversations"] });
+      setSelectedConversationId(data.id);
       setIsCreating(false);
       setNewSubject("");
-    },
-  });
-
-  // Send message
-  const sendMessage = useMutation({
-    mutationFn: async () => {
-      if (!selectedConversation || !user?.id || !newMessage.trim()) return;
-      
-      const { error } = await supabase.from("chat_messages").insert({
-        conversation_id: selectedConversation,
-        sender_type: "parent",
-        sender_id: user.id,
-        message: newMessage.trim(),
-      });
-      if (error) throw error;
-
-      // Update last_message_at
-      await supabase
-        .from("chat_conversations")
-        .update({ last_message_at: new Date().toISOString() })
-        .eq("id", selectedConversation);
-    },
-    onSuccess: () => {
-      setNewMessage("");
-      queryClient.invalidateQueries({ queryKey: ["conversation-messages", selectedConversation] });
-      queryClient.invalidateQueries({ queryKey: ["parent-conversations"] });
     },
   });
 
@@ -158,10 +244,16 @@ export function ParentChat() {
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${message}`, "_blank");
   };
 
+  // All conversations combined
+  const allConversations = [
+    ...conversations.map((c) => ({ ...c, isLegacy: false })),
+    ...legacyConversations,
+  ];
+
   // Conversation list view
-  if (!selectedConversation && !isCreating) {
+  if (!selectedConversationId && !isCreating) {
     return (
-      <Card className="h-[500px] flex flex-col">
+      <Card className="border-0 shadow-md">
         <CardHeader className="border-b">
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
@@ -175,44 +267,60 @@ export function ParentChat() {
               </Button>
               <Button size="sm" onClick={() => setIsCreating(true)} className="gap-1">
                 <Plus className="h-4 w-4" />
-                محادثة جديدة
+                جديدة
               </Button>
             </div>
           </div>
         </CardHeader>
-        <CardContent className="flex-1 p-0">
+        <CardContent className="p-0">
           {loadingConversations ? (
-            <div className="flex items-center justify-center h-full">
+            <div className="flex items-center justify-center py-12">
               <Loader2 className="h-6 w-6 animate-spin" />
             </div>
-          ) : conversations.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-              <MessageCircle className="h-12 w-12 mb-3 opacity-50" />
-              <p>لا توجد محادثات</p>
+          ) : allConversations.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+              <MessageCircle className="h-12 w-12 mb-3 opacity-30" />
+              <p className="font-medium">لا توجد محادثات</p>
               <p className="text-sm">ابدأ محادثة جديدة أو تواصل عبر واتساب</p>
             </div>
           ) : (
-            <ScrollArea className="h-full">
-              <div className="divide-y">
-                {conversations.map((conv) => (
-                  <button
-                    key={conv.id}
-                    className="w-full p-4 text-right hover:bg-muted transition-colors"
-                    onClick={() => setSelectedConversation(conv.id)}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <Badge variant={conv.status === "open" ? "default" : "secondary"}>
-                        {conv.status === "open" ? "مفتوح" : conv.status === "pending" ? "في الانتظار" : "مغلق"}
-                      </Badge>
-                      <span className="font-medium">{conv.subject || "بدون عنوان"}</span>
+            <div className="divide-y max-h-[400px] overflow-y-auto">
+              {allConversations.map((conv: any) => (
+                <button
+                  key={conv.id}
+                  className="w-full p-4 text-right hover:bg-muted/50 transition-colors flex items-center gap-3"
+                  onClick={() => setSelectedConversationId(conv.id)}
+                >
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <User className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-0.5">
+                      <div className="flex items-center gap-2">
+                        {conv.unreadCount > 0 && (
+                          <Badge className="bg-primary text-primary-foreground text-xs h-5 min-w-5 flex items-center justify-center">
+                            {conv.unreadCount}
+                          </Badge>
+                        )}
+                        {conv.isLegacy && (
+                          <Badge variant="outline" className="text-[10px]">قديم</Badge>
+                        )}
+                      </div>
+                      <span className="font-medium text-sm truncate">{conv.subject || "محادثة"}</span>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      {format(new Date(conv.last_message_at), "dd MMM yyyy HH:mm", { locale: ar })}
+                    {conv.lastMessage && (
+                      <p className="text-xs text-muted-foreground truncate text-right">
+                        {conv.lastMessage.sender_name}: {conv.lastMessage.message}
+                      </p>
+                    )}
+                    <p className="text-[10px] text-muted-foreground/60 text-right mt-0.5">
+                      {format(new Date(conv.last_message_at || conv.created_at), "dd MMM hh:mm a", { locale: ar })}
                     </p>
-                  </button>
-                ))}
-              </div>
-            </ScrollArea>
+                  </div>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground/40 shrink-0 rtl:rotate-180" />
+                </button>
+              ))}
+            </div>
           )}
         </CardContent>
       </Card>
@@ -222,7 +330,7 @@ export function ParentChat() {
   // Create new conversation view
   if (isCreating) {
     return (
-      <Card className="h-[500px] flex flex-col">
+      <Card className="border-0 shadow-md">
         <CardHeader className="border-b">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" onClick={() => setIsCreating(false)}>
@@ -231,16 +339,18 @@ export function ParentChat() {
             <CardTitle>محادثة جديدة</CardTitle>
           </div>
         </CardHeader>
-        <CardContent className="flex-1 flex flex-col justify-center gap-4 p-6">
+        <CardContent className="p-6 space-y-4">
           <div className="space-y-2">
             <label className="text-sm font-medium">موضوع المحادثة</label>
             <Input
               placeholder="مثال: استفسار عن الرسوم"
               value={newSubject}
               onChange={(e) => setNewSubject(e.target.value)}
+              dir="rtl"
             />
           </div>
           <Button 
+            className="w-full"
             onClick={() => createConversation.mutate()}
             disabled={createConversation.isPending}
           >
@@ -253,22 +363,24 @@ export function ParentChat() {
   }
 
   // Chat view
+  const currentConvo = allConversations.find((c: any) => c.id === selectedConversationId);
+
   return (
-    <Card className="h-[500px] flex flex-col">
-      <CardHeader className="border-b py-3">
+    <Card className="border-0 shadow-md flex flex-col h-[500px]">
+      <CardHeader className="border-b py-3 shrink-0">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => setSelectedConversation(null)}>
+          <Button variant="ghost" size="icon" onClick={() => setSelectedConversationId(null)}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <CardTitle className="text-base">
-            {conversations.find((c) => c.id === selectedConversation)?.subject || "محادثة"}
+          <CardTitle className="text-base truncate">
+            {currentConvo?.subject || "محادثة"}
           </CardTitle>
         </div>
       </CardHeader>
       
       <ScrollArea className="flex-1 p-4">
         {loadingMessages ? (
-          <div className="flex items-center justify-center h-full">
+          <div className="flex items-center justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin" />
           </div>
         ) : messages.length === 0 ? (
@@ -277,33 +389,36 @@ export function ParentChat() {
           </div>
         ) : (
           <div className="space-y-3">
-            {messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`flex ${msg.sender_type === "parent" ? "justify-end" : "justify-start"}`}
-              >
-                <div
-                  className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                    msg.sender_type === "parent"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted"
-                  }`}
-                >
-                  <p className="text-sm">{msg.message}</p>
-                  <p className={`text-xs mt-1 ${
-                    msg.sender_type === "parent" ? "text-primary-foreground/70" : "text-muted-foreground"
-                  }`}>
-                    {format(new Date(msg.created_at), "HH:mm", { locale: ar })}
-                  </p>
+            {messages.map((msg: any) => {
+              const isMe = msg.sender_id === user?.id || msg.sender_type === "parent";
+              return (
+                <div key={msg.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
+                  <div
+                    className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${
+                      isMe
+                        ? "bg-primary text-primary-foreground rounded-br-md"
+                        : "bg-muted rounded-bl-md"
+                    }`}
+                  >
+                    {!isMe && msg.sender_name && (
+                      <p className="text-[10px] font-medium text-muted-foreground mb-1">
+                        {msg.sender_name}
+                      </p>
+                    )}
+                    <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
+                    <p className={`text-[10px] mt-1 ${isMe ? "text-primary-foreground/60" : "text-muted-foreground/60"}`}>
+                      {format(new Date(msg.created_at), "hh:mm a")}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
             <div ref={messagesEndRef} />
           </div>
         )}
       </ScrollArea>
 
-      <div className="p-4 border-t">
+      <div className="p-3 border-t shrink-0">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -316,8 +431,10 @@ export function ParentChat() {
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             disabled={sendMessage.isPending}
+            dir="rtl"
+            className="rounded-xl"
           />
-          <Button type="submit" size="icon" disabled={sendMessage.isPending || !newMessage.trim()}>
+          <Button type="submit" size="icon" className="rounded-xl shrink-0" disabled={sendMessage.isPending || !newMessage.trim()}>
             {sendMessage.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
