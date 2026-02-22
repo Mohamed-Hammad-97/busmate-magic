@@ -213,6 +213,44 @@ export type Database = {
           },
         ]
       }
+      conversation_participants: {
+        Row: {
+          can_send: boolean | null
+          conversation_id: string
+          created_at: string
+          id: string
+          participant_ref_id: string | null
+          participant_type: string
+          user_id: string | null
+        }
+        Insert: {
+          can_send?: boolean | null
+          conversation_id: string
+          created_at?: string
+          id?: string
+          participant_ref_id?: string | null
+          participant_type: string
+          user_id?: string | null
+        }
+        Update: {
+          can_send?: boolean | null
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          participant_ref_id?: string | null
+          participant_type?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_participants_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "unified_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_feedback: {
         Row: {
           created_at: string
@@ -1232,6 +1270,91 @@ export type Database = {
           },
         ]
       }
+      unified_conversations: {
+        Row: {
+          allow_customer_messages: boolean | null
+          created_at: string
+          created_by: string | null
+          id: string
+          last_message_at: string | null
+          route_id: string | null
+          subject: string | null
+          type: Database["public"]["Enums"]["conversation_type"]
+          updated_at: string
+        }
+        Insert: {
+          allow_customer_messages?: boolean | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          last_message_at?: string | null
+          route_id?: string | null
+          subject?: string | null
+          type: Database["public"]["Enums"]["conversation_type"]
+          updated_at?: string
+        }
+        Update: {
+          allow_customer_messages?: boolean | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          last_message_at?: string | null
+          route_id?: string | null
+          subject?: string | null
+          type?: Database["public"]["Enums"]["conversation_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unified_conversations_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      unified_messages: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          id: string
+          is_read: boolean | null
+          message: string
+          sender_id: string
+          sender_name: string | null
+          sender_type: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          message: string
+          sender_id: string
+          sender_name?: string | null
+          sender_type: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          sender_id?: string
+          sender_name?: string | null
+          sender_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unified_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "unified_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -1258,6 +1381,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_send_in_conversation: {
+        Args: { _conversation_id: string; _user_id: string }
+        Returns: boolean
+      }
       cleanup_expired_otps: { Args: never; Returns: undefined }
       get_user_departments: {
         Args: { _user_id: string }
@@ -1278,6 +1405,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_conversation_participant: {
+        Args: { _conversation_id: string; _user_id: string }
         Returns: boolean
       }
       is_driver_or_supervisor: { Args: { _user_id: string }; Returns: boolean }
@@ -1302,6 +1433,11 @@ export type Database = {
     Enums: {
       app_role: "super_admin" | "employee"
       car_type: "ac" | "non_ac"
+      conversation_type:
+        | "staff_dm"
+        | "customer_dm"
+        | "route_group"
+        | "customer_supervisor"
       department: "customer_support" | "operations" | "finance" | "reports"
       education_department: "national" | "ig" | "american"
       payment_status: "paid" | "pending" | "overdue"
@@ -1444,6 +1580,12 @@ export const Constants = {
     Enums: {
       app_role: ["super_admin", "employee"],
       car_type: ["ac", "non_ac"],
+      conversation_type: [
+        "staff_dm",
+        "customer_dm",
+        "route_group",
+        "customer_supervisor",
+      ],
       department: ["customer_support", "operations", "finance", "reports"],
       education_department: ["national", "ig", "american"],
       payment_status: ["paid", "pending", "overdue"],
