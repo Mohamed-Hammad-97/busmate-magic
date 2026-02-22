@@ -18,6 +18,7 @@ import { Bus, LogOut, User, CreditCard, MapPin, School, Phone, Bell, CheckCircle
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { ParentLiveTracking } from "@/components/tracking/ParentLiveTracking";
+import { GoogleMapsProvider } from "@/components/maps/GoogleMapsProvider";
 import { ParentChat } from "@/components/chat/ParentChat";
 import { SetPasswordDialog } from "@/components/chat/SetPasswordDialog";
 import { AbsenceRegistration } from "@/components/parent/AbsenceRegistration";
@@ -239,7 +240,9 @@ export default function ParentDashboard() {
 
           {/* Live Tracking Tab */}
           <TabsContent value="tracking">
-            <ParentLiveTracking />
+            <GoogleMapsProvider>
+              <ParentLiveTracking />
+            </GoogleMapsProvider>
           </TabsContent>
 
           {/* Children Tab */}
