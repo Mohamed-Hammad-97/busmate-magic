@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
@@ -13,8 +13,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Plus, Search, Users, MapPin, Phone, Edit, Eye, TrendingUp, UserCheck, Building2 } from 'lucide-react';
+import { Plus, Search, Users, MapPin, Phone, Edit, Eye, TrendingUp, UserCheck, Building2, ShieldCheck, Loader2 } from 'lucide-react';
 import { useCity } from '@/contexts/CityContext';
+import { toast } from 'sonner';
 import type { Tables } from '@/integrations/supabase/types';
 import CustomerDialog from '@/components/customers/CustomerDialog';
 import CustomerDetails from '@/components/customers/CustomerDetails';
@@ -24,6 +25,7 @@ type ParentAccount = Tables<'parent_accounts'>;
 const Customers = () => {
   const { t } = useTranslation();
   const { selectedCity } = useCity();
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -70,6 +72,29 @@ const Customers = () => {
     },
   });
 
+  // Activation mutation
+  const activateMutation = useMutation({
+    mutationFn: async (parentId: string) => {
+      const { data, error } = await supabase.functions.invoke('activate-parent-account', {
+        body: { parent_id: parentId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      if (data?.already_active) {
+        toast.info('الحساب مفعل بالفعل');
+      } else {
+        toast.success('تم تفعيل الحساب بنجاح');
+      }
+    },
+    onError: (error) => {
+      toast.error('فشل في تفعيل الحساب: ' + error.message);
+    },
+  });
+
   const filteredCustomers = customers.filter((customer) =>
     customer.parent_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     customer.national_id.includes(searchTerm) ||
@@ -90,6 +115,11 @@ const Customers = () => {
   const handleAddNew = () => {
     setSelectedCustomer(null);
     setIsDialogOpen(true);
+  };
+
+  const handleActivate = (e: React.MouseEvent, customer: ParentAccount) => {
+    e.stopPropagation();
+    activateMutation.mutate(customer.id);
   };
 
   const totalCustomers = customers.length;
@@ -121,57 +151,42 @@ const Customers = () => {
 
         {/* Premium Stats Grid */}
         <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-          {/* Total Customers */}
           <div className="group relative overflow-hidden rounded-2xl border border-border/50 bg-card p-5 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
             <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
             <div className="relative">
               <div className="flex items-center justify-between mb-3">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <Users className="h-4 w-4 text-primary" />
-                </div>
+                <div className="p-2 rounded-lg bg-primary/10"><Users className="h-4 w-4 text-primary" /></div>
                 <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
               </div>
               <p className="text-3xl font-bold tracking-tight text-foreground">{totalCustomers}</p>
               <p className="text-xs text-muted-foreground mt-1">{t('customers.totalCustomers')}</p>
             </div>
           </div>
-
-          {/* Cities */}
           <div className="group relative overflow-hidden rounded-2xl border border-border/50 bg-card p-5 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
             <div className="absolute top-0 right-0 w-20 h-20 bg-info/5 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
             <div className="relative">
               <div className="flex items-center justify-between mb-3">
-                <div className="p-2 rounded-lg bg-info/10">
-                  <Building2 className="h-4 w-4 text-info" />
-                </div>
+                <div className="p-2 rounded-lg bg-info/10"><Building2 className="h-4 w-4 text-info" /></div>
               </div>
               <p className="text-3xl font-bold tracking-tight text-foreground">{uniqueCities}</p>
               <p className="text-xs text-muted-foreground mt-1">{t('customers.cities')}</p>
             </div>
           </div>
-
-          {/* Total Registrations */}
           <div className="group relative overflow-hidden rounded-2xl border border-border/50 bg-card p-5 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
             <div className="absolute top-0 right-0 w-20 h-20 bg-success/5 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
             <div className="relative">
               <div className="flex items-center justify-between mb-3">
-                <div className="p-2 rounded-lg bg-success/10">
-                  <Phone className="h-4 w-4 text-success" />
-                </div>
+                <div className="p-2 rounded-lg bg-success/10"><Phone className="h-4 w-4 text-success" /></div>
               </div>
               <p className="text-3xl font-bold tracking-tight text-foreground">{totalRegistrations}</p>
               <p className="text-xs text-muted-foreground mt-1">{t('customers.totalRegistrations')}</p>
             </div>
           </div>
-
-          {/* Active Accounts */}
           <div className="group relative overflow-hidden rounded-2xl border border-border/50 bg-card p-5 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
             <div className="absolute top-0 right-0 w-20 h-20 bg-warning/5 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
             <div className="relative">
               <div className="flex items-center justify-between mb-3">
-                <div className="p-2 rounded-lg bg-warning/10">
-                  <UserCheck className="h-4 w-4 text-warning" />
-                </div>
+                <div className="p-2 rounded-lg bg-warning/10"><UserCheck className="h-4 w-4 text-warning" /></div>
               </div>
               <p className="text-3xl font-bold tracking-tight text-foreground">{withPassword}</p>
               <p className="text-xs text-muted-foreground mt-1">Active Accounts</p>
@@ -268,25 +283,41 @@ const Customers = () => {
                         </span>
                       </TableCell>
                       <TableCell>
-                        {customer.has_password ? (
+                        {customer.user_id ? (
                           <div className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border bg-success/10 text-success border-success/20">
                             <UserCheck className="h-3 w-3" />
-                            Active
+                            مفعل
                           </div>
                         ) : (
                           <div className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border bg-muted/50 text-muted-foreground border-border/50">
-                            No Account
+                            غير مفعل
                           </div>
                         )}
                       </TableCell>
                       <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex justify-end gap-0.5">
                           <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary" onClick={() => handleViewDetails(customer)}>
                             <Eye className="h-3.5 w-3.5" />
                           </Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary" onClick={() => handleEdit(customer)}>
                             <Edit className="h-3.5 w-3.5" />
                           </Button>
+                          {!customer.user_id && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 rounded-lg hover:bg-success/10 hover:text-success"
+                              onClick={(e) => handleActivate(e, customer)}
+                              disabled={activateMutation.isPending}
+                              title="تفعيل الحساب"
+                            >
+                              {activateMutation.isPending ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <ShieldCheck className="h-3.5 w-3.5" />
+                              )}
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
