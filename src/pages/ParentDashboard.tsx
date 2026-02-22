@@ -13,7 +13,9 @@ import {
   Bus, LogOut, User, CreditCard, MapPin, School, Phone, Bell,
   CheckCircle, Clock, AlertCircle, Navigation, MessageCircle,
   CalendarOff, Wallet, Shield, Route, UserCircle, Car,
+  ChevronLeft, Receipt, CircleDollarSign,
 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { ParentLiveTracking } from "@/components/tracking/ParentLiveTracking";
@@ -27,6 +29,7 @@ import seaterLogo from "@/assets/seater-logo.jpg";
 export default function ParentDashboard() {
   const { parentAccount, signOut, user } = useParentAuth();
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [selectedPaymentReg, setSelectedPaymentReg] = useState<any>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -398,79 +401,140 @@ export default function ParentDashboard() {
           </TabsContent>
 
           {/* Payments Tab */}
-          <TabsContent value="payments" className="space-y-4">
-            {registrations.map((reg: any) => {
-              const subscription = reg.subscriptions?.[0];
-              if (!subscription?.payments?.length) return null;
+          <TabsContent value="payments" className="space-y-3">
+            {registrations.filter((r: any) => r.subscriptions?.[0]?.payments?.length).length === 0 ? (
+              <Card className="border-0 shadow-md">
+                <CardContent className="py-12 text-center text-muted-foreground">
+                  <Wallet className="h-12 w-12 mx-auto mb-3 text-muted-foreground/40" />
+                  <p className="font-medium">لا توجد مدفوعات حالياً</p>
+                </CardContent>
+              </Card>
+            ) : (
+              registrations.map((reg: any) => {
+                const subscription = reg.subscriptions?.[0];
+                if (!subscription?.payments?.length) return null;
+                const payments = subscription.payments;
+                const paidCount = payments.filter((p: any) => p.status === "paid").length;
+                const totalAmount = Number(subscription.value);
+                const paidAmount = payments.filter((p: any) => p.status === "paid").reduce((s: number, p: any) => s + Number(p.amount), 0);
+                const nextPayment = payments.filter((p: any) => p.status !== "paid").sort((a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())[0];
 
-              return (
-                <Card key={reg.id} className="border-0 shadow-md overflow-hidden">
-                  <div className="h-1 bg-gradient-to-r from-green-500 to-emerald-500" />
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Wallet className="h-5 w-5 text-green-600" />
-                      {reg.student_name}
-                    </CardTitle>
-                    <CardDescription>
-                      {subscription.subscription_type === "monthly" ? "اشتراك شهري" : "اشتراك سنوي"} -
-                      إجمالي: {Number(subscription.value).toLocaleString()} ج.م
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="text-right">القسط</TableHead>
-                          <TableHead className="text-right">المبلغ</TableHead>
-                          <TableHead className="text-right">الاستحقاق</TableHead>
-                          <TableHead className="text-right">الدفع</TableHead>
-                          <TableHead className="text-right">الحالة</TableHead>
-                          <TableHead className="text-right"></TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {subscription.payments
-                          .sort((a: any, b: any) => a.installment_number - b.installment_number)
-                          .map((payment: any) => (
-                            <TableRow key={payment.id}>
-                              <TableCell className="font-medium">{payment.installment_number}</TableCell>
-                              <TableCell>{Number(payment.amount).toLocaleString()} ج.م</TableCell>
-                              <TableCell className="text-xs">
-                                {format(new Date(payment.due_date), "dd MMM yyyy", { locale: ar })}
-                              </TableCell>
-                              <TableCell className="text-xs">
-                                {payment.paid_date
-                                  ? format(new Date(payment.paid_date), "dd MMM yyyy", { locale: ar })
-                                  : "-"}
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-1.5">
-                                  {paymentStatusLabels[payment.status]?.icon}
-                                  <span className="text-xs">{paymentStatusLabels[payment.status]?.label || payment.status}</span>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                {payment.status !== "paid" && (
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="gap-1 h-7 text-xs"
-                                    onClick={() => toast({ title: "الدفع الإلكتروني", description: "سيتم تفعيل الدفع الإلكتروني قريباً" })}
-                                  >
-                                    <Wallet className="h-3 w-3" />
-                                    ادفع
-                                  </Button>
-                                )}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                      </TableBody>
-                    </Table>
-                  </CardContent>
-                </Card>
-              );
-            })}
+                return (
+                  <Card
+                    key={reg.id}
+                    className="border-0 shadow-md hover:shadow-lg transition-all cursor-pointer overflow-hidden"
+                    onClick={() => setSelectedPaymentReg(reg)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-4">
+                        <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/20 flex items-center justify-center shrink-0">
+                          <CircleDollarSign className="h-6 w-6 text-green-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold truncate">{reg.student_name}</h3>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {subscription.subscription_type === "monthly" ? "شهري" : "سنوي"} • {totalAmount.toLocaleString()} ج.م
+                          </p>
+                        </div>
+                        <div className="text-left shrink-0">
+                          <div className="text-sm font-bold text-green-600">{paidCount}/{payments.length}</div>
+                          <p className="text-[10px] text-muted-foreground">أقساط مدفوعة</p>
+                        </div>
+                        <ChevronLeft className="h-5 w-5 text-muted-foreground/50 shrink-0" />
+                      </div>
+                      {/* Progress bar */}
+                      <div className="mt-3 h-2 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full transition-all"
+                          style={{ width: `${totalAmount > 0 ? (paidAmount / totalAmount) * 100 : 0}%` }}
+                        />
+                      </div>
+                      {nextPayment && (
+                        <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          القسط القادم: {format(new Date(nextPayment.due_date), "dd MMM yyyy", { locale: ar })} - {Number(nextPayment.amount).toLocaleString()} ج.م
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })
+            )}
           </TabsContent>
+
+          {/* Payment Detail Dialog */}
+          <Dialog open={!!selectedPaymentReg} onOpenChange={() => setSelectedPaymentReg(null)}>
+            <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+              {selectedPaymentReg && (() => {
+                const subscription = selectedPaymentReg.subscriptions?.[0];
+                const payments = subscription?.payments?.sort((a: any, b: any) => a.installment_number - b.installment_number) || [];
+                return (
+                  <>
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/20 flex items-center justify-center">
+                          <Receipt className="h-5 w-5 text-green-600" />
+                        </div>
+                        <div>
+                          <div>{selectedPaymentReg.student_name}</div>
+                          <p className="text-sm font-normal text-muted-foreground">
+                            {subscription?.subscription_type === "monthly" ? "اشتراك شهري" : "اشتراك سنوي"} - {Number(subscription?.value).toLocaleString()} ج.م
+                          </p>
+                        </div>
+                      </DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-3 mt-2">
+                      {payments.map((payment: any) => (
+                        <div
+                          key={payment.id}
+                          className={`p-4 rounded-xl border transition-all ${
+                            payment.status === "paid"
+                              ? "bg-green-50/50 border-green-200 dark:bg-green-950/20 dark:border-green-800/30"
+                              : payment.status === "overdue"
+                              ? "bg-red-50/50 border-red-200 dark:bg-red-950/20 dark:border-red-800/30"
+                              : "bg-muted/30 border-border"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-semibold">القسط {payment.installment_number}</span>
+                              <Badge
+                                variant={payment.status === "paid" ? "default" : payment.status === "overdue" ? "destructive" : "secondary"}
+                                className="text-[10px] h-5"
+                              >
+                                {paymentStatusLabels[payment.status]?.icon}
+                                <span className="mr-1">{paymentStatusLabels[payment.status]?.label}</span>
+                              </Badge>
+                            </div>
+                            <span className="font-bold text-sm">{Number(payment.amount).toLocaleString()} ج.م</span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <span>الاستحقاق: {format(new Date(payment.due_date), "dd MMM yyyy", { locale: ar })}</span>
+                            {payment.paid_date && (
+                              <span>تم الدفع: {format(new Date(payment.paid_date), "dd MMM yyyy", { locale: ar })}</span>
+                            )}
+                          </div>
+                          {payment.status !== "paid" && (
+                            <Button
+                              size="sm"
+                              className="w-full mt-3 gap-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-md"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toast({ title: "الدفع الإلكتروني", description: "سيتم تفعيل الدفع الإلكتروني قريباً" });
+                              }}
+                            >
+                              <Wallet className="h-4 w-4" />
+                              ادفع الآن
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                );
+              })()}
+            </DialogContent>
+          </Dialog>
 
           <TabsContent value="absences">
             <AbsenceRegistration />
