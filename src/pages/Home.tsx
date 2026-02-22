@@ -703,7 +703,7 @@ const Home = () => {
                     className="w-full shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300"
                     disabled={submitContactMutation.isPending}
                   >
-                    {submitContactMutation.isPending ? t('homepage.contact.sending') : t('homepage.contact.submit')}
+                    {submitContactMutation.isPending ? t('homepage.contact.sending') : t('homepage.contact.send')}
                   </Button>
                 </form>
               </CardContent>
