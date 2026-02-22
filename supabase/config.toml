@@ -44,3 +44,12 @@ verify_jwt = false
 
 [functions.rds-auth-me]
 verify_jwt = false
+
+[functions.check-parent-auth]
+verify_jwt = false
+
+[functions.parent-password-login]
+verify_jwt = false
+
+[functions.activate-parent-account]
+verify_jwt = false
