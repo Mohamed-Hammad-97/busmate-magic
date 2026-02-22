@@ -690,7 +690,7 @@ const Home = () => {
                     className="h-12 bg-background/50 border-border/50 focus:border-primary"
                   />
                   <Textarea 
-                    placeholder={t('homepage.contact.message')} 
+                    placeholder={t('homepage.contact.yourMessage')} 
                     rows={5}
                     value={contactForm.message}
                     onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
