@@ -9,44 +9,39 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Bus, LogOut, User, MapPin, Users, Play, Clock, 
-  CheckCircle, Navigation, Phone, History
+import {
+  Bus, LogOut, User, MapPin, Users, Play, Clock,
+  CheckCircle, Navigation, Phone, History, Shield, UserCircle,
 } from "lucide-react";
 import { GoogleMapsProvider } from "@/components/maps/GoogleMapsProvider";
-import { format } from "date-fns";
-import { ar } from "date-fns/locale";
+import seaterLogo from "@/assets/seater-logo.jpg";
 
 export default function DriverDashboard() {
   const { driverAccount, isDriver, isSupervisor, signOut } = useDriverAuth();
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
   const [historyRouteId, setHistoryRouteId] = useState<string | null>(null);
 
-  const personName = isDriver 
-    ? driverAccount?.driver?.full_name 
+  const personName = isDriver
+    ? driverAccount?.driver?.full_name
     : driverAccount?.supervisor?.full_name;
 
-  // Fetch assigned routes
   const { data: assignedRoutes = [], isLoading } = useQuery({
     queryKey: ["driver-routes", driverAccount?.driver_id, driverAccount?.supervisor_id],
     queryFn: async () => {
       let query = supabase
         .from("routes")
         .select(`
-          *,
-          schools (name, city, latitude, longitude),
+          *, schools (name, city, latitude, longitude),
           drivers (full_name, phone),
           supervisors (full_name, phone),
           route_assignments (count)
         `)
         .eq("is_active", true);
-
       if (isDriver && driverAccount?.driver_id) {
         query = query.eq("driver_id", driverAccount.driver_id);
       } else if (isSupervisor && driverAccount?.supervisor_id) {
         query = query.eq("supervisor_id", driverAccount.supervisor_id);
       }
-
       const { data, error } = await query;
       if (error) throw error;
       return data;
@@ -54,7 +49,6 @@ export default function DriverDashboard() {
     enabled: !!(driverAccount?.driver_id || driverAccount?.supervisor_id),
   });
 
-  // Check for active trips
   const { data: activeTrips = [] } = useQuery({
     queryKey: ["driver-active-trips"],
     queryFn: async () => {
@@ -68,14 +62,12 @@ export default function DriverDashboard() {
     refetchInterval: 10000,
   });
 
-  // Today's completed trips
   const { data: todayTrips = [] } = useQuery({
     queryKey: ["driver-today-trips"],
     queryFn: async () => {
       const today = new Date().toISOString().split("T")[0];
       const routeIds = assignedRoutes.map((r) => r.id);
       if (routeIds.length === 0) return [];
-
       const { data, error } = await supabase
         .from("live_trips")
         .select("*")
@@ -88,82 +80,101 @@ export default function DriverDashboard() {
     enabled: assignedRoutes.length > 0,
   });
 
-  const getActiveTrip = (routeId: string) => {
-    return activeTrips.find((t) => t.route_id === routeId);
-  };
+  const getActiveTrip = (routeId: string) => activeTrips.find((t) => t.route_id === routeId);
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-blue-600 text-white shadow-lg">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
+      {/* Premium Header */}
+      <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-xl">
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Bus className="h-8 w-8" />
+            <img src={seaterLogo} alt="Seater" className="h-10 w-10 rounded-xl shadow-md" />
             <div>
-              <span className="text-xl font-bold">لوحة {isDriver ? "السائق" : "المشرف"}</span>
-              <p className="text-sm text-blue-100">{personName}</p>
+              <h1 className="text-lg font-bold text-foreground">Seater</h1>
+              <p className="text-xs text-muted-foreground">
+                {isDriver ? "بوابة السائق" : "بوابة المشرف"}
+              </p>
             </div>
           </div>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="text-white hover:bg-white/20"
-            onClick={signOut}
-          >
-            <LogOut className="h-4 w-4 ml-2" />
-            خروج
-          </Button>
+          <div className="flex items-center gap-3">
+            <div className="text-left hidden sm:block">
+              <p className="text-sm font-medium">{personName}</p>
+              <p className="text-xs text-muted-foreground">{driverAccount?.phone}</p>
+            </div>
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive" onClick={signOut}>
+              <LogOut className="h-4 w-4 ml-1" />
+              خروج
+            </Button>
+          </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6 space-y-6">
-        {/* Stats Cards */}
+      <main className="container mx-auto px-4 py-6 space-y-6 max-w-2xl">
+        {/* Profile Card */}
+        <Card className="border-0 shadow-lg overflow-hidden">
+          <div className="h-20 bg-gradient-to-r from-primary to-primary/70 relative">
+            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjEpIi8+PC9zdmc+')] opacity-50" />
+          </div>
+          <CardContent className="relative -mt-8 pb-4">
+            <div className="flex items-end gap-4">
+              <div className="h-16 w-16 rounded-2xl bg-background border-4 border-background shadow-lg flex items-center justify-center">
+                {isDriver ? (
+                  <Bus className="h-8 w-8 text-primary" />
+                ) : (
+                  <Shield className="h-8 w-8 text-primary" />
+                )}
+              </div>
+              <div className="pb-1">
+                <h2 className="text-lg font-bold">{personName}</h2>
+                <p className="text-sm text-muted-foreground">
+                  {isDriver ? "سائق" : "مشرف"} • {driverAccount?.phone}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Stats */}
         <div className="grid grid-cols-3 gap-3">
-          <Card>
-            <CardContent className="pt-4 pb-3 px-4">
+          <Card className="border-0 shadow-md bg-gradient-to-br from-primary/5 to-primary/10">
+            <CardContent className="pt-4 pb-3 px-3 text-center">
+              <MapPin className="h-5 w-5 mx-auto text-primary mb-1" />
+              <div className="text-2xl font-bold text-primary">{assignedRoutes.length}</div>
               <p className="text-xs text-muted-foreground">المسارات</p>
-              <div className="text-2xl font-bold flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-primary" />
-                {assignedRoutes.length}
-              </div>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="pt-4 pb-3 px-4">
+          <Card className="border-0 shadow-md bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-900/20">
+            <CardContent className="pt-4 pb-3 px-3 text-center">
+              <CheckCircle className="h-5 w-5 mx-auto text-green-600 mb-1" />
+              <div className="text-2xl font-bold text-green-600">{todayTrips.length}</div>
               <p className="text-xs text-muted-foreground">رحلات اليوم</p>
-              <div className="text-2xl font-bold flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 text-green-600" />
-                {todayTrips.length}
-              </div>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="pt-4 pb-3 px-4">
-              <p className="text-xs text-muted-foreground">نشطة</p>
-              <div className="text-2xl font-bold flex items-center gap-2">
-                <Navigation className="h-4 w-4 text-blue-600" />
-                {activeTrips.length}
-              </div>
+          <Card className="border-0 shadow-md bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/20">
+            <CardContent className="pt-4 pb-3 px-3 text-center">
+              <Navigation className="h-5 w-5 mx-auto text-blue-600 mb-1" />
+              <div className="text-2xl font-bold text-blue-600">{activeTrips.length}</div>
+              <p className="text-xs text-muted-foreground">نشطة الآن</p>
             </CardContent>
           </Card>
         </div>
 
         {/* Active Trip Banner */}
         {activeTrips.length > 0 && (
-          <Card className="bg-green-50 dark:bg-green-950 border-green-200">
+          <Card className="border-0 shadow-md bg-gradient-to-r from-green-500 to-emerald-500 text-white">
             <CardContent className="py-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-green-500 flex items-center justify-center animate-pulse">
-                    <Navigation className="h-5 w-5 text-white" />
+                  <div className="h-12 w-12 rounded-xl bg-white/20 flex items-center justify-center animate-pulse">
+                    <Navigation className="h-6 w-6" />
                   </div>
                   <div>
-                    <p className="font-semibold text-green-700 dark:text-green-300">رحلة نشطة</p>
-                    <p className="text-sm text-green-600 dark:text-green-400">اضغط للمتابعة</p>
+                    <p className="font-bold text-lg">رحلة نشطة</p>
+                    <p className="text-sm text-white/80">اضغط للمتابعة</p>
                   </div>
                 </div>
-                <Button 
-                  className="bg-green-600 hover:bg-green-700"
+                <Button
+                  className="bg-white text-green-700 hover:bg-white/90 shadow-lg"
                   onClick={() => setSelectedRouteId(activeTrips[0].route_id)}
                 >
                   متابعة
@@ -175,12 +186,12 @@ export default function DriverDashboard() {
 
         {/* Routes & History Tabs */}
         <Tabs defaultValue="routes">
-          <TabsList className="w-full">
-            <TabsTrigger value="routes" className="flex-1 gap-2">
+          <TabsList className="w-full h-12 bg-muted/50 p-1 rounded-xl">
+            <TabsTrigger value="routes" className="flex-1 gap-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
               <Bus className="h-4 w-4" />
               المسارات
             </TabsTrigger>
-            <TabsTrigger value="history" className="flex-1 gap-2">
+            <TabsTrigger value="history" className="flex-1 gap-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
               <History className="h-4 w-4" />
               سجل الرحلات
             </TabsTrigger>
@@ -188,14 +199,14 @@ export default function DriverDashboard() {
 
           <TabsContent value="routes" className="space-y-4 mt-4">
             {isLoading ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <div className="flex justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
               </div>
             ) : assignedRoutes.length === 0 ? (
-              <Card>
-                <CardContent className="py-8 text-center text-muted-foreground">
-                  <MapPin className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
-                  <p>لا توجد مسارات معينة لك</p>
+              <Card className="border-0 shadow-md">
+                <CardContent className="py-12 text-center text-muted-foreground">
+                  <MapPin className="h-12 w-12 mx-auto mb-3 text-muted-foreground/30" />
+                  <p className="font-medium">لا توجد مسارات معينة لك</p>
                 </CardContent>
               </Card>
             ) : (
@@ -205,71 +216,82 @@ export default function DriverDashboard() {
                   const studentCount = route.route_assignments?.[0]?.count || 0;
 
                   return (
-                    <Card 
-                      key={route.id} 
-                      className={`transition-all ${activeTrip ? "border-green-500 shadow-green-100" : ""}`}
+                    <Card
+                      key={route.id}
+                      className={`border-0 shadow-md overflow-hidden transition-all ${activeTrip ? "ring-2 ring-green-500 shadow-green-100" : ""}`}
                     >
+                      {activeTrip && <div className="h-1 bg-gradient-to-r from-green-500 to-emerald-500" />}
                       <CardHeader className="pb-2">
                         <div className="flex items-center justify-between">
                           <CardTitle className="text-base flex items-center gap-2">
-                            <Bus className="h-5 w-5 text-primary" />
+                            <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                              <Bus className="h-5 w-5 text-primary" />
+                            </div>
                             {route.name}
                           </CardTitle>
                           {activeTrip && (
-                            <Badge className="bg-green-500">نشط</Badge>
+                            <Badge className="bg-green-500 shadow-sm">نشط</Badge>
                           )}
                         </div>
                       </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="grid grid-cols-2 gap-3 text-sm">
-                          <div className="flex items-center gap-2 text-muted-foreground">
-                            <MapPin className="h-4 w-4" />
-                            {route.schools?.name}
+                      <CardContent className="space-y-3">
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <div className="flex items-center gap-2 text-muted-foreground p-2 bg-muted/50 rounded-lg">
+                            <MapPin className="h-4 w-4 text-primary" />
+                            <span className="truncate">{route.schools?.name}</span>
                           </div>
-                          <div className="flex items-center gap-2 text-muted-foreground">
-                            <Users className="h-4 w-4" />
+                          <div className="flex items-center gap-2 text-muted-foreground p-2 bg-muted/50 rounded-lg">
+                            <Users className="h-4 w-4 text-primary" />
                             {studentCount} طالب
                           </div>
                           {route.route_duration_minutes && (
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                              <Clock className="h-4 w-4" />
-                              {route.route_duration_minutes} دقيقة
+                            <div className="flex items-center gap-2 text-muted-foreground p-2 bg-muted/50 rounded-lg col-span-2">
+                              <Clock className="h-4 w-4 text-primary" />
+                              مدة الرحلة: {route.route_duration_minutes} دقيقة
                             </div>
                           )}
                         </div>
 
+                        {/* Show counterpart info */}
                         {isDriver && route.supervisors && (
-                          <div className="flex items-center gap-3 p-2 bg-muted rounded-lg text-sm">
-                            <User className="h-4 w-4 text-muted-foreground" />
-                            <div className="flex-1">
-                              <p className="font-medium">{route.supervisors.full_name}</p>
+                          <div className="flex items-center gap-3 p-3 border rounded-xl bg-purple-50/50 dark:bg-purple-950/20">
+                            <div className="h-9 w-9 rounded-full bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center">
+                              <Shield className="h-4 w-4 text-purple-600" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm">{route.supervisors.full_name}</p>
                               <p className="text-xs text-muted-foreground">المشرفة</p>
                             </div>
                             <a href={`tel:${route.supervisors.phone}`}>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <Phone className="h-4 w-4" />
+                              <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full">
+                                <Phone className="h-4 w-4 text-primary" />
                               </Button>
                             </a>
                           </div>
                         )}
                         {isSupervisor && route.drivers && (
-                          <div className="flex items-center gap-3 p-2 bg-muted rounded-lg text-sm">
-                            <User className="h-4 w-4 text-muted-foreground" />
-                            <div className="flex-1">
-                              <p className="font-medium">{route.drivers.full_name}</p>
+                          <div className="flex items-center gap-3 p-3 border rounded-xl bg-blue-50/50 dark:bg-blue-950/20">
+                            <div className="h-9 w-9 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
+                              <User className="h-4 w-4 text-blue-600" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm">{route.drivers.full_name}</p>
                               <p className="text-xs text-muted-foreground">السائق</p>
                             </div>
                             <a href={`tel:${route.drivers.phone}`}>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <Phone className="h-4 w-4" />
+                              <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full">
+                                <Phone className="h-4 w-4 text-primary" />
                               </Button>
                             </a>
                           </div>
                         )}
 
                         <Button
-                          className="w-full gap-2"
-                          variant={activeTrip ? "default" : "outline"}
+                          className={`w-full gap-2 h-11 rounded-xl shadow-md ${
+                            activeTrip
+                              ? "bg-green-600 hover:bg-green-700 shadow-green-200"
+                              : "bg-primary hover:bg-primary/90 shadow-primary/20"
+                          }`}
                           onClick={() => setSelectedRouteId(route.id)}
                         >
                           {activeTrip ? (
@@ -294,8 +316,9 @@ export default function DriverDashboard() {
 
           <TabsContent value="history" className="mt-4">
             {assignedRoutes.length === 0 ? (
-              <Card>
-                <CardContent className="py-8 text-center text-muted-foreground">
+              <Card className="border-0 shadow-md">
+                <CardContent className="py-12 text-center text-muted-foreground">
+                  <History className="h-12 w-12 mx-auto mb-3 text-muted-foreground/30" />
                   لا توجد مسارات
                 </CardContent>
               </Card>
@@ -305,16 +328,18 @@ export default function DriverDashboard() {
               <div className="space-y-4">
                 {!historyRouteId ? (
                   <div className="space-y-2">
-                    <p className="text-sm text-muted-foreground">اختر مسار لعرض سجل رحلاته:</p>
-                    {assignedRoutes.map(route => (
+                    <p className="text-sm text-muted-foreground mb-3">اختر مسار لعرض سجل رحلاته:</p>
+                    {assignedRoutes.map((route) => (
                       <Card
                         key={route.id}
-                        className="cursor-pointer hover:border-primary/30 transition-all"
+                        className="cursor-pointer hover:border-primary/30 transition-all border-0 shadow-sm hover:shadow-md"
                         onClick={() => setHistoryRouteId(route.id)}
                       >
                         <CardContent className="py-3 flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Bus className="h-4 w-4 text-primary" />
+                          <div className="flex items-center gap-3">
+                            <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                              <Bus className="h-4 w-4 text-primary" />
+                            </div>
                             <span className="font-medium text-sm">{route.name}</span>
                           </div>
                           <span className="text-xs text-muted-foreground">{route.schools?.name}</span>
@@ -324,13 +349,10 @@ export default function DriverDashboard() {
                   </div>
                 ) : (
                   <div>
-                    <Button variant="ghost" size="sm" className="mb-2" onClick={() => setHistoryRouteId(null)}>
+                    <Button variant="ghost" size="sm" className="mb-3" onClick={() => setHistoryRouteId(null)}>
                       ← العودة للمسارات
                     </Button>
-                    <TripHistory
-                      routeId={historyRouteId}
-                      routeName={assignedRoutes.find(r => r.id === historyRouteId)?.name}
-                    />
+                    <TripHistory routeId={historyRouteId} routeName={assignedRoutes.find((r) => r.id === historyRouteId)?.name} />
                   </div>
                 )}
               </div>
@@ -344,10 +366,7 @@ export default function DriverDashboard() {
         <DialogContent className="max-w-4xl h-[95vh] p-0">
           {selectedRouteId && (
             <GoogleMapsProvider>
-              <DriverTripInterface
-                routeId={selectedRouteId}
-                onClose={() => setSelectedRouteId(null)}
-              />
+              <DriverTripInterface routeId={selectedRouteId} onClose={() => setSelectedRouteId(null)} />
             </GoogleMapsProvider>
           )}
         </DialogContent>
