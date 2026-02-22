@@ -367,18 +367,27 @@ const Home = () => {
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-2xl space-y-8 animate-fade-in-up">
 
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight tracking-tight">
-              {getSetting("hero_title", t('homepage.hero.defaultTitle')).split(",")[0]},{" "}
-              <span className="text-primary relative">
-                {getSetting("hero_title", t('homepage.hero.defaultTitle')).split(",").slice(1).join(",")}
-                <svg className="absolute -bottom-2 left-0 w-full h-3 text-primary/30" viewBox="0 0 200 12" preserveAspectRatio="none">
-                  <path d="M0,8 Q50,0 100,8 T200,8" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round"/>
-                </svg>
-              </span>
-            </h1>
-            <p className="text-xl text-muted-foreground max-w-lg leading-relaxed">
-              {getSetting("hero_subtitle", t('homepage.hero.defaultSubtitle'))}
-            </p>
+            {(() => {
+              const isAr = i18n.language === 'ar';
+              const title = isAr && getSetting("hero_title_ar") ? getSetting("hero_title_ar") : getSetting("hero_title", t('homepage.hero.defaultTitle'));
+              const subtitle = isAr && getSetting("hero_subtitle_ar") ? getSetting("hero_subtitle_ar") : getSetting("hero_subtitle", t('homepage.hero.defaultSubtitle'));
+              return (
+                <>
+                  <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight tracking-tight">
+                    {title.split(",")[0]},{" "}
+                    <span className="text-primary relative">
+                      {title.split(",").slice(1).join(",")}
+                      <svg className="absolute -bottom-2 left-0 w-full h-3 text-primary/30" viewBox="0 0 200 12" preserveAspectRatio="none">
+                        <path d="M0,8 Q50,0 100,8 T200,8" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round"/>
+                      </svg>
+                    </span>
+                  </h1>
+                  <p className="text-xl text-muted-foreground max-w-lg leading-relaxed">
+                    {subtitle}
+                  </p>
+                </>
+              );
+            })()}
             
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 pt-2">
