@@ -79,9 +79,6 @@ const Register: React.FC = () => {
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold">
               {t('register.chooseType')}
             </h1>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              {t('register.subtitle') || 'Select the service that best fits your transportation needs'}
-            </p>
           </div>
 
           {/* Service Cards Grid */}
@@ -121,12 +118,6 @@ const Register: React.FC = () => {
             ))}
           </div>
 
-          {/* Bottom Help Text */}
-          <div className="text-center mt-16">
-            <p className="text-sm text-muted-foreground">
-              {t('register.helpText') || 'Need help choosing? Contact our team for personalized assistance.'}
-            </p>
-          </div>
         </div>
       </div>
     </div>

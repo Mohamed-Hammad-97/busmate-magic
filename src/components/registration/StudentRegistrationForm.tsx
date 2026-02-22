@@ -68,16 +68,20 @@ const StudentRegistrationForm: React.FC = () => {
   });
 
   const { data: schools = [] } = useQuery({
-    queryKey: ['schools-public'],
+    queryKey: ['schools-public', formData.city],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('schools')
         .select('*')
-        .eq('is_active', true)
-        .order('name');
+        .eq('is_active', true);
+      if (formData.city) {
+        query = query.eq('city', formData.city);
+      }
+      const { data, error } = await query.order('name');
       if (error) throw error;
       return data;
     },
+    enabled: !!formData.city,
   });
 
   const { data: cities = [] } = useQuery({
@@ -301,7 +305,7 @@ const StudentRegistrationForm: React.FC = () => {
                   <Label className="text-sm font-medium">{t('register.student.fields.city')} *</Label>
                   <Select
                     value={formData.city}
-                    onValueChange={(v) => setFormData((f) => ({ ...f, city: v }))}
+                    onValueChange={(v) => setFormData((f) => ({ ...f, city: v, school_id: '' }))}
                   >
                     <SelectTrigger className="h-12 bg-muted/50 border-border/50 focus:bg-background transition-colors">
                       <SelectValue placeholder={t('register.student.placeholders.city')} />
@@ -319,7 +323,33 @@ const StudentRegistrationForm: React.FC = () => {
             </div>
 
             <div className="flex justify-end pt-4">
-              <Button type="button" onClick={() => setStep(2)} size="lg" className="px-8">
+              <Button type="button" onClick={() => {
+                if (!formData.student_name.trim()) {
+                  toast({ title: t('register.student.validation.studentName'), variant: 'destructive' });
+                  return;
+                }
+                if (!formData.parent_name.trim()) {
+                  toast({ title: t('register.student.validation.parentName'), variant: 'destructive' });
+                  return;
+                }
+                if (!formData.national_id.trim()) {
+                  toast({ title: t('register.student.validation.nationalId'), variant: 'destructive' });
+                  return;
+                }
+                if (!formData.father_phone.trim()) {
+                  toast({ title: t('register.student.validation.fatherPhone'), variant: 'destructive' });
+                  return;
+                }
+                if (!formData.emergency_phone.trim()) {
+                  toast({ title: t('register.student.validation.emergencyPhone'), variant: 'destructive' });
+                  return;
+                }
+                if (!formData.city) {
+                  toast({ title: t('register.student.validation.city'), variant: 'destructive' });
+                  return;
+                }
+                setStep(2);
+              }} size="lg" className="px-8">
                 {t('register.common.next')}
               </Button>
             </div>
