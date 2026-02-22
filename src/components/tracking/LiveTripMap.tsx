@@ -1,6 +1,8 @@
 import React, { useState, useCallback, useEffect } from "react";
-import { GoogleMap, Marker, InfoWindow } from '@react-google-maps/api';
+import { GoogleMap, Marker, InfoWindow, Polyline } from '@react-google-maps/api';
 import { useGoogleMaps } from "@/components/maps/GoogleMapsProvider";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 import type { TripStudentStatus, LiveTrip } from "@/hooks/useLiveTrip";
 
@@ -13,10 +15,10 @@ interface LiveTripMapProps {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  pending: "#f59e0b", // amber
-  arriving: "#3b82f6", // blue
-  picked_up: "#22c55e", // green
-  dropped_off: "#6b7280", // gray
+  pending: "#f59e0b",
+  arriving: "#3b82f6",
+  picked_up: "#22c55e",
+  dropped_off: "#6b7280",
 };
 
 const containerStyle = {
@@ -37,9 +39,26 @@ export function LiveTripMap({
   isDriver = false,
 }: LiveTripMapProps) {
   const { isLoaded } = useGoogleMaps();
-
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [activeMarker, setActiveMarker] = useState<string | null>(null);
+
+  // Fetch today's absences for students on this trip
+  const registrationIds = students.map(s => s.registration_id);
+  const { data: todayAbsences = [] } = useQuery({
+    queryKey: ["trip-absences-today", registrationIds],
+    queryFn: async () => {
+      if (registrationIds.length === 0) return [];
+      const today = new Date().toISOString().split("T")[0];
+      const { data, error } = await supabase
+        .from("student_absences")
+        .select("registration_id")
+        .in("registration_id", registrationIds)
+        .eq("absence_date", today);
+      if (error) return [];
+      return data.map(a => a.registration_id);
+    },
+    enabled: registrationIds.length > 0,
+  });
 
   const onLoad = useCallback((mapInstance: google.maps.Map) => {
     setMap(mapInstance);
@@ -49,27 +68,45 @@ export function LiveTripMap({
     setMap(null);
   }, []);
 
-  // Fit bounds to show all markers
+  // Build ordered route path for polyline
+  const routePath = React.useMemo(() => {
+    const points: google.maps.LatLngLiteral[] = [];
+
+    // Sort students by pickup_order
+    const sortedStudents = [...students]
+      .filter(s => s.registrations?.parent_accounts?.pickup_latitude && s.registrations?.parent_accounts?.pickup_longitude)
+      .sort((a, b) => (a.pickup_order || 999) - (b.pickup_order || 999));
+
+    sortedStudents.forEach(student => {
+      const parent = student.registrations!.parent_accounts!;
+      points.push({ lat: parent.pickup_latitude, lng: parent.pickup_longitude });
+    });
+
+    // Add school at the end
+    if (trip?.routes?.schools) {
+      points.push({ lat: trip.routes.schools.latitude, lng: trip.routes.schools.longitude });
+    }
+
+    return points;
+  }, [students, trip]);
+
+  // Fit bounds
   useEffect(() => {
     if (!map || !isLoaded || !window.google?.maps) return;
 
     const bounds = new google.maps.LatLngBounds();
     let hasValidBounds = false;
 
-    // Add school location
     if (trip?.routes?.schools) {
-      const school = trip.routes.schools;
-      bounds.extend({ lat: school.latitude, lng: school.longitude });
+      bounds.extend({ lat: trip.routes.schools.latitude, lng: trip.routes.schools.longitude });
       hasValidBounds = true;
     }
 
-    // Add driver location
     if (showDriverLocation && trip?.current_latitude && trip?.current_longitude) {
       bounds.extend({ lat: trip.current_latitude, lng: trip.current_longitude });
       hasValidBounds = true;
     }
 
-    // Add student locations
     students.forEach((student) => {
       if (student.registrations?.parent_accounts) {
         const parent = student.registrations.parent_accounts;
@@ -93,6 +130,32 @@ export function LiveTripMap({
     );
   }
 
+  const createStudentIcon = (statusColor: string, isAbsent: boolean, pickupOrder?: number | null) => {
+    if (isAbsent) {
+      // Red circle with X line for absent
+      return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36">
+          <circle cx="18" cy="18" r="16" fill="#dc2626" stroke="white" stroke-width="2"/>
+          <circle cx="18" cy="13" r="4" fill="white" opacity="0.5"/>
+          <path d="M10 28c0-4 4-6 8-6s8 2 8 6" fill="white" opacity="0.5"/>
+          <line x1="8" y1="8" x2="28" y2="28" stroke="white" stroke-width="3" stroke-linecap="round"/>
+          <line x1="28" y1="8" x2="8" y2="28" stroke="white" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+      `);
+    }
+    
+    const orderText = pickupOrder ? `<text x="18" y="22" font-size="11" font-weight="bold" fill="white" text-anchor="middle" font-family="Arial">${pickupOrder}</text>` : '';
+    
+    return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36">
+        <circle cx="18" cy="18" r="16" fill="${statusColor}" stroke="white" stroke-width="2"/>
+        <circle cx="18" cy="12" r="4" fill="white"/>
+        <path d="M8 28c0-4 4-6 10-6s10 2 10 6" fill="white"/>
+        ${orderText}
+      </svg>
+    `);
+  };
+
   return (
     <div className="relative w-full h-full">
       <GoogleMap
@@ -109,6 +172,24 @@ export function LiveTripMap({
           fullscreenControl: false,
         }}
       >
+        {/* Route Polyline */}
+        {routePath.length > 1 && (
+          <Polyline
+            path={routePath}
+            options={{
+              strokeColor: "#3B82F6",
+              strokeOpacity: 0.8,
+              strokeWeight: 4,
+              geodesic: true,
+              icons: [{
+                icon: { path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale: 3, strokeColor: "#1d4ed8" },
+                offset: "50%",
+                repeat: "100px",
+              }],
+            }}
+          />
+        )}
+
         {/* School Marker */}
         {trip?.routes?.schools && window.google?.maps && (
           <Marker
@@ -118,20 +199,20 @@ export function LiveTripMap({
             }}
             icon={{
               url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
-                  <circle cx="20" cy="20" r="18" fill="#3B82F6" stroke="white" stroke-width="2"/>
-                  <path d="M10 18l10-6 10 6M12 20v8h16v-8M18 28v-4h4v4" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 44 44">
+                  <circle cx="22" cy="22" r="20" fill="#1d4ed8" stroke="white" stroke-width="2"/>
+                  <path d="M11 20l11-7 11 7M13 22v9h18v-9M19 31v-5h6v5" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
               `),
-              scaledSize: new google.maps.Size(40, 40),
+              scaledSize: new google.maps.Size(44, 44),
             }}
             onClick={() => setActiveMarker('school')}
           >
             {activeMarker === 'school' && (
               <InfoWindow onCloseClick={() => setActiveMarker(null)}>
-                <div>
-                  <h3 className="font-bold">{trip.routes.schools.name}</h3>
-                  <p>المدرسة</p>
+                <div style={{ padding: '4px' }}>
+                  <h3 style={{ fontWeight: 'bold', margin: 0 }}>{trip.routes.schools.name}</h3>
+                  <p style={{ margin: 0, color: '#666', fontSize: '12px' }}>المدرسة</p>
                 </div>
               </InfoWindow>
             )}
@@ -147,12 +228,15 @@ export function LiveTripMap({
             }}
             icon={{
               url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
-                  <circle cx="24" cy="24" r="22" fill="#2563EB" stroke="white" stroke-width="3"/>
-                  <path d="M35 23.5C35 22 34 21 32 21H29L27 16H21L19 21H16C14 21 13 22 13 23.5L13 32H15V33.5C15 34.3 15.7 35 16.5 35C17.3 35 18 34.3 18 33.5V32H30V33.5C30 34.3 30.7 35 31.5 35C32.3 35 33 34.3 33 33.5V32H35V23.5ZM17 28C16 28 15 27 15 26C15 25 16 24 17 24C18 24 19 25 19 26C19 27 18 28 17 28ZM31 28C30 28 29 27 29 26C29 25 30 24 31 24C32 24 33 25 33 26C33 27 32 28 31 28ZM15 23L17 18.5H31L33 23H15Z" fill="white"/>
+                <svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 52 52">
+                  <circle cx="26" cy="26" r="24" fill="#2563EB" stroke="white" stroke-width="3">
+                    <animate attributeName="r" values="22;24;22" dur="2s" repeatCount="indefinite"/>
+                  </circle>
+                  <circle cx="26" cy="26" r="18" fill="#3b82f6" stroke="none"/>
+                  <path d="M37 25.5C37 24 36 23 34 23H31L29 18H23L21 23H18C16 23 15 24 15 25.5L15 34H17V35.5C17 36.3 17.7 37 18.5 37C19.3 37 20 36.3 20 35.5V34H32V35.5C32 36.3 32.7 37 33.5 37C34.3 37 35 36.3 35 35.5V34H37V25.5ZM19 30C18 30 17 29 17 28C17 27 18 26 19 26C20 26 21 27 21 28C21 29 20 30 19 30ZM33 30C32 30 31 29 31 28C31 27 32 26 33 26C34 26 35 27 35 28C35 29 34 30 33 30ZM17 25L19 20.5H33L35 25H17Z" fill="white"/>
                 </svg>
               `),
-              scaledSize: new google.maps.Size(48, 48),
+              scaledSize: new google.maps.Size(52, 52),
             }}
           />
         )}
@@ -166,6 +250,7 @@ export function LiveTripMap({
           if (!window.google?.maps) return null;
 
           const statusColor = STATUS_COLORS[student.status] || STATUS_COLORS.pending;
+          const isAbsent = todayAbsences.includes(student.registration_id);
 
           return (
             <Marker
@@ -175,14 +260,8 @@ export function LiveTripMap({
                 lng: parent.pickup_longitude,
               }}
               icon={{
-                url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-                  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
-                    <circle cx="16" cy="16" r="14" fill="${statusColor}" stroke="white" stroke-width="2"/>
-                    <circle cx="16" cy="12" r="4" fill="white"/>
-                    <path d="M8 26c0-4 4-6 8-6s8 2 8 6" fill="white"/>
-                  </svg>
-                `),
-                scaledSize: new google.maps.Size(32, 32),
+                url: createStudentIcon(statusColor, isAbsent, student.pickup_order),
+                scaledSize: new google.maps.Size(36, 36),
               }}
               onClick={() => {
                 if (isDriver && onStudentClick) {
@@ -193,10 +272,18 @@ export function LiveTripMap({
             >
               {activeMarker === student.id && (
                 <InfoWindow onCloseClick={() => setActiveMarker(null)}>
-                  <div className="p-2">
-                    <h3 className="font-bold text-sm">{student.registrations.student_name}</h3>
-                    <p className="text-xs text-gray-600">{parent.parent_name}</p>
-                    <p className="text-xs text-gray-500">{parent.father_phone}</p>
+                  <div style={{ padding: '4px' }}>
+                    <h3 style={{ fontWeight: 'bold', margin: 0, fontSize: '13px' }}>
+                      {student.registrations.student_name}
+                      {isAbsent && <span style={{ color: '#dc2626', marginRight: '4px' }}> (غائب)</span>}
+                    </h3>
+                    <p style={{ margin: 0, color: '#666', fontSize: '11px' }}>{parent.parent_name}</p>
+                    <p style={{ margin: 0, color: '#888', fontSize: '11px' }}>{parent.father_phone}</p>
+                    {student.pickup_order && (
+                      <p style={{ margin: '2px 0 0', color: '#3b82f6', fontSize: '11px', fontWeight: 'bold' }}>
+                        ترتيب الاستلام: {student.pickup_order}
+                      </p>
+                    )}
                   </div>
                 </InfoWindow>
               )}
@@ -224,6 +311,10 @@ export function LiveTripMap({
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: STATUS_COLORS.dropped_off }} />
             <span>تم التوصيل</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-destructive" />
+            <span>غائب</span>
           </div>
         </div>
       </div>
