@@ -14,16 +14,19 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Bus, LogOut, User, CreditCard, MapPin, School, Phone, Bell, CheckCircle, Clock, AlertCircle, Navigation, MessageCircle, Lock } from "lucide-react";
+import { Bus, LogOut, User, CreditCard, MapPin, School, Phone, Bell, CheckCircle, Clock, AlertCircle, Navigation, MessageCircle, Lock, CalendarOff, Wallet } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { ParentLiveTracking } from "@/components/tracking/ParentLiveTracking";
 import { ParentChat } from "@/components/chat/ParentChat";
 import { SetPasswordDialog } from "@/components/chat/SetPasswordDialog";
+import { AbsenceRegistration } from "@/components/parent/AbsenceRegistration";
+import { useToast } from "@/hooks/use-toast";
 
 export default function ParentDashboard() {
   const { parentAccount, signOut, user } = useParentAuth();
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const { toast } = useToast();
 
   // Check if parent needs to set password (after subscription is verified)
   useEffect(() => {
@@ -216,17 +219,21 @@ export default function ParentDashboard() {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="tracking" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="tracking" className="gap-2">
+          <TabsList className="grid w-full grid-cols-6">
+            <TabsTrigger value="tracking" className="gap-1 text-xs sm:text-sm">
               <Navigation className="h-4 w-4" />
-              التتبع
+              <span className="hidden sm:inline">التتبع</span>
             </TabsTrigger>
-            <TabsTrigger value="children">أبنائي</TabsTrigger>
-            <TabsTrigger value="routes">المسارات</TabsTrigger>
-            <TabsTrigger value="payments">المدفوعات</TabsTrigger>
-            <TabsTrigger value="chat" className="gap-2">
+            <TabsTrigger value="children" className="text-xs sm:text-sm">أبنائي</TabsTrigger>
+            <TabsTrigger value="routes" className="text-xs sm:text-sm">المسارات</TabsTrigger>
+            <TabsTrigger value="payments" className="text-xs sm:text-sm">المدفوعات</TabsTrigger>
+            <TabsTrigger value="absences" className="gap-1 text-xs sm:text-sm">
+              <CalendarOff className="h-4 w-4" />
+              <span className="hidden sm:inline">الغياب</span>
+            </TabsTrigger>
+            <TabsTrigger value="chat" className="gap-1 text-xs sm:text-sm">
               <MessageCircle className="h-4 w-4" />
-              الدعم
+              <span className="hidden sm:inline">الدعم</span>
             </TabsTrigger>
           </TabsList>
 
@@ -361,6 +368,7 @@ export default function ParentDashboard() {
                           <TableHead className="text-right">تاريخ الاستحقاق</TableHead>
                           <TableHead className="text-right">تاريخ الدفع</TableHead>
                           <TableHead className="text-right">الحالة</TableHead>
+                          <TableHead className="text-right">دفع</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -380,10 +388,28 @@ export default function ParentDashboard() {
                               }
                             </TableCell>
                             <TableCell>
-                              <div className="flex items-center gap-1">
+                              <div className="flex items-center gap-2">
                                 {paymentStatusLabels[payment.status]?.icon}
                                 <span>{paymentStatusLabels[payment.status]?.label || payment.status}</span>
                               </div>
+                            </TableCell>
+                            <TableCell>
+                              {payment.status !== "paid" && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="gap-1"
+                                  onClick={() => {
+                                    toast({
+                                      title: "الدفع الإلكتروني",
+                                      description: "سيتم تفعيل الدفع الإلكتروني قريباً",
+                                    });
+                                  }}
+                                >
+                                  <Wallet className="h-3 w-3" />
+                                  ادفع الآن
+                                </Button>
+                              )}
                             </TableCell>
                           </TableRow>
                         ))}
@@ -393,6 +419,11 @@ export default function ParentDashboard() {
                 </Card>
               );
             })}
+          </TabsContent>
+
+          {/* Absences Tab */}
+          <TabsContent value="absences">
+            <AbsenceRegistration />
           </TabsContent>
 
           {/* Chat Tab */}
