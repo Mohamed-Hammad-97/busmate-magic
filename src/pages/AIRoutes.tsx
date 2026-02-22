@@ -313,17 +313,24 @@ const AIRoutes: React.FC = () => {
         />
 
         {/* Configuration */}
-        <Card>
-          <CardHeader>
-            <CardTitle>{isRtl ? 'إعدادات الخط' : 'Route Configuration'}</CardTitle>
-            <CardDescription>{isRtl ? 'اختر المدرسة والتفضيلات لإنشاء اقتراحات الخطوط' : 'Select school and preferences to generate route suggestions'}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-6">
-              <div className="space-y-2">
-                <Label>{isRtl ? 'المدينة *' : 'City *'}</Label>
+        <div className="relative group">
+          <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-r from-primary/30 via-accent/20 to-primary/30 opacity-60 group-hover:opacity-100 transition-opacity duration-500 blur-[1px]" />
+          <div className="relative rounded-2xl border border-border/50 bg-card p-6 space-y-5">
+            <div>
+              <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                <div className="p-2 rounded-xl bg-primary/10">
+                  <Sparkles className="h-5 w-5 text-primary" />
+                </div>
+                {isRtl ? 'إعدادات الخط' : 'Route Configuration'}
+              </h2>
+              <p className="text-sm text-muted-foreground mt-1">{isRtl ? 'اختر المدرسة والتفضيلات لإنشاء اقتراحات الخطوط' : 'Select school and preferences to generate route suggestions'}</p>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{isRtl ? 'المدينة *' : 'City *'}</Label>
                 <Select value={selectedRouteCity} onValueChange={(v) => { setSelectedRouteCity(v); setSelectedSchool(''); }}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-11 rounded-xl bg-background border-border/50 focus:border-primary/50">
                     <SelectValue placeholder={isRtl ? 'اختر المدينة' : 'Select city'} />
                   </SelectTrigger>
                   <SelectContent className="bg-background border border-border z-50">
@@ -334,10 +341,10 @@ const AIRoutes: React.FC = () => {
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label>{isRtl ? 'المدرسة *' : 'School *'}</Label>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{isRtl ? 'المدرسة *' : 'School *'}</Label>
                 <Select value={selectedSchool} onValueChange={setSelectedSchool} disabled={!selectedRouteCity}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-11 rounded-xl bg-background border-border/50 focus:border-primary/50">
                     <SelectValue placeholder={isRtl ? 'اختر المدرسة' : 'Select school'} />
                   </SelectTrigger>
                   <SelectContent className="bg-background border border-border z-50">
@@ -350,10 +357,10 @@ const AIRoutes: React.FC = () => {
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label>{isRtl ? 'نوع السيارة *' : 'Car Type *'}</Label>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{isRtl ? 'نوع السيارة *' : 'Car Type *'}</Label>
                 <Select value={selectedCarType} onValueChange={setSelectedCarType}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-11 rounded-xl bg-background border-border/50 focus:border-primary/50">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-background border border-border z-50">
@@ -364,21 +371,22 @@ const AIRoutes: React.FC = () => {
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label>{isRtl ? 'أقصى عدد مقاعد' : 'Max Seats per Route'}</Label>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{isRtl ? 'أقصى عدد مقاعد' : 'Max Seats per Route'}</Label>
                 <Input
                   type="number"
                   value={maxSeats}
                   onChange={(e) => setMaxSeats(e.target.value)}
                   min="4"
                   max="50"
+                  className="h-11 rounded-xl bg-background border-border/50 focus:border-primary/50"
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label>{isRtl ? 'اتجاه الخط' : 'Route Direction'}</Label>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{isRtl ? 'اتجاه الخط' : 'Route Direction'}</Label>
                 <Select value={routeDirection} onValueChange={(v) => setRouteDirection(v as any)}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-11 rounded-xl bg-background border-border/50 focus:border-primary/50">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-background border border-border z-50">
@@ -399,7 +407,7 @@ const AIRoutes: React.FC = () => {
               </div>
 
               <div className="flex items-end">
-                <Button onClick={handleSuggest} disabled={suggestMutation.isPending} className="w-full">
+                <Button onClick={handleSuggest} disabled={suggestMutation.isPending} className="w-full h-11 rounded-xl font-semibold shadow-md hover:shadow-lg transition-all">
                   {suggestMutation.isPending ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -414,8 +422,8 @@ const AIRoutes: React.FC = () => {
                 </Button>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Search Area Map */}
         {selectedSchool && (
