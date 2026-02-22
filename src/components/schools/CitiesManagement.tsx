@@ -99,8 +99,8 @@ const CitiesManagement: React.FC = () => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <Edit2 className="h-4 w-4 mr-2" />
+        <Button variant="secondary" size="sm" className="gap-2 bg-white/15 hover:bg-white/25 text-primary-foreground border-0 backdrop-blur-sm">
+          <Edit2 className="h-4 w-4" />
           Manage Cities
         </Button>
       </DialogTrigger>

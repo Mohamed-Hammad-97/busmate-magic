@@ -38,7 +38,7 @@ export const ShareButton: React.FC<ShareButtonProps> = ({ url, title = '', text 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="gap-2">
+        <Button variant="secondary" size="sm" className="gap-2 bg-white/15 hover:bg-white/25 text-primary-foreground border-0 backdrop-blur-sm">
           <Share2 className="h-4 w-4" />
           {t('common.shareVia')}
         </Button>
