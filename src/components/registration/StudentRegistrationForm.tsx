@@ -95,27 +95,35 @@ const StudentRegistrationForm: React.FC = () => {
 
   const submitMutation = useMutation({
     mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke('public-register', {
-        body: {
-          student_name: formData.student_name,
-          parent_name: formData.parent_name,
-          national_id: formData.national_id,
-          father_phone: formData.father_phone,
-          mother_phone: formData.mother_phone || undefined,
-          emergency_phone: formData.emergency_phone,
-          city: formData.city,
-          job: formData.job || undefined,
-          pickup_latitude: formData.pickup_latitude,
-          pickup_longitude: formData.pickup_longitude,
-          school_id: formData.school_id,
-          grade: formData.grade,
-          car_type: formData.car_type,
-          education_department: formData.education_department,
-        },
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/public-register`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            student_name: formData.student_name,
+            parent_name: formData.parent_name,
+            national_id: formData.national_id,
+            father_phone: formData.father_phone,
+            mother_phone: formData.mother_phone || undefined,
+            emergency_phone: formData.emergency_phone,
+            city: formData.city,
+            job: formData.job || undefined,
+            pickup_latitude: formData.pickup_latitude,
+            pickup_longitude: formData.pickup_longitude,
+            school_id: formData.school_id,
+            grade: formData.grade,
+            car_type: formData.car_type,
+            education_department: formData.education_department,
+          }),
+        }
+      );
 
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Registration failed');
+      }
+      return data;
     },
     onSuccess: () => {
       setSubmitted(true);
