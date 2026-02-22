@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { PageHero } from "@/components/layout/PageHero";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -120,10 +121,18 @@ export default function Dashboard() {
   const visibleCards = statCards.filter((card) => card.show);
 
   return (
-    <DashboardLayout
-      title={`Welcome, ${employee?.full_name || "User"}`}
-      description="Here's an overview of your transportation system"
-    >
+    <DashboardLayout>
+      <div className="space-y-6">
+        <PageHero
+          icon={TrendingUp}
+          title={`Welcome, ${employee?.full_name || "User"}`}
+          description="Here's an overview of your transportation system"
+          stats={[
+            { icon: Users, value: stats.totalStudents, label: 'Students' },
+            { icon: School, value: stats.totalSchools, label: 'Schools' },
+            { icon: Bus, value: stats.activeRoutes, label: 'Routes' },
+          ]}
+        />
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {visibleCards.map((card) => (
           <Card key={card.title} className="animate-fade-in">
@@ -252,6 +261,7 @@ export default function Dashboard() {
             </div>
           </CardContent>
         </Card>
+      </div>
       </div>
     </DashboardLayout>
   );

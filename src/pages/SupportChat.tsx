@@ -20,6 +20,7 @@ import {
   MessageCircle, Send, Loader2, User, Clock, 
   CheckCircle, Search, ArrowLeft, Phone
 } from "lucide-react";
+import { PageHero } from "@/components/layout/PageHero";
 import { format } from "date-fns";
 import { ar, enUS } from "date-fns/locale";
 
@@ -203,11 +204,12 @@ export default function SupportChat() {
   return (
     <DashboardLayout>
       <div className="h-[calc(100vh-8rem)]">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-2xl font-bold">{t('supportChat.title')}</h1>
-            <p className="text-muted-foreground">{t('supportChat.description')}</p>
-          </div>
+        <div className="mb-4">
+          <PageHero
+            icon={MessageCircle}
+            title={t('supportChat.title')}
+            description={t('supportChat.description')}
+          />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100%-4rem)]">

@@ -19,6 +19,7 @@ import { toast } from 'sonner';
 import type { Tables } from '@/integrations/supabase/types';
 import CustomerDialog from '@/components/customers/CustomerDialog';
 import CustomerDetails from '@/components/customers/CustomerDetails';
+import { PageHero } from '@/components/layout/PageHero';
 
 type ParentAccount = Tables<'parent_accounts'>;
 
@@ -130,24 +131,23 @@ const Customers = () => {
   return (
     <DashboardLayout>
       <div className="space-y-8">
-        {/* Premium Header */}
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 animate-fade-in">
-          <div className="space-y-1">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
-                <Users className="h-6 w-6" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight text-foreground">{t('customers.title')}</h1>
-                <p className="text-sm text-muted-foreground">{t('customers.description')}</p>
-              </div>
-            </div>
-          </div>
-          <Button onClick={handleAddNew} size="sm" className="gap-2 shadow-md hover:shadow-lg transition-all">
-            <Plus className="h-4 w-4" />
-            {t('customers.addCustomer')}
-          </Button>
-        </div>
+        <PageHero
+          icon={Users}
+          title={t('customers.title')}
+          description={t('customers.description')}
+          stats={[
+            { icon: Users, value: totalCustomers, label: t('customers.totalCustomers') },
+            { icon: Building2, value: uniqueCities, label: t('customers.cities') },
+            { icon: Phone, value: totalRegistrations, label: t('customers.totalRegistrations') },
+            { icon: UserCheck, value: withPassword, label: 'Active Accounts' },
+          ]}
+          actions={
+            <Button size="sm" className="gap-2 bg-white/15 hover:bg-white/25 text-primary-foreground border-0 backdrop-blur-sm" onClick={handleAddNew}>
+              <Plus className="h-4 w-4" />
+              {t('customers.addCustomer')}
+            </Button>
+          }
+        />
 
         {/* Premium Stats Grid */}
         <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 animate-fade-in" style={{ animationDelay: '0.1s' }}>
