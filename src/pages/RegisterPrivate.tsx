@@ -341,7 +341,33 @@ Notes: ${formData.notes || 'N/A'}
                 </div>
 
                 <div className="flex justify-end pt-4">
-                  <Button type="button" onClick={() => setStep(2)} size="lg" className="px-8">
+                  <Button type="button" onClick={() => {
+                    if (!formData.full_name.trim()) {
+                      toast({ title: t('register.private.validation.fullName'), variant: 'destructive' });
+                      return;
+                    }
+                    if (!formData.phone.trim()) {
+                      toast({ title: t('register.private.validation.phone'), variant: 'destructive' });
+                      return;
+                    }
+                    if (!formData.email.trim()) {
+                      toast({ title: t('register.private.validation.email'), variant: 'destructive' });
+                      return;
+                    }
+                    if (!formData.city) {
+                      toast({ title: t('register.private.validation.city'), variant: 'destructive' });
+                      return;
+                    }
+                    if (!formData.destination.trim()) {
+                      toast({ title: t('register.private.validation.destination'), variant: 'destructive' });
+                      return;
+                    }
+                    if (!formData.frequency) {
+                      toast({ title: t('register.private.validation.frequency'), variant: 'destructive' });
+                      return;
+                    }
+                    setStep(2);
+                  }} size="lg" className="px-8">
                     {t('register.common.next')}
                   </Button>
                 </div>
