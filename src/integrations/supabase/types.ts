@@ -1238,7 +1238,15 @@ export type Database = {
         Returns: boolean
       }
       is_driver_or_supervisor: { Args: { _user_id: string }; Returns: boolean }
+      is_driver_registration: {
+        Args: { _registration_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_employee: { Args: { _user_id: string }; Returns: boolean }
+      is_parent_route: {
+        Args: { _route_id: string; _user_id: string }
+        Returns: boolean
+      }
       log_sensitive_data_access: {
         Args: { p_record_id: string; p_table_name: string }
         Returns: undefined
