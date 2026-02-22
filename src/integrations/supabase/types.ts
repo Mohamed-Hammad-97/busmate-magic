@@ -970,6 +970,48 @@ export type Database = {
         }
         Relationships: []
       }
+      student_absences: {
+        Row: {
+          absence_date: string
+          created_at: string
+          id: string
+          parent_id: string
+          reason: string | null
+          registration_id: string
+        }
+        Insert: {
+          absence_date: string
+          created_at?: string
+          id?: string
+          parent_id: string
+          reason?: string | null
+          registration_id: string
+        }
+        Update: {
+          absence_date?: string
+          created_at?: string
+          id?: string
+          parent_id?: string
+          reason?: string | null
+          registration_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_absences_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "parent_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_absences_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscriptions: {
         Row: {
           created_at: string
