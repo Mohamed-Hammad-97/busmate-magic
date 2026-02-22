@@ -9,6 +9,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ParentAuthProvider } from "@/contexts/ParentAuthContext";
 import { DriverAuthProvider } from "@/contexts/DriverAuthContext";
 import { CityProvider } from "@/contexts/CityContext";
+import { SidebarProvider } from "@/contexts/SidebarContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { ParentProtectedRoute } from "@/components/auth/ParentProtectedRoute";
 import { DriverProtectedRoute } from "@/components/auth/DriverProtectedRoute";
@@ -94,6 +95,7 @@ const App = () => (
           {/* Employee Auth-wrapped routes */}
           <Route path="/*" element={
             <AuthProvider>
+              <SidebarProvider>
               <CityProvider>
               <Routes>
                 <Route path="/auth" element={<Auth />} />
@@ -114,6 +116,7 @@ const App = () => (
                 <Route path="*" element={<NotFound />} />
               </Routes>
               </CityProvider>
+              </SidebarProvider>
             </AuthProvider>
           } />
         </Routes>
