@@ -11,10 +11,11 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Bus, LogOut, User, MapPin, Users, Play, Clock,
-  CheckCircle, Navigation, Phone, History, Shield, UserCircle,
+  CheckCircle, Navigation, Phone, History, Shield, UserCircle, MessageCircle,
 } from "lucide-react";
 import { GoogleMapsProvider } from "@/components/maps/GoogleMapsProvider";
 import seaterLogo from "@/assets/seater-logo.jpg";
+import { DriverChatSection } from "@/components/chat/DriverChatSection";
 
 export default function DriverDashboard() {
   const { driverAccount, isDriver, isSupervisor, signOut } = useDriverAuth();
@@ -197,9 +198,13 @@ export default function DriverDashboard() {
               <Bus className="h-4 w-4" />
               المسارات
             </TabsTrigger>
+            <TabsTrigger value="chat" className="flex-1 gap-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
+              <MessageCircle className="h-4 w-4" />
+              المحادثات
+            </TabsTrigger>
             <TabsTrigger value="history" className="flex-1 gap-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
               <History className="h-4 w-4" />
-              سجل الرحلات
+              السجل
             </TabsTrigger>
           </TabsList>
 
@@ -318,6 +323,10 @@ export default function DriverDashboard() {
                 })}
               </div>
             )}
+          </TabsContent>
+
+          <TabsContent value="chat" className="mt-4">
+            <DriverChatSection />
           </TabsContent>
 
           <TabsContent value="history" className="mt-4">
