@@ -36,7 +36,18 @@ import {
   FileText,
   Hash,
   Car,
-  Building
+  Building,
+  Globe,
+  Sparkles,
+  LayoutDashboard,
+  Palette,
+  Link2,
+  Share2,
+  Search,
+  Type,
+  Megaphone,
+  ImageIcon,
+  ExternalLink,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -279,68 +290,117 @@ const HomepageAdmin = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "new":
-        return <Badge variant="default" className="bg-blue-500"><Clock className="h-3 w-3 mr-1" />New</Badge>;
+        return <Badge className="bg-blue-500/10 text-blue-600 border-blue-200 dark:border-blue-800"><Clock className="h-3 w-3 mr-1" />New</Badge>;
       case "in_progress":
-        return <Badge variant="secondary"><Eye className="h-3 w-3 mr-1" />In Progress</Badge>;
+        return <Badge className="bg-amber-500/10 text-amber-600 border-amber-200 dark:border-amber-800"><Eye className="h-3 w-3 mr-1" />In Progress</Badge>;
       case "resolved":
-        return <Badge variant="default" className="bg-green-500"><CheckCircle className="h-3 w-3 mr-1" />Resolved</Badge>;
+        return <Badge className="bg-green-500/10 text-green-600 border-green-200 dark:border-green-800"><CheckCircle className="h-3 w-3 mr-1" />Resolved</Badge>;
       case "closed":
-        return <Badge variant="outline"><XCircle className="h-3 w-3 mr-1" />Closed</Badge>;
+        return <Badge variant="outline" className="text-muted-foreground"><XCircle className="h-3 w-3 mr-1" />Closed</Badge>;
       default:
         return <Badge>{status}</Badge>;
     }
   };
 
+  const newSubmissions = submissions?.filter(s => s.status === "new").length || 0;
+  const activePartners = partners?.filter(p => p.is_active).length || 0;
+  const activeGallery = gallery?.filter(g => g.is_active).length || 0;
+
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Homepage Management</h1>
-            <p className="text-muted-foreground">Manage your landing page content</p>
+      <div className="space-y-8">
+        {/* Premium Header */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary via-primary/90 to-primary/70 p-8 text-primary-foreground">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/3 blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/3 blur-2xl" />
+          <div className="relative z-10 flex items-start justify-between">
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center">
+                  <LayoutDashboard className="h-6 w-6" />
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold tracking-tight">Homepage CMS</h1>
+                  <p className="text-primary-foreground/70">Manage your landing page content & settings</p>
+                </div>
+              </div>
+            </div>
+            <Button 
+              variant="secondary" 
+              className="gap-2 bg-white/15 hover:bg-white/25 text-primary-foreground border-0 backdrop-blur-sm shadow-lg"
+              onClick={() => window.open(window.location.origin, '_blank')}
+            >
+              <ExternalLink className="h-4 w-4" />
+              View Website
+            </Button>
           </div>
-          <Button 
-            variant="outline" 
-            className="gap-2"
-            onClick={() => window.open(window.location.origin, '_blank')}
-          >
-            <Eye className="h-4 w-4" />
-            View Website
-          </Button>
+
+          {/* Stat pills */}
+          <div className="relative z-10 flex flex-wrap gap-3 mt-6">
+            <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 text-sm">
+              <Users className="h-4 w-4" />
+              <span className="font-semibold">{activePartners}</span>
+              <span className="text-primary-foreground/70">Partners</span>
+            </div>
+            <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 text-sm">
+              <ImageIcon className="h-4 w-4" />
+              <span className="font-semibold">{activeGallery}</span>
+              <span className="text-primary-foreground/70">Gallery</span>
+            </div>
+            <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 text-sm">
+              <MessageSquare className="h-4 w-4" />
+              <span className="font-semibold">{newSubmissions}</span>
+              <span className="text-primary-foreground/70">New Messages</span>
+            </div>
+          </div>
         </div>
 
-        <Tabs defaultValue="settings">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="settings" className="gap-2">
+        {/* Tabs */}
+        <Tabs defaultValue="settings" className="space-y-6">
+          <TabsList className="bg-muted/50 p-1.5 rounded-xl h-auto flex-wrap">
+            <TabsTrigger value="settings" className="gap-2 rounded-lg px-4 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
               <Settings className="h-4 w-4" />
               Settings
             </TabsTrigger>
-            <TabsTrigger value="partners" className="gap-2">
+            <TabsTrigger value="partners" className="gap-2 rounded-lg px-4 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
               <Users className="h-4 w-4" />
               Partners
+              {activePartners > 0 && <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">{activePartners}</Badge>}
             </TabsTrigger>
-            <TabsTrigger value="gallery" className="gap-2">
+            <TabsTrigger value="gallery" className="gap-2 rounded-lg px-4 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
               <Image className="h-4 w-4" />
               Gallery
+              {activeGallery > 0 && <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">{activeGallery}</Badge>}
             </TabsTrigger>
-            <TabsTrigger value="submissions" className="gap-2">
+            <TabsTrigger value="submissions" className="gap-2 rounded-lg px-4 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
               <MessageSquare className="h-4 w-4" />
               Submissions
+              {newSubmissions > 0 && <Badge className="ml-1 h-5 px-1.5 text-[10px] bg-destructive text-destructive-foreground">{newSubmissions}</Badge>}
             </TabsTrigger>
           </TabsList>
 
           {/* Settings Tab */}
           <TabsContent value="settings" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Hero Section</CardTitle>
+            {/* Hero Section Card */}
+            <Card className="border-0 shadow-lg overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent border-b">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <Sparkles className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">Hero Section</CardTitle>
+                    <p className="text-sm text-muted-foreground">Main banner content visitors see first</p>
+                  </div>
+                </div>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 pt-6">
                 <div className="space-y-2">
                   <Label>Hero Title</Label>
                   <Input
                     value={settingsForm.hero_title || ""}
                     onChange={(e) => setSettingsForm({ ...settingsForm, hero_title: e.target.value })}
+                    className="h-11"
                   />
                 </div>
                 <div className="space-y-2">
@@ -352,21 +412,21 @@ const HomepageAdmin = () => {
                 </div>
                 <div className="grid md:grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label>Stats - Users</Label>
+                    <Label className="flex items-center gap-1.5"><CheckCircle className="h-3.5 w-3.5 text-primary" />Stats - Users</Label>
                     <Input
                       value={settingsForm.stats_users || ""}
                       onChange={(e) => setSettingsForm({ ...settingsForm, stats_users: e.target.value })}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Stats - Schools</Label>
+                    <Label className="flex items-center gap-1.5"><Building className="h-3.5 w-3.5 text-primary" />Stats - Schools</Label>
                     <Input
                       value={settingsForm.stats_schools || ""}
                       onChange={(e) => setSettingsForm({ ...settingsForm, stats_schools: e.target.value })}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Stats - Cities</Label>
+                    <Label className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-primary" />Stats - Cities</Label>
                     <Input
                       value={settingsForm.stats_cities || ""}
                       onChange={(e) => setSettingsForm({ ...settingsForm, stats_cities: e.target.value })}
@@ -376,11 +436,20 @@ const HomepageAdmin = () => {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>About Section</CardTitle>
+            {/* About Section Card */}
+            <Card className="border-0 shadow-lg overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-blue-500/5 to-transparent border-b">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                    <Type className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">About Section</CardTitle>
+                    <p className="text-sm text-muted-foreground">Tell your story in both languages</p>
+                  </div>
+                </div>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 pt-6">
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>About Title (English)</Label>
@@ -420,7 +489,7 @@ const HomepageAdmin = () => {
                 <div className="space-y-2">
                   <Label>About Section Image</Label>
                   <p className="text-sm text-muted-foreground">Leave empty to use the second gallery image as fallback</p>
-                <ImageUploadInput
+                  <ImageUploadInput
                     value={settingsForm.about_image || ""}
                     onChange={(url) => setSettingsForm({ ...settingsForm, about_image: url })}
                   />
@@ -428,18 +497,29 @@ const HomepageAdmin = () => {
               </CardContent>
             </Card>
 
-            {/* Services Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Services Settings</CardTitle>
+            {/* Services Section Card */}
+            <Card className="border-0 shadow-lg overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-green-500/5 to-transparent border-b">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-green-500/10 flex items-center justify-center">
+                    <Megaphone className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">Services Settings</CardTitle>
+                    <p className="text-sm text-muted-foreground">Configure each service card on the homepage</p>
+                  </div>
+                </div>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <p className="text-sm text-muted-foreground">Configure each service card on the homepage. Enable a service to make it clickable with a "Get Started" button.</p>
-                
+              <CardContent className="space-y-6 pt-6">
                 {/* Student Service */}
-                <div className="border rounded-lg p-4 space-y-4">
+                <div className="rounded-xl border-2 border-dashed border-primary/20 p-5 space-y-4 bg-primary/[0.02]">
                   <div className="flex items-center justify-between">
-                    <h4 className="font-semibold">Student Transportation</h4>
+                    <div className="flex items-center gap-2">
+                      <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <Car className="h-4 w-4 text-primary" />
+                      </div>
+                      <h4 className="font-semibold">Student Transportation</h4>
+                    </div>
                     <div className="flex items-center gap-2">
                       <Label htmlFor="student-enabled" className="text-sm">Enabled</Label>
                       <Switch
@@ -452,73 +532,48 @@ const HomepageAdmin = () => {
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Custom Name (English)</Label>
-                      <Input
-                        placeholder="School Bus"
-                        value={settingsForm.service_student_name_en || ""}
-                        onChange={(e) => setSettingsForm({ ...settingsForm, service_student_name_en: e.target.value })}
-                      />
+                      <Input placeholder="School Bus" value={settingsForm.service_student_name_en || ""} onChange={(e) => setSettingsForm({ ...settingsForm, service_student_name_en: e.target.value })} />
                     </div>
                     <div className="space-y-2">
                       <Label>Custom Name (Arabic)</Label>
-                      <Input
-                        dir="rtl"
-                        placeholder="باص مدرسي"
-                        value={settingsForm.service_student_name_ar || ""}
-                        onChange={(e) => setSettingsForm({ ...settingsForm, service_student_name_ar: e.target.value })}
-                      />
+                      <Input dir="rtl" placeholder="باص مدرسي" value={settingsForm.service_student_name_ar || ""} onChange={(e) => setSettingsForm({ ...settingsForm, service_student_name_ar: e.target.value })} />
                     </div>
                   </div>
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Short Description (English) - shown on card</Label>
-                      <Input
-                        placeholder="Safe and reliable school transportation"
-                        value={settingsForm.service_student_short_en || ""}
-                        onChange={(e) => setSettingsForm({ ...settingsForm, service_student_short_en: e.target.value })}
-                      />
+                      <Label>Short Description (English)</Label>
+                      <Input placeholder="Safe and reliable school transportation" value={settingsForm.service_student_short_en || ""} onChange={(e) => setSettingsForm({ ...settingsForm, service_student_short_en: e.target.value })} />
                     </div>
                     <div className="space-y-2">
-                      <Label>Short Description (Arabic) - shown on card</Label>
-                      <Input
-                        dir="rtl"
-                        placeholder="نقل مدرسي آمن وموثوق"
-                        value={settingsForm.service_student_short_ar || ""}
-                        onChange={(e) => setSettingsForm({ ...settingsForm, service_student_short_ar: e.target.value })}
-                      />
+                      <Label>Short Description (Arabic)</Label>
+                      <Input dir="rtl" placeholder="نقل مدرسي آمن وموثوق" value={settingsForm.service_student_short_ar || ""} onChange={(e) => setSettingsForm({ ...settingsForm, service_student_short_ar: e.target.value })} />
                     </div>
                   </div>
                   <div className="space-y-2">
                     <Label>Service Image</Label>
-                    <ImageUploadInput
-                      value={settingsForm.service_student_image || ""}
-                      onChange={(url) => setSettingsForm({ ...settingsForm, service_student_image: url })}
-                    />
+                    <ImageUploadInput value={settingsForm.service_student_image || ""} onChange={(url) => setSettingsForm({ ...settingsForm, service_student_image: url })} />
                   </div>
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Full Description (English) - shown on details page</Label>
-                      <Textarea
-                        rows={2}
-                        value={settingsForm.service_student_description_en || ""}
-                        onChange={(e) => setSettingsForm({ ...settingsForm, service_student_description_en: e.target.value })}
-                      />
+                      <Label>Full Description (English)</Label>
+                      <Textarea rows={2} value={settingsForm.service_student_description_en || ""} onChange={(e) => setSettingsForm({ ...settingsForm, service_student_description_en: e.target.value })} />
                     </div>
                     <div className="space-y-2">
-                      <Label>Full Description (Arabic) - shown on details page</Label>
-                      <Textarea
-                        rows={2}
-                        dir="rtl"
-                        value={settingsForm.service_student_description_ar || ""}
-                        onChange={(e) => setSettingsForm({ ...settingsForm, service_student_description_ar: e.target.value })}
-                      />
+                      <Label>Full Description (Arabic)</Label>
+                      <Textarea rows={2} dir="rtl" value={settingsForm.service_student_description_ar || ""} onChange={(e) => setSettingsForm({ ...settingsForm, service_student_description_ar: e.target.value })} />
                     </div>
                   </div>
                 </div>
 
                 {/* Corporate Service */}
-                <div className="border rounded-lg p-4 space-y-4">
+                <div className="rounded-xl border-2 border-dashed border-blue-400/20 p-5 space-y-4 bg-blue-500/[0.02]">
                   <div className="flex items-center justify-between">
-                    <h4 className="font-semibold">Corporate Transportation</h4>
+                    <div className="flex items-center gap-2">
+                      <div className="h-8 w-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                        <Building className="h-4 w-4 text-blue-600" />
+                      </div>
+                      <h4 className="font-semibold">Corporate Transportation</h4>
+                    </div>
                     <div className="flex items-center gap-2">
                       <Label htmlFor="corporate-enabled" className="text-sm">Enabled</Label>
                       <Switch
@@ -531,73 +586,48 @@ const HomepageAdmin = () => {
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Custom Name (English)</Label>
-                      <Input
-                        placeholder="Corporate Booking"
-                        value={settingsForm.service_corporate_name_en || ""}
-                        onChange={(e) => setSettingsForm({ ...settingsForm, service_corporate_name_en: e.target.value })}
-                      />
+                      <Input placeholder="Corporate Booking" value={settingsForm.service_corporate_name_en || ""} onChange={(e) => setSettingsForm({ ...settingsForm, service_corporate_name_en: e.target.value })} />
                     </div>
                     <div className="space-y-2">
                       <Label>Custom Name (Arabic)</Label>
-                      <Input
-                        dir="rtl"
-                        placeholder="حجز للشركات"
-                        value={settingsForm.service_corporate_name_ar || ""}
-                        onChange={(e) => setSettingsForm({ ...settingsForm, service_corporate_name_ar: e.target.value })}
-                      />
+                      <Input dir="rtl" placeholder="حجز للشركات" value={settingsForm.service_corporate_name_ar || ""} onChange={(e) => setSettingsForm({ ...settingsForm, service_corporate_name_ar: e.target.value })} />
                     </div>
                   </div>
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Short Description (English) - shown on card</Label>
-                      <Input
-                        placeholder="Professional fleet for businesses"
-                        value={settingsForm.service_corporate_short_en || ""}
-                        onChange={(e) => setSettingsForm({ ...settingsForm, service_corporate_short_en: e.target.value })}
-                      />
+                      <Label>Short Description (English)</Label>
+                      <Input placeholder="Professional fleet for businesses" value={settingsForm.service_corporate_short_en || ""} onChange={(e) => setSettingsForm({ ...settingsForm, service_corporate_short_en: e.target.value })} />
                     </div>
                     <div className="space-y-2">
-                      <Label>Short Description (Arabic) - shown on card</Label>
-                      <Input
-                        dir="rtl"
-                        placeholder="أسطول احترافي للشركات"
-                        value={settingsForm.service_corporate_short_ar || ""}
-                        onChange={(e) => setSettingsForm({ ...settingsForm, service_corporate_short_ar: e.target.value })}
-                      />
+                      <Label>Short Description (Arabic)</Label>
+                      <Input dir="rtl" placeholder="أسطول احترافي للشركات" value={settingsForm.service_corporate_short_ar || ""} onChange={(e) => setSettingsForm({ ...settingsForm, service_corporate_short_ar: e.target.value })} />
                     </div>
                   </div>
                   <div className="space-y-2">
                     <Label>Service Image</Label>
-                    <ImageUploadInput
-                      value={settingsForm.service_corporate_image || ""}
-                      onChange={(url) => setSettingsForm({ ...settingsForm, service_corporate_image: url })}
-                    />
+                    <ImageUploadInput value={settingsForm.service_corporate_image || ""} onChange={(url) => setSettingsForm({ ...settingsForm, service_corporate_image: url })} />
                   </div>
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Full Description (English) - shown on details page</Label>
-                      <Textarea
-                        rows={2}
-                        value={settingsForm.service_corporate_description_en || ""}
-                        onChange={(e) => setSettingsForm({ ...settingsForm, service_corporate_description_en: e.target.value })}
-                      />
+                      <Label>Full Description (English)</Label>
+                      <Textarea rows={2} value={settingsForm.service_corporate_description_en || ""} onChange={(e) => setSettingsForm({ ...settingsForm, service_corporate_description_en: e.target.value })} />
                     </div>
                     <div className="space-y-2">
-                      <Label>Full Description (Arabic) - shown on details page</Label>
-                      <Textarea
-                        rows={2}
-                        dir="rtl"
-                        value={settingsForm.service_corporate_description_ar || ""}
-                        onChange={(e) => setSettingsForm({ ...settingsForm, service_corporate_description_ar: e.target.value })}
-                      />
+                      <Label>Full Description (Arabic)</Label>
+                      <Textarea rows={2} dir="rtl" value={settingsForm.service_corporate_description_ar || ""} onChange={(e) => setSettingsForm({ ...settingsForm, service_corporate_description_ar: e.target.value })} />
                     </div>
                   </div>
                 </div>
 
                 {/* Private Service */}
-                <div className="border rounded-lg p-4 space-y-4">
+                <div className="rounded-xl border-2 border-dashed border-amber-400/20 p-5 space-y-4 bg-amber-500/[0.02]">
                   <div className="flex items-center justify-between">
-                    <h4 className="font-semibold">Private Transportation</h4>
+                    <div className="flex items-center gap-2">
+                      <div className="h-8 w-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                        <Car className="h-4 w-4 text-amber-600" />
+                      </div>
+                      <h4 className="font-semibold">Private Transportation</h4>
+                    </div>
                     <div className="flex items-center gap-2">
                       <Label htmlFor="private-enabled" className="text-sm">Enabled</Label>
                       <Switch
@@ -610,267 +640,212 @@ const HomepageAdmin = () => {
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Custom Name (English)</Label>
-                      <Input
-                        placeholder="Private Request"
-                        value={settingsForm.service_private_name_en || ""}
-                        onChange={(e) => setSettingsForm({ ...settingsForm, service_private_name_en: e.target.value })}
-                      />
+                      <Input placeholder="Private Request" value={settingsForm.service_private_name_en || ""} onChange={(e) => setSettingsForm({ ...settingsForm, service_private_name_en: e.target.value })} />
                     </div>
                     <div className="space-y-2">
                       <Label>Custom Name (Arabic)</Label>
-                      <Input
-                        dir="rtl"
-                        placeholder="طلب خاص"
-                        value={settingsForm.service_private_name_ar || ""}
-                        onChange={(e) => setSettingsForm({ ...settingsForm, service_private_name_ar: e.target.value })}
-                      />
+                      <Input dir="rtl" placeholder="طلب خاص" value={settingsForm.service_private_name_ar || ""} onChange={(e) => setSettingsForm({ ...settingsForm, service_private_name_ar: e.target.value })} />
                     </div>
                   </div>
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Short Description (English) - shown on card</Label>
-                      <Input
-                        placeholder="Customized private transportation"
-                        value={settingsForm.service_private_short_en || ""}
-                        onChange={(e) => setSettingsForm({ ...settingsForm, service_private_short_en: e.target.value })}
-                      />
+                      <Label>Short Description (English)</Label>
+                      <Input placeholder="Customized private transportation" value={settingsForm.service_private_short_en || ""} onChange={(e) => setSettingsForm({ ...settingsForm, service_private_short_en: e.target.value })} />
                     </div>
                     <div className="space-y-2">
-                      <Label>Short Description (Arabic) - shown on card</Label>
-                      <Input
-                        dir="rtl"
-                        placeholder="نقل خاص مخصص"
-                        value={settingsForm.service_private_short_ar || ""}
-                        onChange={(e) => setSettingsForm({ ...settingsForm, service_private_short_ar: e.target.value })}
-                      />
+                      <Label>Short Description (Arabic)</Label>
+                      <Input dir="rtl" placeholder="نقل خاص مخصص" value={settingsForm.service_private_short_ar || ""} onChange={(e) => setSettingsForm({ ...settingsForm, service_private_short_ar: e.target.value })} />
                     </div>
                   </div>
                   <div className="space-y-2">
                     <Label>Service Image</Label>
-                    <ImageUploadInput
-                      value={settingsForm.service_private_image || ""}
-                      onChange={(url) => setSettingsForm({ ...settingsForm, service_private_image: url })}
-                    />
+                    <ImageUploadInput value={settingsForm.service_private_image || ""} onChange={(url) => setSettingsForm({ ...settingsForm, service_private_image: url })} />
                   </div>
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Full Description (English) - shown on details page</Label>
-                      <Textarea
-                        rows={2}
-                        value={settingsForm.service_private_description_en || ""}
-                        onChange={(e) => setSettingsForm({ ...settingsForm, service_private_description_en: e.target.value })}
-                      />
+                      <Label>Full Description (English)</Label>
+                      <Textarea rows={2} value={settingsForm.service_private_description_en || ""} onChange={(e) => setSettingsForm({ ...settingsForm, service_private_description_en: e.target.value })} />
                     </div>
                     <div className="space-y-2">
-                      <Label>Full Description (Arabic) - shown on details page</Label>
-                      <Textarea
-                        rows={2}
-                        dir="rtl"
-                        value={settingsForm.service_private_description_ar || ""}
-                        onChange={(e) => setSettingsForm({ ...settingsForm, service_private_description_ar: e.target.value })}
-                      />
+                      <Label>Full Description (Arabic)</Label>
+                      <Textarea rows={2} dir="rtl" value={settingsForm.service_private_description_ar || ""} onChange={(e) => setSettingsForm({ ...settingsForm, service_private_description_ar: e.target.value })} />
                     </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>SEO Settings</CardTitle>
+            {/* SEO Card */}
+            <Card className="border-0 shadow-lg overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-purple-500/5 to-transparent border-b">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
+                    <Search className="h-5 w-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">SEO Settings</CardTitle>
+                    <p className="text-sm text-muted-foreground">Control how your website appears in search engines</p>
+                  </div>
+                </div>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-muted-foreground">These settings control how your website appears in search engines and when shared on social media.</p>
+              <CardContent className="space-y-4 pt-6">
                 <div className="space-y-2">
                   <Label>Page Title</Label>
-                  <Input
-                    placeholder="Seater - Smart School & Corporate Transportation"
-                    value={settingsForm.seo_title || ""}
-                    onChange={(e) => setSettingsForm({ ...settingsForm, seo_title: e.target.value })}
-                  />
+                  <Input placeholder="Seater - Smart School & Corporate Transportation" value={settingsForm.seo_title || ""} onChange={(e) => setSettingsForm({ ...settingsForm, seo_title: e.target.value })} />
                 </div>
                 <div className="space-y-2">
                   <Label>Meta Description</Label>
-                  <Textarea
-                    rows={3}
-                    placeholder="A brief description of your website for search engines..."
-                    value={settingsForm.seo_description || ""}
-                    onChange={(e) => setSettingsForm({ ...settingsForm, seo_description: e.target.value })}
-                  />
+                  <Textarea rows={3} placeholder="A brief description of your website for search engines..." value={settingsForm.seo_description || ""} onChange={(e) => setSettingsForm({ ...settingsForm, seo_description: e.target.value })} />
                 </div>
                 <div className="space-y-2">
                   <Label>Keywords</Label>
-                  <Input
-                    placeholder="school bus, transportation, fleet management, GPS tracking"
-                    value={settingsForm.seo_keywords || ""}
-                    onChange={(e) => setSettingsForm({ ...settingsForm, seo_keywords: e.target.value })}
-                  />
+                  <Input placeholder="school bus, transportation, fleet management, GPS tracking" value={settingsForm.seo_keywords || ""} onChange={(e) => setSettingsForm({ ...settingsForm, seo_keywords: e.target.value })} />
                   <p className="text-xs text-muted-foreground">Separate keywords with commas</p>
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>App Links</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-muted-foreground">Leave empty to hide the button</p>
-                <div className="grid md:grid-cols-2 gap-4">
+            {/* App Links & Social Media - Side by side */}
+            <div className="grid lg:grid-cols-2 gap-6">
+              <Card className="border-0 shadow-lg overflow-hidden">
+                <CardHeader className="bg-gradient-to-r from-rose-500/5 to-transparent border-b">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-rose-500/10 flex items-center justify-center">
+                      <Link2 className="h-5 w-5 text-rose-600" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg">App Links</CardTitle>
+                      <p className="text-sm text-muted-foreground">Leave empty to hide</p>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4 pt-6">
                   <div className="space-y-2">
                     <Label>App Store URL</Label>
-                    <Input
-                      placeholder="https://apps.apple.com/..."
-                      value={settingsForm.app_store_url || ""}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, app_store_url: e.target.value })}
-                    />
+                    <Input placeholder="https://apps.apple.com/..." value={settingsForm.app_store_url || ""} onChange={(e) => setSettingsForm({ ...settingsForm, app_store_url: e.target.value })} />
                   </div>
                   <div className="space-y-2">
                     <Label>Google Play URL</Label>
-                    <Input
-                      placeholder="https://play.google.com/..."
-                      value={settingsForm.google_play_url || ""}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, google_play_url: e.target.value })}
-                    />
+                    <Input placeholder="https://play.google.com/..." value={settingsForm.google_play_url || ""} onChange={(e) => setSettingsForm({ ...settingsForm, google_play_url: e.target.value })} />
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Social Media Links</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-muted-foreground">Leave empty to hide the icon. Icons will only appear in the footer when at least one link is provided.</p>
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label>Facebook</Label>
-                    <Input
-                      placeholder="https://facebook.com/..."
-                      value={settingsForm.social_facebook || ""}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, social_facebook: e.target.value })}
-                    />
+              <Card className="border-0 shadow-lg overflow-hidden">
+                <CardHeader className="bg-gradient-to-r from-cyan-500/5 to-transparent border-b">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-cyan-500/10 flex items-center justify-center">
+                      <Share2 className="h-5 w-5 text-cyan-600" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg">Social Media</CardTitle>
+                      <p className="text-sm text-muted-foreground">Leave empty to hide icon</p>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Twitter / X</Label>
-                    <Input
-                      placeholder="https://twitter.com/..."
-                      value={settingsForm.social_twitter || ""}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, social_twitter: e.target.value })}
-                    />
+                </CardHeader>
+                <CardContent className="space-y-4 pt-6">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Facebook</Label>
+                      <Input className="h-9 text-sm" placeholder="https://..." value={settingsForm.social_facebook || ""} onChange={(e) => setSettingsForm({ ...settingsForm, social_facebook: e.target.value })} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Twitter / X</Label>
+                      <Input className="h-9 text-sm" placeholder="https://..." value={settingsForm.social_twitter || ""} onChange={(e) => setSettingsForm({ ...settingsForm, social_twitter: e.target.value })} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Instagram</Label>
+                      <Input className="h-9 text-sm" placeholder="https://..." value={settingsForm.social_instagram || ""} onChange={(e) => setSettingsForm({ ...settingsForm, social_instagram: e.target.value })} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">LinkedIn</Label>
+                      <Input className="h-9 text-sm" placeholder="https://..." value={settingsForm.social_linkedin || ""} onChange={(e) => setSettingsForm({ ...settingsForm, social_linkedin: e.target.value })} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">YouTube</Label>
+                      <Input className="h-9 text-sm" placeholder="https://..." value={settingsForm.social_youtube || ""} onChange={(e) => setSettingsForm({ ...settingsForm, social_youtube: e.target.value })} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">TikTok</Label>
+                      <Input className="h-9 text-sm" placeholder="https://..." value={settingsForm.social_tiktok || ""} onChange={(e) => setSettingsForm({ ...settingsForm, social_tiktok: e.target.value })} />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Instagram</Label>
-                    <Input
-                      placeholder="https://instagram.com/..."
-                      value={settingsForm.social_instagram || ""}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, social_instagram: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>LinkedIn</Label>
-                    <Input
-                      placeholder="https://linkedin.com/company/..."
-                      value={settingsForm.social_linkedin || ""}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, social_linkedin: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>YouTube</Label>
-                    <Input
-                      placeholder="https://youtube.com/..."
-                      value={settingsForm.social_youtube || ""}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, social_youtube: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>TikTok</Label>
-                    <Input
-                      placeholder="https://tiktok.com/@..."
-                      value={settingsForm.social_tiktok || ""}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, social_tiktok: e.target.value })}
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Contact Information - Cairo</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label>Address</Label>
-                    <Input
-                      value={settingsForm.cairo_address || ""}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, cairo_address: e.target.value })}
-                    />
+            {/* Contact Info - Side by side */}
+            <div className="grid lg:grid-cols-2 gap-6">
+              <Card className="border-0 shadow-lg overflow-hidden">
+                <CardHeader className="bg-gradient-to-r from-orange-500/5 to-transparent border-b">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-orange-500/10 flex items-center justify-center">
+                      <MapPin className="h-5 w-5 text-orange-600" />
+                    </div>
+                    <CardTitle className="text-lg">Cairo Office</CardTitle>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Phone</Label>
-                    <Input
-                      value={settingsForm.cairo_phone || ""}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, cairo_phone: e.target.value })}
-                    />
+                </CardHeader>
+                <CardContent className="space-y-3 pt-6">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Address</Label>
+                    <Input value={settingsForm.cairo_address || ""} onChange={(e) => setSettingsForm({ ...settingsForm, cairo_address: e.target.value })} />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Email</Label>
-                    <Input
-                      value={settingsForm.cairo_email || ""}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, cairo_email: e.target.value })}
-                    />
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Phone</Label>
+                    <Input value={settingsForm.cairo_phone || ""} onChange={(e) => setSettingsForm({ ...settingsForm, cairo_phone: e.target.value })} />
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Email</Label>
+                    <Input value={settingsForm.cairo_email || ""} onChange={(e) => setSettingsForm({ ...settingsForm, cairo_email: e.target.value })} />
+                  </div>
+                </CardContent>
+              </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Contact Information - Alexandria</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label>Address</Label>
-                    <Input
-                      value={settingsForm.alex_address || ""}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, alex_address: e.target.value })}
-                    />
+              <Card className="border-0 shadow-lg overflow-hidden">
+                <CardHeader className="bg-gradient-to-r from-teal-500/5 to-transparent border-b">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-teal-500/10 flex items-center justify-center">
+                      <MapPin className="h-5 w-5 text-teal-600" />
+                    </div>
+                    <CardTitle className="text-lg">Alexandria Office</CardTitle>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Phone</Label>
-                    <Input
-                      value={settingsForm.alex_phone || ""}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, alex_phone: e.target.value })}
-                    />
+                </CardHeader>
+                <CardContent className="space-y-3 pt-6">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Address</Label>
+                    <Input value={settingsForm.alex_address || ""} onChange={(e) => setSettingsForm({ ...settingsForm, alex_address: e.target.value })} />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Email</Label>
-                    <Input
-                      value={settingsForm.alex_email || ""}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, alex_email: e.target.value })}
-                    />
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Phone</Label>
+                    <Input value={settingsForm.alex_phone || ""} onChange={(e) => setSettingsForm({ ...settingsForm, alex_phone: e.target.value })} />
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Email</Label>
+                    <Input value={settingsForm.alex_email || ""} onChange={(e) => setSettingsForm({ ...settingsForm, alex_email: e.target.value })} />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
 
-            <Button onClick={handleSaveSettings} disabled={updateSettingsMutation.isPending} className="gap-2">
-              <Save className="h-4 w-4" />
-              Save All Settings
-            </Button>
+            {/* Save Button */}
+            <div className="flex justify-end">
+              <Button onClick={handleSaveSettings} disabled={updateSettingsMutation.isPending} size="lg" className="gap-2 shadow-lg shadow-primary/20 px-8">
+                <Save className="h-4 w-4" />
+                Save All Settings
+              </Button>
+            </div>
           </TabsContent>
 
           {/* Partners Tab */}
-          <TabsContent value="partners" className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold">Partners & Clients</h2>
+          <TabsContent value="partners" className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold">Partners & Clients</h2>
+                <p className="text-sm text-muted-foreground">Manage the logos displayed on your landing page</p>
+              </div>
               <Dialog open={partnerDialogOpen} onOpenChange={setPartnerDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button onClick={() => setEditingPartner(null)} className="gap-2">
+                  <Button onClick={() => setEditingPartner(null)} className="gap-2 shadow-md">
                     <Plus className="h-4 w-4" />
                     Add Partner
                   </Button>
@@ -888,70 +863,62 @@ const HomepageAdmin = () => {
               </Dialog>
             </div>
 
-            <Card>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Logo URL</TableHead>
-                    <TableHead>Order</TableHead>
-                    <TableHead>Active</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {partners?.map((partner) => (
-                    <TableRow key={partner.id}>
-                      <TableCell className="font-medium">{partner.name}</TableCell>
-                      <TableCell className="max-w-[200px] truncate">{partner.logo_url || "-"}</TableCell>
-                      <TableCell>{partner.display_order}</TableCell>
-                      <TableCell>
-                        <Badge variant={partner.is_active ? "default" : "secondary"}>
-                          {partner.is_active ? "Active" : "Inactive"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setEditingPartner(partner);
-                              setPartnerDialogOpen(true);
-                            }}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => deletePartnerMutation.mutate(partner.id)}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
+            {/* Partner Cards Grid */}
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {partners?.map((partner) => (
+                <Card key={partner.id} className={`border-0 shadow-md overflow-hidden group transition-all hover:shadow-lg ${!partner.is_active ? 'opacity-50' : ''}`}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="h-14 w-14 rounded-xl bg-muted flex items-center justify-center shrink-0 overflow-hidden">
+                        {partner.logo_url ? (
+                          <img src={partner.logo_url} alt={partner.name} className="h-full w-full object-contain p-1" />
+                        ) : (
+                          <Users className="h-6 w-6 text-muted-foreground" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold truncate">{partner.name}</h3>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant={partner.is_active ? "default" : "secondary"} className="text-[10px] h-5">
+                            {partner.is_active ? "Active" : "Inactive"}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">Order: {partner.display_order}</span>
                         </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {(!partners || partners.length === 0) && (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                        No partners added yet
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </Card>
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-1 mt-3 pt-3 border-t">
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => { setEditingPartner(partner); setPartnerDialogOpen(true); }}>
+                        <Edit className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive hover:text-destructive" onClick={() => deletePartnerMutation.mutate(partner.id)}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+              {(!partners || partners.length === 0) && (
+                <Card className="col-span-full border-0 shadow-md">
+                  <CardContent className="py-12 text-center text-muted-foreground">
+                    <Users className="h-12 w-12 mx-auto mb-3 text-muted-foreground/30" />
+                    <p className="font-medium">No partners added yet</p>
+                    <p className="text-sm mt-1">Click "Add Partner" to get started</p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </TabsContent>
 
           {/* Gallery Tab */}
-          <TabsContent value="gallery" className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold">Gallery Images</h2>
+          <TabsContent value="gallery" className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold">Gallery Images</h2>
+                <p className="text-sm text-muted-foreground">Manage hero backgrounds and visual content</p>
+              </div>
               <Dialog open={galleryDialogOpen} onOpenChange={setGalleryDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button onClick={() => setEditingGallery(null)} className="gap-2">
+                  <Button onClick={() => setEditingGallery(null)} className="gap-2 shadow-md">
                     <Plus className="h-4 w-4" />
                     Add Image
                   </Button>
@@ -971,39 +938,29 @@ const HomepageAdmin = () => {
 
             <div className="grid md:grid-cols-3 lg:grid-cols-4 gap-4">
               {gallery?.map((image) => (
-                <Card key={image.id} className={!image.is_active ? "opacity-50" : ""}>
-                  <CardContent className="p-4 space-y-3">
-                    <div className="aspect-video bg-muted rounded-lg overflow-hidden">
-                      {image.image_url ? (
-                        <img src={image.image_url} alt={image.alt_text || ""} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Image className="h-8 w-8 text-muted-foreground" />
-                        </div>
-                      )}
-                    </div>
+                <Card key={image.id} className={`border-0 shadow-md overflow-hidden group transition-all hover:shadow-lg ${!image.is_active ? "opacity-50" : ""}`}>
+                  <div className="aspect-video bg-muted overflow-hidden relative">
+                    {image.image_url ? (
+                      <img src={image.image_url} alt={image.alt_text || ""} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Image className="h-8 w-8 text-muted-foreground/30" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                  <CardContent className="p-3">
                     <p className="text-sm font-medium truncate">{image.title || "Untitled"}</p>
-                    <div className="flex justify-between items-center">
-                      <Badge variant={image.is_active ? "default" : "secondary"}>
+                    <div className="flex justify-between items-center mt-2">
+                      <Badge variant={image.is_active ? "default" : "secondary"} className="text-[10px] h-5">
                         {image.is_active ? "Active" : "Inactive"}
                       </Badge>
                       <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setEditingGallery(image);
-                            setGalleryDialogOpen(true);
-                          }}
-                        >
-                          <Edit className="h-4 w-4" />
+                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => { setEditingGallery(image); setGalleryDialogOpen(true); }}>
+                          <Edit className="h-3.5 w-3.5" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => deleteGalleryMutation.mutate(image.id)}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
+                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={() => deleteGalleryMutation.mutate(image.id)}>
+                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
                     </div>
@@ -1011,9 +968,11 @@ const HomepageAdmin = () => {
                 </Card>
               ))}
               {(!gallery || gallery.length === 0) && (
-                <Card className="col-span-full">
-                  <CardContent className="py-8 text-center text-muted-foreground">
-                    No gallery images added yet
+                <Card className="col-span-full border-0 shadow-md">
+                  <CardContent className="py-12 text-center text-muted-foreground">
+                    <Image className="h-12 w-12 mx-auto mb-3 text-muted-foreground/30" />
+                    <p className="font-medium">No gallery images added yet</p>
+                    <p className="text-sm mt-1">Click "Add Image" to get started</p>
                   </CardContent>
                 </Card>
               )}
@@ -1021,33 +980,64 @@ const HomepageAdmin = () => {
           </TabsContent>
 
           {/* Submissions Tab */}
-          <TabsContent value="submissions" className="space-y-4">
-            <h2 className="text-xl font-semibold">Contact Form Submissions</h2>
+          <TabsContent value="submissions" className="space-y-6">
+            <div>
+              <h2 className="text-xl font-bold">Contact Form Submissions</h2>
+              <p className="text-sm text-muted-foreground">Review and manage messages from your website visitors</p>
+            </div>
 
-            <Card>
+            {/* Summary cards */}
+            <div className="grid grid-cols-4 gap-4">
+              <Card className="border-0 shadow-md bg-blue-500/5">
+                <CardContent className="p-4 text-center">
+                  <div className="text-2xl font-bold text-blue-600">{submissions?.filter(s => s.status === "new").length || 0}</div>
+                  <p className="text-xs text-muted-foreground mt-1">New</p>
+                </CardContent>
+              </Card>
+              <Card className="border-0 shadow-md bg-amber-500/5">
+                <CardContent className="p-4 text-center">
+                  <div className="text-2xl font-bold text-amber-600">{submissions?.filter(s => s.status === "in_progress").length || 0}</div>
+                  <p className="text-xs text-muted-foreground mt-1">In Progress</p>
+                </CardContent>
+              </Card>
+              <Card className="border-0 shadow-md bg-green-500/5">
+                <CardContent className="p-4 text-center">
+                  <div className="text-2xl font-bold text-green-600">{submissions?.filter(s => s.status === "resolved").length || 0}</div>
+                  <p className="text-xs text-muted-foreground mt-1">Resolved</p>
+                </CardContent>
+              </Card>
+              <Card className="border-0 shadow-md bg-muted/50">
+                <CardContent className="p-4 text-center">
+                  <div className="text-2xl font-bold text-muted-foreground">{submissions?.length || 0}</div>
+                  <p className="text-xs text-muted-foreground mt-1">Total</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card className="border-0 shadow-lg overflow-hidden">
               <Table>
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="bg-muted/30">
                     <TableHead>Date</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Subject</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead className="w-[60px]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {submissions?.map((submission) => (
-                    <TableRow key={submission.id}>
-                      <TableCell>{format(new Date(submission.created_at), "MMM d, yyyy")}</TableCell>
+                    <TableRow key={submission.id} className="hover:bg-muted/30">
+                      <TableCell className="text-sm">{format(new Date(submission.created_at), "MMM d, yyyy")}</TableCell>
                       <TableCell className="font-medium">{submission.name}</TableCell>
-                      <TableCell>{submission.email}</TableCell>
-                      <TableCell className="max-w-[150px] truncate">{submission.subject || "-"}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{submission.email}</TableCell>
+                      <TableCell className="max-w-[150px] truncate text-sm">{submission.subject || "-"}</TableCell>
                       <TableCell>{getStatusBadge(submission.status)}</TableCell>
                       <TableCell>
                         <Dialog>
                           <DialogTrigger asChild>
-                            <Button variant="ghost" size="sm" onClick={() => setSelectedSubmission(submission)}>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => setSelectedSubmission(submission)}>
                               <Eye className="h-4 w-4" />
                             </Button>
                           </DialogTrigger>
@@ -1077,8 +1067,9 @@ const HomepageAdmin = () => {
                   ))}
                   {(!submissions || submissions.length === 0) && (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                        No submissions yet
+                      <TableCell colSpan={6} className="text-center text-muted-foreground py-12">
+                        <MessageSquare className="h-12 w-12 mx-auto mb-3 text-muted-foreground/30" />
+                        <p className="font-medium">No submissions yet</p>
                       </TableCell>
                     </TableRow>
                   )}
