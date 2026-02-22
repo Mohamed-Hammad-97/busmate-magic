@@ -362,6 +362,7 @@ const AIRoutes: React.FC = () => {
                   <SelectContent className="bg-background border border-border z-50">
                     <SelectItem value="ac">{isRtl ? 'مكيف' : 'AC'}</SelectItem>
                     <SelectItem value="non_ac">{isRtl ? 'غير مكيف' : 'Non-AC'}</SelectItem>
+                    <SelectItem value="both">{isRtl ? 'الكل' : 'Both'}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
