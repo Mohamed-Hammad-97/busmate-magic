@@ -21,8 +21,10 @@ interface ParentAuthContextType {
   parentAccount: ParentAccount | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  checkAuthMethod: (phone: string) => Promise<{ exists: boolean; has_password: boolean }>;
   sendOtp: (phone: string) => Promise<{ error: Error | null }>;
   verifyOtp: (phone: string, token: string) => Promise<{ error: Error | null }>;
+  loginWithPassword: (phone: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -152,6 +154,59 @@ export function ParentAuthProvider({ children }: { children: React.ReactNode }) 
     }
   };
 
+  const checkAuthMethod = async (phone: string) => {
+    try {
+      const cleanPhone = phone.replace(/\s/g, "").replace(/^0/, "");
+      const { data, error } = await supabase.functions.invoke("check-parent-auth", {
+        body: { phone: cleanPhone },
+      });
+      if (error || !data) return { exists: false, has_password: false };
+      return { exists: data.exists ?? false, has_password: data.has_password ?? false };
+    } catch {
+      return { exists: false, has_password: false };
+    }
+  };
+
+  const loginWithPassword = async (phone: string, password: string) => {
+    try {
+      const cleanPhone = phone.replace(/\s/g, "").replace(/^0/, "");
+      const { data, error } = await supabase.functions.invoke("parent-password-login", {
+        body: { phone: cleanPhone, password },
+      });
+
+      if (error) {
+        return { error: new Error(error.message || "فشل في تسجيل الدخول") };
+      }
+      if (data?.error) {
+        return { error: new Error(data.error) };
+      }
+
+      if (data?.success && data?.session) {
+        const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
+        });
+
+        if (sessionError) {
+          return { error: new Error("فشل في تسجيل الدخول") };
+        }
+
+        if (sessionData.session) {
+          setSession(sessionData.session);
+          setUser(sessionData.session.user);
+        }
+
+        if (data.user_id) {
+          await fetchParentAccount(data.user_id);
+        }
+      }
+
+      return { error: null };
+    } catch (error) {
+      return { error: error as Error };
+    }
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
     setParentAccount(null);
@@ -163,8 +218,10 @@ export function ParentAuthProvider({ children }: { children: React.ReactNode }) 
     parentAccount,
     isLoading,
     isAuthenticated: !!user && !!parentAccount,
+    checkAuthMethod,
     sendOtp,
     verifyOtp,
+    loginWithPassword,
     signOut,
   };
 

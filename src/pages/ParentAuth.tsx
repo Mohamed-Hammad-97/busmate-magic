@@ -6,20 +6,22 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Phone, ArrowLeft, RefreshCw, ArrowRight, Shield } from "lucide-react";
+import { Loader2, Phone, ArrowLeft, RefreshCw, ArrowRight, Shield, Lock, Eye, EyeOff } from "lucide-react";
 import { z } from "zod";
 import seaterLogo from '@/assets/seater-logo.jpg';
 import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 
 const phoneSchema = z.string().regex(/^01[0125]\d{8}$/, "رقم الهاتف غير صالح");
-const RESEND_COOLDOWN = 120; // 2 minutes in seconds
+const RESEND_COOLDOWN = 120;
 
 export default function ParentAuth() {
-  const { user, parentAccount, isLoading: authLoading, sendOtp, verifyOtp } = useParentAuth();
+  const { user, parentAccount, isLoading: authLoading, checkAuthMethod, sendOtp, verifyOtp, loginWithPassword } = useParentAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [step, setStep] = useState<"phone" | "otp">("phone");
+  const [step, setStep] = useState<"phone" | "password" | "otp">("phone");
   const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [otp, setOtp] = useState("");
   const [error, setError] = useState("");
   const [resendTimer, setResendTimer] = useState(0);
@@ -27,14 +29,12 @@ export default function ParentAuth() {
   const sendingRef = useRef(false);
   const verifyingRef = useRef(false);
 
-  // Cleanup timer on unmount
   useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, []);
 
-  // Start countdown timer
   const startResendTimer = () => {
     setResendTimer(RESEND_COOLDOWN);
     if (timerRef.current) clearInterval(timerRef.current);
@@ -49,12 +49,12 @@ export default function ParentAuth() {
     }, 1000);
   };
 
-  // Redirect if already logged in
   if (!authLoading && user && parentAccount) {
     return <Navigate to="/parent" replace />;
   }
 
-  const handleSendOtp = async (e: React.FormEvent) => {
+  // Step 1: Enter phone and check auth method
+  const handlePhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (sendingRef.current) return;
     setError("");
@@ -67,23 +67,73 @@ export default function ParentAuth() {
 
     sendingRef.current = true;
     setIsLoading(true);
+
+    // Check if parent has password set
+    const authInfo = await checkAuthMethod(phone);
+
+    if (authInfo.has_password) {
+      // Parent has password - show password login
+      setStep("password");
+      setIsLoading(false);
+      sendingRef.current = false;
+    } else {
+      // No password - send OTP
+      const { error } = await sendOtp(phone);
+      setIsLoading(false);
+      sendingRef.current = false;
+
+      if (error) {
+        toast({
+          variant: "destructive",
+          title: "خطأ",
+          description: error.message,
+        });
+      } else {
+        setStep("otp");
+        startResendTimer();
+        toast({
+          title: "تم إرسال رمز التحقق",
+          description: `تم إرسال رمز التحقق إلى ${phone}`,
+        });
+      }
+    }
+  };
+
+  // Password login
+  const handlePasswordLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!password.trim()) return;
+
+    setIsLoading(true);
+    setError("");
+    const { error } = await loginWithPassword(phone, password);
+    setIsLoading(false);
+
+    if (error) {
+      setError(error.message);
+      toast({
+        variant: "destructive",
+        title: "خطأ في تسجيل الدخول",
+        description: error.message,
+      });
+    }
+  };
+
+  // Switch to OTP from password screen
+  const handleSwitchToOtp = async () => {
+    if (sendingRef.current) return;
+    sendingRef.current = true;
+    setIsLoading(true);
     const { error } = await sendOtp(phone);
     setIsLoading(false);
     sendingRef.current = false;
 
     if (error) {
-      toast({
-        variant: "destructive",
-        title: "خطأ",
-        description: error.message,
-      });
+      toast({ variant: "destructive", title: "خطأ", description: error.message });
     } else {
       setStep("otp");
       startResendTimer();
-      toast({
-        title: "تم إرسال رمز التحقق",
-        description: `تم إرسال رمز التحقق إلى ${phone}`,
-      });
+      toast({ title: "تم إرسال رمز التحقق", description: `تم إرسال رمز التحقق إلى ${phone}` });
     }
   };
 
@@ -106,6 +156,15 @@ export default function ParentAuth() {
     }
   };
 
+  const resetToPhone = () => {
+    setStep("phone");
+    setOtp("");
+    setPassword("");
+    setError("");
+    setResendTimer(0);
+    if (timerRef.current) clearInterval(timerRef.current);
+  };
+
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -113,6 +172,22 @@ export default function ParentAuth() {
       </div>
     );
   }
+
+  const getStepTitle = () => {
+    switch (step) {
+      case "phone": return "تسجيل الدخول";
+      case "password": return "كلمة المرور";
+      case "otp": return "التحقق من الرقم";
+    }
+  };
+
+  const getStepDescription = () => {
+    switch (step) {
+      case "phone": return "أدخل رقم الهاتف المسجل للدخول إلى حسابك";
+      case "password": return `أدخل كلمة المرور للدخول بالرقم ${phone}`;
+      case "otp": return `أدخل رمز التحقق المرسل إلى ${phone}`;
+    }
+  };
 
   return (
     <div className="min-h-screen flex bg-background relative overflow-hidden">
@@ -135,9 +210,7 @@ export default function ParentAuth() {
           </div>
           <div>
             <h1 className="text-4xl font-bold mb-4">Seater</h1>
-            <p className="text-lg text-primary-foreground/80">
-              بوابة أولياء الأمور
-            </p>
+            <p className="text-lg text-primary-foreground/80">بوابة أولياء الأمور</p>
           </div>
           <div className="space-y-4 pt-8">
             <div className="flex items-center gap-4 p-4 bg-primary-foreground/10 rounded-xl backdrop-blur-sm text-right">
@@ -176,19 +249,13 @@ export default function ParentAuth() {
 
           {/* Form Header */}
           <div className="text-center space-y-2">
-            <h2 className="text-3xl font-bold">
-              {step === "phone" ? "تسجيل الدخول" : "التحقق من الرقم"}
-            </h2>
-            <p className="text-muted-foreground">
-              {step === "phone" 
-                ? "أدخل رقم الهاتف المسجل للدخول إلى حسابك"
-                : `أدخل رمز التحقق المرسل إلى ${phone}`
-              }
-            </p>
+            <h2 className="text-3xl font-bold">{getStepTitle()}</h2>
+            <p className="text-muted-foreground">{getStepDescription()}</p>
           </div>
 
-          {step === "phone" ? (
-            <form onSubmit={handleSendOtp} className="space-y-6">
+          {/* Phone Step */}
+          {step === "phone" && (
+            <form onSubmit={handlePhoneSubmit} className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="phone" className="text-sm font-medium">رقم الهاتف</Label>
                 <div className="relative">
@@ -203,9 +270,7 @@ export default function ParentAuth() {
                     dir="ltr"
                   />
                 </div>
-                {error && (
-                  <p className="text-sm text-destructive">{error}</p>
-                )}
+                {error && <p className="text-sm text-destructive">{error}</p>}
               </div>
               <Button 
                 type="submit" 
@@ -216,13 +281,71 @@ export default function ParentAuth() {
                   <Loader2 className="ml-2 h-5 w-5 animate-spin" />
                 ) : (
                   <>
-                    إرسال رمز التحقق
+                    متابعة
                     <ArrowRight className="mr-2 h-5 w-5 rotate-180" />
                   </>
                 )}
               </Button>
             </form>
-          ) : (
+          )}
+
+          {/* Password Step */}
+          {step === "password" && (
+            <form onSubmit={handlePasswordLogin} className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-sm font-medium">كلمة المرور</Label>
+                <div className="relative">
+                  <Lock className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pr-10 pl-10 h-12 bg-muted/50 border-border/50 focus:bg-background transition-colors"
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
+                </div>
+                {error && <p className="text-sm text-destructive">{error}</p>}
+              </div>
+
+              <div className="space-y-3">
+                <Button 
+                  type="submit" 
+                  className="w-full h-12 text-base font-medium shadow-lg shadow-primary/30" 
+                  disabled={isLoading || !password.trim()}
+                >
+                  {isLoading ? <Loader2 className="ml-2 h-5 w-5 animate-spin" /> : "تسجيل الدخول"}
+                </Button>
+                
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full h-12"
+                  onClick={handleSwitchToOtp}
+                  disabled={isLoading}
+                >
+                  <Phone className="ml-2 h-5 w-5" />
+                  الدخول برمز التحقق بدلاً من ذلك
+                </Button>
+
+                <Button variant="ghost" className="w-full h-12" onClick={resetToPhone}>
+                  <ArrowLeft className="ml-2 h-5 w-5" />
+                  تغيير الرقم
+                </Button>
+              </div>
+            </form>
+          )}
+
+          {/* OTP Step */}
+          {step === "otp" && (
             <div className="space-y-6">
               <div className="flex flex-col items-center gap-6">
                 <div className="bg-muted/50 p-6 rounded-2xl">
@@ -242,9 +365,6 @@ export default function ParentAuth() {
                     </InputOTPGroup>
                   </InputOTP>
                 </div>
-                {error && (
-                  <p className="text-sm text-destructive">{error}</p>
-                )}
               </div>
               <div className="space-y-3">
                 <Button 
@@ -266,17 +386,10 @@ export default function ParentAuth() {
                     setIsLoading(false);
                     sendingRef.current = false;
                     if (error) {
-                      toast({
-                        variant: "destructive",
-                        title: "خطأ",
-                        description: error.message,
-                      });
+                      toast({ variant: "destructive", title: "خطأ", description: error.message });
                     } else {
                       startResendTimer();
-                      toast({
-                        title: "تم إعادة إرسال الرمز",
-                        description: `تم إرسال رمز جديد إلى ${phone}`,
-                      });
+                      toast({ title: "تم إعادة إرسال الرمز", description: `تم إرسال رمز جديد إلى ${phone}` });
                       setOtp("");
                     }
                   }}
@@ -288,17 +401,7 @@ export default function ParentAuth() {
                     : "إعادة إرسال الرمز"
                   }
                 </Button>
-                <Button 
-                  variant="ghost" 
-                  className="w-full h-12"
-                  onClick={() => {
-                    setStep("phone");
-                    setOtp("");
-                    setError("");
-                    setResendTimer(0);
-                    if (timerRef.current) clearInterval(timerRef.current);
-                  }}
-                >
+                <Button variant="ghost" className="w-full h-12" onClick={resetToPhone}>
                   <ArrowLeft className="ml-2 h-5 w-5" />
                   تغيير الرقم
                 </Button>
@@ -308,10 +411,7 @@ export default function ParentAuth() {
 
           {/* Back to Website */}
           <div className="text-center pt-4">
-            <Link 
-              to="/" 
-              className="text-sm text-muted-foreground hover:text-primary transition-colors"
-            >
+            <Link to="/" className="text-sm text-muted-foreground hover:text-primary transition-colors">
               ← العودة للموقع الرئيسي
             </Link>
           </div>
