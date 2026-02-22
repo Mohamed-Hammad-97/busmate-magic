@@ -122,15 +122,26 @@ export function ParentAuthProvider({ children }: { children: React.ReactNode }) 
         return { error: new Error(data.error) };
       }
 
-      if (data?.success && data?.user_id) {
-        // Fetch parent account after successful verification
-        await fetchParentAccount(data.user_id);
-        
-        // Refresh the session to get the updated auth state
-        const { data: sessionData } = await supabase.auth.getSession();
+      if (data?.success && data?.session) {
+        // Set the session using the tokens returned from verify-otp
+        const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
+        });
+
+        if (sessionError) {
+          console.error("Error setting session:", sessionError);
+          return { error: new Error("فشل في تسجيل الدخول") };
+        }
+
         if (sessionData.session) {
           setSession(sessionData.session);
           setUser(sessionData.session.user);
+        }
+
+        // Fetch parent account after successful verification
+        if (data.user_id) {
+          await fetchParentAccount(data.user_id);
         }
       }
 
