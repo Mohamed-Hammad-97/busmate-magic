@@ -106,6 +106,16 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
         .update({ status: 'complete' })
         .eq('id', registration.id);
       if (regError) throw regError;
+
+      // Activate parent account for login (creates auth user if not exists)
+      try {
+        await supabase.functions.invoke('activate-parent-account', {
+          body: { parent_id: registration.parent_id },
+        });
+      } catch (activateErr) {
+        console.error('Failed to activate parent account:', activateErr);
+        // Non-blocking: subscription still created successfully
+      }
     },
     onSuccess: () => {
       toast({ title: 'Subscription created successfully' });
