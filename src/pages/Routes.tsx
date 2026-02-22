@@ -33,6 +33,7 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { Plus, Search, Route, Bus, Users, Edit, Map, School, Trash2, ExternalLink } from 'lucide-react';
+import { PageHero } from '@/components/layout/PageHero';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -411,74 +412,23 @@ const Routes = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">
-              {isRtl ? 'إدارة الخطوط' : 'Routes Management'}
-            </h1>
-            <p className="text-muted-foreground">
-              {isRtl ? 'إدارة خطوط النقل وتعيين السائقين والمشرفين' : 'Manage transportation routes, assign drivers and supervisors'}
-            </p>
-          </div>
-          <Button onClick={handleAddNew}>
-            <Plus className="h-4 w-4 ml-2" />
-            {isRtl ? 'إضافة خط' : 'Add Route'}
-          </Button>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">
-                {isRtl ? 'إجمالي الخطوط' : 'Total Routes'}
-              </CardTitle>
-              <Route className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{filteredRoutes.length}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">
-                {isRtl ? 'الخطوط النشطة' : 'Active Routes'}
-              </CardTitle>
-              <Bus className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {filteredRoutes.filter((r: any) => r.is_active).length}
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">
-                {isRtl ? 'السائقين المعينين' : 'Assigned Drivers'}
-              </CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {filteredRoutes.filter((r: any) => r.driver_id).length}
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">
-                {isRtl ? 'إجمالي الطلاب' : 'Total Students'}
-              </CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {filteredRoutes.reduce((sum: number, r: any) => sum + (assignmentCounts[r.id] || 0), 0)}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <PageHero
+          icon={Route}
+          title={isRtl ? 'إدارة الخطوط' : 'Routes Management'}
+          description={isRtl ? 'إدارة خطوط النقل وتعيين السائقين والمشرفين' : 'Manage transportation routes, assign drivers and supervisors'}
+          stats={[
+            { icon: Route, value: filteredRoutes.length, label: isRtl ? 'إجمالي الخطوط' : 'Total Routes' },
+            { icon: Bus, value: filteredRoutes.filter((r: any) => r.is_active).length, label: isRtl ? 'نشطة' : 'Active' },
+            { icon: Users, value: filteredRoutes.filter((r: any) => r.driver_id).length, label: isRtl ? 'سائقين' : 'Drivers' },
+            { icon: Users, value: filteredRoutes.reduce((sum: number, r: any) => sum + (assignmentCounts[r.id] || 0), 0), label: isRtl ? 'طلاب' : 'Students' },
+          ]}
+          actions={
+            <Button className="gap-2 bg-white/15 hover:bg-white/25 text-primary-foreground border-0 backdrop-blur-sm" onClick={handleAddNew}>
+              <Plus className="h-4 w-4" />
+              {isRtl ? 'إضافة خط' : 'Add Route'}
+            </Button>
+          }
+        />
 
         {/* Tabs for Table/Map view */}
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>

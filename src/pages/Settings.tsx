@@ -36,6 +36,7 @@ import {
 import { toast } from 'sonner';
 import { Settings as SettingsIcon, Users, Globe, Plus, Edit, Search } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher';
+import { PageHero } from '@/components/layout/PageHero';
 import type { Tables, Enums } from '@/integrations/supabase/types';
 
 type Employee = Tables<'employees'>;
@@ -179,10 +180,14 @@ const Settings = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">{t('settings.title')}</h1>
-          <p className="text-muted-foreground">{t('settings.description')}</p>
-        </div>
+        <PageHero
+          icon={SettingsIcon}
+          title={t('settings.title')}
+          description={t('settings.description')}
+          stats={[
+            { icon: Users, value: employees.length, label: 'Employees' },
+          ]}
+        />
 
         <Tabs defaultValue="general" className="space-y-4">
           <TabsList>

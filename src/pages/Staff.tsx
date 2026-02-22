@@ -34,6 +34,7 @@ import { toast } from 'sonner';
 import { Plus, Search, Users, Car, UserCheck, Edit, MapPin, KeyRound, TrendingUp } from 'lucide-react';
 import { useCity } from '@/contexts/CityContext';
 import { DriverAccountsManagement } from '@/components/staff/DriverAccountsManagement';
+import { PageHero } from '@/components/layout/PageHero';
 
 const Staff = () => {
   const { t } = useTranslation();
@@ -171,31 +172,30 @@ const Staff = () => {
   return (
     <DashboardLayout>
       <div className="space-y-8">
-        {/* Premium Header */}
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 animate-fade-in">
-          <div className="space-y-1">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
-                <Users className="h-6 w-6" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight text-foreground">{t('staff.title')}</h1>
-                <p className="text-sm text-muted-foreground">{t('staff.description')}</p>
-              </div>
-            </div>
-          </div>
-          <Button
-            size="sm"
-            className="gap-2 shadow-md hover:shadow-lg transition-all"
-            onClick={() => {
-              if (activeTab === 'drivers') { resetDriverForm(); setIsDriverDialogOpen(true); }
-              else if (activeTab === 'supervisors') { resetSupervisorForm(); setIsSupervisorDialogOpen(true); }
-            }}
-          >
-            <Plus className="h-4 w-4" />
-            {activeTab === 'drivers' ? t('staff.addDriver') : t('staff.addSupervisor')}
-          </Button>
-        </div>
+        <PageHero
+          icon={Users}
+          title={t('staff.title')}
+          description={t('staff.description')}
+          stats={[
+            { icon: Car, value: drivers.length, label: t('staff.totalDrivers') },
+            { icon: UserCheck, value: activeDriversCount, label: t('staff.activeDrivers') },
+            { icon: Users, value: supervisors.length, label: t('staff.totalSupervisors') },
+            { icon: UserCheck, value: activeSupervisorsCount, label: t('staff.activeSupervisors') },
+          ]}
+          actions={
+            <Button
+              size="sm"
+              className="gap-2 bg-white/15 hover:bg-white/25 text-primary-foreground border-0 backdrop-blur-sm"
+              onClick={() => {
+                if (activeTab === 'drivers') { resetDriverForm(); setIsDriverDialogOpen(true); }
+                else if (activeTab === 'supervisors') { resetSupervisorForm(); setIsSupervisorDialogOpen(true); }
+              }}
+            >
+              <Plus className="h-4 w-4" />
+              {activeTab === 'drivers' ? t('staff.addDriver') : t('staff.addSupervisor')}
+            </Button>
+          }
+        />
 
         {/* Premium Stats Grid */}
         <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 animate-fade-in" style={{ animationDelay: '0.1s' }}>

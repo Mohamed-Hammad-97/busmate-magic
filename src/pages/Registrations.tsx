@@ -36,6 +36,7 @@ import RegistrationsMap from '@/components/registrations/RegistrationsMap';
 import { ShareButton } from '@/components/shared/ShareButton';
 import { GoogleMapsProvider } from '@/components/maps/GoogleMapsProvider';
 import { useCity } from '@/contexts/CityContext';
+import { PageHero } from '@/components/layout/PageHero';
 import type { Tables, Enums } from '@/integrations/supabase/types';
 
 type Registration = Tables<'registrations'> & {
@@ -145,39 +146,38 @@ const Registrations: React.FC = () => {
   return (
     <DashboardLayout>
       <div className="space-y-8">
-        {/* Premium Header */}
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 animate-fade-in">
-          <div className="space-y-1">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
-                <ClipboardList className="h-6 w-6" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight text-foreground">Registrations</h1>
-                <p className="text-sm text-muted-foreground">Manage student registrations and enrollments</p>
-              </div>
+        <PageHero
+          icon={ClipboardList}
+          title="Registrations"
+          description="Manage student registrations and enrollments"
+          stats={[
+            { icon: GraduationCap, value: totalCount, label: 'Total' },
+            { icon: CheckCircle, value: completeCount, label: 'Complete' },
+            { icon: Clock, value: pendingCount, label: 'Pending' },
+            { icon: School, value: uniqueSchools, label: 'Schools' },
+          ]}
+          actions={
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button variant="secondary" size="sm" onClick={() => setMapOpen(true)} className="gap-2 bg-white/15 hover:bg-white/25 text-primary-foreground border-0 backdrop-blur-sm">
+                <Map className="h-4 w-4" />
+                Map View
+              </Button>
+              <Button variant="secondary" size="sm" onClick={copyFormLink} className="gap-2 bg-white/15 hover:bg-white/25 text-primary-foreground border-0 backdrop-blur-sm">
+                <Link2 className="h-4 w-4" />
+                {t('registrations.copyFormLink')}
+              </Button>
+              <ShareButton
+                url={formLink}
+                title={isRtl ? 'رابط تسجيل الطلاب' : 'Student Registration Link'}
+                text={isRtl ? 'سجل طفلك في خدمة النقل المدرسي' : 'Register your child for school bus service'}
+              />
+              <Button size="sm" className="gap-2 bg-white/15 hover:bg-white/25 text-primary-foreground border-0 backdrop-blur-sm" onClick={handleAddNew}>
+                <Plus className="h-4 w-4" />
+                {t('registrations.newRegistration')}
+              </Button>
             </div>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <Button variant="outline" size="sm" onClick={() => setMapOpen(true)} className="gap-2 border-border/50 hover:bg-primary/5 hover:border-primary/30 transition-all">
-              <Map className="h-4 w-4" />
-              Map View
-            </Button>
-            <Button variant="outline" size="sm" onClick={copyFormLink} className="gap-2 border-border/50 hover:bg-primary/5 hover:border-primary/30 transition-all">
-              <Link2 className="h-4 w-4" />
-              {t('registrations.copyFormLink')}
-            </Button>
-            <ShareButton
-              url={formLink}
-              title={isRtl ? 'رابط تسجيل الطلاب' : 'Student Registration Link'}
-              text={isRtl ? 'سجل طفلك في خدمة النقل المدرسي' : 'Register your child for school bus service'}
-            />
-            <Button onClick={handleAddNew} size="sm" className="gap-2 shadow-md hover:shadow-lg transition-all">
-              <Plus className="h-4 w-4" />
-              {t('registrations.newRegistration')}
-            </Button>
-          </div>
-        </div>
+          }
+        />
 
         {/* Premium Stats Grid */}
         <div className="grid gap-4 grid-cols-2 lg:grid-cols-5 animate-fade-in" style={{ animationDelay: '0.1s' }}>

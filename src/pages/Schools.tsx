@@ -36,6 +36,7 @@ import SchoolMap from '@/components/schools/SchoolMap';
 import LocationPickerMap from '@/components/schools/LocationPickerMap';
 import CitiesManagement from '@/components/schools/CitiesManagement';
 import { GoogleMapsProvider } from '@/components/maps/GoogleMapsProvider';
+import { PageHero } from '@/components/layout/PageHero';
 import type { Tables } from '@/integrations/supabase/types';
 
 type School = Tables<'schools'>;
@@ -170,16 +171,26 @@ const Schools: React.FC = () => {
   };
 
   return (
-    <DashboardLayout title="Schools Management" description="Manage schools and their locations">
+    <DashboardLayout>
       <div className="space-y-6">
-        {/* Header Actions */}
-        <div className="flex flex-wrap gap-3 justify-between items-center">
-          <CitiesManagement />
-          <Button onClick={() => handleOpenDialog()}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add School
-          </Button>
-        </div>
+        <PageHero
+          icon={SchoolIcon}
+          title="Schools Management"
+          description="Manage schools and their locations"
+          stats={[
+            { icon: SchoolIcon, value: schools.length, label: 'Total Schools' },
+            { icon: MapPin, value: schools.filter(s => s.is_active).length, label: 'Active' },
+          ]}
+          actions={
+            <div className="flex items-center gap-2">
+              <CitiesManagement />
+              <Button className="gap-2 bg-white/15 hover:bg-white/25 text-primary-foreground border-0 backdrop-blur-sm" onClick={() => handleOpenDialog()}>
+                <Plus className="h-4 w-4" />
+                Add School
+              </Button>
+            </div>
+          }
+        />
 
         {/* Map Section */}
         <Card>

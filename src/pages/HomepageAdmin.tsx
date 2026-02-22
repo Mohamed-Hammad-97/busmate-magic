@@ -51,6 +51,7 @@ import {
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { PageHero } from "@/components/layout/PageHero";
 import { format } from "date-fns";
 
 interface HomepageSetting {
@@ -309,51 +310,26 @@ const HomepageAdmin = () => {
   return (
     <DashboardLayout>
       <div className="space-y-8">
-        {/* Premium Header */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary via-primary/90 to-primary/70 p-8 text-primary-foreground">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/3 blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/3 blur-2xl" />
-          <div className="relative z-10 flex items-start justify-between">
-            <div className="space-y-2">
-              <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center">
-                  <LayoutDashboard className="h-6 w-6" />
-                </div>
-                <div>
-                <h1 className="text-3xl font-bold tracking-tight">إدارة الصفحة الرئيسية</h1>
-                  <p className="text-primary-foreground/70">إدارة محتوى وإعدادات الصفحة الرئيسية</p>
-                </div>
-              </div>
-            </div>
+        <PageHero
+          icon={LayoutDashboard}
+          title="Homepage Management"
+          description="Manage homepage content and settings"
+          stats={[
+            { icon: Users, value: activePartners, label: 'Partners' },
+            { icon: ImageIcon, value: activeGallery, label: 'Gallery' },
+            { icon: MessageSquare, value: newSubmissions, label: 'New Messages' },
+          ]}
+          actions={
             <Button 
               variant="secondary" 
               className="gap-2 bg-white/15 hover:bg-white/25 text-primary-foreground border-0 backdrop-blur-sm shadow-lg"
               onClick={() => window.open(window.location.origin, '_blank')}
             >
               <ExternalLink className="h-4 w-4" />
-              عرض الموقع
+              View Website
             </Button>
-          </div>
-
-          {/* Stat pills */}
-          <div className="relative z-10 flex flex-wrap gap-3 mt-6">
-            <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 text-sm">
-              <Users className="h-4 w-4" />
-              <span className="font-semibold">{activePartners}</span>
-              <span className="text-primary-foreground/70">شركاء</span>
-            </div>
-            <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 text-sm">
-              <ImageIcon className="h-4 w-4" />
-              <span className="font-semibold">{activeGallery}</span>
-              <span className="text-primary-foreground/70">معرض</span>
-            </div>
-            <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 text-sm">
-              <MessageSquare className="h-4 w-4" />
-              <span className="font-semibold">{newSubmissions}</span>
-              <span className="text-primary-foreground/70">رسائل جديدة</span>
-            </div>
-          </div>
-        </div>
+          }
+        />
 
         {/* Tabs */}
         <Tabs defaultValue="settings" className="space-y-6">

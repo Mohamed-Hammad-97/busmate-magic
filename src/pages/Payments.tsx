@@ -30,6 +30,7 @@ import { PaymentProfileDialog } from '@/components/payments/PaymentProfileDialog
 import { PaymentReminders } from '@/components/payments/PaymentReminders';
 import { InvoiceGenerator } from '@/components/payments/InvoiceGenerator';
 import { useCity } from '@/contexts/CityContext';
+import { PageHero } from '@/components/layout/PageHero';
 
 const Payments = () => {
   const { t, i18n } = useTranslation();
@@ -175,20 +176,17 @@ const Payments = () => {
   return (
     <DashboardLayout>
       <div className="space-y-8">
-        {/* Premium Header */}
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 animate-fade-in">
-          <div className="space-y-1">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
-                <CreditCard className="h-6 w-6" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight text-foreground">{t('payments.title')}</h1>
-                <p className="text-sm text-muted-foreground">{t('payments.description')}</p>
-              </div>
-            </div>
-          </div>
-        </div>
+        <PageHero
+          icon={CreditCard}
+          title={t('payments.title')}
+          description={t('payments.description')}
+          stats={[
+            { icon: CreditCard, value: stats.total.toLocaleString(), label: 'Total (EGP)' },
+            { icon: CheckCircle, value: stats.paid.toLocaleString(), label: t('payments.paid') },
+            { icon: Clock, value: stats.pending.toLocaleString(), label: t('payments.pending') },
+            { icon: AlertCircle, value: stats.overdue.toLocaleString(), label: t('payments.overdue') },
+          ]}
+        />
 
         {/* Payment Reminders */}
         <PaymentReminders payments={payments} onViewPayment={(payment) => openPaymentProfile(payment)} />

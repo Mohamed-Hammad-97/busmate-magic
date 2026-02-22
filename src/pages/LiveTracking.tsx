@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { MapPin, Users, Map, List, History, Bus, ChevronLeft } from "lucide-react";
 import { useCity } from "@/contexts/CityContext";
 import { GoogleMapsProvider } from "@/components/maps/GoogleMapsProvider";
+import { PageHero } from "@/components/layout/PageHero";
 
 export default function LiveTracking() {
   const { t } = useTranslation();
@@ -58,10 +59,15 @@ export default function LiveTracking() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold">{t('liveTracking.title')}</h1>
-          <p className="text-muted-foreground">{t('liveTracking.description')}</p>
-        </div>
+        <PageHero
+          icon={MapPin}
+          title={t('liveTracking.title')}
+          description={t('liveTracking.description')}
+          stats={[
+            { icon: Bus, value: routes.length, label: 'Routes' },
+            { icon: MapPin, value: activeTrips.length, label: 'Active Trips' },
+          ]}
+        />
 
         <Tabs defaultValue="map" className="space-y-4">
           <TabsList>

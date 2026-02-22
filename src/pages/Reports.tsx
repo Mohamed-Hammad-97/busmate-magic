@@ -39,6 +39,7 @@ import {
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from "recharts";
 import { FinancialReports } from "@/components/reports/FinancialReports";
 import { useCity } from "@/contexts/CityContext";
+import { PageHero } from "@/components/layout/PageHero";
 
 const Reports = () => {
   const { t, i18n } = useTranslation();
@@ -219,10 +220,17 @@ const Reports = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">{t('reports.title')}</h1>
-          <p className="text-muted-foreground">{t('reports.description')}</p>
-        </div>
+        <PageHero
+          icon={BarChart3}
+          title={t('reports.title')}
+          description={t('reports.description')}
+          stats={[
+            { icon: Clock, value: `${onTimePercentage}%`, label: t('reports.onTimePercentage') },
+            { icon: Users, value: `${attendanceRate}%`, label: t('reports.attendanceRate') },
+            { icon: TrendingUp, value: `${collectionRate}%`, label: t('reports.collectionRate') },
+            { icon: AlertCircle, value: incidents.length, label: t('reports.incidents') },
+          ]}
+        />
 
         {/* KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

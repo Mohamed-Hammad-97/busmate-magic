@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Sparkles, MapPin, Users, Route, Loader2, CheckCircle2, Lightbulb, ArrowRight, ArrowLeft, Plus, RefreshCw, Circle, ExternalLink } from 'lucide-react';
+import { PageHero } from '@/components/layout/PageHero';
 import { useCity } from '@/contexts/CityContext';
 import RouteMap from '@/components/routes/RouteMap';
 import DrawableAreaMap from '@/components/routes/DrawableAreaMap';
@@ -305,15 +306,11 @@ const AIRoutes: React.FC = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Sparkles className="h-8 w-8 text-primary" />
-            {isRtl ? 'مخطط الخطوط الذكي' : 'AI Route Planner'}
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            {isRtl ? 'تجميع الطلاب وتحسين خطوط التوصيل باستخدام الذكاء الاصطناعي' : 'Automatically group students and optimize pickup routes using AI'}
-          </p>
-        </div>
+        <PageHero
+          icon={Sparkles}
+          title={isRtl ? 'مخطط الخطوط الذكي' : 'AI Route Planner'}
+          description={isRtl ? 'تجميع الطلاب وتحسين خطوط التوصيل باستخدام الذكاء الاصطناعي' : 'Automatically group students and optimize pickup routes using AI'}
+        />
 
         {/* Configuration */}
         <Card>
