@@ -149,24 +149,22 @@ export default function ParentDashboard() {
 
       <main className="container mx-auto px-4 py-6 space-y-6 max-w-4xl">
         {/* Profile Card */}
-        <Card className="overflow-hidden border-0 shadow-lg">
-          <div className="h-24 bg-gradient-to-r from-primary to-primary/70 relative">
-            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjEpIi8+PC9zdmc+')] opacity-50" />
-          </div>
-          <CardContent className="relative -mt-10 pb-4">
+        <Card className="overflow-hidden border-0 shadow-xl rounded-2xl">
+          <div className="h-28 bg-gradient-to-r from-blue-600 via-blue-500 to-primary rounded-t-2xl" />
+          <CardContent className="relative -mt-9 pb-5 px-5">
             <div className="flex items-end gap-4">
-              <div className="h-20 w-20 rounded-2xl bg-background border-4 border-background shadow-lg flex items-center justify-center">
-                <UserCircle className="h-12 w-12 text-primary" />
+              <div className="h-[72px] w-[72px] rounded-2xl bg-background border-4 border-background shadow-xl flex items-center justify-center shrink-0">
+                <UserCircle className="h-10 w-10 text-primary" />
               </div>
-              <div className="pb-1">
-                <h2 className="text-xl font-bold">{parentAccount?.parent_name}</h2>
-                <div className="flex flex-wrap gap-3 mt-1 text-sm text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <Phone className="h-3.5 w-3.5" />
+              <div className="pb-0.5 min-w-0">
+                <h2 className="text-xl font-bold truncate">{parentAccount?.parent_name}</h2>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-sm text-muted-foreground">
+                  <span className="flex items-center gap-1.5">
+                    <Phone className="h-3.5 w-3.5 text-primary" />
                     {parentAccount?.father_phone}
                   </span>
-                  <span className="flex items-center gap-1">
-                    <MapPin className="h-3.5 w-3.5" />
+                  <span className="flex items-center gap-1.5">
+                    <MapPin className="h-3.5 w-3.5 text-primary" />
                     {parentAccount?.city}
                   </span>
                 </div>
