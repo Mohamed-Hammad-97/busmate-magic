@@ -320,8 +320,8 @@ const HomepageAdmin = () => {
                   <LayoutDashboard className="h-6 w-6" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold tracking-tight">Homepage CMS</h1>
-                  <p className="text-primary-foreground/70">Manage your landing page content & settings</p>
+                <h1 className="text-3xl font-bold tracking-tight">إدارة الصفحة الرئيسية</h1>
+                  <p className="text-primary-foreground/70">إدارة محتوى وإعدادات الصفحة الرئيسية</p>
                 </div>
               </div>
             </div>
@@ -331,7 +331,7 @@ const HomepageAdmin = () => {
               onClick={() => window.open(window.location.origin, '_blank')}
             >
               <ExternalLink className="h-4 w-4" />
-              View Website
+              عرض الموقع
             </Button>
           </div>
 
@@ -340,17 +340,17 @@ const HomepageAdmin = () => {
             <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 text-sm">
               <Users className="h-4 w-4" />
               <span className="font-semibold">{activePartners}</span>
-              <span className="text-primary-foreground/70">Partners</span>
+              <span className="text-primary-foreground/70">شركاء</span>
             </div>
             <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 text-sm">
               <ImageIcon className="h-4 w-4" />
               <span className="font-semibold">{activeGallery}</span>
-              <span className="text-primary-foreground/70">Gallery</span>
+              <span className="text-primary-foreground/70">معرض</span>
             </div>
             <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 text-sm">
               <MessageSquare className="h-4 w-4" />
               <span className="font-semibold">{newSubmissions}</span>
-              <span className="text-primary-foreground/70">New Messages</span>
+              <span className="text-primary-foreground/70">رسائل جديدة</span>
             </div>
           </div>
         </div>
