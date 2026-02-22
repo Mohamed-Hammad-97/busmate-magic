@@ -1222,6 +1222,7 @@ export type Database = {
         Returns: Database["public"]["Enums"]["department"][]
       }
       get_user_driver_id: { Args: { _user_id: string }; Returns: string }
+      get_user_parent_ids: { Args: { _user_id: string }; Returns: string[] }
       get_user_supervisor_id: { Args: { _user_id: string }; Returns: string }
       has_department: {
         Args: {
@@ -1238,6 +1239,10 @@ export type Database = {
         Returns: boolean
       }
       is_driver_or_supervisor: { Args: { _user_id: string }; Returns: boolean }
+      is_driver_parent: {
+        Args: { _parent_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_driver_registration: {
         Args: { _registration_id: string; _user_id: string }
         Returns: boolean
