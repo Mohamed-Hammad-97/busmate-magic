@@ -72,6 +72,7 @@ const AIRoutes: React.FC = () => {
   const queryClient = useQueryClient();
   const { selectedCity, cityLabels } = useCity();
 
+  const [selectedRouteCity, setSelectedRouteCity] = useState<string>('');
   const [selectedSchool, setSelectedSchool] = useState<string>('');
   const [selectedCarType, setSelectedCarType] = useState<string>('ac');
   const [maxSeats, setMaxSeats] = useState<string>('12');
@@ -95,19 +96,19 @@ const AIRoutes: React.FC = () => {
     },
   });
 
-  // Filter schools by city
+  // Filter schools by selected route city
   const schools = useMemo(() => {
-    if (selectedCity === 'all') return allSchools;
+    if (!selectedRouteCity) return allSchools;
     const cityMapping: Record<string, string[]> = {
       cairo: ['cairo', 'القاهرة', 'قاهرة'],
       giza: ['giza', 'الجيزة', 'جيزة'],
       alexandria: ['alexandria', 'الإسكندرية', 'اسكندرية', 'إسكندرية'],
     };
-    const cityNames = cityMapping[selectedCity] || [];
+    const cityNames = cityMapping[selectedRouteCity] || [];
     return allSchools.filter((s) =>
       cityNames.some((name) => s.city?.toLowerCase().includes(name.toLowerCase()))
     );
-  }, [allSchools, selectedCity]);
+  }, [allSchools, selectedRouteCity]);
 
   const selectedSchoolData = useMemo(() => 
     schools.find(s => s.id === selectedSchool), 
@@ -264,6 +265,10 @@ const AIRoutes: React.FC = () => {
   });
 
   const handleSuggest = () => {
+    if (!selectedRouteCity) {
+      toast({ title: isRtl ? 'يرجى اختيار المدينة' : 'Please select a city', variant: 'destructive' });
+      return;
+    }
     if (!selectedSchool) {
       toast({ title: isRtl ? 'يرجى اختيار المدرسة' : 'Please select a school', variant: 'destructive' });
       return;
@@ -317,10 +322,24 @@ const AIRoutes: React.FC = () => {
             <CardDescription>{isRtl ? 'اختر المدرسة والتفضيلات لإنشاء اقتراحات الخطوط' : 'Select school and preferences to generate route suggestions'}</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4 md:grid-cols-5">
+            <div className="grid gap-4 md:grid-cols-6">
+              <div className="space-y-2">
+                <Label>{isRtl ? 'المدينة *' : 'City *'}</Label>
+                <Select value={selectedRouteCity} onValueChange={(v) => { setSelectedRouteCity(v); setSelectedSchool(''); }}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={isRtl ? 'اختر المدينة' : 'Select city'} />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border border-border z-50">
+                    <SelectItem value="cairo">{isRtl ? 'القاهرة' : 'Cairo'}</SelectItem>
+                    <SelectItem value="giza">{isRtl ? 'الجيزة' : 'Giza'}</SelectItem>
+                    <SelectItem value="alexandria">{isRtl ? 'الإسكندرية' : 'Alexandria'}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="space-y-2">
                 <Label>{isRtl ? 'المدرسة *' : 'School *'}</Label>
-                <Select value={selectedSchool} onValueChange={setSelectedSchool}>
+                <Select value={selectedSchool} onValueChange={setSelectedSchool} disabled={!selectedRouteCity}>
                   <SelectTrigger>
                     <SelectValue placeholder={isRtl ? 'اختر المدرسة' : 'Select school'} />
                   </SelectTrigger>
@@ -335,7 +354,7 @@ const AIRoutes: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label>{isRtl ? 'نوع السيارة' : 'Car Type'}</Label>
+                <Label>{isRtl ? 'نوع السيارة *' : 'Car Type *'}</Label>
                 <Select value={selectedCarType} onValueChange={setSelectedCarType}>
                   <SelectTrigger>
                     <SelectValue />
