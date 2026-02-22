@@ -3,13 +3,15 @@ import { useQuery } from "@tanstack/react-query";
 import { useDriverAuth } from "@/contexts/DriverAuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { DriverTripInterface } from "@/components/tracking/DriverTripInterface";
+import { TripHistory } from "@/components/tracking/TripHistory";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Bus, LogOut, User, MapPin, Users, Play, Clock, 
-  CheckCircle, Navigation, Phone
+  CheckCircle, Navigation, Phone, History
 } from "lucide-react";
 import { GoogleMapsProvider } from "@/components/maps/GoogleMapsProvider";
 import { format } from "date-fns";
@@ -18,6 +20,7 @@ import { ar } from "date-fns/locale";
 export default function DriverDashboard() {
   const { driverAccount, isDriver, isSupervisor, signOut } = useDriverAuth();
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
+  const [historyRouteId, setHistoryRouteId] = useState<string | null>(null);
 
   const personName = isDriver 
     ? driverAccount?.driver?.full_name 
@@ -115,26 +118,31 @@ export default function DriverDashboard() {
 
       <main className="container mx-auto px-4 py-6 space-y-6">
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-3">
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">المسارات المعينة</CardTitle>
-            </CardHeader>
-            <CardContent>
+            <CardContent className="pt-4 pb-3 px-4">
+              <p className="text-xs text-muted-foreground">المسارات</p>
               <div className="text-2xl font-bold flex items-center gap-2">
-                <MapPin className="h-5 w-5 text-primary" />
+                <MapPin className="h-4 w-4 text-primary" />
                 {assignedRoutes.length}
               </div>
             </CardContent>
           </Card>
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">رحلات اليوم</CardTitle>
-            </CardHeader>
-            <CardContent>
+            <CardContent className="pt-4 pb-3 px-4">
+              <p className="text-xs text-muted-foreground">رحلات اليوم</p>
               <div className="text-2xl font-bold flex items-center gap-2">
-                <CheckCircle className="h-5 w-5 text-green-500" />
+                <CheckCircle className="h-4 w-4 text-green-600" />
                 {todayTrips.length}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4 pb-3 px-4">
+              <p className="text-xs text-muted-foreground">نشطة</p>
+              <div className="text-2xl font-bold flex items-center gap-2">
+                <Navigation className="h-4 w-4 text-blue-600" />
+                {activeTrips.length}
               </div>
             </CardContent>
           </Card>
@@ -151,9 +159,7 @@ export default function DriverDashboard() {
                   </div>
                   <div>
                     <p className="font-semibold text-green-700 dark:text-green-300">رحلة نشطة</p>
-                    <p className="text-sm text-green-600 dark:text-green-400">
-                      اضغط للمتابعة
-                    </p>
+                    <p className="text-sm text-green-600 dark:text-green-400">اضغط للمتابعة</p>
                   </div>
                 </div>
                 <Button 
@@ -167,115 +173,170 @@ export default function DriverDashboard() {
           </Card>
         )}
 
-        {/* Routes List */}
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold">المسارات المعينة</h2>
-          
-          {isLoading ? (
-            <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
-          ) : assignedRoutes.length === 0 ? (
-            <Card>
-              <CardContent className="py-8 text-center text-muted-foreground">
-                <MapPin className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
-                <p>لا توجد مسارات معينة لك</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-4">
-              {assignedRoutes.map((route) => {
-                const activeTrip = getActiveTrip(route.id);
-                const studentCount = route.route_assignments?.[0]?.count || 0;
+        {/* Routes & History Tabs */}
+        <Tabs defaultValue="routes">
+          <TabsList className="w-full">
+            <TabsTrigger value="routes" className="flex-1 gap-2">
+              <Bus className="h-4 w-4" />
+              المسارات
+            </TabsTrigger>
+            <TabsTrigger value="history" className="flex-1 gap-2">
+              <History className="h-4 w-4" />
+              سجل الرحلات
+            </TabsTrigger>
+          </TabsList>
 
-                return (
-                  <Card 
-                    key={route.id} 
-                    className={`transition-all ${activeTrip ? "border-green-500 shadow-green-100" : ""}`}
-                  >
-                    <CardHeader className="pb-2">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-base flex items-center gap-2">
-                          <Bus className="h-5 w-5 text-primary" />
-                          {route.name}
-                        </CardTitle>
-                        {activeTrip && (
-                          <Badge className="bg-green-500">نشط</Badge>
-                        )}
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="grid grid-cols-2 gap-3 text-sm">
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <MapPin className="h-4 w-4" />
-                          {route.schools?.name}
+          <TabsContent value="routes" className="space-y-4 mt-4">
+            {isLoading ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : assignedRoutes.length === 0 ? (
+              <Card>
+                <CardContent className="py-8 text-center text-muted-foreground">
+                  <MapPin className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
+                  <p>لا توجد مسارات معينة لك</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {assignedRoutes.map((route) => {
+                  const activeTrip = getActiveTrip(route.id);
+                  const studentCount = route.route_assignments?.[0]?.count || 0;
+
+                  return (
+                    <Card 
+                      key={route.id} 
+                      className={`transition-all ${activeTrip ? "border-green-500 shadow-green-100" : ""}`}
+                    >
+                      <CardHeader className="pb-2">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-base flex items-center gap-2">
+                            <Bus className="h-5 w-5 text-primary" />
+                            {route.name}
+                          </CardTitle>
+                          {activeTrip && (
+                            <Badge className="bg-green-500">نشط</Badge>
+                          )}
                         </div>
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <Users className="h-4 w-4" />
-                          {studentCount} طالب
-                        </div>
-                        {route.route_duration_minutes && (
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="grid grid-cols-2 gap-3 text-sm">
                           <div className="flex items-center gap-2 text-muted-foreground">
-                            <Clock className="h-4 w-4" />
-                            {route.route_duration_minutes} دقيقة
+                            <MapPin className="h-4 w-4" />
+                            {route.schools?.name}
+                          </div>
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <Users className="h-4 w-4" />
+                            {studentCount} طالب
+                          </div>
+                          {route.route_duration_minutes && (
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                              <Clock className="h-4 w-4" />
+                              {route.route_duration_minutes} دقيقة
+                            </div>
+                          )}
+                        </div>
+
+                        {isDriver && route.supervisors && (
+                          <div className="flex items-center gap-3 p-2 bg-muted rounded-lg text-sm">
+                            <User className="h-4 w-4 text-muted-foreground" />
+                            <div className="flex-1">
+                              <p className="font-medium">{route.supervisors.full_name}</p>
+                              <p className="text-xs text-muted-foreground">المشرفة</p>
+                            </div>
+                            <a href={`tel:${route.supervisors.phone}`}>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <Phone className="h-4 w-4" />
+                              </Button>
+                            </a>
                           </div>
                         )}
-                      </div>
-
-                      {/* Show the other person (driver shows supervisor, supervisor shows driver) */}
-                      {isDriver && route.supervisors && (
-                        <div className="flex items-center gap-3 p-2 bg-muted rounded-lg text-sm">
-                          <User className="h-4 w-4 text-muted-foreground" />
-                          <div className="flex-1">
-                            <p className="font-medium">{route.supervisors.full_name}</p>
-                            <p className="text-xs text-muted-foreground">المشرفة</p>
+                        {isSupervisor && route.drivers && (
+                          <div className="flex items-center gap-3 p-2 bg-muted rounded-lg text-sm">
+                            <User className="h-4 w-4 text-muted-foreground" />
+                            <div className="flex-1">
+                              <p className="font-medium">{route.drivers.full_name}</p>
+                              <p className="text-xs text-muted-foreground">السائق</p>
+                            </div>
+                            <a href={`tel:${route.drivers.phone}`}>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <Phone className="h-4 w-4" />
+                              </Button>
+                            </a>
                           </div>
-                          <a href={`tel:${route.supervisors.phone}`}>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <Phone className="h-4 w-4" />
-                            </Button>
-                          </a>
-                        </div>
-                      )}
-                      {isSupervisor && route.drivers && (
-                        <div className="flex items-center gap-3 p-2 bg-muted rounded-lg text-sm">
-                          <User className="h-4 w-4 text-muted-foreground" />
-                          <div className="flex-1">
-                            <p className="font-medium">{route.drivers.full_name}</p>
-                            <p className="text-xs text-muted-foreground">السائق</p>
-                          </div>
-                          <a href={`tel:${route.drivers.phone}`}>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <Phone className="h-4 w-4" />
-                            </Button>
-                          </a>
-                        </div>
-                      )}
+                        )}
 
-                      <Button
-                        className="w-full gap-2"
-                        variant={activeTrip ? "default" : "outline"}
-                        onClick={() => setSelectedRouteId(route.id)}
+                        <Button
+                          className="w-full gap-2"
+                          variant={activeTrip ? "default" : "outline"}
+                          onClick={() => setSelectedRouteId(route.id)}
+                        >
+                          {activeTrip ? (
+                            <>
+                              <Navigation className="h-4 w-4" />
+                              متابعة الرحلة
+                            </>
+                          ) : (
+                            <>
+                              <Play className="h-4 w-4" />
+                              بدء الرحلة
+                            </>
+                          )}
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="history" className="mt-4">
+            {assignedRoutes.length === 0 ? (
+              <Card>
+                <CardContent className="py-8 text-center text-muted-foreground">
+                  لا توجد مسارات
+                </CardContent>
+              </Card>
+            ) : assignedRoutes.length === 1 ? (
+              <TripHistory routeId={assignedRoutes[0].id} routeName={assignedRoutes[0].name} />
+            ) : (
+              <div className="space-y-4">
+                {!historyRouteId ? (
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">اختر مسار لعرض سجل رحلاته:</p>
+                    {assignedRoutes.map(route => (
+                      <Card
+                        key={route.id}
+                        className="cursor-pointer hover:border-primary/30 transition-all"
+                        onClick={() => setHistoryRouteId(route.id)}
                       >
-                        {activeTrip ? (
-                          <>
-                            <Navigation className="h-4 w-4" />
-                            متابعة الرحلة
-                          </>
-                        ) : (
-                          <>
-                            <Play className="h-4 w-4" />
-                            بدء الرحلة
-                          </>
-                        )}
-                      </Button>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          )}
-        </div>
+                        <CardContent className="py-3 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Bus className="h-4 w-4 text-primary" />
+                            <span className="font-medium text-sm">{route.name}</span>
+                          </div>
+                          <span className="text-xs text-muted-foreground">{route.schools?.name}</span>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <div>
+                    <Button variant="ghost" size="sm" className="mb-2" onClick={() => setHistoryRouteId(null)}>
+                      ← العودة للمسارات
+                    </Button>
+                    <TripHistory
+                      routeId={historyRouteId}
+                      routeName={assignedRoutes.find(r => r.id === historyRouteId)?.name}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </main>
 
       {/* Trip Interface Dialog */}

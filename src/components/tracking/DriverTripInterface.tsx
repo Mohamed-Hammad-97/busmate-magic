@@ -5,23 +5,13 @@ import { useLiveTrip, useLiveTripRealtime, type TripStudentStatus, type StudentS
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { LiveTripMap } from "./LiveTripMap";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
-  Play,
-  Square,
-  MapPin,
-  Phone,
-  Bell,
-  CheckCircle2,
-  Clock,
-  Navigation,
-  Users,
-  Loader2,
-  AlertCircle,
+  Play, Square, MapPin, Phone, Bell, CheckCircle2,
+  Clock, Navigation, Users, Loader2, AlertCircle, Ban,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -34,7 +24,7 @@ const STATUS_CONFIG: Record<StudentStatus, { label: string; color: string; icon:
   pending: { label: "في الانتظار", color: "bg-amber-500", icon: <Clock className="h-4 w-4" /> },
   arriving: { label: "الباص في الطريق", color: "bg-blue-500", icon: <Navigation className="h-4 w-4" /> },
   picked_up: { label: "تم الاستلام", color: "bg-green-500", icon: <CheckCircle2 className="h-4 w-4" /> },
-  dropped_off: { label: "تم التوصيل", color: "bg-gray-500", icon: <CheckCircle2 className="h-4 w-4" /> },
+  dropped_off: { label: "تم التوصيل", color: "bg-muted-foreground", icon: <CheckCircle2 className="h-4 w-4" /> },
 };
 
 export function DriverTripInterface({ routeId, onClose }: DriverTripInterfaceProps) {
@@ -43,33 +33,21 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
   const [showStudentDialog, setShowStudentDialog] = useState(false);
   
   const {
-    activeTrip,
-    tripStudents,
-    isLoading,
-    startTrip,
-    updateLocation,
-    updateStudentStatus,
-    endTrip,
-    isStarting,
-    isEnding,
+    activeTrip, tripStudents, isLoading,
+    startTrip, updateLocation, updateStudentStatus, endTrip,
+    isStarting, isEnding,
   } = useLiveTrip(routeId);
 
   useLiveTripRealtime(activeTrip?.id);
 
   const { latitude, longitude, startTracking, stopTracking, isTracking, error: geoError } = useGeolocation();
 
-  // Fetch route details
   const { data: route } = useQuery({
     queryKey: ["route-details", routeId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("routes")
-        .select(`
-          *,
-          schools (name),
-          drivers (full_name),
-          supervisors (full_name)
-        `)
+        .select(`*, schools (name), drivers (full_name), supervisors (full_name)`)
         .eq("id", routeId)
         .single();
       if (error) throw error;
@@ -77,7 +55,24 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
     },
   });
 
-  // Start location tracking when trip starts
+  // Fetch today's absences
+  const registrationIds = tripStudents.map(s => s.registration_id);
+  const { data: todayAbsences = [] } = useQuery({
+    queryKey: ["driver-trip-absences", registrationIds],
+    queryFn: async () => {
+      if (registrationIds.length === 0) return [];
+      const today = new Date().toISOString().split("T")[0];
+      const { data, error } = await supabase
+        .from("student_absences")
+        .select("registration_id")
+        .in("registration_id", registrationIds)
+        .eq("absence_date", today);
+      if (error) return [];
+      return data.map(a => a.registration_id);
+    },
+    enabled: registrationIds.length > 0,
+  });
+
   useEffect(() => {
     if (activeTrip?.status === "in_progress" && !isTracking) {
       startTracking((lat, lng) => {
@@ -88,11 +83,8 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
     }
   }, [activeTrip?.status, activeTrip?.id, isTracking]);
 
-  // Stop tracking when component unmounts
   useEffect(() => {
-    return () => {
-      stopTracking();
-    };
+    return () => { stopTracking(); };
   }, []);
 
   const handleStartTrip = () => {
@@ -117,44 +109,24 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
 
   const handleUpdateStudentStatus = (newStatus: StudentStatus) => {
     if (!selectedStudent || !activeTrip) return;
-
     const notificationMap: Record<StudentStatus, "arriving_soon" | "arrived_at_pickup" | "picked_up" | "arrived_at_school" | undefined> = {
-      pending: undefined,
-      arriving: "arriving_soon",
-      picked_up: "picked_up",
-      dropped_off: "arrived_at_school",
+      pending: undefined, arriving: "arriving_soon", picked_up: "picked_up", dropped_off: "arrived_at_school",
     };
-
     updateStudentStatus({
-      statusId: selectedStudent.id,
-      registrationId: selectedStudent.registration_id,
-      tripId: activeTrip.id,
-      status: newStatus,
-      notificationType: notificationMap[newStatus],
+      statusId: selectedStudent.id, registrationId: selectedStudent.registration_id,
+      tripId: activeTrip.id, status: newStatus, notificationType: notificationMap[newStatus],
     });
-
     setShowStudentDialog(false);
-    toast({
-      title: "تم التحديث",
-      description: `تم تحديث حالة ${selectedStudent.registrations?.student_name} وإرسال إشعار`,
-    });
+    toast({ title: "تم التحديث", description: `تم تحديث حالة ${selectedStudent.registrations?.student_name}` });
   };
 
   const handleArriveAtStudent = () => {
     if (!selectedStudent || !activeTrip) return;
-
     updateStudentStatus({
-      statusId: selectedStudent.id,
-      registrationId: selectedStudent.registration_id,
-      tripId: activeTrip.id,
-      status: "arriving",
-      notificationType: "arrived_at_pickup",
+      statusId: selectedStudent.id, registrationId: selectedStudent.registration_id,
+      tripId: activeTrip.id, status: "arriving", notificationType: "arrived_at_pickup",
     });
-
-    toast({
-      title: "تم الإشعار",
-      description: `تم إرسال إشعار الوصول لـ ${selectedStudent.registrations?.student_name}`,
-    });
+    toast({ title: "تم الإشعار", description: `تم إرسال إشعار الوصول لـ ${selectedStudent.registrations?.student_name}` });
   };
 
   const stats = {
@@ -173,103 +145,99 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
   }
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="p-4 border-b bg-background">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-xl font-bold">{route?.name || "الرحلة"}</h2>
-            <p className="text-sm text-muted-foreground">{route?.schools?.name}</p>
+    <ScrollArea className="h-full">
+      <div className="flex flex-col min-h-full">
+        {/* Header */}
+        <div className="p-4 border-b bg-background sticky top-0 z-10">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h2 className="text-lg font-bold">{route?.name || "الرحلة"}</h2>
+              <p className="text-xs text-muted-foreground">{route?.schools?.name}</p>
+            </div>
+            
+            {!activeTrip || activeTrip.status === "completed" ? (
+              <Button onClick={handleStartTrip} disabled={isStarting} size="sm" className="gap-2">
+                {isStarting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+                بدء الرحلة
+              </Button>
+            ) : (
+              <Button onClick={handleEndTrip} disabled={isEnding} variant="destructive" size="sm" className="gap-2">
+                {isEnding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Square className="h-4 w-4" />}
+                إنهاء الرحلة
+              </Button>
+            )}
           </div>
-          
-          {!activeTrip || activeTrip.status === "completed" ? (
-            <Button onClick={handleStartTrip} disabled={isStarting} className="gap-2">
-              {isStarting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-              بدء الرحلة
-            </Button>
-          ) : (
-            <Button onClick={handleEndTrip} disabled={isEnding} variant="destructive" className="gap-2">
-              {isEnding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Square className="h-4 w-4" />}
-              إنهاء الرحلة
-            </Button>
+
+          {/* Stats */}
+          {activeTrip?.status === "in_progress" && (
+            <div className="grid grid-cols-4 gap-2">
+              {[
+                { val: stats.total, label: "إجمالي", color: "text-foreground" },
+                { val: stats.pending, label: "في الانتظار", color: "text-amber-500" },
+                { val: stats.pickedUp, label: "تم الاستلام", color: "text-green-500" },
+                { val: stats.droppedOff, label: "تم التوصيل", color: "text-muted-foreground" },
+              ].map((s, i) => (
+                <div key={i} className="bg-muted/50 rounded-lg p-2 text-center">
+                  <p className={`text-xl font-bold ${s.color}`}>{s.val}</p>
+                  <p className="text-[10px] text-muted-foreground">{s.label}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {geoError && (
+            <div className="mt-2 p-2 bg-destructive/10 rounded-lg flex items-center gap-2 text-destructive text-sm">
+              <AlertCircle className="h-4 w-4" />
+              {geoError}
+            </div>
           )}
         </div>
 
-        {/* Stats */}
+        {/* Map */}
+        <div className="h-[350px] relative">
+          <LiveTripMap
+            trip={activeTrip}
+            students={tripStudents}
+            onStudentClick={handleStudentClick}
+            showDriverLocation={isTracking}
+            isDriver={true}
+          />
+        </div>
+
+        {/* Student List */}
         {activeTrip?.status === "in_progress" && (
-          <div className="grid grid-cols-4 gap-2">
-            <Card className="p-2">
-              <div className="text-center">
-                <p className="text-2xl font-bold">{stats.total}</p>
-                <p className="text-xs text-muted-foreground">إجمالي</p>
-              </div>
-            </Card>
-            <Card className="p-2">
-              <div className="text-center">
-                <p className="text-2xl font-bold text-amber-500">{stats.pending}</p>
-                <p className="text-xs text-muted-foreground">في الانتظار</p>
-              </div>
-            </Card>
-            <Card className="p-2">
-              <div className="text-center">
-                <p className="text-2xl font-bold text-green-500">{stats.pickedUp}</p>
-                <p className="text-xs text-muted-foreground">تم الاستلام</p>
-              </div>
-            </Card>
-            <Card className="p-2">
-              <div className="text-center">
-                <p className="text-2xl font-bold text-gray-500">{stats.droppedOff}</p>
-                <p className="text-xs text-muted-foreground">تم التوصيل</p>
-              </div>
-            </Card>
-          </div>
-        )}
-
-        {geoError && (
-          <div className="mt-2 p-2 bg-destructive/10 rounded-lg flex items-center gap-2 text-destructive text-sm">
-            <AlertCircle className="h-4 w-4" />
-            {geoError}
-          </div>
-        )}
-      </div>
-
-      {/* Map */}
-      <div className="flex-1 relative min-h-[300px]">
-        <LiveTripMap
-          trip={activeTrip}
-          students={tripStudents}
-          onStudentClick={handleStudentClick}
-          showDriverLocation={isTracking}
-          isDriver={true}
-        />
-      </div>
-
-      {/* Student List */}
-      {activeTrip?.status === "in_progress" && (
-        <div className="border-t">
-          <div className="p-3 bg-muted/50">
-            <h3 className="font-semibold flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              الطلاب ({tripStudents.length})
-            </h3>
-          </div>
-          <ScrollArea className="h-48">
+          <div className="border-t">
+            <div className="p-3 bg-muted/50 sticky top-0">
+              <h3 className="font-semibold flex items-center gap-2 text-sm">
+                <Users className="h-4 w-4" />
+                الطلاب ({tripStudents.length})
+              </h3>
+            </div>
             <div className="p-2 space-y-2">
               {tripStudents.map((student) => {
                 const config = STATUS_CONFIG[student.status as StudentStatus];
+                const isAbsent = todayAbsences.includes(student.registration_id);
                 return (
                   <Card
                     key={student.id}
-                    className="p-3 cursor-pointer hover:bg-muted/50 transition-colors"
+                    className={`p-3 cursor-pointer hover:bg-muted/50 transition-colors ${isAbsent ? "opacity-60 border-destructive/30" : ""}`}
                     onClick={() => handleStudentClick(student)}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-full ${config.color} flex items-center justify-center text-white`}>
-                          {config.icon}
+                        <div className={`w-9 h-9 rounded-full ${isAbsent ? "bg-destructive" : config.color} flex items-center justify-center text-white relative`}>
+                          {isAbsent ? <Ban className="h-4 w-4" /> : config.icon}
+                          {student.pickup_order && (
+                            <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-primary text-[9px] text-primary-foreground rounded-full flex items-center justify-center font-bold">
+                              {student.pickup_order}
+                            </span>
+                          )}
                         </div>
                         <div>
-                          <p className="font-medium">{student.registrations?.student_name}</p>
+                          <p className="font-medium text-sm flex items-center gap-1">
+                            {student.registrations?.student_name}
+                            {isAbsent && <span className="text-destructive text-xs">(غائب)</span>}
+                          </p>
                           <p className="text-xs text-muted-foreground">
                             {student.registrations?.parent_accounts?.parent_name}
                           </p>
@@ -282,9 +250,9 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
                         <a
                           href={`tel:${student.registrations?.parent_accounts?.father_phone}`}
                           onClick={(e) => e.stopPropagation()}
-                          className="p-2 hover:bg-muted rounded-full"
+                          className="p-1.5 hover:bg-muted rounded-full"
                         >
-                          <Phone className="h-4 w-4" />
+                          <Phone className="h-3.5 w-3.5" />
                         </a>
                       </div>
                     </div>
@@ -292,9 +260,9 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
                 );
               })}
             </div>
-          </ScrollArea>
-        </div>
-      )}
+          </div>
+        )}
+      </div>
 
       {/* Student Action Dialog */}
       <Dialog open={showStudentDialog} onOpenChange={setShowStudentDialog}>
@@ -310,8 +278,7 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
                 <p className="text-sm">موقع الاستلام</p>
                 <a
                   href={`https://www.google.com/maps?q=${selectedStudent?.registrations?.parent_accounts?.pickup_latitude},${selectedStudent?.registrations?.parent_accounts?.pickup_longitude}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  target="_blank" rel="noopener noreferrer"
                   className="text-xs text-primary hover:underline"
                 >
                   فتح في الخرائط
@@ -323,10 +290,8 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
               <Phone className="h-5 w-5 text-muted-foreground" />
               <div>
                 <p className="text-sm">هاتف ولي الأمر</p>
-                <a
-                  href={`tel:${selectedStudent?.registrations?.parent_accounts?.father_phone}`}
-                  className="text-xs text-primary hover:underline"
-                >
+                <a href={`tel:${selectedStudent?.registrations?.parent_accounts?.father_phone}`}
+                  className="text-xs text-primary hover:underline">
                   {selectedStudent?.registrations?.parent_accounts?.father_phone}
                 </a>
               </div>
@@ -335,45 +300,28 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
             <div className="grid grid-cols-2 gap-2">
               {selectedStudent?.status === "pending" && (
                 <>
-                  <Button
-                    variant="outline"
-                    className="gap-2"
-                    onClick={handleArriveAtStudent}
-                  >
-                    <Bell className="h-4 w-4" />
-                    إشعار الوصول
+                  <Button variant="outline" className="gap-2" onClick={handleArriveAtStudent}>
+                    <Bell className="h-4 w-4" /> إشعار الوصول
                   </Button>
-                  <Button
-                    className="gap-2"
-                    onClick={() => handleUpdateStudentStatus("picked_up")}
-                  >
-                    <CheckCircle2 className="h-4 w-4" />
-                    تم الاستلام
+                  <Button className="gap-2" onClick={() => handleUpdateStudentStatus("picked_up")}>
+                    <CheckCircle2 className="h-4 w-4" /> تم الاستلام
                   </Button>
                 </>
               )}
               {selectedStudent?.status === "arriving" && (
-                <Button
-                  className="gap-2 col-span-2"
-                  onClick={() => handleUpdateStudentStatus("picked_up")}
-                >
-                  <CheckCircle2 className="h-4 w-4" />
-                  تم الاستلام
+                <Button className="gap-2 col-span-2" onClick={() => handleUpdateStudentStatus("picked_up")}>
+                  <CheckCircle2 className="h-4 w-4" /> تم الاستلام
                 </Button>
               )}
               {selectedStudent?.status === "picked_up" && (
-                <Button
-                  className="gap-2 col-span-2"
-                  onClick={() => handleUpdateStudentStatus("dropped_off")}
-                >
-                  <CheckCircle2 className="h-4 w-4" />
-                  تم التوصيل
+                <Button className="gap-2 col-span-2" onClick={() => handleUpdateStudentStatus("dropped_off")}>
+                  <CheckCircle2 className="h-4 w-4" /> تم التوصيل
                 </Button>
               )}
             </div>
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </ScrollArea>
   );
 }

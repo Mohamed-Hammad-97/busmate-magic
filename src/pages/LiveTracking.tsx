@@ -1,19 +1,22 @@
-import React from "react";
+import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { OperationsMapView } from "@/components/tracking/OperationsMapView";
+import { TripHistory } from "@/components/tracking/TripHistory";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MapPin, Users, Map, List } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { MapPin, Users, Map, List, History, Bus, ChevronLeft } from "lucide-react";
 import { useCity } from "@/contexts/CityContext";
 import { GoogleMapsProvider } from "@/components/maps/GoogleMapsProvider";
 
 export default function LiveTracking() {
   const { t } = useTranslation();
   const { selectedCity } = useCity();
+  const [historyRouteId, setHistoryRouteId] = useState<string | null>(null);
 
   const { data: routes = [], isLoading } = useQuery({
     queryKey: ["routes-for-tracking", selectedCity],
@@ -39,7 +42,6 @@ export default function LiveTracking() {
     },
   });
 
-  // Check for active trips
   const { data: activeTrips = [] } = useQuery({
     queryKey: ["active-trips"],
     queryFn: async () => {
@@ -71,9 +73,12 @@ export default function LiveTracking() {
               <List className="h-4 w-4" />
               {t('liveTracking.routesList')}
             </TabsTrigger>
+            <TabsTrigger value="history" className="gap-2">
+              <History className="h-4 w-4" />
+              سجل الرحلات
+            </TabsTrigger>
           </TabsList>
 
-          {/* Map View - All buses */}
           <TabsContent value="map">
             <GoogleMapsProvider>
               <OperationsMapView />
@@ -128,6 +133,44 @@ export default function LiveTracking() {
                 );
               })}
             </div>
+          </TabsContent>
+
+          <TabsContent value="history">
+            {!historyRouteId ? (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">اختر مسار لعرض سجل رحلاته:</p>
+                <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                  {routes.map(route => (
+                    <Card
+                      key={route.id}
+                      className="cursor-pointer hover:border-primary/30 hover:shadow-md transition-all"
+                      onClick={() => setHistoryRouteId(route.id)}
+                    >
+                      <CardContent className="py-4 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Bus className="h-5 w-5 text-primary" />
+                          <div>
+                            <p className="font-medium text-sm">{route.name}</p>
+                            <p className="text-xs text-muted-foreground">{route.schools?.name}</p>
+                          </div>
+                        </div>
+                        <ChevronLeft className="h-4 w-4 text-muted-foreground" />
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div>
+                <Button variant="ghost" size="sm" className="mb-3" onClick={() => setHistoryRouteId(null)}>
+                  ← العودة للمسارات
+                </Button>
+                <TripHistory
+                  routeId={historyRouteId}
+                  routeName={routes.find(r => r.id === historyRouteId)?.name}
+                />
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>
