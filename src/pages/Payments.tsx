@@ -136,6 +136,21 @@ const Payments = () => {
     return matchesSearch && matchesStatus && matchesInstallments;
   });
 
+  // Grouped view filtered by search/status
+  const filteredGrouped = useMemo(() => {
+    const result: typeof paymentsByRegistration = {};
+    Object.entries(paymentsByRegistration).forEach(([regId, regData]) => {
+      // Filter by payment tab
+      if (paymentTab === 'fully_paid' && !regData.isFullyPaid) return;
+      if (paymentTab === 'partial' && regData.isFullyPaid) return;
+      // Filter by search
+      const matchesSearch = regData.parentName.toLowerCase().includes(searchTerm.toLowerCase()) || regData.studentName.toLowerCase().includes(searchTerm.toLowerCase());
+      if (!matchesSearch) return;
+      result[regId] = regData;
+    });
+    return result;
+  }, [paymentsByRegistration, paymentTab, searchTerm]);
+
   const statusLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: React.ReactNode }> = {
     paid: { label: t('payments.paid'), variant: 'default', icon: <CheckCircle className="h-4 w-4" /> },
     pending: { label: t('payments.pending'), variant: 'secondary', icon: <Clock className="h-4 w-4" /> },
@@ -297,13 +312,13 @@ const Payments = () => {
                 </div>
               </div>
 
-              {/* Premium Table */}
+              {/* Premium Table - One row per user */}
               <div className="rounded-2xl border border-border/50 bg-card overflow-hidden shadow-sm">
                 <div className="px-6 py-4 border-b border-border/50 flex items-center gap-3">
                   <div className="p-1.5 rounded-lg bg-primary/10"><CreditCard className="h-4 w-4 text-primary" /></div>
                   <div>
                     <h2 className="text-sm font-semibold text-foreground">{t('payments.title')}</h2>
-                    <p className="text-xs text-muted-foreground">{filteredPayments.length} records</p>
+                    <p className="text-xs text-muted-foreground">{Object.keys(filteredGrouped).length} users</p>
                   </div>
                 </div>
                 {isLoading ? (
@@ -313,7 +328,7 @@ const Payments = () => {
                     </div>
                     <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
                   </div>
-                ) : filteredPayments.length === 0 ? (
+                ) : Object.keys(filteredGrouped).length === 0 ? (
                   <div className="p-16 text-center">
                     <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-muted/50 mb-4">
                       <CreditCard className="h-8 w-8 text-muted-foreground" />
@@ -328,79 +343,66 @@ const Payments = () => {
                           <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('payments.parentName')}</TableHead>
                           <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('payments.studentName')}</TableHead>
                           <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('payments.subscriptionType')}</TableHead>
-                          <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('payments.installments')}</TableHead>
-                          <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('payments.installmentNumber')}</TableHead>
-                          <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('payments.amount')}</TableHead>
-                          <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('payments.dueDate')}</TableHead>
-                          <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('common.status')}</TableHead>
+                          <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Total</TableHead>
+                          <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('payments.paid')}</TableHead>
+                          <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Remaining</TableHead>
+                          <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Progress</TableHead>
                           <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground text-right">{t('common.actions')}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {filteredPayments.map((payment: any) => (
-                          <TableRow key={payment.id} className="group hover:bg-muted/20 transition-colors duration-150">
-                            <TableCell>
-                              <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
-                                  {(payment.subscriptions?.registrations?.parent_accounts?.parent_name || '?')[0].toUpperCase()}
+                        {Object.values(filteredGrouped).map((regData) => {
+                          const remaining = regData.totalAmount - regData.paidAmount;
+                          const progress = regData.totalAmount > 0 ? Math.min((regData.paidAmount / regData.totalAmount) * 100, 100) : 0;
+                          return (
+                            <TableRow key={regData.registrationId} className="group hover:bg-muted/20 transition-colors duration-150 cursor-pointer" onClick={() => setSelectedRegistration(regData)}>
+                              <TableCell>
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
+                                    {(regData.parentName || '?')[0].toUpperCase()}
+                                  </div>
+                                  <span className="font-medium text-sm text-foreground">{regData.parentName || '-'}</span>
                                 </div>
-                                <span className="font-medium text-sm text-foreground">{payment.subscriptions?.registrations?.parent_accounts?.parent_name || '-'}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-sm text-muted-foreground">{payment.subscriptions?.registrations?.student_name || '-'}</TableCell>
-                            <TableCell>
-                              <span className="text-xs font-medium bg-primary/10 text-primary px-2.5 py-1 rounded-full">
-                                {subscriptionTypeLabels[payment.subscriptions?.subscription_type] || '-'}
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-sm text-muted-foreground">{payment.subscriptions?.number_of_installments || '-'}</TableCell>
-                            <TableCell className="text-sm text-muted-foreground font-mono">{payment.installment_number}</TableCell>
-                            <TableCell className="text-sm font-medium text-foreground">{Number(payment.amount).toLocaleString()} EGP</TableCell>
-                            <TableCell className="text-sm text-muted-foreground">{format(new Date(payment.due_date), 'dd MMM yyyy', { locale: dateLocale })}</TableCell>
-                            <TableCell>
-                              {payment.status === 'paid' ? (
-                                <div className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border bg-success/10 text-success border-success/20">
-                                  <CheckCircle className="h-3 w-3" />
-                                  {t('payments.paid')}
+                              </TableCell>
+                              <TableCell className="text-sm text-muted-foreground">{regData.studentName || '-'}</TableCell>
+                              <TableCell>
+                                <span className="text-xs font-medium bg-primary/10 text-primary px-2.5 py-1 rounded-full">
+                                  {subscriptionTypeLabels[regData.subscription?.subscription_type] || '-'}
+                                </span>
+                              </TableCell>
+                              <TableCell className="text-sm font-semibold text-foreground">{Number(regData.totalAmount).toLocaleString()} EGP</TableCell>
+                              <TableCell className="text-sm font-medium text-success">{regData.paidAmount.toLocaleString()} EGP</TableCell>
+                              <TableCell className={`text-sm font-medium ${remaining > 0 ? 'text-destructive' : 'text-success'}`}>{remaining.toLocaleString()} EGP</TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <div className="w-16 h-2 rounded-full bg-muted/50 overflow-hidden">
+                                    <div className={`h-full rounded-full ${regData.isFullyPaid ? 'bg-success' : 'bg-primary'}`} style={{ width: `${progress}%` }} />
+                                  </div>
+                                  <span className="text-[10px] text-muted-foreground">{progress.toFixed(0)}%</span>
                                 </div>
-                              ) : payment.status === 'overdue' ? (
-                                <div className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border bg-destructive/10 text-destructive border-destructive/20">
-                                  <AlertCircle className="h-3 w-3" />
-                                  {t('payments.overdue')}
-                                </div>
-                              ) : (
-                                <div className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border bg-warning/10 text-warning border-warning/20">
-                                  <Clock className="h-3 w-3" />
-                                  {t('payments.pending')}
-                                </div>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary" onClick={() => openPaymentProfile(payment)}>
-                                  <Eye className="h-3.5 w-3.5" />
-                                </Button>
-                                <InvoiceGenerator
-                                  data={{
-                                    parentName: payment.subscriptions?.registrations?.parent_accounts?.parent_name || '',
-                                    studentName: payment.subscriptions?.registrations?.student_name || '',
-                                    subscriptionType: payment.subscriptions?.subscription_type || '',
-                                    totalAmount: payment.subscriptions?.value || 0,
-                                    paidAmount: paymentsByRegistration[payment.subscriptions?.registration_id]?.paidAmount || 0,
-                                    payments: paymentsByRegistration[payment.subscriptions?.registration_id]?.payments || [],
-                                    registrationId: payment.subscriptions?.registration_id || payment.id,
-                                  }}
-                                  variant="icon"
-                                />
-                                {payment.status !== 'paid' && (
-                                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-success/10 hover:text-success" onClick={() => markPaidMutation.mutate(payment.id)} disabled={markPaidMutation.isPending}>
-                                    <Check className="h-3.5 w-3.5" />
+                              </TableCell>
+                              <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                                <div className="flex justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary" onClick={() => setSelectedRegistration(regData)}>
+                                    <Eye className="h-3.5 w-3.5" />
                                   </Button>
-                                )}
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                                  <InvoiceGenerator
+                                    data={{
+                                      parentName: regData.parentName,
+                                      studentName: regData.studentName,
+                                      subscriptionType: regData.subscription?.subscription_type || '',
+                                      totalAmount: regData.totalAmount,
+                                      paidAmount: regData.paidAmount,
+                                      payments: regData.payments,
+                                      registrationId: regData.registrationId,
+                                    }}
+                                    variant="icon"
+                                  />
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
                       </TableBody>
                     </Table>
                   </div>

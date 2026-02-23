@@ -64,6 +64,7 @@ const Settings = () => {
     is_active: true,
     user_id: '',
     password: '',
+    city: '',
   });
 
   const { data: employees = [], isLoading } = useQuery({
@@ -90,6 +91,7 @@ const Settings = () => {
             phone: employeeForm.phone,
             departments: employeeForm.departments,
             is_active: employeeForm.is_active,
+            city: employeeForm.city || null,
           })
           .eq('id', selectedEmployee.id);
         if (error) throw error;
@@ -107,6 +109,7 @@ const Settings = () => {
             phone: employeeForm.phone,
             departments: employeeForm.departments,
             password: employeeForm.password,
+            city: employeeForm.city || null,
           },
           headers: {
             Authorization: `Bearer ${sessionData.session?.access_token}`,
@@ -143,6 +146,7 @@ const Settings = () => {
       is_active: true,
       user_id: '',
       password: '',
+      city: '',
     });
     setSelectedEmployee(null);
   };
@@ -157,6 +161,7 @@ const Settings = () => {
       is_active: employee.is_active,
       user_id: employee.user_id,
       password: '',
+      city: (employee as any).city || '',
     });
     setIsEmployeeDialogOpen(true);
   };
@@ -262,6 +267,7 @@ const Settings = () => {
                       <TableHead className={isRtl ? 'text-right' : ''}>{t('common.name')}</TableHead>
                       <TableHead className={isRtl ? 'text-right' : ''}>{t('common.email')}</TableHead>
                       <TableHead className={isRtl ? 'text-right' : ''}>{t('common.phone')}</TableHead>
+                      <TableHead className={isRtl ? 'text-right' : ''}>{t('common.city')}</TableHead>
                       <TableHead className={isRtl ? 'text-right' : ''}>{t('settings.departments')}</TableHead>
                       <TableHead className={isRtl ? 'text-right' : ''}>{t('common.status')}</TableHead>
                       <TableHead className={isRtl ? 'text-right' : ''}>{t('common.actions')}</TableHead>
@@ -270,13 +276,13 @@ const Settings = () => {
                   <TableBody>
                     {isLoading ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8">
+                       <TableCell colSpan={7} className="text-center py-8">
                           {t('common.loading')}
                         </TableCell>
                       </TableRow>
                     ) : filteredEmployees.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8">
+                        <TableCell colSpan={7} className="text-center py-8">
                           {t('common.noData')}
                         </TableCell>
                       </TableRow>
@@ -286,6 +292,7 @@ const Settings = () => {
                           <TableCell className="font-medium">{employee.full_name}</TableCell>
                           <TableCell>{employee.email}</TableCell>
                           <TableCell dir="ltr" className={isRtl ? 'text-right' : ''}>{employee.phone || '-'}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{(employee as any).city || 'All'}</TableCell>
                           <TableCell>
                             <div className="flex flex-wrap gap-1">
                               {employee.departments.map((dept) => (
@@ -379,6 +386,22 @@ const Settings = () => {
                   />
                 </div>
               )}
+              <div className="space-y-2">
+                <Label htmlFor="emp_city">{t('common.city')}</Label>
+                <Select value={employeeForm.city} onValueChange={(val) => setEmployeeForm({ ...employeeForm, city: val })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={isRtl ? 'اختر المدينة' : 'Select city'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cairo">{isRtl ? 'القاهرة' : 'Cairo'}</SelectItem>
+                    <SelectItem value="giza">{isRtl ? 'الجيزة' : 'Giza'}</SelectItem>
+                    <SelectItem value="alexandria">{isRtl ? 'الإسكندرية' : 'Alexandria'}</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  {isRtl ? 'اترك فارغاً للوصول لكل المدن' : 'Leave empty for access to all cities'}
+                </p>
+              </div>
               <div className="space-y-2">
                 <Label>{t('settings.departments')}</Label>
                 <div className="grid grid-cols-2 gap-2">
