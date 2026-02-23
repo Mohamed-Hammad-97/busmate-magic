@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Search, Eye, Edit2, ClipboardList, DollarSign, Link2, Map, TrendingUp, CheckCircle, Clock, XCircle, GraduationCap, Users, School } from 'lucide-react';
+import { Plus, Search, Eye, Edit2, ClipboardList, DollarSign, Link2, Map, TrendingUp, CheckCircle, Clock, XCircle, GraduationCap, Users, School, Trash2, UserX } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
@@ -27,6 +27,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import RegistrationDialog from '@/components/registrations/RegistrationDialog';
@@ -55,6 +65,8 @@ const Registrations: React.FC = () => {
   const [selectedRegistration, setSelectedRegistration] = useState<Registration | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [deleteTarget, setDeleteTarget] = useState<Registration | null>(null);
+  const [deleteMode, setDeleteMode] = useState<'deactivate' | 'delete'>('deactivate');
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -123,6 +135,65 @@ const Registrations: React.FC = () => {
   const handleAddNew = () => {
     setSelectedRegistration(null);
     setDialogOpen(true);
+  };
+
+  const deactivateMutation = useMutation({
+    mutationFn: async (reg: Registration) => {
+      // Cancel the registration
+      const { error: regError } = await supabase
+        .from('registrations')
+        .update({ status: 'cancelled' })
+        .eq('id', reg.id);
+      if (regError) throw regError;
+      // Deactivate the parent account
+      const { error: parentError } = await supabase
+        .from('parent_accounts')
+        .update({ is_active: false })
+        .eq('id', reg.parent_id);
+      if (parentError) throw parentError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['registrations'] });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      toast({ title: 'Account deactivated', description: 'The registration has been cancelled and the parent account deactivated.' });
+      setDeleteTarget(null);
+    },
+    onError: (error) => {
+      toast({ title: 'Error', description: 'Failed to deactivate account', variant: 'destructive' });
+      console.error(error);
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (reg: Registration) => {
+      // Delete payments -> subscriptions -> route_assignments -> registration
+      const { data: subs } = await supabase.from('subscriptions').select('id').eq('registration_id', reg.id);
+      if (subs && subs.length > 0) {
+        const subIds = subs.map(s => s.id);
+        await supabase.from('payments').delete().in('subscription_id', subIds);
+        await supabase.from('subscriptions').delete().eq('registration_id', reg.id);
+      }
+      await supabase.from('route_assignments').delete().eq('registration_id', reg.id);
+      await supabase.from('student_absences').delete().eq('registration_id', reg.id);
+      const { error } = await supabase.from('registrations').delete().eq('id', reg.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['registrations'] });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      toast({ title: 'Registration deleted', description: 'The registration and all related data have been permanently removed.' });
+      setDeleteTarget(null);
+    },
+    onError: (error) => {
+      toast({ title: 'Error', description: 'Failed to delete registration', variant: 'destructive' });
+      console.error(error);
+    },
+  });
+
+  const confirmAction = () => {
+    if (!deleteTarget) return;
+    if (deleteMode === 'deactivate') deactivateMutation.mutate(deleteTarget);
+    else deleteMutation.mutate(deleteTarget);
   };
 
   const totalCount = registrations.length;
@@ -378,6 +449,14 @@ const Registrations: React.FC = () => {
                                 <DollarSign className="h-3.5 w-3.5" />
                               </Button>
                             )}
+                            {reg.status !== 'cancelled' && (
+                              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-warning/10 hover:text-warning" onClick={() => { setDeleteTarget(reg); setDeleteMode('deactivate'); }} title="Deactivate">
+                                <UserX className="h-3.5 w-3.5" />
+                              </Button>
+                            )}
+                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-destructive/10 hover:text-destructive" onClick={() => { setDeleteTarget(reg); setDeleteMode('delete'); }} title="Delete permanently">
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -432,6 +511,32 @@ const Registrations: React.FC = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Deactivate/Delete Confirmation */}
+        <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                {deleteMode === 'deactivate' ? 'Deactivate Account?' : 'Delete Registration Permanently?'}
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {deleteMode === 'deactivate'
+                  ? `This will cancel the registration for "${deleteTarget?.student_name}" and deactivate the parent account. The parent will no longer be able to log in.`
+                  : `This will permanently delete the registration for "${deleteTarget?.student_name}" and all related payments, subscriptions, and route assignments. This action cannot be undone.`}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                className={deleteMode === 'delete' ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90' : 'bg-warning text-warning-foreground hover:bg-warning/90'}
+                onClick={confirmAction}
+                disabled={deactivateMutation.isPending || deleteMutation.isPending}
+              >
+                {deleteMode === 'deactivate' ? 'Deactivate' : 'Delete Permanently'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DashboardLayout>
   );

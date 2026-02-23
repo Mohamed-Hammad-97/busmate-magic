@@ -31,7 +31,7 @@ serve(async (req) => {
     // Find parent account
     const { data: parent, error: parentError } = await supabase
       .from("parent_accounts")
-      .select("id, user_id, has_password")
+      .select("id, user_id, has_password, is_active")
       .or(`father_phone.eq.${cleanPhone},father_phone.eq.0${cleanPhone}`)
       .single();
 
@@ -39,6 +39,14 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ error: "حساب غير موجود أو لم يتم تعيين كلمة مرور" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Block deactivated accounts
+    if (parent.is_active === false) {
+      return new Response(
+        JSON.stringify({ error: "تم تعطيل هذا الحساب. تواصل مع الإدارة" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 

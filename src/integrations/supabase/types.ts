@@ -379,6 +379,7 @@ export type Database = {
       }
       employees: {
         Row: {
+          city: string | null
           created_at: string
           departments: Database["public"]["Enums"]["department"][]
           email: string
@@ -390,6 +391,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          city?: string | null
           created_at?: string
           departments?: Database["public"]["Enums"]["department"][]
           email: string
@@ -401,6 +403,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          city?: string | null
           created_at?: string
           departments?: Database["public"]["Enums"]["department"][]
           email?: string
@@ -659,6 +662,7 @@ export type Database = {
           father_phone: string
           has_password: boolean
           id: string
+          is_active: boolean
           job: string | null
           mother_phone: string | null
           national_id: string
@@ -675,6 +679,7 @@ export type Database = {
           father_phone: string
           has_password?: boolean
           id?: string
+          is_active?: boolean
           job?: string | null
           mother_phone?: string | null
           national_id: string
@@ -691,6 +696,7 @@ export type Database = {
           father_phone?: string
           has_password?: boolean
           id?: string
+          is_active?: boolean
           job?: string | null
           mother_phone?: string | null
           national_id?: string
@@ -701,6 +707,47 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      payment_extra_fees: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string
+          fee_type: string
+          id: string
+          payment_id: string
+          reason: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by: string
+          fee_type?: string
+          id?: string
+          payment_id: string
+          reason?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string
+          fee_type?: string
+          id?: string
+          payment_id?: string
+          reason?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_extra_fees_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payments: {
         Row: {

@@ -31,13 +31,21 @@ serve(async (req) => {
     // Check if parent exists and has password
     const { data: parent, error } = await supabase
       .from("parent_accounts")
-      .select("id, has_password, user_id")
+      .select("id, has_password, user_id, is_active")
       .or(`father_phone.eq.${cleanPhone},father_phone.eq.0${cleanPhone}`)
       .single();
 
     if (error || !parent) {
       return new Response(
         JSON.stringify({ exists: false, has_password: false }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Block deactivated accounts
+    if (parent.is_active === false) {
+      return new Response(
+        JSON.stringify({ exists: true, has_password: false, deactivated: true }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

@@ -6,14 +6,12 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
-import { Plus, Search, Users, MapPin, Phone, Edit, Eye, TrendingUp, UserCheck, Building2, ShieldCheck, Loader2 } from 'lucide-react';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Plus, Search, Users, MapPin, Phone, Edit, Eye, TrendingUp, UserCheck, Building2, ShieldCheck, Loader2, Trash2, UserX } from 'lucide-react';
 import { useCity } from '@/contexts/CityContext';
 import { toast } from 'sonner';
 import type { Tables } from '@/integrations/supabase/types';
@@ -31,6 +29,8 @@ const Customers = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<ParentAccount | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ParentAccount | null>(null);
+  const [deleteMode, setDeleteMode] = useState<'deactivate' | 'delete'>('deactivate');
 
   const { data: allCustomers = [], isLoading } = useQuery({
     queryKey: ['customers'],
@@ -95,6 +95,57 @@ const Customers = () => {
       toast.error('فشل في تفعيل الحساب: ' + error.message);
     },
   });
+
+  const deactivateCustomerMutation = useMutation({
+    mutationFn: async (customer: ParentAccount) => {
+      const { error } = await supabase
+        .from('parent_accounts')
+        .update({ is_active: false })
+        .eq('id', customer.id);
+      if (error) throw error;
+      await supabase.from('registrations').update({ status: 'cancelled' }).eq('parent_id', customer.id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['registrations'] });
+      toast.success('Account deactivated successfully');
+      setDeleteTarget(null);
+    },
+    onError: (error) => { toast.error('Failed to deactivate'); console.error(error); },
+  });
+
+  const deleteCustomerMutation = useMutation({
+    mutationFn: async (customer: ParentAccount) => {
+      const { data: regs } = await supabase.from('registrations').select('id').eq('parent_id', customer.id);
+      if (regs && regs.length > 0) {
+        const regIds = regs.map(r => r.id);
+        const { data: subs } = await supabase.from('subscriptions').select('id').in('registration_id', regIds);
+        if (subs && subs.length > 0) {
+          await supabase.from('payments').delete().in('subscription_id', subs.map(s => s.id));
+          await supabase.from('subscriptions').delete().in('registration_id', regIds);
+        }
+        await supabase.from('route_assignments').delete().in('registration_id', regIds);
+        await supabase.from('student_absences').delete().in('registration_id', regIds);
+        await supabase.from('registrations').delete().eq('parent_id', customer.id);
+      }
+      await supabase.from('chat_conversations').delete().eq('parent_id', customer.id);
+      const { error } = await supabase.from('parent_accounts').delete().eq('id', customer.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['registrations'] });
+      toast.success('Customer deleted permanently');
+      setDeleteTarget(null);
+    },
+    onError: (error) => { toast.error('Failed to delete customer'); console.error(error); },
+  });
+
+  const confirmCustomerAction = () => {
+    if (!deleteTarget) return;
+    if (deleteMode === 'deactivate') deactivateCustomerMutation.mutate(deleteTarget);
+    else deleteCustomerMutation.mutate(deleteTarget);
+  };
 
   const filteredCustomers = customers.filter((customer) =>
     customer.parent_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -303,21 +354,16 @@ const Customers = () => {
                             <Edit className="h-3.5 w-3.5" />
                           </Button>
                           {!customer.user_id && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 rounded-lg hover:bg-success/10 hover:text-success"
-                              onClick={(e) => handleActivate(e, customer)}
-                              disabled={activateMutation.isPending}
-                              title="تفعيل الحساب"
-                            >
-                              {activateMutation.isPending ? (
-                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                              ) : (
-                                <ShieldCheck className="h-3.5 w-3.5" />
-                              )}
+                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-success/10 hover:text-success" onClick={(e) => handleActivate(e, customer)} disabled={activateMutation.isPending} title="تفعيل الحساب">
+                              {activateMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5" />}
                             </Button>
                           )}
+                          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-warning/10 hover:text-warning" onClick={() => { setDeleteTarget(customer); setDeleteMode('deactivate'); }} title="Deactivate">
+                            <UserX className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-destructive/10 hover:text-destructive" onClick={() => { setDeleteTarget(customer); setDeleteMode('delete'); }} title="Delete permanently">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -339,6 +385,32 @@ const Customers = () => {
           onClose={() => setIsDetailsOpen(false)}
           customer={selectedCustomer}
         />
+
+        {/* Deactivate/Delete Confirmation */}
+        <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                {deleteMode === 'deactivate' ? 'Deactivate Account?' : 'Delete Customer Permanently?'}
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {deleteMode === 'deactivate'
+                  ? `This will deactivate "${deleteTarget?.parent_name}"'s account and cancel all their registrations. They will no longer be able to log in.`
+                  : `This will permanently delete "${deleteTarget?.parent_name}" and ALL their registrations, payments, and data. This cannot be undone.`}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                className={deleteMode === 'delete' ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90' : 'bg-warning text-warning-foreground hover:bg-warning/90'}
+                onClick={confirmCustomerAction}
+                disabled={deactivateCustomerMutation.isPending || deleteCustomerMutation.isPending}
+              >
+                {deleteMode === 'deactivate' ? 'Deactivate' : 'Delete Permanently'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DashboardLayout>
   );
