@@ -12,6 +12,7 @@ interface Employee {
   phone: string | null;
   departments: Department[];
   is_active: boolean;
+  city: string | null;
 }
 
 interface AuthContextType {
