@@ -58,6 +58,7 @@ interface PaymentProfileDialogProps {
   subscription: any;
   parentName: string;
   studentName: string;
+  canEdit?: boolean;
 }
 
 export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
@@ -68,6 +69,7 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
   subscription,
   parentName,
   studentName,
+  canEdit = true,
 }) => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -312,13 +314,15 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
                   <Calendar className="h-3.5 w-3.5 mr-1.5" />
                   Installments
                 </TabsTrigger>
-                <TabsTrigger value="extra-fees" className="rounded-lg px-4 py-2 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                  <Receipt className="h-3.5 w-3.5 mr-1.5" />
-                  Extra Fees
-                  {extraFees.length > 0 && (
-                    <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-[10px]">{extraFees.length}</Badge>
-                  )}
-                </TabsTrigger>
+                {canEdit && (
+                  <TabsTrigger value="extra-fees" className="rounded-lg px-4 py-2 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                    <Receipt className="h-3.5 w-3.5 mr-1.5" />
+                    Extra Fees
+                    {extraFees.length > 0 && (
+                      <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-[10px]">{extraFees.length}</Badge>
+                    )}
+                  </TabsTrigger>
+                )}
               </TabsList>
 
               {/* Installments Tab */}
@@ -395,6 +399,7 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
                               </span>
                             </TableCell>
                             <TableCell className="text-right">
+                              {canEdit && (
                               <div className="flex justify-end gap-0.5">
                                 {editingPaymentId === payment.id ? (
                                   <>
@@ -418,6 +423,7 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
                                   </>
                                 )}
                               </div>
+                              )}
                             </TableCell>
                           </TableRow>
                         );

@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -55,6 +56,8 @@ const Routes = () => {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.language === 'ar';
   const queryClient = useQueryClient();
+  const { isSuperAdmin, hasDepartment } = useAuth();
+  const canEdit = isSuperAdmin || hasDepartment('operations');
   const { selectedCity } = useCity();
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -423,10 +426,12 @@ const Routes = () => {
             { icon: Users, value: filteredRoutes.reduce((sum: number, r: any) => sum + (assignmentCounts[r.id] || 0), 0), label: isRtl ? 'طلاب' : 'Students' },
           ]}
           actions={
-            <Button className="gap-2 bg-white/15 hover:bg-white/25 text-primary-foreground border-0 backdrop-blur-sm" onClick={handleAddNew}>
-              <Plus className="h-4 w-4" />
-              {isRtl ? 'إضافة خط' : 'Add Route'}
-            </Button>
+            canEdit && (
+              <Button className="gap-2 bg-white/15 hover:bg-white/25 text-primary-foreground border-0 backdrop-blur-sm" onClick={handleAddNew}>
+                <Plus className="h-4 w-4" />
+                {isRtl ? 'إضافة خط' : 'Add Route'}
+              </Button>
+            )
           }
         />
 
@@ -524,13 +529,15 @@ const Routes = () => {
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-1">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleEdit(route)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
+                              {canEdit && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleEdit(route)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              )}
                               {getGoogleMapsUrl(route) && (
                                 <a
                                   href={getGoogleMapsUrl(route) || '#'}
@@ -542,14 +549,16 @@ const Routes = () => {
                                   <ExternalLink className="h-4 w-4" />
                                 </a>
                               )}
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteClick(route)}
-                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                              {canEdit && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDeleteClick(route)}
+                                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>

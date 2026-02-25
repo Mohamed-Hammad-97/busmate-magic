@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -37,6 +38,8 @@ const Payments = () => {
   const dateLocale = i18n.language === 'ar' ? ar : enUS;
   const queryClient = useQueryClient();
   const { selectedCity } = useCity();
+  const { isSuperAdmin, hasDepartment } = useAuth();
+  const canEdit = isSuperAdmin || hasDepartment('finance');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [installmentFilter, setInstallmentFilter] = useState<string>('');
@@ -56,6 +59,7 @@ const Payments = () => {
         .from('payments')
         .select(`
           *,
+          payment_extra_fees (*),
           subscriptions (
             id,
             registration_id,
@@ -115,7 +119,15 @@ const Payments = () => {
       grouped[registrationId].payments.push(payment);
       if (payment.status === 'paid') grouped[registrationId].paidAmount += Number(payment.amount);
     });
-    Object.values(grouped).forEach((reg) => { reg.isFullyPaid = reg.paidAmount >= reg.totalAmount; });
+    // Include extra fees in totalAmount
+    Object.values(grouped).forEach((reg) => {
+      const extraFeesTotal = reg.payments.reduce((sum: number, p: any) => {
+        const fees = p.payment_extra_fees || [];
+        return sum + fees.reduce((fSum: number, f: any) => fSum + Number(f.amount), 0);
+      }, 0);
+      reg.totalAmount = (reg.subscription?.value || 0) + extraFeesTotal;
+      reg.isFullyPaid = reg.paidAmount >= reg.totalAmount;
+    });
     return grouped;
   }, [payments]);
 
@@ -162,12 +174,14 @@ const Payments = () => {
     yearly: t('payments.yearly'),
   };
 
-  const stats = {
-    total: payments.reduce((sum: number, p: any) => sum + Number(p.amount), 0),
-    paid: payments.filter((p: any) => p.status === 'paid').reduce((sum: number, p: any) => sum + Number(p.amount), 0),
-    pending: payments.filter((p: any) => p.status === 'pending').reduce((sum: number, p: any) => sum + Number(p.amount), 0),
-    overdue: payments.filter((p: any) => p.status === 'overdue').reduce((sum: number, p: any) => sum + Number(p.amount), 0),
-  };
+  const stats = useMemo(() => {
+    const extraFeesForPayments = (p: any) => (p.payment_extra_fees || []).reduce((s: number, f: any) => s + Number(f.amount), 0);
+    const total = payments.reduce((sum: number, p: any) => sum + Number(p.amount) + extraFeesForPayments(p), 0);
+    const paid = payments.filter((p: any) => p.status === 'paid').reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+    const pending = payments.filter((p: any) => p.status === 'pending').reduce((sum: number, p: any) => sum + Number(p.amount) + extraFeesForPayments(p), 0);
+    const overdue = payments.filter((p: any) => p.status === 'overdue').reduce((sum: number, p: any) => sum + Number(p.amount) + extraFeesForPayments(p), 0);
+    return { total, paid, pending, overdue };
+  }, [payments]);
 
   const tabStats = useMemo(() => {
     const registrations = Object.values(paymentsByRegistration);
@@ -423,6 +437,7 @@ const Payments = () => {
           subscription={selectedRegistration.subscription}
           parentName={selectedRegistration.parentName}
           studentName={selectedRegistration.studentName}
+          canEdit={canEdit}
         />
       )}
     </DashboardLayout>

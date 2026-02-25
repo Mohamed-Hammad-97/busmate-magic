@@ -163,53 +163,93 @@ serve(async (req) => {
       );
     }
 
-    // Check for duplicate national ID
+    // Check if parent already exists by father_phone (same parent can register multiple kids)
     const { data: existingParent } = await supabase
       .from('parent_accounts')
       .select('id')
-      .eq('national_id', data.national_id)
-      .single();
+      .eq('father_phone', data.father_phone)
+      .maybeSingle();
+
+    let parentId: string;
 
     if (existingParent) {
-      console.log("National ID already registered:", data.national_id);
-      return new Response(
-        JSON.stringify({ error: "This national ID is already registered. Please contact support if you need assistance." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      // Existing parent - add another child registration
+      console.log("Existing parent found by phone, adding new registration:", data.father_phone);
+      parentId = existingParent.id;
+    } else {
+      // Check for duplicate national ID (only for new parents)
+      const { data: existingByNationalId } = await supabase
+        .from('parent_accounts')
+        .select('id')
+        .eq('national_id', data.national_id)
+        .maybeSingle();
+
+      if (existingByNationalId) {
+        // Same national ID but different phone - use existing parent
+        console.log("National ID already registered:", data.national_id);
+        parentId = existingByNationalId.id;
+      } else {
+        // Check phone uniqueness across employees, drivers, supervisors
+        const { data: empPhone } = await supabase
+          .from('employees')
+          .select('id')
+          .eq('phone', data.father_phone)
+          .maybeSingle();
+        
+        const { data: driverPhone } = await supabase
+          .from('drivers')
+          .select('id')
+          .eq('phone', data.father_phone)
+          .maybeSingle();
+        
+        const { data: supervisorPhone } = await supabase
+          .from('supervisors')
+          .select('id')
+          .eq('phone', data.father_phone)
+          .maybeSingle();
+
+        if (empPhone || driverPhone || supervisorPhone) {
+          return new Response(
+            JSON.stringify({ error: "This phone number is already registered with another role (employee/driver/supervisor). Each phone number can only be used for one role." }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Create new parent account
+        const { data: newParent, error: parentError } = await supabase
+          .from('parent_accounts')
+          .insert({
+            parent_name: sanitizeString(data.parent_name),
+            national_id: data.national_id,
+            father_phone: data.father_phone,
+            mother_phone: data.mother_phone || null,
+            emergency_phone: data.emergency_phone,
+            city: sanitizeString(data.city),
+            job: data.job ? sanitizeString(data.job) : null,
+            pickup_latitude: data.pickup_latitude,
+            pickup_longitude: data.pickup_longitude,
+          })
+          .select()
+          .single();
+
+        if (parentError) {
+          console.error("Error creating parent account:", parentError);
+          return new Response(
+            JSON.stringify({ error: "Failed to create parent account. Please try again." }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        console.log("Created parent account:", newParent.id);
+        parentId = newParent.id;
+      }
     }
-
-    // Create parent account with sanitized data
-    const { data: newParent, error: parentError } = await supabase
-      .from('parent_accounts')
-      .insert({
-        parent_name: sanitizeString(data.parent_name),
-        national_id: data.national_id,
-        father_phone: data.father_phone,
-        mother_phone: data.mother_phone || null,
-        emergency_phone: data.emergency_phone,
-        city: sanitizeString(data.city),
-        job: data.job ? sanitizeString(data.job) : null,
-        pickup_latitude: data.pickup_latitude,
-        pickup_longitude: data.pickup_longitude,
-      })
-      .select()
-      .single();
-
-    if (parentError) {
-      console.error("Error creating parent account:", parentError);
-      return new Response(
-        JSON.stringify({ error: "Failed to create parent account. Please try again." }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    console.log("Created parent account:", newParent.id);
 
     // Create registration
     const { error: regError } = await supabase
       .from('registrations')
       .insert({
-        parent_id: newParent.id,
+        parent_id: parentId,
         student_name: sanitizeString(data.student_name),
         school_id: data.school_id,
         grade: data.grade,
@@ -220,8 +260,6 @@ serve(async (req) => {
 
     if (regError) {
       console.error("Error creating registration:", regError);
-      // Rollback: delete the parent account if registration fails
-      await supabase.from('parent_accounts').delete().eq('id', newParent.id);
       return new Response(
         JSON.stringify({ error: "Failed to create registration. Please try again." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
