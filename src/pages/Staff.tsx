@@ -304,7 +304,7 @@ const Staff = () => {
                           <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('common.phone')}</TableHead>
                           <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('staff.licenseNumber')}</TableHead>
                           <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('common.city')}</TableHead>
-                          <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">تابع لـ</TableHead>
+                          <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('staff.belongsTo')}</TableHead>
                           <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('common.status')}</TableHead>
                           <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground text-right">{t('common.actions')}</TableHead>
                         </TableRow>
@@ -330,7 +330,7 @@ const Staff = () => {
                             </TableCell>
                             <TableCell>
                               <Badge variant="secondary" className="text-xs">
-                                {driver.belongs_to === 'school' ? 'مدارس' : driver.belongs_to === 'corporate' ? 'شركات' : 'الكل'}
+                                {driver.belongs_to === 'school' ? t('staff.school') : driver.belongs_to === 'corporate' ? t('staff.corporate') : t('staff.both')}
                               </Badge>
                             </TableCell>
                             <TableCell>
@@ -390,7 +390,7 @@ const Staff = () => {
                          <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('common.name')}</TableHead>
                           <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('common.phone')}</TableHead>
                           <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('common.city')}</TableHead>
-                          <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">تابع لـ</TableHead>
+                          <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('staff.belongsTo')}</TableHead>
                           <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('common.status')}</TableHead>
                           <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground text-right">{t('common.actions')}</TableHead>
                         </TableRow>
@@ -415,7 +415,7 @@ const Staff = () => {
                             </TableCell>
                             <TableCell>
                               <Badge variant="secondary" className="text-xs">
-                                {supervisor.belongs_to === 'school' ? 'مدارس' : supervisor.belongs_to === 'corporate' ? 'شركات' : 'الكل'}
+                                {supervisor.belongs_to === 'school' ? t('staff.school') : supervisor.belongs_to === 'corporate' ? t('staff.corporate') : t('staff.both')}
                               </Badge>
                             </TableCell>
                             <TableCell>
@@ -481,13 +481,13 @@ const Staff = () => {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="driver_belongs_to">تابع لـ *</Label>
+                <Label htmlFor="driver_belongs_to">{t('staff.belongsTo')} *</Label>
                 <Select value={driverForm.belongs_to} onValueChange={(value) => setDriverForm({ ...driverForm, belongs_to: value as any })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent className="bg-background border border-border z-50">
-                    <SelectItem value="school">مدارس</SelectItem>
-                    <SelectItem value="corporate">شركات</SelectItem>
-                    <SelectItem value="both">الكل</SelectItem>
+                    <SelectItem value="school">{t('staff.school')}</SelectItem>
+                    <SelectItem value="corporate">{t('staff.corporate')}</SelectItem>
+                    <SelectItem value="both">{t('staff.both')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -530,13 +530,13 @@ const Staff = () => {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="supervisor_belongs_to">تابع لـ *</Label>
+                <Label htmlFor="supervisor_belongs_to">{t('staff.belongsTo')} *</Label>
                 <Select value={supervisorForm.belongs_to} onValueChange={(value) => setSupervisorForm({ ...supervisorForm, belongs_to: value as any })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent className="bg-background border border-border z-50">
-                    <SelectItem value="school">مدارس</SelectItem>
-                    <SelectItem value="corporate">شركات</SelectItem>
-                    <SelectItem value="both">الكل</SelectItem>
+                    <SelectItem value="school">{t('staff.school')}</SelectItem>
+                    <SelectItem value="corporate">{t('staff.corporate')}</SelectItem>
+                    <SelectItem value="both">{t('staff.both')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

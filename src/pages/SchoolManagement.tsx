@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CalendarDays, CreditCard, DollarSign, GraduationCap } from 'lucide-react';
@@ -10,6 +11,7 @@ import { SalaryManagement } from '@/components/corporate/SalaryManagement';
 import { useAuth } from '@/contexts/AuthContext';
 
 const SchoolManagement = () => {
+  const { t } = useTranslation();
   const { hasDepartment, isSuperAdmin } = useAuth();
   const canEdit = hasDepartment('operations') || isSuperAdmin;
   const isFinance = hasDepartment('finance') || isSuperAdmin;
@@ -32,8 +34,8 @@ const SchoolManagement = () => {
       <div className="space-y-8">
         <PageHero
           icon={GraduationCap}
-          title="إدارة المدارس"
-          description="متابعة الحضور وملفات الموظفين والرواتب لسائقي المدارس"
+          title={t('schoolMgmt.title')}
+          description={t('schoolMgmt.description')}
           stats={[]}
         />
 
@@ -41,16 +43,16 @@ const SchoolManagement = () => {
           <TabsList className="bg-muted/50 p-1 rounded-xl h-auto flex-wrap">
             <TabsTrigger value="attendance" className="gap-2 rounded-lg px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
               <CalendarDays className="h-4 w-4" />
-              الحضور
+              {t('schoolMgmt.attendance')}
             </TabsTrigger>
             <TabsTrigger value="profiles" className="gap-2 rounded-lg px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
               <CreditCard className="h-4 w-4" />
-              ملفات الموظفين
+              {t('schoolMgmt.staffFiles')}
             </TabsTrigger>
             {isFinance && (
               <TabsTrigger value="salaries" className="gap-2 rounded-lg px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
                 <DollarSign className="h-4 w-4" />
-                الرواتب
+                {t('schoolMgmt.salaries')}
               </TabsTrigger>
             )}
           </TabsList>

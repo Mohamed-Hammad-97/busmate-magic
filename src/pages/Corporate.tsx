@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -28,6 +29,7 @@ import { CompanyInvoices } from '@/components/corporate/CompanyInvoices';
 
 const Corporate = () => {
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
   const { hasDepartment, isSuperAdmin } = useAuth();
   const canEdit = hasDepartment('operation_companies') || isSuperAdmin;
   const isFinance = hasDepartment('finance') || isSuperAdmin;
@@ -132,12 +134,12 @@ const Corporate = () => {
       <div className="space-y-8">
         <PageHero
           icon={Building2}
-          title="إدارة الشركات"
-          description="تسجيل الشركات وإدارة الخطوط والحضور والرواتب"
+          title={t('corporateMgmt.title')}
+          description={t('corporateMgmt.description')}
           stats={[
-            { icon: Building2, value: companies.length, label: 'إجمالي الشركات' },
-            { icon: TrendingUp, value: activeCompanies, label: 'شركات نشطة' },
-            { icon: Truck, value: totalLines, label: 'إجمالي الخطوط' },
+            { icon: Building2, value: companies.length, label: t('corporateMgmt.companies') },
+            { icon: TrendingUp, value: activeCompanies, label: t('corporateMgmt.active') },
+            { icon: Truck, value: totalLines, label: t('corporateMgmt.lines') },
           ]}
           actions={canEdit && activeTab === 'companies' ? (
             <Button
@@ -146,7 +148,7 @@ const Corporate = () => {
               onClick={() => { resetForm(); setCompanyDialogOpen(true); }}
             >
               <Plus className="h-4 w-4" />
-              إضافة شركة
+              {t('corporateMgmt.addCompany')}
             </Button>
           ) : undefined}
         />
@@ -156,26 +158,26 @@ const Corporate = () => {
           <TabsList className="bg-muted/50 p-1 rounded-xl h-auto flex-wrap">
             <TabsTrigger value="companies" className="gap-2 rounded-lg px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
               <Building2 className="h-4 w-4" />
-              الشركات
+              {t('corporateMgmt.companies')}
             </TabsTrigger>
             <TabsTrigger value="attendance" className="gap-2 rounded-lg px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
               <CalendarDays className="h-4 w-4" />
-              الحضور
+              {t('corporateMgmt.attendance')}
             </TabsTrigger>
             <TabsTrigger value="profiles" className="gap-2 rounded-lg px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
               <CreditCard className="h-4 w-4" />
-              ملفات الموظفين
+              {t('corporateMgmt.staffFiles')}
             </TabsTrigger>
             {isFinance && (
               <TabsTrigger value="salaries" className="gap-2 rounded-lg px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
                 <DollarSign className="h-4 w-4" />
-                الرواتب
+                {t('corporateMgmt.salaries')}
               </TabsTrigger>
             )}
             {isFinance && (
               <TabsTrigger value="invoices" className="gap-2 rounded-lg px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
                 <FileText className="h-4 w-4" />
-                الفواتير
+                {t('corporateMgmt.invoices')}
               </TabsTrigger>
             )}
           </TabsList>
@@ -186,7 +188,7 @@ const Corporate = () => {
               <div className="relative max-w-md">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="بحث بالاسم أو رقم الهاتف..."
+                  placeholder={t('common.search') + '...'}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 h-11 bg-card border-border/50 focus:border-primary/50 rounded-xl transition-all"
@@ -205,7 +207,7 @@ const Corporate = () => {
                   <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-muted/50 mb-4">
                     <Building2 className="h-8 w-8 text-muted-foreground" />
                   </div>
-                  <p className="text-sm font-medium text-foreground mb-1">لا توجد شركات</p>
+                  <p className="text-sm font-medium text-foreground mb-1">{t('corporateMgmt.noCompanies')}</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -254,14 +256,14 @@ const Corporate = () => {
                         <div className="flex items-center gap-2 pt-3 border-t border-border/30">
                           {company.is_active ? (
                             <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 text-xs font-semibold px-3 py-1 rounded-full">
-                              نشط
+                              {t('corporateMgmt.active')}
                             </Badge>
                           ) : (
-                            <Badge variant="secondary" className="text-xs px-3 py-1 rounded-full">غير نشط</Badge>
+                            <Badge variant="secondary" className="text-xs px-3 py-1 rounded-full">{t('corporateMgmt.inactive')}</Badge>
                           )}
                           <Badge variant="outline" className="text-xs font-mono px-3 py-1 rounded-full">
-                            <Truck className="h-3 w-3 ml-1" />
-                            {lineCount} خطوط
+                            <Truck className="h-3 w-3 ml-1 rtl:ml-0 rtl:mr-1" />
+                            {lineCount} {t('corporateMgmt.lines')}
                           </Badge>
                         </div>
 
@@ -297,51 +299,51 @@ const Corporate = () => {
       <Dialog open={companyDialogOpen} onOpenChange={(open) => { setCompanyDialogOpen(open); if (!open) resetForm(); }}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>{selectedCompany ? 'تعديل الشركة' : 'إضافة شركة جديدة'}</DialogTitle>
+            <DialogTitle>{selectedCompany ? t('corporateMgmt.editCompany') : t('corporateMgmt.addNewCompany')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>اسم الشركة *</Label>
-                <Input value={companyForm.name} onChange={(e) => setCompanyForm({ ...companyForm, name: e.target.value })} placeholder="اسم الشركة" />
+                <Label>{t('corporateMgmt.companyName')} *</Label>
+                <Input value={companyForm.name} onChange={(e) => setCompanyForm({ ...companyForm, name: e.target.value })} />
               </div>
               <div className="space-y-2">
-                <Label>المدينة *</Label>
-                <Input value={companyForm.city} onChange={(e) => setCompanyForm({ ...companyForm, city: e.target.value })} placeholder="المدينة" />
+                <Label>{t('corporateMgmt.city')} *</Label>
+                <Input value={companyForm.city} onChange={(e) => setCompanyForm({ ...companyForm, city: e.target.value })} />
               </div>
             </div>
             <div className="space-y-2">
-              <Label>العنوان</Label>
-              <Input value={companyForm.location_address} onChange={(e) => setCompanyForm({ ...companyForm, location_address: e.target.value })} placeholder="العنوان التفصيلي" />
+              <Label>{t('corporateMgmt.address')}</Label>
+              <Input value={companyForm.location_address} onChange={(e) => setCompanyForm({ ...companyForm, location_address: e.target.value })} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>اسم جهة الاتصال *</Label>
-                <Input value={companyForm.contact_person_name} onChange={(e) => setCompanyForm({ ...companyForm, contact_person_name: e.target.value })} placeholder="اسم الشخص" />
+                <Label>{t('corporateMgmt.contactPerson')} *</Label>
+                <Input value={companyForm.contact_person_name} onChange={(e) => setCompanyForm({ ...companyForm, contact_person_name: e.target.value })} />
               </div>
               <div className="space-y-2">
-                <Label>رقم الهاتف *</Label>
+                <Label>{t('corporateMgmt.phone')} *</Label>
                 <Input value={companyForm.contact_person_phone} onChange={(e) => setCompanyForm({ ...companyForm, contact_person_phone: e.target.value })} placeholder="01012345678" dir="ltr" />
               </div>
             </div>
             <div className="space-y-2">
-              <Label>ملاحظات</Label>
-              <Textarea value={companyForm.notes} onChange={(e) => setCompanyForm({ ...companyForm, notes: e.target.value })} placeholder="ملاحظات إضافية..." />
+              <Label>{t('corporateMgmt.notes')}</Label>
+              <Textarea value={companyForm.notes} onChange={(e) => setCompanyForm({ ...companyForm, notes: e.target.value })} />
             </div>
             {selectedCompany && (
               <div className="flex items-center gap-2">
                 <Switch checked={companyForm.is_active} onCheckedChange={(v) => setCompanyForm({ ...companyForm, is_active: v })} />
-                <Label>نشط</Label>
+                <Label>{t('corporateMgmt.active')}</Label>
               </div>
             )}
             <Button className="w-full" onClick={() => {
               if (!companyForm.name || !companyForm.city || !companyForm.contact_person_name || !companyForm.contact_person_phone) {
-                toast.error('يرجى ملء جميع الحقول المطلوبة');
+                toast.error(t('staff.fillRequired'));
                 return;
               }
               saveCompanyMutation.mutate();
             }} disabled={saveCompanyMutation.isPending}>
-              {saveCompanyMutation.isPending ? 'جاري الحفظ...' : selectedCompany ? 'تحديث' : 'إضافة'}
+              {saveCompanyMutation.isPending ? t('common.loading') : selectedCompany ? t('common.save') : t('common.add')}
             </Button>
           </div>
         </DialogContent>
