@@ -40,6 +40,10 @@ interface NavItem {
   adminOnly?: boolean;
 }
 
+interface SidebarProps {
+  onMobileNavigate?: () => void;
+}
+
 const navItems: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: Home },
   { label: "Homepage", href: "/homepage-admin", icon: Globe, adminOnly: true },
@@ -58,7 +62,8 @@ const navItems: NavItem[] = [
   { label: "Settings", href: "/settings", icon: Settings },
 ];
 
-export function Sidebar() {
+export function Sidebar({ onMobileNavigate }: SidebarProps = {}) {
+  const isMobileSheet = !!onMobileNavigate;
   const location = useLocation();
   const { t, i18n } = useTranslation();
   const { employee, isSuperAdmin, hasDepartment, signOut } = useAuth();
@@ -92,36 +97,41 @@ export function Sidebar() {
     return true;
   });
 
-  const sidebarWidth = collapsed ? 'w-[72px]' : 'w-64';
+  const effectiveCollapsed = isMobileSheet ? false : collapsed;
+  const sidebarWidth = isMobileSheet ? 'w-full' : effectiveCollapsed ? 'w-[72px]' : 'w-64';
 
   return (
     <TooltipProvider delayDuration={0}>
       <aside
         className={cn(
-          "fixed top-0 z-40 h-screen bg-sidebar border-sidebar-border transition-all duration-300 ease-in-out",
+          isMobileSheet
+            ? "h-full bg-sidebar"
+            : "fixed top-0 z-40 h-screen bg-sidebar border-sidebar-border transition-all duration-300 ease-in-out",
           sidebarWidth,
-          isRtl ? 'right-0 border-l' : 'left-0 border-r'
+          !isMobileSheet && (isRtl ? 'right-0 border-l' : 'left-0 border-r')
         )}
       >
         <div className="flex h-full flex-col relative">
-          {/* Collapse toggle */}
-          <button
-            onClick={toggle}
-            className={cn(
-              "absolute top-[18px] z-50 flex h-7 w-7 items-center justify-center rounded-full border border-sidebar-border bg-sidebar text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors shadow-md",
-              isRtl ? '-left-3.5' : '-right-3.5'
-            )}
-          >
-            {collapsed
-              ? (isRtl ? <ChevronLeft className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />)
-              : (isRtl ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />)
-            }
-          </button>
+          {/* Collapse toggle - hidden on mobile sheet */}
+          {!isMobileSheet && (
+            <button
+              onClick={toggle}
+              className={cn(
+                "absolute top-[18px] z-50 flex h-7 w-7 items-center justify-center rounded-full border border-sidebar-border bg-sidebar text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors shadow-md",
+                isRtl ? '-left-3.5' : '-right-3.5'
+              )}
+            >
+              {effectiveCollapsed
+                ? (isRtl ? <ChevronLeft className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />)
+                : (isRtl ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />)
+              }
+            </button>
+          )}
 
           {/* Logo */}
           <div className={cn(
             "flex h-16 items-center border-b border-sidebar-border shrink-0 transition-all duration-300",
-            collapsed ? "justify-center px-2" : "gap-3 px-5"
+            effectiveCollapsed ? "justify-center px-2" : "gap-3 px-5"
           )}>
             <div className="relative">
               <img
@@ -131,7 +141,7 @@ export function Sidebar() {
               />
               <div className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-success ring-2 ring-sidebar-background" />
             </div>
-            {!collapsed && (
+            {!effectiveCollapsed && (
               <div className="overflow-hidden">
                 <span className="text-lg font-bold text-sidebar-foreground tracking-tight">
                   Seater
@@ -146,7 +156,7 @@ export function Sidebar() {
           {/* Scrollable content */}
           <div className="flex-1 overflow-y-auto scrollbar-thin">
             {/* Navigation */}
-            <nav className={cn("space-y-0.5 py-4", collapsed ? "px-2" : "px-3")}>
+            <nav className={cn("space-y-0.5 py-4", effectiveCollapsed ? "px-2" : "px-3")}>
               {filteredItems.map((item) => {
                 const isActive = location.pathname === item.href;
                 const label = getNavLabel(item);
@@ -155,9 +165,10 @@ export function Sidebar() {
                   <Link
                     key={item.href}
                     to={item.href}
+                    onClick={onMobileNavigate}
                     className={cn(
                       "group relative flex items-center rounded-xl text-sm font-medium transition-all duration-200",
-                      collapsed ? "justify-center h-10 w-full" : "gap-3 px-3 py-2.5",
+                      effectiveCollapsed ? "justify-center h-10 w-full" : "gap-3 px-3 py-2.5",
                       isActive
                         ? "bg-gradient-to-r from-primary/20 to-primary/10 text-primary shadow-sm shadow-primary/10"
                         : "text-sidebar-muted hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
@@ -167,21 +178,21 @@ export function Sidebar() {
                       <div className={cn(
                         "absolute top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-full bg-primary",
                         isRtl ? "right-0" : "left-0",
-                        collapsed && (isRtl ? "-right-0.5" : "-left-0.5")
+                        effectiveCollapsed && (isRtl ? "-right-0.5" : "-left-0.5")
                       )} />
                     )}
                     <item.icon className={cn(
                       "shrink-0 transition-colors",
-                      collapsed ? "h-5 w-5" : "h-[18px] w-[18px]",
+                      effectiveCollapsed ? "h-5 w-5" : "h-[18px] w-[18px]",
                       isActive ? "text-primary" : "text-sidebar-muted group-hover:text-sidebar-foreground"
                     )} />
-                    {!collapsed && (
+                    {!effectiveCollapsed && (
                       <span className="truncate">{label}</span>
                     )}
                   </Link>
                 );
 
-                if (collapsed) {
+                if (effectiveCollapsed) {
                   return (
                     <Tooltip key={item.href}>
                       <TooltipTrigger asChild>
@@ -202,7 +213,7 @@ export function Sidebar() {
             </nav>
 
             {/* City Selector */}
-            {!collapsed && (
+            {!effectiveCollapsed && (
               <div className="px-3 py-2 border-t border-sidebar-border/50">
                 <CitySelector />
               </div>
@@ -211,9 +222,9 @@ export function Sidebar() {
             {/* User section */}
             <div className={cn(
               "border-t border-sidebar-border/50",
-              collapsed ? "p-2" : "p-3"
+              effectiveCollapsed ? "p-2" : "p-3"
             )}>
-              {!collapsed && (
+              {!effectiveCollapsed && (
                 <div className="mb-2 px-3 py-2 rounded-xl bg-sidebar-accent/40">
                   <p className="text-sm font-semibold text-sidebar-foreground truncate">
                     {employee?.full_name || "User"}
@@ -224,7 +235,7 @@ export function Sidebar() {
                 </div>
               )}
 
-              {collapsed ? (
+              {effectiveCollapsed ? (
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
