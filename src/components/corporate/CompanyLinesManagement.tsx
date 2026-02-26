@@ -314,10 +314,10 @@ export function CompanyLinesManagement({ company, onBack, canEdit }: CompanyLine
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>السائق</Label>
-                <Select value={lineForm.driver_id} onValueChange={(v) => setLineForm({ ...lineForm, driver_id: v })}>
+                <Select value={lineForm.driver_id || 'none'} onValueChange={(v) => setLineForm({ ...lineForm, driver_id: v === 'none' ? '' : v })}>
                   <SelectTrigger><SelectValue placeholder="اختر سائق..." /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">بدون سائق</SelectItem>
+                    <SelectItem value="none">بدون سائق</SelectItem>
                     {drivers.map((d: any) => (
                       <SelectItem key={d.id} value={d.id}>{d.full_name}</SelectItem>
                     ))}
@@ -326,10 +326,10 @@ export function CompanyLinesManagement({ company, onBack, canEdit }: CompanyLine
               </div>
               <div className="space-y-2">
                 <Label>المشرف</Label>
-                <Select value={lineForm.supervisor_id} onValueChange={(v) => setLineForm({ ...lineForm, supervisor_id: v })}>
+                <Select value={lineForm.supervisor_id || 'none'} onValueChange={(v) => setLineForm({ ...lineForm, supervisor_id: v === 'none' ? '' : v })}>
                   <SelectTrigger><SelectValue placeholder="اختر مشرف..." /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">بدون مشرف</SelectItem>
+                    <SelectItem value="none">بدون مشرف</SelectItem>
                     {supervisors.map((s: any) => (
                       <SelectItem key={s.id} value={s.id}>{s.full_name}</SelectItem>
                     ))}
