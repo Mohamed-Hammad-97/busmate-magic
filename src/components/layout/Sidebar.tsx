@@ -21,6 +21,7 @@ import {
   Globe,
   ChevronLeft,
   ChevronRight,
+  Building2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import seaterLogo from "@/assets/seater-logo.jpg";
@@ -36,8 +37,9 @@ interface NavItem {
   label: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
-  department?: "customer_support" | "operations" | "finance" | "reports";
+  department?: "customer_support" | "operations" | "operation_companies" | "finance" | "reports";
   adminOnly?: boolean;
+  multiDepartment?: ("customer_support" | "operations" | "operation_companies" | "finance" | "reports")[];
 }
 
 interface SidebarProps {
@@ -57,6 +59,7 @@ const navItems: NavItem[] = [
   { label: "Payments", href: "/payments", icon: CreditCard },
   { label: "Submissions", href: "/submissions", icon: MessageCircle, department: "customer_support" },
   { label: "Support Chat", href: "/support-chat", icon: MessageCircle, department: "customer_support" },
+  { label: "Corporate", href: "/corporate", icon: Building2, department: "operation_companies" },
   { label: "Reports", href: "/reports", icon: BarChart3, department: "reports" },
   { label: "Employees", href: "/employees", icon: UserCog, adminOnly: true },
   { label: "Settings", href: "/settings", icon: Settings },
@@ -83,6 +86,7 @@ export function Sidebar({ onMobileNavigate }: SidebarProps = {}) {
       Payments: t('nav.payments'),
       Submissions: isRtl ? 'الطلبات الواردة' : 'Submissions',
       'Support Chat': t('nav.supportChat'),
+      Corporate: isRtl ? 'الشركات' : 'Corporate',
       Reports: t('nav.reports'),
       Homepage: 'Homepage',
       Employees: t('settings.employees'),
@@ -93,6 +97,7 @@ export function Sidebar({ onMobileNavigate }: SidebarProps = {}) {
 
   const filteredItems = navItems.filter((item) => {
     if (item.adminOnly) return isSuperAdmin;
+    if (item.multiDepartment) return item.multiDepartment.some(d => hasDepartment(d));
     if (item.department) return hasDepartment(item.department);
     return true;
   });

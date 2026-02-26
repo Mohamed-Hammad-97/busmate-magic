@@ -166,6 +166,180 @@ export type Database = {
         }
         Relationships: []
       }
+      companies: {
+        Row: {
+          city: string
+          contact_person_name: string
+          contact_person_phone: string
+          created_at: string
+          id: string
+          is_active: boolean
+          latitude: number | null
+          location_address: string | null
+          longitude: number | null
+          name: string
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          city: string
+          contact_person_name: string
+          contact_person_phone: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          latitude?: number | null
+          location_address?: string | null
+          longitude?: number | null
+          name: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          city?: string
+          contact_person_name?: string
+          contact_person_phone?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          latitude?: number | null
+          location_address?: string | null
+          longitude?: number | null
+          name?: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      company_invoices: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          invoice_number: string
+          issued_date: string | null
+          line_items: Json
+          notes: string | null
+          paid_date: string | null
+          period_end: string
+          period_start: string
+          status: string
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          invoice_number: string
+          issued_date?: string | null
+          line_items?: Json
+          notes?: string | null
+          paid_date?: string | null
+          period_end: string
+          period_start: string
+          status?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          invoice_number?: string
+          issued_date?: string | null
+          line_items?: Json
+          notes?: string | null
+          paid_date?: string | null
+          period_end?: string
+          period_start?: string
+          status?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_invoices_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_lines: {
+        Row: {
+          company_id: string
+          created_at: string
+          driver_id: string | null
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          number_of_shifts: number
+          price_per_shift: number
+          route_details: string | null
+          shift_times: Json
+          supervisor_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          driver_id?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          number_of_shifts?: number
+          price_per_shift?: number
+          route_details?: string | null
+          shift_times?: Json
+          supervisor_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          driver_id?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          number_of_shifts?: number
+          price_per_shift?: number
+          route_details?: string | null
+          shift_times?: Json
+          supervisor_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_lines_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_lines_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_lines_supervisor_id_fkey"
+            columns: ["supervisor_id"]
+            isOneToOne: false
+            referencedRelation: "supervisors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contact_submissions: {
         Row: {
           created_at: string
@@ -247,6 +421,67 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "unified_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      corporate_driver_attendance: {
+        Row: {
+          attendance_date: string
+          company_line_id: string
+          created_at: string
+          driver_id: string | null
+          id: string
+          is_present: boolean
+          notes: string | null
+          shift_number: number
+          shift_rate: number
+          supervisor_id: string | null
+        }
+        Insert: {
+          attendance_date: string
+          company_line_id: string
+          created_at?: string
+          driver_id?: string | null
+          id?: string
+          is_present?: boolean
+          notes?: string | null
+          shift_number?: number
+          shift_rate?: number
+          supervisor_id?: string | null
+        }
+        Update: {
+          attendance_date?: string
+          company_line_id?: string
+          created_at?: string
+          driver_id?: string | null
+          id?: string
+          is_present?: boolean
+          notes?: string | null
+          shift_number?: number
+          shift_rate?: number
+          supervisor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "corporate_driver_attendance_company_line_id_fkey"
+            columns: ["company_line_id"]
+            isOneToOne: false
+            referencedRelation: "company_lines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "corporate_driver_attendance_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "corporate_driver_attendance_supervisor_id_fkey"
+            columns: ["supervisor_id"]
+            isOneToOne: false
+            referencedRelation: "supervisors"
             referencedColumns: ["id"]
           },
         ]
@@ -989,6 +1224,69 @@ export type Database = {
           },
         ]
       }
+      salary_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          driver_id: string | null
+          id: string
+          notes: string | null
+          payment_date: string | null
+          period_end: string
+          period_start: string
+          reference_document_url: string | null
+          supervisor_id: string | null
+          transfer_reference: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          driver_id?: string | null
+          id?: string
+          notes?: string | null
+          payment_date?: string | null
+          period_end: string
+          period_start: string
+          reference_document_url?: string | null
+          supervisor_id?: string | null
+          transfer_reference?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          driver_id?: string | null
+          id?: string
+          notes?: string | null
+          payment_date?: string | null
+          period_end?: string
+          period_start?: string
+          reference_document_url?: string | null
+          supervisor_id?: string | null
+          transfer_reference?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salary_payments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salary_payments_supervisor_id_fkey"
+            columns: ["supervisor_id"]
+            isOneToOne: false
+            referencedRelation: "supervisors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       schools: {
         Row: {
           city: string | null
@@ -1054,6 +1352,69 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      staff_profiles: {
+        Row: {
+          bank_account_name: string | null
+          bank_account_number: string | null
+          bank_iban: string | null
+          bank_name: string | null
+          contract_document_url: string | null
+          created_at: string
+          driver_id: string | null
+          id: string
+          id_document_url: string | null
+          license_document_url: string | null
+          other_documents_urls: Json | null
+          supervisor_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          bank_account_name?: string | null
+          bank_account_number?: string | null
+          bank_iban?: string | null
+          bank_name?: string | null
+          contract_document_url?: string | null
+          created_at?: string
+          driver_id?: string | null
+          id?: string
+          id_document_url?: string | null
+          license_document_url?: string | null
+          other_documents_urls?: Json | null
+          supervisor_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bank_account_name?: string | null
+          bank_account_number?: string | null
+          bank_iban?: string | null
+          bank_name?: string | null
+          contract_document_url?: string | null
+          created_at?: string
+          driver_id?: string | null
+          id?: string
+          id_document_url?: string | null
+          license_document_url?: string | null
+          other_documents_urls?: Json | null
+          supervisor_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_profiles_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_profiles_supervisor_id_fkey"
+            columns: ["supervisor_id"]
+            isOneToOne: false
+            referencedRelation: "supervisors"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       student_absences: {
         Row: {
