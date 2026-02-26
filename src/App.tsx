@@ -40,6 +40,7 @@ import SupportChat from "./pages/SupportChat";
 import HomepageAdmin from "./pages/HomepageAdmin";
 import Submissions from "./pages/Submissions";
 import Corporate from "./pages/Corporate";
+import SchoolManagement from "./pages/SchoolManagement";
 const queryClient = new QueryClient();
 
 // Component to handle RTL direction globally
@@ -116,6 +117,7 @@ const App = () => (
                 <Route path="/homepage-admin" element={<ProtectedRoute><HomepageAdmin /></ProtectedRoute>} />
                 <Route path="/submissions" element={<ProtectedRoute><Submissions /></ProtectedRoute>} />
                 <Route path="/corporate" element={<ProtectedRoute requireDepartment="operation_companies"><Corporate /></ProtectedRoute>} />
+                <Route path="/school-management" element={<ProtectedRoute><SchoolManagement /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
               </CityProvider>
