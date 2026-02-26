@@ -39,6 +39,7 @@ import DriverDashboard from "./pages/DriverDashboard";
 import SupportChat from "./pages/SupportChat";
 import HomepageAdmin from "./pages/HomepageAdmin";
 import Submissions from "./pages/Submissions";
+import Corporate from "./pages/Corporate";
 const queryClient = new QueryClient();
 
 // Component to handle RTL direction globally
@@ -114,6 +115,7 @@ const App = () => (
                 <Route path="/employees" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                 <Route path="/homepage-admin" element={<ProtectedRoute><HomepageAdmin /></ProtectedRoute>} />
                 <Route path="/submissions" element={<ProtectedRoute><Submissions /></ProtectedRoute>} />
+                <Route path="/corporate" element={<ProtectedRoute requireDepartment="operation_companies"><Corporate /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
               </CityProvider>

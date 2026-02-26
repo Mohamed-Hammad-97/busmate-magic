@@ -44,7 +44,8 @@ type Department = Enums<'department'>;
 
 const departmentLabels: Record<Department, { en: string; ar: string }> = {
   customer_support: { en: 'Customer Support', ar: 'دعم العملاء' },
-  operations: { en: 'Operations', ar: 'العمليات' },
+  operations: { en: 'Operations (Schools)', ar: 'عمليات (مدارس)' },
+  operation_companies: { en: 'Operations (Companies)', ar: 'عمليات (شركات)' },
   finance: { en: 'Finance', ar: 'المالية' },
   reports: { en: 'Reports', ar: 'التقارير' },
 };
