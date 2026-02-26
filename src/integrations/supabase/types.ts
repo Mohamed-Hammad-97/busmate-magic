@@ -1485,7 +1485,12 @@ export type Database = {
         | "customer_dm"
         | "route_group"
         | "customer_supervisor"
-      department: "customer_support" | "operations" | "finance" | "reports"
+      department:
+        | "customer_support"
+        | "operations"
+        | "finance"
+        | "reports"
+        | "operation_companies"
       education_department: "national" | "ig" | "american"
       payment_status: "paid" | "pending" | "overdue"
       registration_status: "pending_fees" | "complete" | "cancelled"
@@ -1633,7 +1638,13 @@ export const Constants = {
         "route_group",
         "customer_supervisor",
       ],
-      department: ["customer_support", "operations", "finance", "reports"],
+      department: [
+        "customer_support",
+        "operations",
+        "finance",
+        "reports",
+        "operation_companies",
+      ],
       education_department: ["national", "ig", "american"],
       payment_status: ["paid", "pending", "overdue"],
       registration_status: ["pending_fees", "complete", "cancelled"],
