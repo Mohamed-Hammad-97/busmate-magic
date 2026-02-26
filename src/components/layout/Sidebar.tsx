@@ -138,17 +138,19 @@ export function Sidebar({ onMobileNavigate }: SidebarProps = {}) {
       'AI Route Planner': t('nav.aiRoutes'),
       'Drivers & Staff': t('nav.staff'),
       Payments: t('nav.payments'),
-      Submissions: isRtl ? 'الطلبات الواردة' : 'Submissions',
+      Submissions: t('nav.submissions', { defaultValue: isRtl ? 'الطلبات الواردة' : 'Submissions' }),
       'Support Chat': t('nav.supportChat'),
       Reports: t('nav.reports'),
       Homepage: 'Homepage',
       Employees: t('settings.employees'),
       Settings: t('nav.settings'),
-      Attendance: isRtl ? 'الحضور' : 'Attendance',
-      'Staff Files': isRtl ? 'ملفات الموظفين' : 'Staff Files',
-      Salaries: isRtl ? 'الرواتب' : 'Salaries',
-      Companies: isRtl ? 'الشركات' : 'Companies',
-      Invoices: isRtl ? 'الفواتير' : 'Invoices',
+      Attendance: t('schoolMgmt.attendance'),
+      'Staff Files': t('schoolMgmt.staffFiles'),
+      Salaries: t('schoolMgmt.salaries'),
+      Companies: t('corporateMgmt.companies'),
+      Invoices: t('corporateMgmt.invoices'),
+      'School Management': t('schoolMgmt.title'),
+      'Corporate Management': t('corporateMgmt.title'),
     };
     return labelMap[label] || label;
   };
@@ -228,7 +230,7 @@ export function Sidebar({ onMobileNavigate }: SidebarProps = {}) {
 
   const renderGroup = (group: NavGroup) => {
     const isExpanded = expandedGroups[group.label] ?? isGroupActive(group);
-    const groupLabel = isRtl ? group.labelAr : group.label;
+    const groupLabel = getNavLabel(group.label);
     const visibleChildren = group.children.filter(canAccessItem);
 
     if (visibleChildren.length === 0) return null;
