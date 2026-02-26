@@ -24,7 +24,18 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Search, CreditCard, CheckCircle, Clock, AlertCircle, Check, Eye, Hash, TrendingUp, DollarSign, UserCheck } from 'lucide-react';
+import { Search, CreditCard, CheckCircle, Clock, AlertCircle, Check, Eye, Hash, TrendingUp, DollarSign, UserCheck, Trash2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
 import { ar, enUS } from 'date-fns/locale';
 import { PaymentProfileDialog } from '@/components/payments/PaymentProfileDialog';
@@ -92,6 +103,31 @@ const Payments = () => {
       return cityNames.some((name) => city?.toLowerCase().includes(name.toLowerCase()));
     });
   }, [allPayments, selectedCity]);
+
+  const deleteSubscriptionMutation = useMutation({
+    mutationFn: async (subscriptionId: string) => {
+      // Delete extra fees first, then payments, then subscription
+      const { data: paymentsData } = await supabase
+        .from('payments')
+        .select('id')
+        .eq('subscription_id', subscriptionId);
+      if (paymentsData && paymentsData.length > 0) {
+        const paymentIds = paymentsData.map(p => p.id);
+        await supabase.from('payment_extra_fees').delete().in('payment_id', paymentIds);
+        await supabase.from('payments').delete().eq('subscription_id', subscriptionId);
+      }
+      const { error } = await supabase.from('subscriptions').delete().eq('id', subscriptionId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      toast.success(t('common.deleted') || 'Deleted successfully');
+    },
+    onError: (error) => {
+      toast.error(t('common.error') || 'Error deleting');
+      console.error(error);
+    },
+  });
 
   const markPaidMutation = useMutation({
     mutationFn: async (paymentId: string) => {
@@ -396,7 +432,7 @@ const Payments = () => {
                                 </div>
                               </TableCell>
                               <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                                <div className="flex justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="flex justify-end gap-0.5">
                                   <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary" onClick={() => setSelectedRegistration(regData)}>
                                     <Eye className="h-3.5 w-3.5" />
                                   </Button>
@@ -412,6 +448,32 @@ const Payments = () => {
                                     }}
                                     variant="icon"
                                   />
+                                  {canEdit && (
+                                    <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-destructive/10 hover:text-destructive">
+                                          <Trash2 className="h-3.5 w-3.5" />
+                                        </Button>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>{t('common.confirmDelete') || 'Confirm Delete'}</AlertDialogTitle>
+                                          <AlertDialogDescription>
+                                            {t('payments.deleteConfirmation') || `This will permanently delete the subscription, all installments, and extra fees for ${regData.parentName} - ${regData.studentName}. This action cannot be undone.`}
+                                          </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel>{t('common.cancel') || 'Cancel'}</AlertDialogCancel>
+                                          <AlertDialogAction
+                                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                            onClick={() => deleteSubscriptionMutation.mutate(regData.subscription?.id)}
+                                          >
+                                            {t('common.delete') || 'Delete'}
+                                          </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
+                                  )}
                                 </div>
                               </TableCell>
                             </TableRow>
