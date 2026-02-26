@@ -70,19 +70,51 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
       const numInstallments = parseInt(installments);
       const installmentAmount = totalValue / numInstallments;
 
-      // Create subscription
-      const { data: subscription, error: subError } = await supabase
+      // Check if subscription already exists
+      const { data: existingSub } = await supabase
         .from('subscriptions')
-        .insert({
-          registration_id: registration.id,
-          subscription_type: subscriptionType,
-          value: totalValue,
-          number_of_installments: numInstallments,
-          created_by: user.id,
-        })
-        .select()
-        .single();
-      if (subError) throw subError;
+        .select('id')
+        .eq('registration_id', registration.id)
+        .maybeSingle();
+
+      let subscriptionId: string;
+
+      if (existingSub) {
+        // Update existing subscription
+        const { error: updateError } = await supabase
+          .from('subscriptions')
+          .update({
+            subscription_type: subscriptionType,
+            value: totalValue,
+            number_of_installments: numInstallments,
+          })
+          .eq('id', existingSub.id);
+        if (updateError) throw updateError;
+
+        // Delete old payments
+        const { error: delError } = await supabase
+          .from('payments')
+          .delete()
+          .eq('subscription_id', existingSub.id);
+        if (delError) throw delError;
+
+        subscriptionId = existingSub.id;
+      } else {
+        // Create new subscription
+        const { data: subscription, error: subError } = await supabase
+          .from('subscriptions')
+          .insert({
+            registration_id: registration.id,
+            subscription_type: subscriptionType,
+            value: totalValue,
+            number_of_installments: numInstallments,
+            created_by: user.id,
+          })
+          .select()
+          .single();
+        if (subError) throw subError;
+        subscriptionId = subscription.id;
+      }
 
       // Create payments for each installment using selected start date
       const payments = [];
@@ -95,7 +127,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
         }
         
         payments.push({
-          subscription_id: subscription.id,
+          subscription_id: subscriptionId,
           amount: installmentAmount,
           installment_number: i + 1,
           due_date: dueDate.toISOString().split('T')[0],
