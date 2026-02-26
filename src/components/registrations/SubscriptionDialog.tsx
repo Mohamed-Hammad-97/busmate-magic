@@ -17,6 +17,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -46,12 +51,14 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
   const [subscriptionType, setSubscriptionType] = useState<Enums<'subscription_type'>>('yearly');
   const [value, setValue] = useState<string>('');
   const [installments, setInstallments] = useState<string>('1');
+  const [startDate, setStartDate] = useState<Date>(new Date());
 
   useEffect(() => {
     if (open) {
       setSubscriptionType('yearly');
       setValue('');
       setInstallments('1');
+      setStartDate(new Date());
     }
   }, [open]);
 
@@ -77,15 +84,14 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
         .single();
       if (subError) throw subError;
 
-      // Create payments for each installment
+      // Create payments for each installment using selected start date
       const payments = [];
-      const today = new Date();
       for (let i = 0; i < numInstallments; i++) {
-        const dueDate = new Date(today);
+        const dueDate = new Date(startDate);
         if (subscriptionType === 'yearly') {
           dueDate.setMonth(dueDate.getMonth() + i);
         } else {
-          dueDate.setDate(dueDate.getDate() + (i * 30));
+          dueDate.setMonth(dueDate.getMonth() + i);
         }
         
         payments.push({
@@ -205,12 +211,53 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
             </Select>
           </div>
 
+          <div className="space-y-2">
+            <Label>First Installment Date</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !startDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {startDate ? format(startDate, "PPP") : "Pick a date"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 z-50" align="start">
+                <Calendar
+                  mode="single"
+                  selected={startDate}
+                  onSelect={(date) => date && setStartDate(date)}
+                  initialFocus
+                  className="pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
           {totalValue > 0 && (
-            <div className="p-3 bg-primary/10 rounded-lg space-y-1">
+            <div className="p-3 bg-primary/10 rounded-lg space-y-2">
               <p className="text-sm font-medium">Payment Summary</p>
               <p className="text-xs text-muted-foreground">
                 {numInstallments} x {perInstallment.toFixed(2)} EGP = {totalValue.toFixed(2)} EGP
               </p>
+              {numInstallments > 1 && (
+                <div className="text-xs text-muted-foreground space-y-0.5 border-t border-primary/10 pt-2 mt-1">
+                  {Array.from({ length: numInstallments }, (_, i) => {
+                    const d = new Date(startDate);
+                    d.setMonth(d.getMonth() + i);
+                    return (
+                      <div key={i} className="flex justify-between">
+                        <span>Installment {i + 1}</span>
+                        <span>{format(d, "dd MMM yyyy")}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 
