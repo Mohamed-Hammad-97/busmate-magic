@@ -56,15 +56,15 @@ const SchoolManagement = () => {
           </TabsList>
 
           <TabsContent value="attendance">
-            <CorporateAttendance canEdit={canEdit} />
+            <CorporateAttendance canEdit={canEdit} staffContext="school" />
           </TabsContent>
 
           <TabsContent value="profiles">
-            <StaffProfilesManagement canEdit={canEdit} />
+            <StaffProfilesManagement canEdit={canEdit} staffContext="school" />
           </TabsContent>
 
           <TabsContent value="salaries">
-            <SalaryManagement />
+            <SalaryManagement staffContext="school" />
           </TabsContent>
         </Tabs>
       </div>

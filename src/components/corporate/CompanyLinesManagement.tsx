@@ -61,18 +61,18 @@ export function CompanyLinesManagement({ company, onBack, canEdit }: CompanyLine
   });
 
   const { data: drivers = [] } = useQuery({
-    queryKey: ['all-drivers'],
+    queryKey: ['corporate-drivers'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('drivers').select('id, full_name, phone').eq('is_active', true).order('full_name');
+      const { data, error } = await supabase.from('drivers').select('id, full_name, phone, belongs_to').eq('is_active', true).in('belongs_to', ['corporate', 'both']).order('full_name');
       if (error) throw error;
       return data;
     },
   });
 
   const { data: supervisors = [] } = useQuery({
-    queryKey: ['all-supervisors'],
+    queryKey: ['corporate-supervisors'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('supervisors').select('id, full_name, phone').eq('is_active', true).order('full_name');
+      const { data, error } = await supabase.from('supervisors').select('id, full_name, phone, belongs_to').eq('is_active', true).in('belongs_to', ['corporate', 'both']).order('full_name');
       if (error) throw error;
       return data;
     },
