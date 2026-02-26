@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -34,7 +35,19 @@ const Corporate = () => {
   const canEdit = hasDepartment('operation_companies') || isSuperAdmin;
   const isFinance = hasDepartment('finance') || isSuperAdmin;
 
-  const [activeTab, setActiveTab] = useState('companies');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'companies');
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab) setActiveTab(tab);
+  }, [searchParams]);
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    setSearchParams({ tab: value });
+  };
+
   const [searchTerm, setSearchTerm] = useState('');
   const [companyDialogOpen, setCompanyDialogOpen] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<any>(null);
@@ -142,7 +155,7 @@ const Corporate = () => {
         />
 
         {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tabs value={activeTab} onValueChange={handleTabChange}>
           <TabsList className="bg-muted/50 p-1 rounded-xl h-auto flex-wrap">
             <TabsTrigger value="companies" className="gap-2 rounded-lg px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
               <Building2 className="h-4 w-4" />
