@@ -57,6 +57,7 @@ const Staff = () => {
     license_number: '',
     city: 'Cairo',
     is_active: true,
+    belongs_to: 'school' as 'school' | 'corporate' | 'both',
   });
 
   const [isSupervisorDialogOpen, setIsSupervisorDialogOpen] = useState(false);
@@ -66,6 +67,7 @@ const Staff = () => {
     phone: '',
     city: 'Cairo',
     is_active: true,
+    belongs_to: 'school' as 'school' | 'corporate' | 'both',
   });
 
   const { data: allDrivers = [], isLoading: driversLoading } = useQuery({
@@ -137,24 +139,24 @@ const Staff = () => {
   });
 
   const resetDriverForm = () => {
-    setDriverForm({ full_name: '', phone: '', license_number: '', city: 'Cairo', is_active: true });
+    setDriverForm({ full_name: '', phone: '', license_number: '', city: 'Cairo', is_active: true, belongs_to: 'school' });
     setSelectedDriver(null);
   };
 
   const resetSupervisorForm = () => {
-    setSupervisorForm({ full_name: '', phone: '', city: 'Cairo', is_active: true });
+    setSupervisorForm({ full_name: '', phone: '', city: 'Cairo', is_active: true, belongs_to: 'school' });
     setSelectedSupervisor(null);
   };
 
   const handleEditDriver = (driver: any) => {
     setSelectedDriver(driver);
-    setDriverForm({ full_name: driver.full_name, phone: driver.phone, license_number: driver.license_number, city: driver.city || 'Cairo', is_active: driver.is_active });
+    setDriverForm({ full_name: driver.full_name, phone: driver.phone, license_number: driver.license_number, city: driver.city || 'Cairo', is_active: driver.is_active, belongs_to: driver.belongs_to || 'school' });
     setIsDriverDialogOpen(true);
   };
 
   const handleEditSupervisor = (supervisor: any) => {
     setSelectedSupervisor(supervisor);
-    setSupervisorForm({ full_name: supervisor.full_name, phone: supervisor.phone, city: supervisor.city || 'Cairo', is_active: supervisor.is_active });
+    setSupervisorForm({ full_name: supervisor.full_name, phone: supervisor.phone, city: supervisor.city || 'Cairo', is_active: supervisor.is_active, belongs_to: supervisor.belongs_to || 'school' });
     setIsSupervisorDialogOpen(true);
   };
 
@@ -298,10 +300,11 @@ const Staff = () => {
                     <Table>
                       <TableHeader>
                         <TableRow className="bg-muted/30 hover:bg-muted/30">
-                          <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('common.name')}</TableHead>
+                         <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('common.name')}</TableHead>
                           <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('common.phone')}</TableHead>
                           <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('staff.licenseNumber')}</TableHead>
                           <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('common.city')}</TableHead>
+                          <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">تابع لـ</TableHead>
                           <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('common.status')}</TableHead>
                           <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground text-right">{t('common.actions')}</TableHead>
                         </TableRow>
@@ -324,6 +327,11 @@ const Staff = () => {
                                 <MapPin className="h-3 w-3 text-muted-foreground" />
                                 <span className="text-sm text-muted-foreground">{driver.city || t('common.notSpecified')}</span>
                               </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="secondary" className="text-xs">
+                                {driver.belongs_to === 'school' ? 'مدارس' : driver.belongs_to === 'corporate' ? 'شركات' : 'الكل'}
+                              </Badge>
                             </TableCell>
                             <TableCell>
                               {driver.is_active ? (
@@ -379,9 +387,10 @@ const Staff = () => {
                     <Table>
                       <TableHeader>
                         <TableRow className="bg-muted/30 hover:bg-muted/30">
-                          <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('common.name')}</TableHead>
+                         <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('common.name')}</TableHead>
                           <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('common.phone')}</TableHead>
                           <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('common.city')}</TableHead>
+                          <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">تابع لـ</TableHead>
                           <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('common.status')}</TableHead>
                           <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground text-right">{t('common.actions')}</TableHead>
                         </TableRow>
@@ -403,6 +412,11 @@ const Staff = () => {
                                 <MapPin className="h-3 w-3 text-muted-foreground" />
                                 <span className="text-sm text-muted-foreground">{supervisor.city || t('common.notSpecified')}</span>
                               </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="secondary" className="text-xs">
+                                {supervisor.belongs_to === 'school' ? 'مدارس' : supervisor.belongs_to === 'corporate' ? 'شركات' : 'الكل'}
+                              </Badge>
                             </TableCell>
                             <TableCell>
                               {supervisor.is_active ? (
@@ -466,6 +480,17 @@ const Staff = () => {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="driver_belongs_to">تابع لـ *</Label>
+                <Select value={driverForm.belongs_to} onValueChange={(value) => setDriverForm({ ...driverForm, belongs_to: value as any })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-background border border-border z-50">
+                    <SelectItem value="school">مدارس</SelectItem>
+                    <SelectItem value="corporate">شركات</SelectItem>
+                    <SelectItem value="both">الكل</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="flex items-center justify-between">
                 <Label htmlFor="driver_active">{t('common.active')}</Label>
                 <Switch id="driver_active" checked={driverForm.is_active} onCheckedChange={(checked) => setDriverForm({ ...driverForm, is_active: checked })} />
@@ -501,6 +526,17 @@ const Staff = () => {
                     <SelectItem value="Cairo">Cairo</SelectItem>
                     <SelectItem value="Giza">Giza</SelectItem>
                     <SelectItem value="Alexandria">Alexandria</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="supervisor_belongs_to">تابع لـ *</Label>
+                <Select value={supervisorForm.belongs_to} onValueChange={(value) => setSupervisorForm({ ...supervisorForm, belongs_to: value as any })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-background border border-border z-50">
+                    <SelectItem value="school">مدارس</SelectItem>
+                    <SelectItem value="corporate">شركات</SelectItem>
+                    <SelectItem value="both">الكل</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

@@ -20,9 +20,10 @@ import { ar } from 'date-fns/locale';
 
 interface CorporateAttendanceProps {
   canEdit: boolean;
+  staffContext?: 'school' | 'corporate';
 }
 
-export function CorporateAttendance({ canEdit }: CorporateAttendanceProps) {
+export function CorporateAttendance({ canEdit, staffContext }: CorporateAttendanceProps) {
   const queryClient = useQueryClient();
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('all');

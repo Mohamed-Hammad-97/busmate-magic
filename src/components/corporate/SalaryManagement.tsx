@@ -23,7 +23,11 @@ import {
 } from 'lucide-react';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
 
-export function SalaryManagement() {
+interface SalaryManagementProps {
+  staffContext?: 'school' | 'corporate';
+}
+
+export function SalaryManagement({ staffContext }: SalaryManagementProps = {}) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [viewMode, setViewMode] = useState<'daily' | 'weekly' | 'monthly'>('daily');
@@ -65,18 +69,22 @@ export function SalaryManagement() {
   });
 
   const { data: drivers = [] } = useQuery({
-    queryKey: ['salary-drivers'],
+    queryKey: ['salary-drivers', staffContext],
     queryFn: async () => {
-      const { data, error } = await supabase.from('drivers').select('id, full_name, phone').order('full_name');
+      let query = supabase.from('drivers').select('id, full_name, phone, belongs_to').order('full_name');
+      if (staffContext) query = query.in('belongs_to', [staffContext, 'both']);
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
   });
 
   const { data: supervisors = [] } = useQuery({
-    queryKey: ['salary-supervisors'],
+    queryKey: ['salary-supervisors', staffContext],
     queryFn: async () => {
-      const { data, error } = await supabase.from('supervisors').select('id, full_name, phone').order('full_name');
+      let query = supabase.from('supervisors').select('id, full_name, phone, belongs_to').order('full_name');
+      if (staffContext) query = query.in('belongs_to', [staffContext, 'both']);
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },

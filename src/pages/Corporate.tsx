@@ -10,9 +10,6 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from '@/components/ui/table';
-import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
@@ -196,113 +193,98 @@ const Corporate = () => {
                 />
               </div>
 
-              {/* Companies Table */}
-              <div className="rounded-2xl border border-border/50 bg-card overflow-hidden shadow-sm">
-                <div className="px-6 py-4 border-b border-border/50 flex items-center gap-3">
-                  <div className="p-1.5 rounded-lg bg-primary/10"><Building2 className="h-4 w-4 text-primary" /></div>
-                  <div>
-                    <h2 className="text-sm font-semibold text-foreground">الشركات</h2>
-                    <p className="text-xs text-muted-foreground">{filteredCompanies.length} شركة</p>
+              {/* Companies Cards */}
+              {isLoading ? (
+                <div className="flex justify-center py-16">
+                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 animate-pulse">
+                    <Building2 className="h-6 w-6 text-primary" />
                   </div>
                 </div>
+              ) : filteredCompanies.length === 0 ? (
+                <div className="py-16 text-center">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-muted/50 mb-4">
+                    <Building2 className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm font-medium text-foreground mb-1">لا توجد شركات</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {filteredCompanies.map((company: any) => {
+                    const lineCount = companyLines.filter((l: any) => l.company_id === company.id).length;
+                    return (
+                      <div
+                        key={company.id}
+                        className="group relative rounded-2xl border border-border/50 bg-card p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden"
+                        onClick={() => setSelectedCompanyForLines(company)}
+                      >
+                        {/* Decorative gradient */}
+                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-primary/60 to-primary/20 rounded-t-2xl" />
+                        
+                        {/* Header */}
+                        <div className="flex items-start justify-between mb-4">
+                          <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">
+                            {company.name}
+                          </h3>
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            {canEdit && (
+                              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary" onClick={(e) => { e.stopPropagation(); handleEdit(company); }}>
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
 
-                {isLoading ? (
-                  <div className="p-16 text-center">
-                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-4 animate-pulse">
-                      <Building2 className="h-6 w-6 text-primary" />
-                    </div>
-                    <p className="text-sm text-muted-foreground">جاري التحميل...</p>
-                  </div>
-                ) : filteredCompanies.length === 0 ? (
-                  <div className="p-16 text-center">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-muted/50 mb-4">
-                      <Building2 className="h-8 w-8 text-muted-foreground" />
-                    </div>
-                    <p className="text-sm font-medium text-foreground mb-1">لا توجد شركات</p>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-muted/30 hover:bg-muted/30">
-                          <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground text-right">اسم الشركة</TableHead>
-                          <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground text-right">المدينة</TableHead>
-                          <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground text-right">جهة الاتصال</TableHead>
-                          <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground text-right">رقم الهاتف</TableHead>
-                          <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground text-right">الخطوط</TableHead>
-                          <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground text-right">الحالة</TableHead>
-                          <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground text-right">إجراءات</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredCompanies.map((company: any) => {
-                          const lineCount = companyLines.filter((l: any) => l.company_id === company.id).length;
-                          return (
-                            <TableRow key={company.id} className="group hover:bg-muted/20 transition-colors duration-150">
-                              <TableCell>
-                                <div className="flex items-center gap-3">
-                                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
-                                    {company.name[0].toUpperCase()}
-                                  </div>
-                                  <span className="font-medium text-sm text-foreground">{company.name}</span>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-1.5">
-                                  <MapPin className="h-3 w-3 text-muted-foreground" />
-                                  <span className="text-sm text-muted-foreground">{company.city}</span>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-1.5">
-                                  <User className="h-3 w-3 text-muted-foreground" />
-                                  <span className="text-sm text-muted-foreground">{company.contact_person_name}</span>
-                                </div>
-                              </TableCell>
-                              <TableCell dir="ltr" className="text-sm text-muted-foreground text-right">{company.contact_person_phone}</TableCell>
-                              <TableCell>
-                                <Badge variant="outline" className="font-mono">{lineCount}</Badge>
-                              </TableCell>
-                              <TableCell>
-                                {company.is_active ? (
-                                  <div className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border bg-success/10 text-success border-success/20">نشط</div>
-                                ) : (
-                                  <div className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border bg-muted/50 text-muted-foreground border-border/50">غير نشط</div>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-1">
-                                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary" onClick={() => setSelectedCompanyForLines(company)}>
-                                    <Eye className="h-4 w-4" />
-                                  </Button>
-                                  {canEdit && (
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary" onClick={() => handleEdit(company)}>
-                                      <Edit className="h-4 w-4" />
-                                    </Button>
-                                  )}
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-              </div>
+                        {/* Info rows */}
+                        <div className="space-y-2.5 mb-5">
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <MapPin className="h-4 w-4 shrink-0" />
+                            <span>{company.city}</span>
+                            {company.location_address && <span className="text-xs truncate">- {company.location_address}</span>}
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <User className="h-4 w-4 shrink-0" />
+                            <span>{company.contact_person_name}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground" dir="ltr">
+                            <span className="text-xs">{company.contact_person_phone}</span>
+                          </div>
+                        </div>
+
+                        {/* Footer badges */}
+                        <div className="flex items-center gap-2 pt-3 border-t border-border/30">
+                          {company.is_active ? (
+                            <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 text-xs font-semibold px-3 py-1 rounded-full">
+                              نشط
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-xs px-3 py-1 rounded-full">غير نشط</Badge>
+                          )}
+                          <Badge variant="outline" className="text-xs font-mono px-3 py-1 rounded-full">
+                            <Truck className="h-3 w-3 ml-1" />
+                            {lineCount} خطوط
+                          </Badge>
+                        </div>
+
+                        {/* Hover glow effect */}
+                        <div className="absolute inset-0 rounded-2xl ring-1 ring-transparent group-hover:ring-primary/20 transition-all duration-300 pointer-events-none" />
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </TabsContent>
 
           <TabsContent value="attendance">
-            <CorporateAttendance canEdit={canEdit} />
+            <CorporateAttendance canEdit={canEdit} staffContext="corporate" />
           </TabsContent>
 
           <TabsContent value="profiles">
-            <StaffProfilesManagement canEdit={canEdit} />
+            <StaffProfilesManagement canEdit={canEdit} staffContext="corporate" />
           </TabsContent>
 
           <TabsContent value="salaries">
-            <SalaryManagement />
+            <SalaryManagement staffContext="corporate" />
           </TabsContent>
 
           <TabsContent value="invoices">

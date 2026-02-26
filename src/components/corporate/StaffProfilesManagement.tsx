@@ -19,9 +19,10 @@ import {
 
 interface StaffProfilesManagementProps {
   canEdit: boolean;
+  staffContext?: 'school' | 'corporate';
 }
 
-export function StaffProfilesManagement({ canEdit }: StaffProfilesManagementProps) {
+export function StaffProfilesManagement({ canEdit, staffContext }: StaffProfilesManagementProps) {
   const queryClient = useQueryClient();
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   const [selectedPerson, setSelectedPerson] = useState<any>(null);
@@ -35,18 +36,22 @@ export function StaffProfilesManagement({ canEdit }: StaffProfilesManagementProp
   const [uploading, setUploading] = useState(false);
 
   const { data: drivers = [] } = useQuery({
-    queryKey: ['all-drivers-profiles'],
+    queryKey: ['staff-profiles-drivers', staffContext],
     queryFn: async () => {
-      const { data, error } = await supabase.from('drivers').select('id, full_name, phone').order('full_name');
+      let query = supabase.from('drivers').select('id, full_name, phone, belongs_to').order('full_name');
+      if (staffContext) query = query.in('belongs_to', [staffContext, 'both']);
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
   });
 
   const { data: supervisors = [] } = useQuery({
-    queryKey: ['all-supervisors-profiles'],
+    queryKey: ['staff-profiles-supervisors', staffContext],
     queryFn: async () => {
-      const { data, error } = await supabase.from('supervisors').select('id, full_name, phone').order('full_name');
+      let query = supabase.from('supervisors').select('id, full_name, phone, belongs_to').order('full_name');
+      if (staffContext) query = query.in('belongs_to', [staffContext, 'both']);
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
