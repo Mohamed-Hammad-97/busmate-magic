@@ -222,6 +222,26 @@ const resources = {
         tomorrow: 'Tomorrow',
         inDays: 'in',
       },
+      // Attendance
+      attendance: {
+        date: 'Date',
+        company: 'Company',
+        allCompanies: 'All Companies',
+        line: 'Line',
+        allLines: 'All Lines',
+        saving: 'Saving...',
+        saveAttendance: 'Save Attendance',
+        record: 'Attendance Record',
+        linesCount: 'lines',
+        noLines: 'No lines found',
+        person: 'Person',
+        type: 'Type',
+        shift: 'Shift',
+        driver: 'Driver',
+        supervisor: 'Supervisor',
+        savedSuccess: 'Attendance saved successfully',
+        saveError: 'Error saving attendance',
+      },
       // Support Chat
       supportChat: {
         title: 'Support Chat',
@@ -814,6 +834,26 @@ const resources = {
         today: 'اليوم',
         tomorrow: 'غداً',
         inDays: 'بعد',
+      },
+      // Attendance
+      attendance: {
+        date: 'التاريخ',
+        company: 'الشركة',
+        allCompanies: 'كل الشركات',
+        line: 'الخط',
+        allLines: 'كل الخطوط',
+        saving: 'جاري الحفظ...',
+        saveAttendance: 'حفظ الحضور',
+        record: 'سجل الحضور',
+        linesCount: 'خط',
+        noLines: 'لا توجد خطوط',
+        person: 'الشخص',
+        type: 'النوع',
+        shift: 'وردة',
+        driver: 'سائق',
+        supervisor: 'مشرف',
+        savedSuccess: 'تم حفظ الحضور',
+        saveError: 'حدث خطأ',
       },
       // Support Chat
       supportChat: {
