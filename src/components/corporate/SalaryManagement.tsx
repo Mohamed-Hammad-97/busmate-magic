@@ -103,9 +103,9 @@ export function SalaryManagement({ staffContext }: SalaryManagementProps = {}) {
     },
   });
 
-  // Calculate salary per person
+  // Calculate salary per person (shifts + extra fees)
   const salaryData = useMemo(() => {
-    const personMap = new Map<string, { name: string; type: string; totalShifts: number; totalSalary: number; personId: string }>();
+    const personMap = new Map<string, { name: string; type: string; totalShifts: number; totalSalary: number; totalExtraFees: number; personId: string }>();
 
     attendance.forEach((a: any) => {
       const key = a.driver_id || a.supervisor_id;
@@ -121,6 +121,7 @@ export function SalaryManagement({ staffContext }: SalaryManagementProps = {}) {
           type: a.driver_id ? 'driver' : 'supervisor',
           totalShifts: 0,
           totalSalary: 0,
+          totalExtraFees: 0,
           personId: key,
         });
       }
@@ -128,12 +129,13 @@ export function SalaryManagement({ staffContext }: SalaryManagementProps = {}) {
       const entry = personMap.get(key)!;
       entry.totalShifts += 1;
       entry.totalSalary += Number(a.shift_rate || 0);
+      entry.totalExtraFees += Number(a.extra_fee_amount || 0);
     });
 
-    return Array.from(personMap.values()).sort((a, b) => b.totalSalary - a.totalSalary);
+    return Array.from(personMap.values()).sort((a, b) => (b.totalSalary + b.totalExtraFees) - (a.totalSalary + a.totalExtraFees));
   }, [attendance, drivers, supervisors]);
 
-  const totalSalaries = salaryData.reduce((sum, d) => sum + d.totalSalary, 0);
+  const totalSalaries = salaryData.reduce((sum, d) => sum + d.totalSalary + d.totalExtraFees, 0);
   const totalPaid = salaryPayments.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
 
   const savePaymentMutation = useMutation({
@@ -165,7 +167,7 @@ export function SalaryManagement({ staffContext }: SalaryManagementProps = {}) {
   const handlePayPerson = (person: any) => {
     setSelectedPerson(person);
     setPaymentForm({
-      amount: person.totalSalary,
+      amount: person.totalSalary + person.totalExtraFees,
       period_start: dateRange.start,
       period_end: dateRange.end,
       payment_date: format(new Date(), 'yyyy-MM-dd'),
@@ -250,12 +252,14 @@ export function SalaryManagement({ staffContext }: SalaryManagementProps = {}) {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/30 hover:bg-muted/30">
-                  <TableHead className="text-xs font-semibold uppercase text-muted-foreground text-right">الاسم</TableHead>
-                  <TableHead className="text-xs font-semibold uppercase text-muted-foreground text-right">النوع</TableHead>
-                  <TableHead className="text-xs font-semibold uppercase text-muted-foreground text-right">عدد الوردات</TableHead>
-                  <TableHead className="text-xs font-semibold uppercase text-muted-foreground text-right">المستحق</TableHead>
-                  <TableHead className="text-xs font-semibold uppercase text-muted-foreground text-right">المدفوع</TableHead>
-                  <TableHead className="text-xs font-semibold uppercase text-muted-foreground text-right">إجراءات</TableHead>
+                   <TableHead className="text-xs font-semibold uppercase text-muted-foreground text-right">الاسم</TableHead>
+                   <TableHead className="text-xs font-semibold uppercase text-muted-foreground text-right">النوع</TableHead>
+                   <TableHead className="text-xs font-semibold uppercase text-muted-foreground text-right">عدد الوردات</TableHead>
+                   <TableHead className="text-xs font-semibold uppercase text-muted-foreground text-right">أجر الوردات</TableHead>
+                   <TableHead className="text-xs font-semibold uppercase text-muted-foreground text-right">إضافي</TableHead>
+                   <TableHead className="text-xs font-semibold uppercase text-muted-foreground text-right">الإجمالي</TableHead>
+                   <TableHead className="text-xs font-semibold uppercase text-muted-foreground text-right">المدفوع</TableHead>
+                   <TableHead className="text-xs font-semibold uppercase text-muted-foreground text-right">إجراءات</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -279,8 +283,13 @@ export function SalaryManagement({ staffContext }: SalaryManagementProps = {}) {
                           {person.type === 'driver' ? 'سائق' : 'مشرف'}
                         </Badge>
                       </TableCell>
-                      <TableCell className="font-mono text-sm">{person.totalShifts}</TableCell>
-                      <TableCell className="font-mono text-sm font-semibold">{person.totalSalary.toLocaleString()} ج.م</TableCell>
+                       <TableCell className="font-mono text-sm">{person.totalSalary.toLocaleString()} ج.م</TableCell>
+                       <TableCell className="font-mono text-sm">
+                         {person.totalExtraFees > 0 ? (
+                           <span className="text-primary">{person.totalExtraFees.toLocaleString()} ج.م</span>
+                         ) : '-'}
+                       </TableCell>
+                       <TableCell className="font-mono text-sm font-semibold">{(person.totalSalary + person.totalExtraFees).toLocaleString()} ج.م</TableCell>
                       <TableCell>
                         {paid > 0 ? (
                           <span className="text-success font-mono text-sm">{paid.toLocaleString()} ج.م</span>

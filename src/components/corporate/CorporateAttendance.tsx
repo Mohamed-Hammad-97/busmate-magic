@@ -13,8 +13,11 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
+import {
+  Popover, PopoverContent, PopoverTrigger,
+} from '@/components/ui/popover';
 import { toast } from 'sonner';
-import { CalendarDays, Check, X, Save } from 'lucide-react';
+import { CalendarDays, Check, X, Save, DollarSign } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface CorporateAttendanceProps {
@@ -72,7 +75,6 @@ export function CorporateAttendance({ canEdit, staffContext }: CorporateAttendan
       if (error) throw error;
 
       if (isSchoolContext) {
-        // Filter: only lines where driver or supervisor belongs to school/both
         return (data || []).filter((line: any) => {
           const driverOk = line.driver && (line.driver.belongs_to === 'school' || line.driver.belongs_to === 'both');
           const supervisorOk = line.supervisor && (line.supervisor.belongs_to === 'school' || line.supervisor.belongs_to === 'both');
@@ -135,6 +137,8 @@ export function CorporateAttendance({ canEdit, staffContext }: CorporateAttendan
   });
 
   const [localAttendance, setLocalAttendance] = useState<Record<string, boolean>>({});
+  // Extra fees state: key = `${lineId}-${personType}` -> { amount, reason }
+  const [localExtraFees, setLocalExtraFees] = useState<Record<string, { amount: number; reason: string }>>({});
 
   const getChecked = (lineId: string, personType: string, shift: number) => {
     const key = `${lineId}-${personType}-${shift}`;
@@ -147,6 +151,26 @@ export function CorporateAttendance({ canEdit, staffContext }: CorporateAttendan
     return existing ? existing.is_present : false;
   };
 
+  const getExtraFee = (lineId: string, personType: string) => {
+    const key = `${lineId}-${personType}`;
+    if (key in localExtraFees) return localExtraFees[key];
+    // Load from existing attendance (extra fee is per-person per-line per-day, stored on shift 1)
+    const existing = attendance.find((a: any) =>
+      a.company_line_id === lineId &&
+      a.shift_number === 1 &&
+      (personType === 'driver' ? a.driver_id !== null : a.supervisor_id !== null)
+    );
+    return {
+      amount: existing ? Number(existing.extra_fee_amount || 0) : 0,
+      reason: existing?.extra_fee_reason || '',
+    };
+  };
+
+  const setExtraFee = (lineId: string, personType: string, fee: { amount: number; reason: string }) => {
+    const key = `${lineId}-${personType}`;
+    setLocalExtraFees(prev => ({ ...prev, [key]: fee }));
+  };
+
   const toggleAttendance = (lineId: string, personType: string, shift: number) => {
     const key = `${lineId}-${personType}-${shift}`;
     setLocalAttendance(prev => ({ ...prev, [key]: !getChecked(lineId, personType, shift) }));
@@ -157,6 +181,7 @@ export function CorporateAttendance({ canEdit, staffContext }: CorporateAttendan
     lines.forEach((line: any) => {
       for (let shift = 1; shift <= line.number_of_shifts; shift++) {
         if (line.driver) {
+          const fee = getExtraFee(line.id, 'driver');
           records.push({
             company_line_id: line.id,
             driver_id: line.driver.id,
@@ -164,9 +189,13 @@ export function CorporateAttendance({ canEdit, staffContext }: CorporateAttendan
             shift_number: shift,
             shift_rate: line.driver_rate_per_shift || line.price_per_shift,
             is_present: getChecked(line.id, 'driver', shift),
+            // Only store extra fee on shift 1 to avoid duplication
+            extra_fee_amount: shift === 1 ? (fee.amount || 0) : 0,
+            extra_fee_reason: shift === 1 ? (fee.reason || null) : null,
           });
         }
         if (line.supervisor) {
+          const fee = getExtraFee(line.id, 'supervisor');
           records.push({
             company_line_id: line.id,
             supervisor_id: line.supervisor.id,
@@ -174,6 +203,8 @@ export function CorporateAttendance({ canEdit, staffContext }: CorporateAttendan
             shift_number: shift,
             shift_rate: line.driver_rate_per_shift || line.price_per_shift,
             is_present: getChecked(line.id, 'supervisor', shift),
+            extra_fee_amount: shift === 1 ? (fee.amount || 0) : 0,
+            extra_fee_reason: shift === 1 ? (fee.reason || null) : null,
           });
         }
       }
@@ -187,7 +218,7 @@ export function CorporateAttendance({ canEdit, staffContext }: CorporateAttendan
       <div className="flex flex-wrap items-end gap-4">
         <div className="space-y-2">
           <Label>{t('attendance.date')}</Label>
-          <Input type="date" value={selectedDate} onChange={(e) => { setSelectedDate(e.target.value); setLocalAttendance({}); }} dir="ltr" className="w-44" />
+          <Input type="date" value={selectedDate} onChange={(e) => { setSelectedDate(e.target.value); setLocalAttendance({}); setLocalExtraFees({}); }} dir="ltr" className="w-44" />
         </div>
 
         {!isSchoolContext && (
@@ -265,6 +296,7 @@ export function CorporateAttendance({ canEdit, staffContext }: CorporateAttendan
                       </TableHead>
                     );
                   })}
+                  <TableHead className="text-xs font-semibold uppercase text-muted-foreground text-center">إضافي</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -273,6 +305,7 @@ export function CorporateAttendance({ canEdit, staffContext }: CorporateAttendan
                   const maxShifts = Math.max(...lines.map((l: any) => l.number_of_shifts));
 
                   if (line.driver) {
+                    const fee = getExtraFee(line.id, 'driver');
                     rows.push(
                       <TableRow key={`${line.id}-driver`} className="hover:bg-muted/20">
                         {!isSchoolContext && (
@@ -294,11 +327,39 @@ export function CorporateAttendance({ canEdit, staffContext }: CorporateAttendan
                             </TableCell>
                           );
                         })}
+                        <TableCell className="text-center">
+                          {canEdit ? (
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button variant={fee.amount > 0 ? 'default' : 'ghost'} size="sm" className="h-7 gap-1 text-xs">
+                                  <DollarSign className="h-3 w-3" />
+                                  {fee.amount > 0 ? fee.amount : '+'}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-56 space-y-3" align="end">
+                                <p className="text-xs font-semibold text-foreground">رسوم إضافية</p>
+                                <div className="space-y-1.5">
+                                  <Label className="text-xs">المبلغ</Label>
+                                  <Input type="number" className="h-8 text-xs" dir="ltr" value={fee.amount || ''} onChange={(e) => setExtraFee(line.id, 'driver', { ...fee, amount: Number(e.target.value) })} placeholder="0" />
+                                </div>
+                                <div className="space-y-1.5">
+                                  <Label className="text-xs">السبب</Label>
+                                  <Input className="h-8 text-xs" value={fee.reason} onChange={(e) => setExtraFee(line.id, 'driver', { ...fee, reason: e.target.value })} placeholder="سبب الرسوم..." />
+                                </div>
+                              </PopoverContent>
+                            </Popover>
+                          ) : (
+                            fee.amount > 0 ? (
+                              <span className="text-xs font-mono text-primary" title={fee.reason}>{fee.amount} ج.م</span>
+                            ) : <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
                       </TableRow>
                     );
                   }
 
                   if (line.supervisor) {
+                    const fee = getExtraFee(line.id, 'supervisor');
                     rows.push(
                       <TableRow key={`${line.id}-supervisor`} className="hover:bg-muted/20">
                         {!isSchoolContext && (
@@ -320,6 +381,33 @@ export function CorporateAttendance({ canEdit, staffContext }: CorporateAttendan
                             </TableCell>
                           );
                         })}
+                        <TableCell className="text-center">
+                          {canEdit ? (
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button variant={fee.amount > 0 ? 'default' : 'ghost'} size="sm" className="h-7 gap-1 text-xs">
+                                  <DollarSign className="h-3 w-3" />
+                                  {fee.amount > 0 ? fee.amount : '+'}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-56 space-y-3" align="end">
+                                <p className="text-xs font-semibold text-foreground">رسوم إضافية</p>
+                                <div className="space-y-1.5">
+                                  <Label className="text-xs">المبلغ</Label>
+                                  <Input type="number" className="h-8 text-xs" dir="ltr" value={fee.amount || ''} onChange={(e) => setExtraFee(line.id, 'supervisor', { ...fee, amount: Number(e.target.value) })} placeholder="0" />
+                                </div>
+                                <div className="space-y-1.5">
+                                  <Label className="text-xs">السبب</Label>
+                                  <Input className="h-8 text-xs" value={fee.reason} onChange={(e) => setExtraFee(line.id, 'supervisor', { ...fee, reason: e.target.value })} placeholder="سبب الرسوم..." />
+                                </div>
+                              </PopoverContent>
+                            </Popover>
+                          ) : (
+                            fee.amount > 0 ? (
+                              <span className="text-xs font-mono text-primary" title={fee.reason}>{fee.amount} ج.م</span>
+                            ) : <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
                       </TableRow>
                     );
                   }
