@@ -18,11 +18,16 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import {
-  FileText, Plus, Eye, Download, DollarSign,
+  FileText, Plus, Download, DollarSign, Trash2,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+
+interface ExtraItem {
+  name: string;
+  amount: number;
+}
 
 export function CompanyInvoices() {
   const queryClient = useQueryClient();
@@ -34,6 +39,7 @@ export function CompanyInvoices() {
     period_end: format(new Date(), 'yyyy-MM-dd'),
     notes: '',
   });
+  const [extraItems, setExtraItems] = useState<ExtraItem[]>([]);
 
   const { data: companies = [] } = useQuery({
     queryKey: ['invoice-companies'],
@@ -71,7 +77,6 @@ export function CompanyInvoices() {
     enabled: !!selectedCompanyId,
   });
 
-  // Calculate line items based on attendance
   const { data: attendanceForInvoice = [] } = useQuery({
     queryKey: ['invoice-attendance', selectedCompanyId, invoiceForm.period_start, invoiceForm.period_end],
     queryFn: async () => {
@@ -104,12 +109,37 @@ export function CompanyInvoices() {
     });
   }, [companyLines, attendanceForInvoice]);
 
-  const invoiceTotal = lineItems.reduce((sum, item) => sum + item.total, 0);
+  const extraItemsTotal = extraItems.reduce((sum, item) => sum + (item.amount || 0), 0);
+  const invoiceTotal = lineItems.reduce((sum, item) => sum + item.total, 0) + extraItemsTotal;
+
+  const addExtraItem = () => {
+    setExtraItems(prev => [...prev, { name: '', amount: 0 }]);
+  };
+
+  const updateExtraItem = (index: number, field: keyof ExtraItem, value: string | number) => {
+    setExtraItems(prev => prev.map((item, i) => i === index ? { ...item, [field]: value } : item));
+  };
+
+  const removeExtraItem = (index: number) => {
+    setExtraItems(prev => prev.filter((_, i) => i !== index));
+  };
 
   const createInvoiceMutation = useMutation({
     mutationFn: async () => {
       const company = companies.find((c: any) => c.id === selectedCompanyId);
       const invoiceNumber = `INV-${company?.name?.slice(0, 3).toUpperCase()}-${Date.now().toString().slice(-6)}`;
+
+      // Combine line items and extra items into one array
+      const allItems = [
+        ...lineItems,
+        ...extraItems.filter(e => e.name && e.amount).map(e => ({
+          line_name: e.name,
+          shifts_count: 0,
+          price_per_shift: 0,
+          total: e.amount,
+          is_extra: true,
+        })),
+      ];
 
       const { error } = await supabase.from('company_invoices').insert({
         company_id: selectedCompanyId,
@@ -117,7 +147,7 @@ export function CompanyInvoices() {
         period_start: invoiceForm.period_start,
         period_end: invoiceForm.period_end,
         total_amount: invoiceTotal,
-        line_items: lineItems,
+        line_items: allItems,
         status: 'issued',
         issued_date: format(new Date(), 'yyyy-MM-dd'),
         notes: invoiceForm.notes || null,
@@ -129,6 +159,7 @@ export function CompanyInvoices() {
       queryClient.invalidateQueries({ queryKey: ['company-invoices'] });
       toast.success('تم إنشاء الفاتورة');
       setInvoiceDialogOpen(false);
+      setExtraItems([]);
     },
     onError: () => toast.error('حدث خطأ'),
   });
@@ -148,11 +179,11 @@ export function CompanyInvoices() {
     const items = Array.isArray(invoice.line_items) ? invoice.line_items : [];
     autoTable(doc, {
       startY: 65,
-      head: [['Line', 'Shifts', 'Rate/Shift', 'Total']],
+      head: [['Item', 'Shifts', 'Rate/Shift', 'Total']],
       body: items.map((item: any) => [
         item.line_name,
-        item.shifts_count,
-        `${item.price_per_shift} EGP`,
+        item.is_extra ? '-' : item.shifts_count,
+        item.is_extra ? '-' : `${item.price_per_shift} EGP`,
         `${item.total} EGP`,
       ]),
       foot: [['', '', 'Total', `${invoice.total_amount} EGP`]],
@@ -171,7 +202,7 @@ export function CompanyInvoices() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div />
-        <Button className="gap-2" onClick={() => { setSelectedCompanyId(''); setInvoiceDialogOpen(true); }}>
+        <Button className="gap-2" onClick={() => { setSelectedCompanyId(''); setExtraItems([]); setInvoiceDialogOpen(true); }}>
           <Plus className="h-4 w-4" />
           إنشاء فاتورة
         </Button>
@@ -265,7 +296,7 @@ export function CompanyInvoices() {
             {/* Line Items Preview */}
             {selectedCompanyId && lineItems.length > 0 && (
               <div className="space-y-2">
-                <Label>تفاصيل الفاتورة</Label>
+                <Label>بنود الخطوط</Label>
                 <div className="rounded-xl border border-border/50 overflow-hidden">
                   <Table>
                     <TableHeader>
@@ -285,12 +316,59 @@ export function CompanyInvoices() {
                           <TableCell className="text-sm font-mono font-semibold">{item.total.toLocaleString()}</TableCell>
                         </TableRow>
                       ))}
-                      <TableRow className="bg-muted/20">
-                        <TableCell colSpan={3} className="text-sm font-semibold">الإجمالي</TableCell>
-                        <TableCell className="text-sm font-mono font-bold">{invoiceTotal.toLocaleString()} ج.م</TableCell>
-                      </TableRow>
                     </TableBody>
                   </Table>
+                </div>
+              </div>
+            )}
+
+            {/* Extra Items */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label>بنود إضافية</Label>
+                <Button type="button" variant="outline" size="sm" className="gap-1 text-xs h-7" onClick={addExtraItem}>
+                  <Plus className="h-3 w-3" /> إضافة بند
+                </Button>
+              </div>
+              {extraItems.map((item, i) => (
+                <div key={i} className="flex items-center gap-2 p-2.5 rounded-lg border border-border/50 bg-muted/20">
+                  <Input
+                    className="flex-1 h-8 text-xs"
+                    placeholder="اسم البند..."
+                    value={item.name}
+                    onChange={(e) => updateExtraItem(i, 'name', e.target.value)}
+                  />
+                  <Input
+                    type="number"
+                    className="w-28 h-8 text-xs"
+                    placeholder="المبلغ"
+                    dir="ltr"
+                    value={item.amount || ''}
+                    onChange={(e) => updateExtraItem(i, 'amount', Number(e.target.value))}
+                  />
+                  <Button type="button" variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => removeExtraItem(i)}>
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+
+            {/* Total Summary */}
+            {selectedCompanyId && (
+              <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-1.5">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">مجموع الخطوط</span>
+                  <span className="font-mono">{lineItems.reduce((s, i) => s + i.total, 0).toLocaleString()} ج.م</span>
+                </div>
+                {extraItemsTotal > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">بنود إضافية</span>
+                    <span className="font-mono">{extraItemsTotal.toLocaleString()} ج.م</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-sm font-bold border-t border-primary/20 pt-1.5">
+                  <span>الإجمالي</span>
+                  <span className="font-mono">{invoiceTotal.toLocaleString()} ج.م</span>
                 </div>
               </div>
             )}

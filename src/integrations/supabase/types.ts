@@ -434,6 +434,8 @@ export type Database = {
           company_line_id: string
           created_at: string
           driver_id: string | null
+          extra_fee_amount: number
+          extra_fee_reason: string | null
           id: string
           is_present: boolean
           notes: string | null
@@ -446,6 +448,8 @@ export type Database = {
           company_line_id: string
           created_at?: string
           driver_id?: string | null
+          extra_fee_amount?: number
+          extra_fee_reason?: string | null
           id?: string
           is_present?: boolean
           notes?: string | null
@@ -458,6 +462,8 @@ export type Database = {
           company_line_id?: string
           created_at?: string
           driver_id?: string | null
+          extra_fee_amount?: number
+          extra_fee_reason?: string | null
           id?: string
           is_present?: boolean
           notes?: string | null
