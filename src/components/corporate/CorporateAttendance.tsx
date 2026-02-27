@@ -49,7 +49,7 @@ export function CorporateAttendance({ canEdit, staffContext }: CorporateAttendan
       let query = supabase
         .from('company_lines')
         .select(`
-          id, name, number_of_shifts, price_per_shift, company_id,
+          id, name, number_of_shifts, price_per_shift, driver_rate_per_shift, company_id,
           driver:drivers(id, full_name, belongs_to),
           supervisor:supervisors(id, full_name, belongs_to),
           company:companies(id, name)
@@ -162,7 +162,7 @@ export function CorporateAttendance({ canEdit, staffContext }: CorporateAttendan
             driver_id: line.driver.id,
             attendance_date: selectedDate,
             shift_number: shift,
-            shift_rate: line.price_per_shift,
+            shift_rate: line.driver_rate_per_shift || line.price_per_shift,
             is_present: getChecked(line.id, 'driver', shift),
           });
         }
@@ -172,7 +172,7 @@ export function CorporateAttendance({ canEdit, staffContext }: CorporateAttendan
             supervisor_id: line.supervisor.id,
             attendance_date: selectedDate,
             shift_number: shift,
-            shift_rate: line.price_per_shift,
+            shift_rate: line.driver_rate_per_shift || line.price_per_shift,
             is_present: getChecked(line.id, 'supervisor', shift),
           });
         }

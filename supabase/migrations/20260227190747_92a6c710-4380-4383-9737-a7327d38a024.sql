@@ -1,0 +1,1 @@
+ALTER TABLE public.company_lines ADD COLUMN driver_rate_per_shift numeric NOT NULL DEFAULT 0;

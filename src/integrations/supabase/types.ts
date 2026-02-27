@@ -275,6 +275,7 @@ export type Database = {
           company_id: string
           created_at: string
           driver_id: string | null
+          driver_rate_per_shift: number
           id: string
           is_active: boolean
           name: string
@@ -290,6 +291,7 @@ export type Database = {
           company_id: string
           created_at?: string
           driver_id?: string | null
+          driver_rate_per_shift?: number
           id?: string
           is_active?: boolean
           name: string
@@ -305,6 +307,7 @@ export type Database = {
           company_id?: string
           created_at?: string
           driver_id?: string | null
+          driver_rate_per_shift?: number
           id?: string
           is_active?: boolean
           name?: string

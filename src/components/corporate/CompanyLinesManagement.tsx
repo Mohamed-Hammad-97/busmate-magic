@@ -37,6 +37,7 @@ export function CompanyLinesManagement({ company, onBack, canEdit }: CompanyLine
     shift_times: [''] as string[],
     route_details: '',
     price_per_shift: 0,
+    driver_rate_per_shift: 0,
     driver_id: '',
     supervisor_id: '',
     notes: '',
@@ -87,6 +88,7 @@ export function CompanyLinesManagement({ company, onBack, canEdit }: CompanyLine
         shift_times: lineForm.shift_times.filter(t => t),
         route_details: lineForm.route_details || null,
         price_per_shift: lineForm.price_per_shift,
+        driver_rate_per_shift: lineForm.driver_rate_per_shift,
         driver_id: lineForm.driver_id || null,
         supervisor_id: lineForm.supervisor_id || null,
         notes: lineForm.notes || null,
@@ -112,7 +114,7 @@ export function CompanyLinesManagement({ company, onBack, canEdit }: CompanyLine
   });
 
   const resetForm = () => {
-    setLineForm({ name: '', number_of_shifts: 1, shift_times: [''], route_details: '', price_per_shift: 0, driver_id: '', supervisor_id: '', notes: '', is_active: true });
+    setLineForm({ name: '', number_of_shifts: 1, shift_times: [''], route_details: '', price_per_shift: 0, driver_rate_per_shift: 0, driver_id: '', supervisor_id: '', notes: '', is_active: true });
     setSelectedLine(null);
   };
 
@@ -125,6 +127,7 @@ export function CompanyLinesManagement({ company, onBack, canEdit }: CompanyLine
       shift_times: shiftTimes.length > 0 ? shiftTimes : [''],
       route_details: line.route_details || '',
       price_per_shift: line.price_per_shift,
+      driver_rate_per_shift: line.driver_rate_per_shift || 0,
       driver_id: line.driver_id || '',
       supervisor_id: line.supervisor_id || '',
       notes: line.notes || '',
@@ -209,7 +212,8 @@ export function CompanyLinesManagement({ company, onBack, canEdit }: CompanyLine
                   <TableHead className="text-xs font-semibold uppercase text-muted-foreground text-right">اسم الخط</TableHead>
                   <TableHead className="text-xs font-semibold uppercase text-muted-foreground text-right">عدد الوردات</TableHead>
                   <TableHead className="text-xs font-semibold uppercase text-muted-foreground text-right">مواعيد الوردات</TableHead>
-                  <TableHead className="text-xs font-semibold uppercase text-muted-foreground text-right">السعر/وردة</TableHead>
+                   <TableHead className="text-xs font-semibold uppercase text-muted-foreground text-right">سعر الفاتورة/وردة</TableHead>
+                   <TableHead className="text-xs font-semibold uppercase text-muted-foreground text-right">سعر السائق/وردة</TableHead>
                   <TableHead className="text-xs font-semibold uppercase text-muted-foreground text-right">السائق</TableHead>
                   <TableHead className="text-xs font-semibold uppercase text-muted-foreground text-right">المشرف</TableHead>
                   <TableHead className="text-xs font-semibold uppercase text-muted-foreground text-right">الحالة</TableHead>
@@ -233,12 +237,18 @@ export function CompanyLinesManagement({ company, onBack, canEdit }: CompanyLine
                         ))}
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <DollarSign className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-sm font-mono">{line.price_per_shift}</span>
-                      </div>
-                    </TableCell>
+                     <TableCell>
+                       <div className="flex items-center gap-1">
+                         <DollarSign className="h-3 w-3 text-muted-foreground" />
+                         <span className="text-sm font-mono">{line.price_per_shift}</span>
+                       </div>
+                     </TableCell>
+                     <TableCell>
+                       <div className="flex items-center gap-1">
+                         <DollarSign className="h-3 w-3 text-muted-foreground" />
+                         <span className="text-sm font-mono">{line.driver_rate_per_shift || 0}</span>
+                       </div>
+                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">{line.driver?.full_name || '-'}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{line.supervisor?.full_name || '-'}</TableCell>
                     <TableCell>
@@ -288,9 +298,16 @@ export function CompanyLinesManagement({ company, onBack, canEdit }: CompanyLine
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>السعر لكل وردة *</Label>
-                <Input type="number" value={lineForm.price_per_shift} onChange={(e) => setLineForm({ ...lineForm, price_per_shift: Number(e.target.value) })} placeholder="0" dir="ltr" />
-              </div>
+                 <Label>سعر الفاتورة/وردة *</Label>
+                 <Input type="number" value={lineForm.price_per_shift} onChange={(e) => setLineForm({ ...lineForm, price_per_shift: Number(e.target.value) })} placeholder="0" dir="ltr" />
+               </div>
+             </div>
+             <div className="grid grid-cols-2 gap-4">
+               <div className="space-y-2">
+                 <Label>سعر السائق/وردة *</Label>
+                 <Input type="number" value={lineForm.driver_rate_per_shift} onChange={(e) => setLineForm({ ...lineForm, driver_rate_per_shift: Number(e.target.value) })} placeholder="0" dir="ltr" />
+               </div>
+               <div></div>
             </div>
 
             {/* Shift Times */}
@@ -351,8 +368,8 @@ export function CompanyLinesManagement({ company, onBack, canEdit }: CompanyLine
             )}
 
             <Button className="w-full" onClick={() => {
-              if (!lineForm.name || lineForm.price_per_shift <= 0) {
-                toast.error('يرجى ملء اسم الخط والسعر');
+              if (!lineForm.name || lineForm.price_per_shift <= 0 || lineForm.driver_rate_per_shift <= 0) {
+                toast.error('يرجى ملء اسم الخط وسعر الفاتورة وسعر السائق');
                 return;
               }
               saveLineMutation.mutate();
