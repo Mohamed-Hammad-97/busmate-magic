@@ -20,9 +20,10 @@ import {
 interface StaffProfilesManagementProps {
   canEdit: boolean;
   staffContext?: 'school' | 'corporate';
+  companyId?: string;
 }
 
-export function StaffProfilesManagement({ canEdit, staffContext }: StaffProfilesManagementProps) {
+export function StaffProfilesManagement({ canEdit, staffContext, companyId }: StaffProfilesManagementProps) {
   const queryClient = useQueryClient();
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   const [selectedPerson, setSelectedPerson] = useState<any>(null);
@@ -35,24 +36,44 @@ export function StaffProfilesManagement({ canEdit, staffContext }: StaffProfiles
   });
   const [uploading, setUploading] = useState(false);
 
+  // Get line assignments for company filtering
+  const { data: companyLineStaff = [] } = useQuery({
+    queryKey: ['company-line-staff', companyId],
+    queryFn: async () => {
+      if (!companyId) return [];
+      const { data, error } = await supabase.from('company_lines').select('driver_id, supervisor_id').eq('company_id', companyId).eq('is_active', true);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!companyId,
+  });
+
   const { data: drivers = [] } = useQuery({
-    queryKey: ['staff-profiles-drivers', staffContext],
+    queryKey: ['staff-profiles-drivers', staffContext, companyId],
     queryFn: async () => {
       let query = supabase.from('drivers').select('id, full_name, phone, belongs_to').order('full_name');
       if (staffContext) query = query.in('belongs_to', [staffContext, 'both']);
       const { data, error } = await query;
       if (error) throw error;
+      if (companyId) {
+        const driverIds = companyLineStaff.map((l: any) => l.driver_id).filter(Boolean);
+        return (data || []).filter((d: any) => driverIds.includes(d.id));
+      }
       return data;
     },
   });
 
   const { data: supervisors = [] } = useQuery({
-    queryKey: ['staff-profiles-supervisors', staffContext],
+    queryKey: ['staff-profiles-supervisors', staffContext, companyId],
     queryFn: async () => {
       let query = supabase.from('supervisors').select('id, full_name, phone, belongs_to').order('full_name');
       if (staffContext) query = query.in('belongs_to', [staffContext, 'both']);
       const { data, error } = await query;
       if (error) throw error;
+      if (companyId) {
+        const supervisorIds = companyLineStaff.map((l: any) => l.supervisor_id).filter(Boolean);
+        return (data || []).filter((s: any) => supervisorIds.includes(s.id));
+      }
       return data;
     },
   });

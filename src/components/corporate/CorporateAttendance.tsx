@@ -23,16 +23,18 @@ import { format } from 'date-fns';
 interface CorporateAttendanceProps {
   canEdit: boolean;
   staffContext?: 'school' | 'corporate';
+  companyId?: string;
 }
 
-export function CorporateAttendance({ canEdit, staffContext }: CorporateAttendanceProps) {
+export function CorporateAttendance({ canEdit, staffContext, companyId }: CorporateAttendanceProps) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
-  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('all');
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>(companyId || 'all');
   const [selectedLineId, setSelectedLineId] = useState<string>('all');
 
   const isSchoolContext = staffContext === 'school';
+  const isFixedCompany = !!companyId;
 
   // Companies — only for corporate context
   const { data: companies = [] } = useQuery({
@@ -102,6 +104,8 @@ export function CorporateAttendance({ canEdit, staffContext }: CorporateAttendan
     },
     enabled: !isSchoolContext && selectedCompanyId !== 'all',
   });
+
+  // Also enable companyLines dropdown when company is fixed
 
   const { data: attendance = [], refetch: refetchAttendance } = useQuery({
     queryKey: ['corporate-attendance', selectedDate],
@@ -221,7 +225,7 @@ export function CorporateAttendance({ canEdit, staffContext }: CorporateAttendan
           <Input type="date" value={selectedDate} onChange={(e) => { setSelectedDate(e.target.value); setLocalAttendance({}); setLocalExtraFees({}); }} dir="ltr" className="w-44" />
         </div>
 
-        {!isSchoolContext && (
+        {!isSchoolContext && !isFixedCompany && (
           <>
             <div className="space-y-2">
               <Label>{t('attendance.company')}</Label>
@@ -251,6 +255,22 @@ export function CorporateAttendance({ canEdit, staffContext }: CorporateAttendan
               </div>
             )}
           </>
+        )}
+
+        {/* Line filter when company is fixed */}
+        {isFixedCompany && companyLines.length > 0 && (
+          <div className="space-y-2">
+            <Label>{t('attendance.line')}</Label>
+            <Select value={selectedLineId} onValueChange={setSelectedLineId}>
+              <SelectTrigger className="w-48"><SelectValue placeholder={t('attendance.allLines')} /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('attendance.allLines')}</SelectItem>
+                {companyLines.map((l: any) => (
+                  <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         )}
 
         {canEdit && (

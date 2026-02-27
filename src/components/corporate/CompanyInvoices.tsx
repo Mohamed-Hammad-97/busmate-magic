@@ -29,7 +29,11 @@ interface ExtraItem {
   amount: number;
 }
 
-export function CompanyInvoices() {
+interface CompanyInvoicesProps {
+  companyId?: string;
+}
+
+export function CompanyInvoices({ companyId: fixedCompanyId }: CompanyInvoicesProps = {}) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
@@ -41,6 +45,9 @@ export function CompanyInvoices() {
   });
   const [extraItems, setExtraItems] = useState<ExtraItem[]>([]);
 
+  // Use fixedCompanyId if provided, otherwise allow selection
+  const effectiveCompanyId = fixedCompanyId || selectedCompanyId;
+
   const { data: companies = [] } = useQuery({
     queryKey: ['invoice-companies'],
     queryFn: async () => {
@@ -51,36 +58,40 @@ export function CompanyInvoices() {
   });
 
   const { data: invoices = [] } = useQuery({
-    queryKey: ['company-invoices'],
+    queryKey: ['company-invoices', fixedCompanyId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('company_invoices')
         .select('*, company:companies(name)')
         .order('created_at', { ascending: false });
+      if (fixedCompanyId) {
+        query = query.eq('company_id', fixedCompanyId);
+      }
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
   });
 
   const { data: companyLines = [] } = useQuery({
-    queryKey: ['invoice-lines', selectedCompanyId],
+    queryKey: ['invoice-lines', effectiveCompanyId],
     queryFn: async () => {
-      if (!selectedCompanyId) return [];
+      if (!effectiveCompanyId) return [];
       const { data, error } = await supabase
         .from('company_lines')
         .select('id, name, number_of_shifts, price_per_shift')
-        .eq('company_id', selectedCompanyId)
+        .eq('company_id', effectiveCompanyId)
         .eq('is_active', true);
       if (error) throw error;
       return data;
     },
-    enabled: !!selectedCompanyId,
+    enabled: !!effectiveCompanyId,
   });
 
   const { data: attendanceForInvoice = [] } = useQuery({
-    queryKey: ['invoice-attendance', selectedCompanyId, invoiceForm.period_start, invoiceForm.period_end],
+    queryKey: ['invoice-attendance', effectiveCompanyId, invoiceForm.period_start, invoiceForm.period_end],
     queryFn: async () => {
-      if (!selectedCompanyId || !companyLines.length) return [];
+      if (!effectiveCompanyId || !companyLines.length) return [];
       const lineIds = companyLines.map((l: any) => l.id);
       const { data, error } = await supabase
         .from('corporate_driver_attendance')
@@ -92,7 +103,7 @@ export function CompanyInvoices() {
       if (error) throw error;
       return data;
     },
-    enabled: !!selectedCompanyId && companyLines.length > 0,
+    enabled: !!effectiveCompanyId && companyLines.length > 0,
   });
 
   const lineItems = useMemo(() => {
@@ -126,7 +137,7 @@ export function CompanyInvoices() {
 
   const createInvoiceMutation = useMutation({
     mutationFn: async () => {
-      const company = companies.find((c: any) => c.id === selectedCompanyId);
+      const company = companies.find((c: any) => c.id === effectiveCompanyId);
       const invoiceNumber = `INV-${company?.name?.slice(0, 3).toUpperCase()}-${Date.now().toString().slice(-6)}`;
 
       // Combine line items and extra items into one array
@@ -142,7 +153,7 @@ export function CompanyInvoices() {
       ];
 
       const { error } = await supabase.from('company_invoices').insert({
-        company_id: selectedCompanyId,
+        company_id: effectiveCompanyId,
         invoice_number: invoiceNumber,
         period_start: invoiceForm.period_start,
         period_end: invoiceForm.period_end,
@@ -202,7 +213,7 @@ export function CompanyInvoices() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div />
-        <Button className="gap-2" onClick={() => { setSelectedCompanyId(''); setExtraItems([]); setInvoiceDialogOpen(true); }}>
+        <Button className="gap-2" onClick={() => { if (!fixedCompanyId) setSelectedCompanyId(''); setExtraItems([]); setInvoiceDialogOpen(true); }}>
           <Plus className="h-4 w-4" />
           إنشاء فاتورة
         </Button>
@@ -271,17 +282,19 @@ export function CompanyInvoices() {
             <DialogTitle>إنشاء فاتورة جديدة</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>الشركة *</Label>
-              <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
-                <SelectTrigger><SelectValue placeholder="اختر شركة..." /></SelectTrigger>
-                <SelectContent>
-                  {companies.map((c: any) => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {!fixedCompanyId && (
+              <div className="space-y-2">
+                <Label>الشركة *</Label>
+                <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
+                  <SelectTrigger><SelectValue placeholder="اختر شركة..." /></SelectTrigger>
+                  <SelectContent>
+                    {companies.map((c: any) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label>من تاريخ</Label>
@@ -294,7 +307,7 @@ export function CompanyInvoices() {
             </div>
 
             {/* Line Items Preview */}
-            {selectedCompanyId && lineItems.length > 0 && (
+            {effectiveCompanyId && lineItems.length > 0 && (
               <div className="space-y-2">
                 <Label>بنود الخطوط</Label>
                 <div className="rounded-xl border border-border/50 overflow-hidden">
@@ -354,7 +367,7 @@ export function CompanyInvoices() {
             </div>
 
             {/* Total Summary */}
-            {selectedCompanyId && (
+            {effectiveCompanyId && (
               <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-1.5">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">مجموع الخطوط</span>
@@ -379,7 +392,7 @@ export function CompanyInvoices() {
             </div>
 
             <Button className="w-full" onClick={() => {
-              if (!selectedCompanyId) { toast.error('اختر شركة'); return; }
+              if (!effectiveCompanyId) { toast.error('اختر شركة'); return; }
               createInvoiceMutation.mutate();
             }} disabled={createInvoiceMutation.isPending}>
               {createInvoiceMutation.isPending ? 'جاري الإنشاء...' : `إنشاء فاتورة (${invoiceTotal.toLocaleString()} ج.م)`}

@@ -26,6 +26,7 @@ import { CorporateAttendance } from '@/components/corporate/CorporateAttendance'
 import { StaffProfilesManagement } from '@/components/corporate/StaffProfilesManagement';
 import { SalaryManagement } from '@/components/corporate/SalaryManagement';
 import { CompanyInvoices } from '@/components/corporate/CompanyInvoices';
+import { CompanyDetailView } from '@/components/corporate/CompanyDetailView';
 
 const Corporate = () => {
   const queryClient = useQueryClient();
@@ -120,10 +121,11 @@ const Corporate = () => {
   if (selectedCompanyForLines) {
     return (
       <DashboardLayout>
-        <CompanyLinesManagement
+        <CompanyDetailView
           company={selectedCompanyForLines}
           onBack={() => setSelectedCompanyForLines(null)}
           canEdit={canEdit}
+          isFinance={isFinance}
         />
       </DashboardLayout>
     );

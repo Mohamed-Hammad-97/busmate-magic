@@ -25,9 +25,10 @@ import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInte
 
 interface SalaryManagementProps {
   staffContext?: 'school' | 'corporate';
+  companyId?: string;
 }
 
-export function SalaryManagement({ staffContext }: SalaryManagementProps = {}) {
+export function SalaryManagement({ staffContext, companyId }: SalaryManagementProps = {}) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [viewMode, setViewMode] = useState<'daily' | 'weekly' | 'monthly'>('daily');
@@ -52,17 +53,27 @@ export function SalaryManagement({ staffContext }: SalaryManagementProps = {}) {
   }, [selectedDate, viewMode]);
 
   const { data: attendance = [] } = useQuery({
-    queryKey: ['salary-attendance', dateRange.start, dateRange.end],
+    queryKey: ['salary-attendance', dateRange.start, dateRange.end, companyId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('corporate_driver_attendance')
         .select(`
           *,
-          company_line:company_lines(name, company:companies(name))
+          company_line:company_lines(name, company_id, company:companies(name))
         `)
         .gte('attendance_date', dateRange.start)
         .lte('attendance_date', dateRange.end)
         .eq('is_present', true);
+      if (companyId) {
+        // Filter attendance by company_line's company_id
+        const { data: lineIds } = await supabase.from('company_lines').select('id').eq('company_id', companyId);
+        if (lineIds && lineIds.length > 0) {
+          query = query.in('company_line_id', lineIds.map(l => l.id));
+        } else {
+          return [];
+        }
+      }
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },

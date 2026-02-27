@@ -25,9 +25,10 @@ interface CompanyLinesManagementProps {
   company: any;
   onBack: () => void;
   canEdit: boolean;
+  hideBackButton?: boolean;
 }
 
-export function CompanyLinesManagement({ company, onBack, canEdit }: CompanyLinesManagementProps) {
+export function CompanyLinesManagement({ company, onBack, canEdit, hideBackButton }: CompanyLinesManagementProps) {
   const queryClient = useQueryClient();
   const [lineDialogOpen, setLineDialogOpen] = useState(false);
   const [selectedLine, setSelectedLine] = useState<any>(null);
@@ -152,9 +153,11 @@ export function CompanyLinesManagement({ company, onBack, canEdit }: CompanyLine
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" className="rounded-xl" onClick={onBack}>
-          <ArrowRight className="h-5 w-5" />
-        </Button>
+        {!hideBackButton && (
+          <Button variant="ghost" size="icon" className="rounded-xl" onClick={onBack}>
+            <ArrowRight className="h-5 w-5" />
+          </Button>
+        )}
         <div>
           <h1 className="text-2xl font-bold text-foreground">{company.name}</h1>
           <p className="text-sm text-muted-foreground">إدارة الخطوط والرحلات</p>
