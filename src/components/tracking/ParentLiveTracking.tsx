@@ -4,28 +4,29 @@ import { supabase } from "@/integrations/supabase/client";
 import { useParentNotifications, type LiveTrip, type TripStudentStatus } from "@/hooks/useLiveTrip";
 import { useParentAuth } from "@/contexts/ParentAuthContext";
 import { LiveTripMap } from "./LiveTripMap";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import {
   Bus, Bell, Clock, CheckCircle2, Navigation, Phone,
-  User, Loader2, Shield,
+  User, Loader2, Shield, AlertTriangle, MapPin, Gauge,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { ar } from "date-fns/locale";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const STATUS_LABELS: Record<string, { label: string; color: string; description: string }> = {
-  pending: { label: "في الانتظار", color: "bg-amber-500", description: "الباص لم يصل بعد" },
-  arriving: { label: "الباص في الطريق", color: "bg-blue-500", description: "الباص على وشك الوصول" },
-  picked_up: { label: "تم الاستلام", color: "bg-green-500", description: "طفلك في الباص" },
-  dropped_off: { label: "تم التوصيل", color: "bg-muted-foreground", description: "وصل طفلك للمدرسة" },
+  pending: { label: "Waiting", color: "bg-amber-500", description: "Bus hasn't arrived yet" },
+  arriving: { label: "Arriving", color: "bg-blue-500", description: "Bus is on the way" },
+  picked_up: { label: "Picked Up", color: "bg-green-500", description: "Your child is on the bus" },
+  dropped_off: { label: "Dropped Off", color: "bg-muted-foreground", description: "Arrived at school" },
 };
 
 export function ParentLiveTracking() {
   const { user, parentAccount } = useParentAuth();
   const { notifications, markAsRead } = useParentNotifications(user?.id);
+  const isMobile = useIsMobile();
 
   const { data: registrations = [], isLoading: registrationsLoading } = useQuery({
     queryKey: ["parent-registrations-tracking", parentAccount?.id],
@@ -34,7 +35,7 @@ export function ParentLiveTracking() {
       const { data, error } = await supabase
         .from("registrations")
         .select(`
-          id, student_name,
+          id, student_name, student_photo_url,
           schools (name),
           route_assignments (
             route_id,
@@ -144,9 +145,9 @@ export function ParentLiveTracking() {
           <div className="h-20 w-20 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
             <Bus className="h-10 w-10 text-primary/60" />
           </div>
-          <h3 className="font-bold text-lg mb-2">لا توجد رحلات نشطة</h3>
+          <h3 className="font-bold text-lg mb-2">No Active Trips</h3>
           <p className="text-muted-foreground text-sm max-w-xs">
-            ستظهر هنا رحلة الباص عندما يبدأ السائق الرحلة
+            The bus trip will appear here when the driver starts the route
           </p>
         </CardContent>
       </Card>
@@ -156,154 +157,185 @@ export function ParentLiveTracking() {
   const currentTrip = activeTrips[0];
   const currentStudentStatuses = studentStatuses.filter((s) => s.live_trip_id === currentTrip.id);
 
+  // Find the student's registration for info display
+  const studentReg = registrations[0];
+  const routeAssignment = studentReg?.route_assignments?.[0];
+
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-bold flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-green-500 flex items-center justify-center animate-pulse">
-              <Navigation className="h-4 w-4 text-white" />
-            </div>
-            تتبع الباص
-          </h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            {currentTrip.routes?.name} - {currentTrip.routes?.schools?.name}
-          </p>
-        </div>
-
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="outline" size="icon" className="relative rounded-xl h-10 w-10">
-              <Bell className="h-5 w-5" />
-              {unreadNotifications.length > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-destructive text-destructive-foreground text-xs rounded-full flex items-center justify-center font-bold shadow-sm">
-                  {unreadNotifications.length}
-                </span>
-              )}
-            </Button>
-          </SheetTrigger>
-          <SheetContent>
-            <SheetHeader>
-              <SheetTitle>الإشعارات</SheetTitle>
-            </SheetHeader>
-            <ScrollArea className="h-[calc(100vh-100px)] mt-4">
-              <div className="space-y-3">
-                {notifications.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">لا توجد إشعارات</p>
-                ) : (
-                  notifications.map((notif) => (
-                    <Card
-                      key={notif.id}
-                      className={`p-3 cursor-pointer transition-all border-0 shadow-sm ${
-                        !notif.read_at ? "bg-primary/5 ring-1 ring-primary/20" : ""
-                      }`}
-                      onClick={() => markAsRead(notif.id)}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                          <Bell className="h-4 w-4 text-primary" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm">{notif.title}</p>
-                          <p className="text-xs text-muted-foreground">{notif.message}</p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {formatDistanceToNow(new Date(notif.sent_at), { addSuffix: true, locale: ar })}
-                          </p>
-                        </div>
-                        {!notif.read_at && <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-1.5" />}
-                      </div>
-                    </Card>
-                  ))
-                )}
-              </div>
-            </ScrollArea>
-          </SheetContent>
-        </Sheet>
-      </div>
-
-      {/* Live Map */}
+    <div className="relative">
+      {/* Full Map */}
       <Card className="overflow-hidden border-0 shadow-lg rounded-2xl">
-        <div className="h-[300px]">
+        <div className="relative h-[65vh] min-h-[400px]">
           <LiveTripMap trip={currentTrip} students={currentStudentStatuses} showDriverLocation={true} isDriver={false} />
+
+          {/* Floating overlay panel */}
+          <div className={`absolute top-3 left-3 z-10 ${isMobile ? 'right-3 max-w-none' : 'w-80'}`}>
+            <Card className="border-0 shadow-2xl bg-background/95 backdrop-blur-xl rounded-2xl overflow-hidden">
+              <CardContent className="p-0">
+                {/* Live badge + route */}
+                <div className="p-3 border-b bg-gradient-to-r from-green-500/10 to-emerald-500/10">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <Badge className="bg-green-500 text-white border-0 text-[10px] px-2 py-0.5 gap-1 animate-pulse">
+                      <span className="h-1.5 w-1.5 rounded-full bg-white" />
+                      LIVE NOW
+                    </Badge>
+                    <Badge variant="outline" className="text-[10px]">
+                      {currentTrip.routes?.name}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Bus info */}
+                <div className="p-3 border-b">
+                  <div className="flex items-center gap-3">
+                    <div className="h-11 w-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                      <Bus className="h-6 w-6 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-sm truncate">{currentTrip.routes?.schools?.name}</h3>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {currentTrip.routes?.name}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Speed + Driver */}
+                <div className="p-3 border-b grid grid-cols-2 gap-3">
+                  <div className="flex items-center gap-2">
+                    <Gauge className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase">Speed</p>
+                      <p className="text-sm font-semibold">— km/h</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase">Driver</p>
+                      <p className="text-sm font-semibold truncate">{currentTrip.routes?.drivers?.full_name || "—"}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Route progress */}
+                {currentStudentStatuses.length > 0 && (
+                  <div className="p-3 border-b">
+                    <p className="text-xs text-muted-foreground mb-2">Route Progress</p>
+                    <div className="space-y-2">
+                      {currentStudentStatuses.map((student) => {
+                        const statusConfig = STATUS_LABELS[student.status] || STATUS_LABELS.pending;
+                        return (
+                          <div key={student.id} className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className={`w-2 h-2 rounded-full ${statusConfig.color}`} />
+                              <span className="text-xs font-medium">{student.registrations?.student_name}</span>
+                            </div>
+                            <Badge variant="outline" className="text-[10px] h-5">
+                              {statusConfig.label}
+                            </Badge>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Call Driver button */}
+                {currentTrip.routes?.drivers?.phone && (
+                  <div className="p-3 space-y-2">
+                    <a
+                      href={`tel:${currentTrip.routes.drivers.phone}`}
+                      className="flex items-center justify-center gap-2 w-full bg-green-600 hover:bg-green-700 text-white rounded-xl py-2.5 text-sm font-medium transition-colors"
+                    >
+                      <Phone className="h-4 w-4" />
+                      Call Driver
+                    </a>
+                    <button className="flex items-center justify-center gap-2 w-full text-muted-foreground hover:text-foreground rounded-xl py-2 text-xs transition-colors">
+                      <AlertTriangle className="h-3.5 w-3.5" />
+                      Report an Issue
+                    </button>
+                  </div>
+                )}
+
+                {/* Your child info */}
+                {studentReg && (
+                  <div className="p-3 border-t bg-muted/30">
+                    <div className="flex items-center gap-2.5">
+                      {(studentReg as any).student_photo_url ? (
+                        <img
+                          src={(studentReg as any).student_photo_url}
+                          alt={studentReg.student_name}
+                          className="h-9 w-9 rounded-full object-cover border-2 border-background shadow"
+                        />
+                      ) : (
+                        <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
+                          <User className="h-4 w-4 text-primary" />
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-[10px] text-muted-foreground uppercase">Your Child</p>
+                        <p className="text-xs font-semibold">{studentReg.student_name}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Notification bell */}
+          <div className="absolute top-3 right-3 z-10">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="secondary" size="icon" className="relative rounded-xl h-10 w-10 shadow-lg bg-background/95 backdrop-blur-xl">
+                  <Bell className="h-5 w-5" />
+                  {unreadNotifications.length > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-destructive text-destructive-foreground text-xs rounded-full flex items-center justify-center font-bold shadow-sm">
+                      {unreadNotifications.length}
+                    </span>
+                  )}
+                </Button>
+              </SheetTrigger>
+              <SheetContent>
+                <SheetHeader>
+                  <SheetTitle>Notifications</SheetTitle>
+                </SheetHeader>
+                <ScrollArea className="h-[calc(100vh-100px)] mt-4">
+                  <div className="space-y-3">
+                    {notifications.length === 0 ? (
+                      <p className="text-center text-muted-foreground py-8">No notifications</p>
+                    ) : (
+                      notifications.map((notif) => (
+                        <Card
+                          key={notif.id}
+                          className={`p-3 cursor-pointer transition-all border-0 shadow-sm ${
+                            !notif.read_at ? "bg-primary/5 ring-1 ring-primary/20" : ""
+                          }`}
+                          onClick={() => markAsRead(notif.id)}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                              <Bell className="h-4 w-4 text-primary" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm">{notif.title}</p>
+                              <p className="text-xs text-muted-foreground">{notif.message}</p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {formatDistanceToNow(new Date(notif.sent_at), { addSuffix: true })}
+                              </p>
+                            </div>
+                            {!notif.read_at && <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-1.5" />}
+                          </div>
+                        </Card>
+                      ))
+                    )}
+                  </div>
+                </ScrollArea>
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
-      </Card>
-
-      {/* Driver/Supervisor Info */}
-      <Card className="border-0 shadow-md">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">معلومات الرحلة</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {currentTrip.routes?.drivers && (
-            <div className="flex items-center justify-between p-3 border rounded-xl bg-blue-50/50 dark:bg-blue-950/20">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
-                  <User className="h-5 w-5 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold">{currentTrip.routes.drivers.full_name}</p>
-                  <p className="text-xs text-muted-foreground">السائق</p>
-                </div>
-              </div>
-              <a href={`tel:${currentTrip.routes.drivers.phone}`} className="h-9 w-9 flex items-center justify-center rounded-full hover:bg-muted transition-colors">
-                <Phone className="h-4 w-4 text-primary" />
-              </a>
-            </div>
-          )}
-          {currentTrip.routes?.supervisors && (
-            <div className="flex items-center justify-between p-3 border rounded-xl bg-purple-50/50 dark:bg-purple-950/20">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center">
-                  <Shield className="h-5 w-5 text-purple-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold">{currentTrip.routes.supervisors.full_name}</p>
-                  <p className="text-xs text-muted-foreground">المشرفة</p>
-                </div>
-              </div>
-              <a href={`tel:${currentTrip.routes.supervisors.phone}`} className="h-9 w-9 flex items-center justify-center rounded-full hover:bg-muted transition-colors">
-                <Phone className="h-4 w-4 text-primary" />
-              </a>
-            </div>
-          )}
-          {currentTrip.last_location_update && (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground px-1">
-              <Clock className="h-3 w-3" />
-              آخر تحديث: {formatDistanceToNow(new Date(currentTrip.last_location_update), { addSuffix: true, locale: ar })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Children Status */}
-      <Card className="border-0 shadow-md">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">حالة الأطفال</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {currentStudentStatuses.map((student) => {
-            const statusConfig = STATUS_LABELS[student.status] || STATUS_LABELS.pending;
-            return (
-              <div key={student.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-xl border">
-                <div className="flex items-center gap-3">
-                  <div className={`w-11 h-11 rounded-xl ${statusConfig.color} flex items-center justify-center text-white shadow-sm`}>
-                    {student.status === "pending" && <Clock className="h-5 w-5" />}
-                    {student.status === "arriving" && <Navigation className="h-5 w-5" />}
-                    {(student.status === "picked_up" || student.status === "dropped_off") && <CheckCircle2 className="h-5 w-5" />}
-                  </div>
-                  <div>
-                    <p className="font-semibold text-sm">{student.registrations?.student_name}</p>
-                    <p className="text-xs text-muted-foreground">{statusConfig.description}</p>
-                  </div>
-                </div>
-                <Badge variant="outline" className={`${statusConfig.color} text-white border-0 shadow-sm`}>
-                  {statusConfig.label}
-                </Badge>
-              </div>
-            );
-          })}
-        </CardContent>
       </Card>
     </div>
   );
