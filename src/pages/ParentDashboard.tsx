@@ -132,7 +132,7 @@ export default function ParentDashboard() {
             <img src={seaterLogo} alt="Seater" className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl shadow-md" />
             <div>
               <h1 className="text-base sm:text-lg font-bold text-foreground">Seater</h1>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">بوابة ولي الأمر</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">بوابة العملاء</p>
             </div>
           </div>
           <div className="flex items-center gap-1.5 sm:gap-2">

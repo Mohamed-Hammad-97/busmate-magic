@@ -847,6 +847,7 @@ const Home = () => {
                 <li><Link to="/auth" className="text-background/70 hover:text-background hover:translate-x-1 inline-block transition-all duration-300">{t('homepage.footer.employeeLogin')}</Link></li>
                 <li><Link to="/parent/auth" className="text-background/70 hover:text-background hover:translate-x-1 inline-block transition-all duration-300">{t('homepage.footer.parentPortal')}</Link></li>
                 <li><Link to="/driver/login" className="text-background/70 hover:text-background hover:translate-x-1 inline-block transition-all duration-300">{t('homepage.footer.driverPortal')}</Link></li>
+                <li><Link to="/company/auth" className="text-background/70 hover:text-background hover:translate-x-1 inline-block transition-all duration-300">{t('homepage.footer.companyPortal')}</Link></li>
                 <li><Link to="/register" className="text-background/70 hover:text-background hover:translate-x-1 inline-block transition-all duration-300">{t('homepage.footer.register')}</Link></li>
               </ul>
             </div>

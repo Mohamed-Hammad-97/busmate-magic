@@ -8,11 +8,13 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ParentAuthProvider } from "@/contexts/ParentAuthContext";
 import { DriverAuthProvider } from "@/contexts/DriverAuthContext";
+import { CompanyAuthProvider } from "@/contexts/CompanyAuthContext";
 import { CityProvider } from "@/contexts/CityContext";
 import { SidebarProvider } from "@/contexts/SidebarContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { ParentProtectedRoute } from "@/components/auth/ParentProtectedRoute";
 import { DriverProtectedRoute } from "@/components/auth/DriverProtectedRoute";
+import { CompanyProtectedRoute } from "@/components/auth/CompanyProtectedRoute";
 import Home from "./pages/Home";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -36,6 +38,8 @@ import ParentAuth from "./pages/ParentAuth";
 import ParentDashboard from "./pages/ParentDashboard";
 import DriverAuth from "./pages/DriverAuth";
 import DriverDashboard from "./pages/DriverDashboard";
+import CompanyAuth from "./pages/CompanyAuth";
+import CompanyDashboard from "./pages/CompanyDashboard";
 import SupportChat from "./pages/SupportChat";
 import HomepageAdmin from "./pages/HomepageAdmin";
 import Submissions from "./pages/Submissions";
@@ -92,6 +96,17 @@ const App = () => (
                 <Route path="*" element={<Navigate to="/driver" replace />} />
               </Routes>
             </DriverAuthProvider>
+          } />
+
+          {/* Company Portal routes */}
+          <Route path="/company/*" element={
+            <CompanyAuthProvider>
+              <Routes>
+                <Route path="/auth" element={<CompanyAuth />} />
+                <Route path="/" element={<CompanyProtectedRoute><CompanyDashboard /></CompanyProtectedRoute>} />
+                <Route path="*" element={<Navigate to="/company" replace />} />
+              </Routes>
+            </CompanyAuthProvider>
           } />
           
           {/* Employee Auth-wrapped routes */}

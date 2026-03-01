@@ -55,6 +55,7 @@ const Corporate = () => {
   const [companyForm, setCompanyForm] = useState({
     name: '', city: '', location_address: '', contact_person_name: '',
     contact_person_phone: '', notes: '', is_active: true,
+    supervisor_email: '', supervisor_password: '',
   });
 
   const { data: companies = [], isLoading } = useQuery({
@@ -77,17 +78,35 @@ const Corporate = () => {
 
   const saveCompanyMutation = useMutation({
     mutationFn: async () => {
+      const { supervisor_email, supervisor_password, ...companyData } = companyForm;
       if (selectedCompany) {
-        const { error } = await supabase.from('companies').update(companyForm).eq('id', selectedCompany.id);
+        const { error } = await supabase.from('companies').update(companyData).eq('id', selectedCompany.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from('companies').insert(companyForm);
+        const { data: newCompany, error } = await supabase.from('companies').insert(companyData).select().single();
         if (error) throw error;
+        
+        // Auto-create supervisor account if email provided
+        if (supervisor_email && supervisor_password && newCompany) {
+          const { data: accountResult, error: accountError } = await supabase.functions.invoke('create-company-account', {
+            body: {
+              company_id: newCompany.id,
+              email: supervisor_email,
+              password: supervisor_password,
+              full_name: companyData.contact_person_name,
+              phone: companyData.contact_person_phone,
+            },
+          });
+          if (accountError || accountResult?.error) {
+            toast.error('تم إنشاء الشركة لكن فشل إنشاء حساب المشرف: ' + (accountResult?.error || accountError?.message));
+            return;
+          }
+        }
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['companies'] });
-      toast.success(selectedCompany ? 'تم تحديث الشركة' : 'تم إضافة الشركة');
+      toast.success(selectedCompany ? 'تم تحديث الشركة' : 'تم إضافة الشركة وحساب المشرف');
       setCompanyDialogOpen(false);
       resetForm();
     },
@@ -95,7 +114,7 @@ const Corporate = () => {
   });
 
   const resetForm = () => {
-    setCompanyForm({ name: '', city: '', location_address: '', contact_person_name: '', contact_person_phone: '', notes: '', is_active: true });
+    setCompanyForm({ name: '', city: '', location_address: '', contact_person_name: '', contact_person_phone: '', notes: '', is_active: true, supervisor_email: '', supervisor_password: '' });
     setSelectedCompany(null);
   };
 
@@ -105,6 +124,7 @@ const Corporate = () => {
       name: company.name, city: company.city, location_address: company.location_address || '',
       contact_person_name: company.contact_person_name, contact_person_phone: company.contact_person_phone,
       notes: company.notes || '', is_active: company.is_active,
+      supervisor_email: '', supervisor_password: '',
     });
     setCompanyDialogOpen(true);
   };
@@ -332,6 +352,23 @@ const Corporate = () => {
               <Label>{t('corporateMgmt.notes')}</Label>
               <Textarea value={companyForm.notes} onChange={(e) => setCompanyForm({ ...companyForm, notes: e.target.value })} />
             </div>
+            {!selectedCompany && (
+              <>
+                <div className="border-t pt-4 mt-2">
+                  <p className="text-sm font-semibold mb-3 text-primary">حساب مشرف الشركة</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>البريد الإلكتروني *</Label>
+                      <Input value={companyForm.supervisor_email} onChange={(e) => setCompanyForm({ ...companyForm, supervisor_email: e.target.value })} placeholder="supervisor@company.com" dir="ltr" type="email" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>كلمة المرور *</Label>
+                      <Input value={companyForm.supervisor_password} onChange={(e) => setCompanyForm({ ...companyForm, supervisor_password: e.target.value })} placeholder="••••••••" type="password" />
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
             {selectedCompany && (
               <div className="flex items-center gap-2">
                 <Switch checked={companyForm.is_active} onCheckedChange={(v) => setCompanyForm({ ...companyForm, is_active: v })} />
@@ -341,6 +378,14 @@ const Corporate = () => {
             <Button className="w-full" onClick={() => {
               if (!companyForm.name || !companyForm.city || !companyForm.contact_person_name || !companyForm.contact_person_phone) {
                 toast.error(t('staff.fillRequired'));
+                return;
+              }
+              if (!selectedCompany && (!companyForm.supervisor_email || !companyForm.supervisor_password)) {
+                toast.error('يرجى إدخال بيانات حساب المشرف');
+                return;
+              }
+              if (!selectedCompany && companyForm.supervisor_password.length < 6) {
+                toast.error('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
                 return;
               }
               saveCompanyMutation.mutate();

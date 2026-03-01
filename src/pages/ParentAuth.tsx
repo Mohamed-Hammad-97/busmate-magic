@@ -210,7 +210,7 @@ export default function ParentAuth() {
           </div>
           <div>
             <h1 className="text-4xl font-bold mb-4">Seater</h1>
-            <p className="text-lg text-primary-foreground/80">بوابة أولياء الأمور</p>
+            <p className="text-lg text-primary-foreground/80">بوابة العملاء</p>
           </div>
           <div className="space-y-4 pt-8">
             <div className="flex items-center gap-4 p-4 bg-primary-foreground/10 rounded-xl backdrop-blur-sm text-right">
@@ -244,7 +244,7 @@ export default function ParentAuth() {
               <img src={seaterLogo} alt="Seater" className="h-16 w-auto rounded-xl shadow-lg" />
             </div>
             <h2 className="text-xl font-bold">Seater</h2>
-            <p className="text-sm text-muted-foreground">بوابة أولياء الأمور</p>
+            <p className="text-sm text-muted-foreground">بوابة العملاء</p>
           </div>
 
           {/* Form Header */}
