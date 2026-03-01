@@ -414,85 +414,159 @@ export default function ParentDashboard() {
 
       case "payments":
         return (
-          <div className="space-y-3">
-            <h2 className="text-xl font-bold">Payments</h2>
-            {/* Payment Summary */}
-            <Card className="border-0 shadow-md">
-              <CardContent className="p-4">
-                <div className="grid grid-cols-3 gap-2 text-center">
-                  <div className="p-2 bg-muted/50 rounded-lg">
-                    <p className="text-lg sm:text-xl font-bold">{paymentSummary.total.toLocaleString()}</p>
-                    <p className="text-[10px] text-muted-foreground">Total</p>
-                  </div>
-                  <div className="p-2 bg-green-50 dark:bg-green-950/20 rounded-lg">
-                    <p className="text-lg sm:text-xl font-bold text-green-600">{paymentSummary.paid.toLocaleString()}</p>
-                    <p className="text-[10px] text-muted-foreground">Paid</p>
-                  </div>
-                  <div className="p-2 bg-amber-50 dark:bg-amber-950/20 rounded-lg">
-                    <p className="text-lg sm:text-xl font-bold text-amber-600">{paymentSummary.pending.toLocaleString()}</p>
-                    <p className="text-[10px] text-muted-foreground">Remaining</p>
-                  </div>
+          <div className="space-y-5">
+            {/* Header */}
+            <div>
+              <h2 className="text-xl sm:text-2xl font-bold">Subscription & Payments</h2>
+              <p className="text-sm text-muted-foreground mt-1">Manage your family's bus routes and track payment history in one place.</p>
+            </div>
+
+            {/* Active Child Subscriptions */}
+            <div>
+              <h3 className="font-semibold text-base mb-3 flex items-center gap-2">
+                <School className="h-4 w-4 text-primary" />
+                Active Child Subscriptions
+              </h3>
+              {registrations.length === 0 ? (
+                <Card className="border-0 shadow-md">
+                  <CardContent className="py-12 text-center text-muted-foreground">
+                    <Wallet className="h-12 w-12 mx-auto mb-3 text-muted-foreground/40" />
+                    <p className="font-medium">No subscriptions yet</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {registrations.map((reg: any) => {
+                    const subscription = reg.subscriptions?.[0];
+                    const payments = subscription?.payments || [];
+                    const paidCount = payments.filter((p: any) => p.status === "paid").length;
+                    const routeAssignment = routeAssignments.find((ra: any) => ra.registration_id === reg.id);
+
+                    return (
+                      <Card
+                        key={reg.id}
+                        className="border-0 shadow-md hover:shadow-lg transition-all cursor-pointer overflow-hidden"
+                        onClick={() => subscription?.payments?.length ? setSelectedPaymentReg(reg) : null}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-start gap-3 mb-3">
+                            <div className="h-11 w-11 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                              <User className="h-5 w-5 text-primary" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center justify-between">
+                                <h4 className="font-semibold text-sm truncate">{reg.student_name}</h4>
+                                <Badge variant={subscription ? "default" : "secondary"} className="text-[10px] shrink-0">
+                                  {subscription?.subscription_type === "monthly" ? "Monthly" : subscription?.subscription_type === "yearly" ? "Yearly" : "Active"}
+                                </Badge>
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                                {routeAssignment?.routes?.name || reg.schools?.name || "—"}
+                              </p>
+                            </div>
+                          </div>
+                          {subscription && (
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                              <div>
+                                <span className="text-muted-foreground">Plan</span>
+                                <p className="font-semibold">{subscription.subscription_type === "monthly" ? "Monthly Pass" : "Annual Pass"}</p>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Progress</span>
+                                <p className="font-semibold text-green-600">{paidCount}/{payments.length} paid</p>
+                              </div>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
-              </CardContent>
-            </Card>
+              )}
+            </div>
 
-            {registrations.filter((r: any) => r.subscriptions?.[0]?.payments?.length).length === 0 ? (
-              <Card className="border-0 shadow-md">
-                <CardContent className="py-12 text-center text-muted-foreground">
-                  <Wallet className="h-12 w-12 mx-auto mb-3 text-muted-foreground/40" />
-                  <p className="font-medium">No payments yet</p>
-                </CardContent>
-              </Card>
-            ) : (
-              registrations.map((reg: any) => {
+            {/* Recent Transactions */}
+            {(() => {
+              const allPayments = registrations.flatMap((reg: any) => {
                 const subscription = reg.subscriptions?.[0];
-                if (!subscription?.payments?.length) return null;
-                const payments = subscription.payments;
-                const paidCount = payments.filter((p: any) => p.status === "paid").length;
-                const totalAmount = Number(subscription.value);
-                const paidAmount = payments.filter((p: any) => p.status === "paid").reduce((s: number, p: any) => s + Number(p.amount), 0);
-                const nextPayment = payments.filter((p: any) => p.status !== "paid").sort((a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())[0];
+                return (subscription?.payments || []).map((p: any) => ({ ...p, studentName: reg.student_name }));
+              }).sort((a: any, b: any) => new Date(b.due_date).getTime() - new Date(a.due_date).getTime());
 
-                return (
-                  <Card
-                    key={reg.id}
-                    className="border-0 shadow-md hover:shadow-lg transition-all cursor-pointer overflow-hidden"
-                    onClick={() => setSelectedPaymentReg(reg)}
-                  >
-                    <CardContent className="p-3 sm:p-4">
-                      <div className="flex items-center gap-3 sm:gap-4">
-                        <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/20 flex items-center justify-center shrink-0">
-                          <CircleDollarSign className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-sm truncate">{reg.student_name}</h3>
-                          <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
-                            {subscription.subscription_type === "monthly" ? "Monthly" : "Yearly"} • {totalAmount.toLocaleString()} EGP
-                          </p>
-                        </div>
-                        <div className="text-right shrink-0">
-                          <div className="text-sm font-bold text-green-600">{paidCount}/{payments.length}</div>
-                          <p className="text-[10px] text-muted-foreground">installments</p>
-                        </div>
-                        <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground/50 shrink-0" />
-                      </div>
-                      <div className="mt-2 sm:mt-3 h-1.5 sm:h-2 bg-muted rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full transition-all"
-                          style={{ width: `${totalAmount > 0 ? (paidAmount / totalAmount) * 100 : 0}%` }}
-                        />
-                      </div>
-                      {nextPayment && (
-                        <p className="text-[10px] sm:text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          Next: {format(new Date(nextPayment.due_date), "dd MMM yyyy")} - {Number(nextPayment.amount).toLocaleString()} EGP
-                        </p>
-                      )}
-                    </CardContent>
+              if (allPayments.length === 0) return null;
+
+              return (
+                <div>
+                  <h3 className="font-semibold text-base mb-3 flex items-center gap-2">
+                    <Receipt className="h-4 w-4 text-primary" />
+                    Recent Transactions
+                  </h3>
+                  <Card className="border-0 shadow-md overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b bg-muted/30">
+                            <th className="text-left p-3 text-xs font-medium text-muted-foreground uppercase">Date</th>
+                            <th className="text-left p-3 text-xs font-medium text-muted-foreground uppercase">Description</th>
+                            <th className="text-left p-3 text-xs font-medium text-muted-foreground uppercase">Amount</th>
+                            <th className="text-left p-3 text-xs font-medium text-muted-foreground uppercase">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y">
+                          {allPayments.slice(0, 5).map((payment: any) => (
+                            <tr key={payment.id} className="hover:bg-muted/20 transition-colors">
+                              <td className="p-3 text-xs text-muted-foreground">{format(new Date(payment.due_date), "MMM dd, yyyy")}</td>
+                              <td className="p-3 text-xs font-medium">{payment.studentName} - Installment {payment.installment_number}</td>
+                              <td className="p-3 text-xs font-semibold">{Number(payment.amount).toLocaleString()} EGP</td>
+                              <td className="p-3">
+                                <Badge
+                                  variant={payment.status === "paid" ? "default" : payment.status === "overdue" ? "destructive" : "secondary"}
+                                  className="text-[10px]"
+                                >
+                                  {paymentStatusLabels[payment.status]?.label || payment.status}
+                                </Badge>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </Card>
-                );
-              })
-            )}
+                </div>
+              );
+            })()}
+
+            {/* Make a Payment */}
+            {(() => {
+              const nextPayment = registrations
+                .flatMap((r: any) => r.subscriptions?.[0]?.payments || [])
+                .filter((p: any) => p.status !== "paid")
+                .sort((a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())[0];
+              if (!nextPayment) return null;
+              return (
+                <Card className="border-0 shadow-md">
+                  <CardContent className="p-5">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-semibold text-base">Make a Payment</h3>
+                      <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+                        <Shield className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                    </div>
+                    <div className="mb-4">
+                      <p className="text-xs text-muted-foreground">Upcoming Total</p>
+                      <p className="text-2xl sm:text-3xl font-bold">{Number(nextPayment.amount).toLocaleString()} EGP</p>
+                      <p className="text-xs text-muted-foreground mt-1">Due by {format(new Date(nextPayment.due_date), "MMMM dd, yyyy")}</p>
+                    </div>
+                    <Button
+                      className="w-full gap-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-md"
+                      onClick={() => toast({ title: "Online Payment", description: "Online payment will be available soon" })}
+                    >
+                      <Wallet className="h-4 w-4" />
+                      Pay Now
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })()}
           </div>
         );
 
