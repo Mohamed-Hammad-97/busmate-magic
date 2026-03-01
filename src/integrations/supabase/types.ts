@@ -211,8 +211,62 @@ export type Database = {
         }
         Relationships: []
       }
+      company_accounts: {
+        Row: {
+          company_id: string
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          is_active: boolean
+          password_hash: string
+          permissions: Json
+          phone: string | null
+          role: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          email: string
+          full_name: string
+          id?: string
+          is_active?: boolean
+          password_hash: string
+          permissions?: Json
+          phone?: string | null
+          role?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          is_active?: boolean
+          password_hash?: string
+          permissions?: Json
+          phone?: string | null
+          role?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_accounts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       company_invoices: {
         Row: {
+          company_approval_status: string
+          company_approved_at: string | null
+          company_approved_by: string | null
+          company_comment: string | null
           company_id: string
           created_at: string
           created_by: string | null
@@ -229,6 +283,10 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          company_approval_status?: string
+          company_approved_at?: string | null
+          company_approved_by?: string | null
+          company_comment?: string | null
           company_id: string
           created_at?: string
           created_by?: string | null
@@ -245,6 +303,10 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          company_approval_status?: string
+          company_approved_at?: string | null
+          company_approved_by?: string | null
+          company_comment?: string | null
           company_id?: string
           created_at?: string
           created_by?: string | null
@@ -261,6 +323,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "company_invoices_company_approved_by_fkey"
+            columns: ["company_approved_by"]
+            isOneToOne: false
+            referencedRelation: "company_accounts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "company_invoices_company_id_fkey"
             columns: ["company_id"]
