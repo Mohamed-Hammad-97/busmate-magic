@@ -22,6 +22,7 @@ import { CompanyAccountsManager } from "@/components/corporate/CompanyAccountsMa
 import { CompanyNotificationBell } from "@/components/corporate/CompanyNotificationBell";
 import { CompanyChatView } from "@/components/corporate/CompanyChatView";
 import { CompanyPortalSidebar } from "@/components/corporate/CompanyPortalSidebar";
+import { CompanyChangePassword } from "@/components/corporate/CompanyChangePassword";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import seaterLogo from "@/assets/seater-logo.jpg";
@@ -120,7 +121,7 @@ export default function CompanyDashboard() {
                   </div>
                   <div className="min-w-0">
                     <h2 className="text-xl sm:text-2xl font-bold truncate">Welcome, {account?.full_name}</h2>
-                    <p className="text-sm text-primary-foreground/70 mt-0.5">Here's an overview of your transportation system</p>
+                    <p className="text-sm text-primary-foreground/70 mt-0.5">Here's an overview of your account</p>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2.5">
@@ -336,6 +337,14 @@ export default function CompanyDashboard() {
           <div className="space-y-4">
             <h2 className="text-xl font-bold">Accounts Management</h2>
             <CompanyAccountsManager accounts={accounts} />
+          </div>
+        );
+
+      case "settings":
+        return (
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold">Settings</h2>
+            <CompanyChangePassword />
           </div>
         );
 
