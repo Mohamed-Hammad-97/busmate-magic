@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCompanyAuth } from "@/contexts/CompanyAuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import {
   Building2, LogOut, Truck, FileText, Users, MapPin, Clock,
   CheckCircle, XCircle, User, Copy, Link2, Bus, Navigation,
+  Shield, MessageCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -18,6 +19,10 @@ import seaterLogo from "@/assets/seater-logo.jpg";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { GoogleMapsProvider } from "@/components/maps/GoogleMapsProvider";
 import { CompanyLiveTracking } from "@/components/corporate/CompanyLiveTracking";
+import { CompanyDriversView } from "@/components/corporate/CompanyDriversView";
+import { CompanyAccountsManager } from "@/components/corporate/CompanyAccountsManager";
+import { CompanyNotificationBell } from "@/components/corporate/CompanyNotificationBell";
+import { CompanyChatView } from "@/components/corporate/CompanyChatView";
 
 function useCompanyPortalData(action: string, token: string | null, options?: { refetchInterval?: number }) {
   return useQuery({
@@ -48,19 +53,20 @@ export default function CompanyDashboard() {
   const { data: invoicesData } = useCompanyPortalData("get-invoices", token);
   const { data: employeesData } = useCompanyPortalData("get-employees", token);
   const { data: trackingData } = useCompanyPortalData("get-live-trips", token, { refetchInterval: 5000 });
+  const { data: driversData } = useCompanyPortalData("get-drivers", token);
+  const { data: accountsData } = useCompanyPortalData("get-accounts", token);
 
   const lines = linesData?.lines || [];
   const invoices = invoicesData?.invoices || [];
   const employees = employeesData?.employees || [];
   const activeTrips = trackingData?.trips || [];
+  const staff = driversData?.staff || [];
+  const accounts = accountsData?.accounts || [];
 
   const updateInvoiceMutation = useMutation({
     mutationFn: async ({ id, status, comment }: { id: string; status: string; comment: string }) => {
       const { data, error } = await supabase.functions.invoke("company-portal-data", {
-        body: {
-          action: "update-invoice-approval",
-          data: { invoice_id: id, status, comment },
-        },
+        body: { action: "update-invoice-approval", data: { invoice_id: id, status, comment } },
         headers: { Authorization: `Bearer ${token}` },
       });
       if (error) throw error;
@@ -78,7 +84,6 @@ export default function CompanyDashboard() {
 
   const activeLines = lines.filter((l: any) => l.is_active).length;
   const pendingInvoices = invoices.filter((i: any) => i.company_approval_status === "pending").length;
-
   const formLink = `${window.location.origin}/company/register/${account?.company_id}`;
 
   const copyFormLink = () => {
@@ -88,12 +93,9 @@ export default function CompanyDashboard() {
 
   const getApprovalBadge = (status: string) => {
     switch (status) {
-      case "approved":
-        return <Badge className="bg-green-100 text-green-700 border-green-200">معتمدة</Badge>;
-      case "rejected":
-        return <Badge className="bg-red-100 text-red-700 border-red-200">مرفوضة</Badge>;
-      default:
-        return <Badge className="bg-amber-100 text-amber-700 border-amber-200">في الانتظار</Badge>;
+      case "approved": return <Badge className="bg-green-100 text-green-700 border-green-200">معتمدة</Badge>;
+      case "rejected": return <Badge className="bg-red-100 text-red-700 border-red-200">مرفوضة</Badge>;
+      default: return <Badge className="bg-amber-100 text-amber-700 border-amber-200">في الانتظار</Badge>;
     }
   };
 
@@ -110,6 +112,7 @@ export default function CompanyDashboard() {
             </div>
           </div>
           <div className="flex items-center gap-1.5 sm:gap-2">
+            <CompanyNotificationBell />
             <div className="hidden sm:block text-left">
               <p className="text-sm font-medium truncate max-w-[150px]">{account?.company_name}</p>
               <p className="text-xs text-muted-foreground">{account?.full_name}</p>
@@ -134,14 +137,8 @@ export default function CompanyDashboard() {
               <div className="pb-0.5 min-w-0">
                 <h2 className="text-lg sm:text-xl font-bold truncate">{account?.company_name}</h2>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs sm:text-sm text-muted-foreground">
-                  <span className="flex items-center gap-1.5">
-                    <User className="h-3.5 w-3.5 text-primary" />
-                    {account?.full_name}
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <MapPin className="h-3.5 w-3.5 text-primary" />
-                    {account?.company_city}
-                  </span>
+                  <span className="flex items-center gap-1.5"><User className="h-3.5 w-3.5 text-primary" />{account?.full_name}</span>
+                  <span className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-primary" />{account?.company_city}</span>
                 </div>
               </div>
             </div>
@@ -161,7 +158,7 @@ export default function CompanyDashboard() {
             <CardContent className="pt-3 sm:pt-4 pb-2 sm:pb-3 px-2 sm:px-4 text-center">
               <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mx-auto text-green-600 mb-1" />
               <div className="text-xl sm:text-2xl font-bold text-green-600">{activeLines}</div>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">خطوط نشطة</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">نشطة</p>
             </CardContent>
           </Card>
           <Card className="border-0 shadow-md bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950/30 dark:to-amber-900/20">
@@ -182,24 +179,33 @@ export default function CompanyDashboard() {
 
         {/* Tabs */}
         <Tabs defaultValue="lines" className="space-y-4">
-          <TabsList className={`${isMobile ? 'flex w-full gap-1' : 'grid w-full grid-cols-4'} h-11 sm:h-12 bg-muted/50 p-1 rounded-xl`}>
-            <TabsTrigger value="lines" className="rounded-lg gap-1 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
-              <Truck className="h-4 w-4" />
-              <span className="hidden sm:inline">الخطوط</span>
-            </TabsTrigger>
-            <TabsTrigger value="tracking" className="rounded-lg gap-1 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
-              <Navigation className="h-4 w-4" />
-              <span className="hidden sm:inline">التتبع</span>
-            </TabsTrigger>
-            <TabsTrigger value="invoices" className="rounded-lg gap-1 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
-              <FileText className="h-4 w-4" />
-              <span className="hidden sm:inline">الفواتير</span>
-            </TabsTrigger>
-            <TabsTrigger value="employees" className="rounded-lg gap-1 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
-              <Users className="h-4 w-4" />
-              <span className="hidden sm:inline">الموظفون</span>
-            </TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto -mx-3 px-3">
+            <TabsList className="inline-flex h-11 sm:h-12 bg-muted/50 p-1 rounded-xl gap-1 min-w-max">
+              <TabsTrigger value="lines" className="rounded-lg gap-1 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md px-3">
+                <Truck className="h-4 w-4" /><span className="hidden sm:inline">الخطوط</span>
+              </TabsTrigger>
+              <TabsTrigger value="tracking" className="rounded-lg gap-1 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md px-3">
+                <Navigation className="h-4 w-4" /><span className="hidden sm:inline">التتبع</span>
+              </TabsTrigger>
+              <TabsTrigger value="drivers" className="rounded-lg gap-1 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md px-3">
+                <User className="h-4 w-4" /><span className="hidden sm:inline">الطاقم</span>
+              </TabsTrigger>
+              <TabsTrigger value="invoices" className="rounded-lg gap-1 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md px-3">
+                <FileText className="h-4 w-4" /><span className="hidden sm:inline">الفواتير</span>
+              </TabsTrigger>
+              <TabsTrigger value="employees" className="rounded-lg gap-1 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md px-3">
+                <Users className="h-4 w-4" /><span className="hidden sm:inline">الموظفون</span>
+              </TabsTrigger>
+              <TabsTrigger value="chat" className="rounded-lg gap-1 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md px-3">
+                <MessageCircle className="h-4 w-4" /><span className="hidden sm:inline">المحادثات</span>
+              </TabsTrigger>
+              {account?.role === "admin" && (
+                <TabsTrigger value="accounts" className="rounded-lg gap-1 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md px-3">
+                  <Shield className="h-4 w-4" /><span className="hidden sm:inline">الحسابات</span>
+                </TabsTrigger>
+              )}
+            </TabsList>
+          </div>
 
           {/* Lines Tab */}
           <TabsContent value="lines" className="space-y-4">
@@ -224,9 +230,7 @@ export default function CompanyDashboard() {
                           <Badge variant="secondary" className="text-xs">غير نشط</Badge>
                         )}
                       </div>
-                      {line.route_details && (
-                        <p className="text-sm text-muted-foreground">{line.route_details}</p>
-                      )}
+                      {line.route_details && <p className="text-sm text-muted-foreground">{line.route_details}</p>}
                       <div className="space-y-1.5 text-sm">
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <Clock className="h-3.5 w-3.5" />
@@ -262,6 +266,11 @@ export default function CompanyDashboard() {
             </GoogleMapsProvider>
           </TabsContent>
 
+          {/* Drivers Tab */}
+          <TabsContent value="drivers" className="space-y-4">
+            <CompanyDriversView staff={staff} />
+          </TabsContent>
+
           {/* Invoices Tab */}
           <TabsContent value="invoices" className="space-y-4">
             {invoices.length === 0 ? (
@@ -274,11 +283,7 @@ export default function CompanyDashboard() {
             ) : (
               <div className="space-y-3">
                 {invoices.map((inv: any) => (
-                  <Card
-                    key={inv.id}
-                    className="border-0 shadow-md cursor-pointer hover:shadow-lg transition-shadow"
-                    onClick={() => { setSelectedInvoice(inv); setComment(inv.company_comment || ""); setInvoiceDialogOpen(true); }}
-                  >
+                  <Card key={inv.id} className="border-0 shadow-md cursor-pointer hover:shadow-lg transition-shadow" onClick={() => { setSelectedInvoice(inv); setComment(inv.company_comment || ""); setInvoiceDialogOpen(true); }}>
                     <CardContent className="p-4 flex items-center justify-between gap-3">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 mb-1">
@@ -302,7 +307,6 @@ export default function CompanyDashboard() {
 
           {/* Employees Tab */}
           <TabsContent value="employees" className="space-y-4">
-            {/* Share Form Link */}
             <Card className="border-0 shadow-md bg-gradient-to-r from-primary/5 to-primary/10">
               <CardContent className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
@@ -320,7 +324,6 @@ export default function CompanyDashboard() {
                 </Button>
               </CardContent>
             </Card>
-
             {employees.length === 0 ? (
               <Card className="border-0 shadow-md">
                 <CardContent className="py-12 text-center text-muted-foreground">
@@ -350,20 +353,29 @@ export default function CompanyDashboard() {
                         </div>
                         {emp.pickup_address && (
                           <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
-                            {emp.pickup_address}
+                            <MapPin className="h-3 w-3" />{emp.pickup_address}
                           </p>
                         )}
                       </div>
-                      <div className="text-xs text-muted-foreground shrink-0">
-                        {format(new Date(emp.created_at), "dd/MM")}
-                      </div>
+                      <div className="text-xs text-muted-foreground shrink-0">{format(new Date(emp.created_at), "dd/MM")}</div>
                     </CardContent>
                   </Card>
                 ))}
               </div>
             )}
           </TabsContent>
+
+          {/* Chat Tab */}
+          <TabsContent value="chat">
+            <CompanyChatView />
+          </TabsContent>
+
+          {/* Accounts Tab */}
+          {account?.role === "admin" && (
+            <TabsContent value="accounts" className="space-y-4">
+              <CompanyAccountsManager accounts={accounts} />
+            </TabsContent>
+          )}
         </Tabs>
       </main>
 
@@ -378,9 +390,7 @@ export default function CompanyDashboard() {
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <p className="text-muted-foreground">الفترة</p>
-                  <p className="font-medium">
-                    {format(new Date(selectedInvoice.period_start), "dd/MM/yyyy")} - {format(new Date(selectedInvoice.period_end), "dd/MM/yyyy")}
-                  </p>
+                  <p className="font-medium">{format(new Date(selectedInvoice.period_start), "dd/MM/yyyy")} - {format(new Date(selectedInvoice.period_end), "dd/MM/yyyy")}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">المبلغ الإجمالي</p>
@@ -403,12 +413,7 @@ export default function CompanyDashboard() {
                   <p className="text-sm font-medium mb-2">بنود الفاتورة</p>
                   <div className="border rounded-xl overflow-hidden">
                     <table className="w-full text-sm">
-                      <thead className="bg-muted/50">
-                        <tr>
-                          <th className="text-right p-2">البند</th>
-                          <th className="text-right p-2">المبلغ</th>
-                        </tr>
-                      </thead>
+                      <thead className="bg-muted/50"><tr><th className="text-right p-2">البند</th><th className="text-right p-2">المبلغ</th></tr></thead>
                       <tbody>
                         {(selectedInvoice.line_items as any[]).map((item: any, i: number) => (
                           <tr key={i} className="border-t">
@@ -424,43 +429,22 @@ export default function CompanyDashboard() {
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">تعليق / ملاحظات</label>
-                <Textarea
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  placeholder="أضف تعليقك على الفاتورة..."
-                  rows={3}
-                />
+                <Textarea value={comment} onChange={(e) => setComment(e.target.value)} placeholder="أضف تعليقك على الفاتورة..." rows={3} />
               </div>
 
               {selectedInvoice.company_approval_status === "pending" && (
                 <div className="flex gap-3">
-                  <Button
-                    className="flex-1 gap-2 bg-green-600 hover:bg-green-700"
-                    onClick={() => updateInvoiceMutation.mutate({ id: selectedInvoice.id, status: "approved", comment })}
-                    disabled={updateInvoiceMutation.isPending}
-                  >
-                    <CheckCircle className="h-4 w-4" />
-                    اعتماد الفاتورة
+                  <Button className="flex-1 gap-2 bg-green-600 hover:bg-green-700" onClick={() => updateInvoiceMutation.mutate({ id: selectedInvoice.id, status: "approved", comment })} disabled={updateInvoiceMutation.isPending}>
+                    <CheckCircle className="h-4 w-4" />اعتماد الفاتورة
                   </Button>
-                  <Button
-                    variant="destructive"
-                    className="flex-1 gap-2"
-                    onClick={() => updateInvoiceMutation.mutate({ id: selectedInvoice.id, status: "rejected", comment })}
-                    disabled={updateInvoiceMutation.isPending}
-                  >
-                    <XCircle className="h-4 w-4" />
-                    رفض
+                  <Button variant="destructive" className="flex-1 gap-2" onClick={() => updateInvoiceMutation.mutate({ id: selectedInvoice.id, status: "rejected", comment })} disabled={updateInvoiceMutation.isPending}>
+                    <XCircle className="h-4 w-4" />رفض
                   </Button>
                 </div>
               )}
 
               {selectedInvoice.company_approval_status !== "pending" && (
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => updateInvoiceMutation.mutate({ id: selectedInvoice.id, status: "pending", comment })}
-                  disabled={updateInvoiceMutation.isPending}
-                >
+                <Button variant="outline" className="w-full" onClick={() => updateInvoiceMutation.mutate({ id: selectedInvoice.id, status: "pending", comment })} disabled={updateInvoiceMutation.isPending}>
                   إعادة فتح المراجعة
                 </Button>
               )}
