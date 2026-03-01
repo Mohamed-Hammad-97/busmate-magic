@@ -40,6 +40,7 @@ import DriverAuth from "./pages/DriverAuth";
 import DriverDashboard from "./pages/DriverDashboard";
 import CompanyAuth from "./pages/CompanyAuth";
 import CompanyDashboard from "./pages/CompanyDashboard";
+import CompanyEmployeeRegister from "./pages/CompanyEmployeeRegister";
 import SupportChat from "./pages/SupportChat";
 import HomepageAdmin from "./pages/HomepageAdmin";
 import Submissions from "./pages/Submissions";
@@ -75,6 +76,7 @@ const App = () => (
           <Route path="/register/corporate" element={<RegisterCorporate />} />
           <Route path="/register/private" element={<RegisterPrivate />} />
           <Route path="/services/:serviceType" element={<ServiceDetails />} />
+          <Route path="/company/register/:companyId" element={<CompanyEmployeeRegister />} />
           
           {/* Parent Portal routes */}
           <Route path="/parent/*" element={

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCompanyAuth } from "@/contexts/CompanyAuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,14 +10,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Building2, LogOut, Truck, FileText, Users, MapPin, Clock,
-  CheckCircle, XCircle, User,
+  CheckCircle, XCircle, User, Copy, Link2, Bus, Navigation,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import seaterLogo from "@/assets/seater-logo.jpg";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { GoogleMapsProvider } from "@/components/maps/GoogleMapsProvider";
+import { CompanyLiveTracking } from "@/components/corporate/CompanyLiveTracking";
 
-function useCompanyPortalData(action: string, token: string | null) {
+function useCompanyPortalData(action: string, token: string | null, options?: { refetchInterval?: number }) {
   return useQuery({
     queryKey: ["company-portal", action],
     queryFn: async () => {
@@ -30,6 +32,7 @@ function useCompanyPortalData(action: string, token: string | null) {
       return data;
     },
     enabled: !!token,
+    refetchInterval: options?.refetchInterval,
   });
 }
 
@@ -43,9 +46,13 @@ export default function CompanyDashboard() {
 
   const { data: linesData } = useCompanyPortalData("get-lines", token);
   const { data: invoicesData } = useCompanyPortalData("get-invoices", token);
+  const { data: employeesData } = useCompanyPortalData("get-employees", token);
+  const { data: trackingData } = useCompanyPortalData("get-live-trips", token, { refetchInterval: 5000 });
 
   const lines = linesData?.lines || [];
   const invoices = invoicesData?.invoices || [];
+  const employees = employeesData?.employees || [];
+  const activeTrips = trackingData?.trips || [];
 
   const updateInvoiceMutation = useMutation({
     mutationFn: async ({ id, status, comment }: { id: string; status: string; comment: string }) => {
@@ -71,6 +78,13 @@ export default function CompanyDashboard() {
 
   const activeLines = lines.filter((l: any) => l.is_active).length;
   const pendingInvoices = invoices.filter((i: any) => i.company_approval_status === "pending").length;
+
+  const formLink = `${window.location.origin}/company/register/${account?.company_id}`;
+
+  const copyFormLink = () => {
+    navigator.clipboard.writeText(formLink);
+    toast.success("تم نسخ رابط التسجيل");
+  };
 
   const getApprovalBadge = (status: string) => {
     switch (status) {
@@ -135,7 +149,7 @@ export default function CompanyDashboard() {
         </Card>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-2 sm:gap-3">
+        <div className="grid grid-cols-4 gap-2 sm:gap-3">
           <Card className="border-0 shadow-md bg-gradient-to-br from-primary/5 to-primary/10">
             <CardContent className="pt-3 sm:pt-4 pb-2 sm:pb-3 px-2 sm:px-4 text-center">
               <Truck className="h-4 w-4 sm:h-5 sm:w-5 mx-auto text-primary mb-1" />
@@ -157,22 +171,33 @@ export default function CompanyDashboard() {
               <p className="text-[10px] sm:text-xs text-muted-foreground">فواتير معلقة</p>
             </CardContent>
           </Card>
+          <Card className="border-0 shadow-md bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/20">
+            <CardContent className="pt-3 sm:pt-4 pb-2 sm:pb-3 px-2 sm:px-4 text-center">
+              <Bus className="h-4 w-4 sm:h-5 sm:w-5 mx-auto text-blue-600 mb-1" />
+              <div className="text-xl sm:text-2xl font-bold text-blue-600">{activeTrips.length}</div>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">رحلات نشطة</p>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Tabs */}
         <Tabs defaultValue="lines" className="space-y-4">
-          <TabsList className={`${isMobile ? 'flex w-full gap-1' : 'grid w-full grid-cols-3'} h-11 sm:h-12 bg-muted/50 p-1 rounded-xl`}>
+          <TabsList className={`${isMobile ? 'flex w-full gap-1' : 'grid w-full grid-cols-4'} h-11 sm:h-12 bg-muted/50 p-1 rounded-xl`}>
             <TabsTrigger value="lines" className="rounded-lg gap-1 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
               <Truck className="h-4 w-4" />
-              الخطوط
+              <span className="hidden sm:inline">الخطوط</span>
+            </TabsTrigger>
+            <TabsTrigger value="tracking" className="rounded-lg gap-1 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
+              <Navigation className="h-4 w-4" />
+              <span className="hidden sm:inline">التتبع</span>
             </TabsTrigger>
             <TabsTrigger value="invoices" className="rounded-lg gap-1 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
               <FileText className="h-4 w-4" />
-              الفواتير
+              <span className="hidden sm:inline">الفواتير</span>
             </TabsTrigger>
             <TabsTrigger value="employees" className="rounded-lg gap-1 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
               <Users className="h-4 w-4" />
-              الموظفون
+              <span className="hidden sm:inline">الموظفون</span>
             </TabsTrigger>
           </TabsList>
 
@@ -230,6 +255,13 @@ export default function CompanyDashboard() {
             )}
           </TabsContent>
 
+          {/* Tracking Tab */}
+          <TabsContent value="tracking" className="space-y-4">
+            <GoogleMapsProvider>
+              <CompanyLiveTracking trips={activeTrips} />
+            </GoogleMapsProvider>
+          </TabsContent>
+
           {/* Invoices Tab */}
           <TabsContent value="invoices" className="space-y-4">
             {invoices.length === 0 ? (
@@ -268,15 +300,69 @@ export default function CompanyDashboard() {
             )}
           </TabsContent>
 
-          {/* Employees Tab - Placeholder */}
-          <TabsContent value="employees">
-            <Card className="border-0 shadow-md">
-              <CardContent className="py-12 text-center text-muted-foreground">
-                <Users className="h-12 w-12 mx-auto mb-3 text-muted-foreground/40" />
-                <p className="font-medium mb-1">إدارة الموظفين</p>
-                <p className="text-sm">سيتم تفعيل هذه الميزة قريباً</p>
+          {/* Employees Tab */}
+          <TabsContent value="employees" className="space-y-4">
+            {/* Share Form Link */}
+            <Card className="border-0 shadow-md bg-gradient-to-r from-primary/5 to-primary/10">
+              <CardContent className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                    <Link2 className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-medium text-sm">رابط تسجيل الموظفين</p>
+                    <p className="text-xs text-muted-foreground truncate max-w-[250px]">{formLink}</p>
+                  </div>
+                </div>
+                <Button size="sm" variant="outline" className="gap-2 shrink-0" onClick={copyFormLink}>
+                  <Copy className="h-4 w-4" />
+                  نسخ الرابط
+                </Button>
               </CardContent>
             </Card>
+
+            {employees.length === 0 ? (
+              <Card className="border-0 shadow-md">
+                <CardContent className="py-12 text-center text-muted-foreground">
+                  <Users className="h-12 w-12 mx-auto mb-3 text-muted-foreground/40" />
+                  <p className="font-medium mb-1">لا يوجد موظفون مسجلون</p>
+                  <p className="text-sm">شارك رابط التسجيل مع موظفيك</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {employees.map((emp: any) => (
+                  <Card key={emp.id} className="border-0 shadow-md">
+                    <CardContent className="p-4 flex items-center justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="font-semibold text-sm">{emp.full_name}</h4>
+                          {emp.is_active ? (
+                            <Badge className="bg-green-100 text-green-700 border-green-200 text-[10px]">نشط</Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-[10px]">غير نشط</Badge>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                          <span>{emp.phone}</span>
+                          {emp.department && <span>• {emp.department}</span>}
+                          {emp.company_lines?.name && <span>• {emp.company_lines.name}</span>}
+                        </div>
+                        {emp.pickup_address && (
+                          <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                            <MapPin className="h-3 w-3" />
+                            {emp.pickup_address}
+                          </p>
+                        )}
+                      </div>
+                      <div className="text-xs text-muted-foreground shrink-0">
+                        {format(new Date(emp.created_at), "dd/MM")}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </main>
@@ -312,7 +398,6 @@ export default function CompanyDashboard() {
                 </div>
               </div>
 
-              {/* Line Items */}
               {selectedInvoice.line_items && Array.isArray(selectedInvoice.line_items) && (selectedInvoice.line_items as any[]).length > 0 && (
                 <div>
                   <p className="text-sm font-medium mb-2">بنود الفاتورة</p>
@@ -337,7 +422,6 @@ export default function CompanyDashboard() {
                 </div>
               )}
 
-              {/* Comment */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">تعليق / ملاحظات</label>
                 <Textarea
@@ -348,7 +432,6 @@ export default function CompanyDashboard() {
                 />
               </div>
 
-              {/* Actions */}
               {selectedInvoice.company_approval_status === "pending" && (
                 <div className="flex gap-3">
                   <Button

@@ -261,6 +261,72 @@ export type Database = {
           },
         ]
       }
+      company_employees: {
+        Row: {
+          company_id: string
+          company_line_id: string | null
+          created_at: string
+          department: string | null
+          full_name: string
+          id: string
+          is_active: boolean
+          national_id: string | null
+          notes: string | null
+          phone: string
+          pickup_address: string | null
+          pickup_latitude: number | null
+          pickup_longitude: number | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          company_line_id?: string | null
+          created_at?: string
+          department?: string | null
+          full_name: string
+          id?: string
+          is_active?: boolean
+          national_id?: string | null
+          notes?: string | null
+          phone: string
+          pickup_address?: string | null
+          pickup_latitude?: number | null
+          pickup_longitude?: number | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          company_line_id?: string | null
+          created_at?: string
+          department?: string | null
+          full_name?: string
+          id?: string
+          is_active?: boolean
+          national_id?: string | null
+          notes?: string | null
+          phone?: string
+          pickup_address?: string | null
+          pickup_latitude?: number | null
+          pickup_longitude?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_employees_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_employees_company_line_id_fkey"
+            columns: ["company_line_id"]
+            isOneToOne: false
+            referencedRelation: "company_lines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       company_invoices: {
         Row: {
           company_approval_status: string
