@@ -7,8 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageCircle, Send, Search, Headphones, Truck, Building2 } from "lucide-react";
-import { formatDistanceToNow, format } from "date-fns";
-import { ar } from "date-fns/locale";
+import { format } from "date-fns";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ChatChannel {
@@ -44,7 +43,6 @@ export function CompanyChatView() {
   });
 
   const channels: ChatChannel[] = channelsData?.channels || [];
-
   const filteredChannels = channels.filter((ch) =>
     ch.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -56,10 +54,7 @@ export function CompanyChatView() {
       const { data, error } = await supabase.functions.invoke("company-portal-data", {
         body: {
           action: "get-chat-messages",
-          data: {
-            channel_type: selectedChannel.type,
-            channel_ref_id: selectedChannel.ref_id,
-          },
+          data: { channel_type: selectedChannel.type, channel_ref_id: selectedChannel.ref_id },
         },
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -78,11 +73,7 @@ export function CompanyChatView() {
       const { data, error } = await supabase.functions.invoke("company-portal-data", {
         body: {
           action: "send-chat-message",
-          data: {
-            channel_type: selectedChannel.type,
-            channel_ref_id: selectedChannel.ref_id,
-            message: message.trim(),
-          },
+          data: { channel_type: selectedChannel.type, channel_ref_id: selectedChannel.ref_id, message: message.trim() },
         },
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -122,34 +113,30 @@ export function CompanyChatView() {
     const now = new Date();
     const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
     if (diffDays === 0) return format(date, "hh:mm a");
-    if (diffDays === 1) return "أمس";
+    if (diffDays === 1) return "Yesterday";
     return format(date, "dd/MM");
   };
 
-  // Sidebar
   const renderSidebar = () => (
     <div className={`flex flex-col bg-card rounded-2xl border border-border/50 shadow-lg overflow-hidden ${
       isMobile ? "w-full" : "w-[320px] shrink-0"
     }`}>
-      {/* Search */}
       <div className="p-3 border-b border-border/30">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="بحث في المحادثات..."
+            placeholder="Search conversations..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-9 h-10 bg-muted/40 border-0 rounded-xl text-sm focus-visible:ring-1 focus-visible:ring-primary/30"
           />
         </div>
       </div>
-
-      {/* Channel list */}
       <ScrollArea className="flex-1">
         {filteredChannels.length === 0 ? (
           <div className="py-12 text-center text-muted-foreground">
             <MessageCircle className="h-10 w-10 mx-auto mb-2 text-muted-foreground/30" />
-            <p className="text-sm">لا توجد محادثات</p>
+            <p className="text-sm">No conversations</p>
           </div>
         ) : (
           <div className="divide-y divide-border/20">
@@ -159,21 +146,17 @@ export function CompanyChatView() {
                 <button
                   key={ch.id}
                   onClick={() => setSelectedChannel(ch)}
-                  className={`w-full flex items-center gap-3 px-4 py-3.5 text-right transition-colors hover:bg-muted/50 ${
-                    isActive ? "bg-primary/5 border-r-2 border-r-primary" : ""
+                  className={`w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-muted/50 ${
+                    isActive ? "bg-primary/5 border-l-2 border-l-primary" : ""
                   }`}
                 >
                   <div className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 ${getChannelIconBg(ch.type)}`}>
                     {getChannelIcon(ch.type)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className={`text-sm font-semibold truncate ${isActive ? "text-primary" : "text-foreground"}`}>
-                        {ch.name}
-                      </p>
-                    </div>
+                    <p className={`text-sm font-semibold truncate ${isActive ? "text-primary" : "text-foreground"}`}>{ch.name}</p>
                     <p className="text-xs text-muted-foreground truncate mt-0.5">
-                      {ch.type === "seater_support" ? "الدعم الفني" : "محادثة السائق"}
+                      {ch.type === "seater_support" ? "Technical Support" : "Driver Chat"}
                     </p>
                   </div>
                   {ch.unread > 0 && (
@@ -190,15 +173,14 @@ export function CompanyChatView() {
     </div>
   );
 
-  // Message area
   const renderMessageArea = () => {
     if (!selectedChannel) {
       return (
         <div className="flex-1 bg-card rounded-2xl border border-border/50 shadow-lg flex items-center justify-center">
           <div className="text-center text-muted-foreground">
             <MessageCircle className="h-16 w-16 mx-auto mb-4 text-muted-foreground/20" />
-            <p className="text-base font-medium mb-1">اختر محادثة</p>
-            <p className="text-sm">اختر محادثة من القائمة لبدء المراسلة</p>
+            <p className="text-base font-medium mb-1">Select a conversation</p>
+            <p className="text-sm">Choose a conversation from the list to start messaging</p>
           </div>
         </div>
       );
@@ -206,10 +188,9 @@ export function CompanyChatView() {
 
     return (
       <div className="flex-1 bg-card rounded-2xl border border-border/50 shadow-lg flex flex-col overflow-hidden">
-        {/* Header */}
         <div className="flex items-center gap-3 px-5 py-3.5 border-b border-border/30">
           {isMobile && (
-            <Button variant="ghost" size="sm" className="h-8 px-2 -mr-2" onClick={() => setSelectedChannel(null)}>
+            <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => setSelectedChannel(null)}>
               ←
             </Button>
           )}
@@ -218,15 +199,14 @@ export function CompanyChatView() {
           </div>
           <div className="min-w-0">
             <p className="font-semibold text-sm text-foreground truncate">{selectedChannel.name}</p>
-            <p className="text-xs text-green-500 font-medium">متصل</p>
+            <p className="text-xs text-green-500 font-medium">Online</p>
           </div>
         </div>
 
-        {/* Messages */}
         <ScrollArea className="flex-1 px-5 py-4">
           <div className="space-y-3">
             {messages_list.length === 0 && (
-              <p className="text-center text-muted-foreground text-sm py-12">ابدأ المحادثة...</p>
+              <p className="text-center text-muted-foreground text-sm py-12">Start the conversation...</p>
             )}
             {messages_list.map((msg: any) => {
               const isMine = msg.sender_type === "company_account";
@@ -240,17 +220,10 @@ export function CompanyChatView() {
                     }`}
                   >
                     {!isMine && (
-                      <p className="text-[10px] font-semibold mb-0.5 text-muted-foreground">
-                        {msg.sender_name}
-                      </p>
+                      <p className="text-[10px] font-semibold mb-0.5 text-muted-foreground">{msg.sender_name}</p>
                     )}
                     <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.message}</p>
-                    <p
-                      className={`text-[10px] mt-1 text-left ${
-                        isMine ? "text-primary-foreground/60" : "text-muted-foreground"
-                      }`}
-                      dir="ltr"
-                    >
+                    <p className={`text-[10px] mt-1 text-left ${isMine ? "text-primary-foreground/60" : "text-muted-foreground"}`} dir="ltr">
                       {formatTime(msg.created_at)}
                     </p>
                   </div>
@@ -261,22 +234,16 @@ export function CompanyChatView() {
           </div>
         </ScrollArea>
 
-        {/* Input */}
         <form onSubmit={handleSend} className="px-5 py-3 border-t border-border/30 flex items-center gap-3">
           <Input
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder="اكتب رسالتك..."
+            placeholder="Type your message..."
             className="flex-1 h-11 rounded-xl bg-muted/40 border-0 focus-visible:ring-1 focus-visible:ring-primary/30"
             disabled={sendMutation.isPending}
           />
-          <Button
-            type="submit"
-            size="default"
-            disabled={sendMutation.isPending || !message.trim()}
-            className="h-11 px-5 rounded-xl gap-1.5"
-          >
-            إرسال
+          <Button type="submit" size="default" disabled={sendMutation.isPending || !message.trim()} className="h-11 px-5 rounded-xl gap-1.5">
+            Send
             <Send className="h-4 w-4" />
           </Button>
         </form>
@@ -284,12 +251,10 @@ export function CompanyChatView() {
     );
   };
 
-  // Mobile: show sidebar or messages
   if (isMobile) {
     return selectedChannel ? renderMessageArea() : renderSidebar();
   }
 
-  // Desktop: side-by-side
   return (
     <div className="flex gap-4 h-[550px]">
       {renderSidebar()}
