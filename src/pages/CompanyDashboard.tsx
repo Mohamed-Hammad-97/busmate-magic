@@ -111,56 +111,42 @@ export default function CompanyDashboard() {
       case "dashboard":
         return (
           <div className="space-y-6">
-            {/* Welcome Card */}
-            <Card className="overflow-hidden border-0 shadow-xl rounded-2xl">
-              <div className="h-24 sm:h-32 bg-gradient-to-r from-primary via-primary/80 to-primary/60 rounded-t-2xl" />
-              <CardContent className="relative -mt-8 sm:-mt-10 pb-5 px-5 sm:px-6">
-                <div className="flex items-end gap-4">
-                  <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl bg-background border-4 border-background shadow-xl flex items-center justify-center shrink-0">
-                    <Building2 className="h-9 w-9 sm:h-11 sm:w-11 text-primary" />
+            {/* Welcome Card - gradient with stats inside */}
+            <Card className="overflow-hidden border-0 shadow-xl rounded-2xl bg-gradient-to-r from-primary via-primary/90 to-primary/70 text-primary-foreground">
+              <CardContent className="p-5 sm:p-7">
+                <div className="flex items-start gap-3 mb-5">
+                  <div className="h-11 w-11 rounded-xl bg-primary-foreground/20 flex items-center justify-center shrink-0">
+                    <Building2 className="h-6 w-6" />
                   </div>
-                  <div className="pb-1 min-w-0">
-                    <h2 className="text-xl sm:text-2xl font-bold truncate">{account?.company_name}</h2>
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1.5"><User className="h-3.5 w-3.5 text-primary" />{account?.full_name}</span>
-                      <span className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-primary" />{account?.company_city}</span>
-                    </div>
+                  <div className="min-w-0">
+                    <h2 className="text-xl sm:text-2xl font-bold truncate">Welcome, {account?.full_name}</h2>
+                    <p className="text-sm text-primary-foreground/70 mt-0.5">Here's an overview of your transportation system</p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2.5">
+                  <div className="flex items-center gap-2 bg-primary-foreground/15 backdrop-blur-sm rounded-full px-4 py-2">
+                    <Truck className="h-4 w-4" />
+                    <span className="font-bold text-sm">{lines.length}</span>
+                    <span className="text-xs text-primary-foreground/80">Lines</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-primary-foreground/15 backdrop-blur-sm rounded-full px-4 py-2">
+                    <CheckCircle className="h-4 w-4" />
+                    <span className="font-bold text-sm">{activeLines}</span>
+                    <span className="text-xs text-primary-foreground/80">Active</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-primary-foreground/15 backdrop-blur-sm rounded-full px-4 py-2">
+                    <FileText className="h-4 w-4" />
+                    <span className="font-bold text-sm">{pendingInvoices}</span>
+                    <span className="text-xs text-primary-foreground/80">Invoices</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-primary-foreground/15 backdrop-blur-sm rounded-full px-4 py-2">
+                    <Bus className="h-4 w-4" />
+                    <span className="font-bold text-sm">{activeTrips.length}</span>
+                    <span className="text-xs text-primary-foreground/80">Trips</span>
                   </div>
                 </div>
               </CardContent>
             </Card>
-
-            {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <Card className="border-0 shadow-md bg-gradient-to-br from-primary/5 to-primary/10">
-                <CardContent className="pt-4 pb-3 px-4 text-center">
-                  <Truck className="h-5 w-5 mx-auto text-primary mb-1" />
-                  <div className="text-2xl font-bold text-primary">{lines.length}</div>
-                  <p className="text-xs text-muted-foreground">Lines</p>
-                </CardContent>
-              </Card>
-              <Card className="border-0 shadow-md bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-900/20">
-                <CardContent className="pt-4 pb-3 px-4 text-center">
-                  <CheckCircle className="h-5 w-5 mx-auto text-green-600 mb-1" />
-                  <div className="text-2xl font-bold text-green-600">{activeLines}</div>
-                  <p className="text-xs text-muted-foreground">Active</p>
-                </CardContent>
-              </Card>
-              <Card className="border-0 shadow-md bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950/30 dark:to-amber-900/20">
-                <CardContent className="pt-4 pb-3 px-4 text-center">
-                  <FileText className="h-5 w-5 mx-auto text-amber-600 mb-1" />
-                  <div className="text-2xl font-bold text-amber-600">{pendingInvoices}</div>
-                  <p className="text-xs text-muted-foreground">Pending Invoices</p>
-                </CardContent>
-              </Card>
-              <Card className="border-0 shadow-md bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/20">
-                <CardContent className="pt-4 pb-3 px-4 text-center">
-                  <Bus className="h-5 w-5 mx-auto text-blue-600 mb-1" />
-                  <div className="text-2xl font-bold text-blue-600">{activeTrips.length}</div>
-                  <p className="text-xs text-muted-foreground">Active Trips</p>
-                </CardContent>
-              </Card>
-            </div>
           </div>
         );
 

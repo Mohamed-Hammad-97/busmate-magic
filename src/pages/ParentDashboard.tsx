@@ -5,12 +5,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Bus, LogOut, User, CreditCard, MapPin, School, Phone, Bell,
   CheckCircle, Clock, AlertCircle, Navigation, MessageCircle,
   CalendarOff, Wallet, Shield, Route, UserCircle, Car,
   ChevronLeft, Receipt, CircleDollarSign, LayoutDashboard, Settings2,
+  TrendingUp,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { format } from "date-fns";
@@ -28,6 +28,7 @@ export default function ParentDashboard() {
   const { parentAccount, signOut, user } = useParentAuth();
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [selectedPaymentReg, setSelectedPaymentReg] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState("dashboard");
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
@@ -97,15 +98,15 @@ export default function ParentDashboard() {
   });
 
   const statusLabels: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-    pending_fees: { label: "في انتظار الرسوم", variant: "secondary" },
-    complete: { label: "مكتمل", variant: "default" },
-    cancelled: { label: "ملغي", variant: "destructive" },
+    pending_fees: { label: "Pending Fees", variant: "secondary" },
+    complete: { label: "Complete", variant: "default" },
+    cancelled: { label: "Cancelled", variant: "destructive" },
   };
 
   const paymentStatusLabels: Record<string, { label: string; icon: React.ReactNode }> = {
-    paid: { label: "مدفوع", icon: <CheckCircle className="h-4 w-4 text-green-500" /> },
-    pending: { label: "في الانتظار", icon: <Clock className="h-4 w-4 text-yellow-500" /> },
-    overdue: { label: "متأخر", icon: <AlertCircle className="h-4 w-4 text-red-500" /> },
+    paid: { label: "Paid", icon: <CheckCircle className="h-4 w-4 text-green-500" /> },
+    pending: { label: "Pending", icon: <Clock className="h-4 w-4 text-yellow-500" /> },
+    overdue: { label: "Overdue", icon: <AlertCircle className="h-4 w-4 text-red-500" /> },
   };
 
   const paymentSummary = registrations.reduce(
@@ -123,144 +124,74 @@ export default function ParentDashboard() {
     { total: 0, paid: 0, pending: 0 }
   );
 
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
-      {/* Header - inspired by BusTrack reference */}
-      <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-xl">
-        <div className="container mx-auto px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2.5 sm:gap-3">
-            <img src={seaterLogo} alt="Seater" className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl shadow-md" />
-            <div>
-              <h1 className="text-base sm:text-lg font-bold text-foreground">Seater</h1>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">بوابة العملاء</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            <div className="hidden sm:block text-left">
-              <p className="text-sm font-medium truncate max-w-[120px]">{parentAccount?.parent_name}</p>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground hover:text-destructive h-8 px-2 sm:px-3"
-              onClick={signOut}
-            >
-              <LogOut className="h-4 w-4" />
-              <span className="hidden sm:inline mr-1">خروج</span>
-            </Button>
-          </div>
-        </div>
-      </header>
+  const navItems = [
+    { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { key: "tracking", label: "Tracking", icon: Navigation },
+    { key: "payments", label: "Payments", icon: Wallet },
+    { key: "children", label: "My Kids", icon: School },
+    { key: "routes", label: "Routes", icon: Route },
+    { key: "absences", label: "Absences", icon: CalendarOff },
+    { key: "chat", label: "Messages", icon: MessageCircle },
+  ];
 
-      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6 max-w-4xl">
-        {/* Welcome & Profile Card */}
-        <Card className="overflow-hidden border-0 shadow-xl rounded-2xl">
-          <div className="h-20 sm:h-28 bg-gradient-to-r from-blue-600 via-blue-500 to-primary rounded-t-2xl" />
-          <CardContent className="relative -mt-7 sm:-mt-9 pb-4 sm:pb-5 px-4 sm:px-5">
-            <div className="flex items-end gap-3 sm:gap-4">
-              <div className="h-14 w-14 sm:h-[72px] sm:w-[72px] rounded-2xl bg-background border-4 border-background shadow-xl flex items-center justify-center shrink-0">
-                <UserCircle className="h-8 w-8 sm:h-10 sm:w-10 text-primary" />
-              </div>
-              <div className="pb-0.5 min-w-0">
-                <h2 className="text-lg sm:text-xl font-bold truncate">
-                  مرحباً، {parentAccount?.parent_name}!
-                </h2>
-                <div className="flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-1 mt-1 text-xs sm:text-sm text-muted-foreground">
-                  <span className="flex items-center gap-1.5">
-                    <Phone className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-primary" />
-                    {parentAccount?.father_phone}
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <MapPin className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-primary" />
-                    {parentAccount?.city}
-                  </span>
+  const renderContent = () => {
+    switch (activeTab) {
+      case "dashboard":
+        return (
+          <div className="space-y-4 sm:space-y-5">
+            {/* Welcome Card - gradient with stats */}
+            <Card className="overflow-hidden border-0 shadow-xl rounded-2xl bg-gradient-to-r from-primary via-primary/90 to-primary/70 text-primary-foreground">
+              <CardContent className="p-5 sm:p-7">
+                <div className="flex items-start gap-3 mb-5">
+                  <div className="h-11 w-11 rounded-xl bg-primary-foreground/20 flex items-center justify-center shrink-0">
+                    <TrendingUp className="h-6 w-6" />
+                  </div>
+                  <div className="min-w-0">
+                    <h2 className="text-xl sm:text-2xl font-bold truncate">Welcome, {parentAccount?.parent_name}</h2>
+                    <p className="text-sm text-primary-foreground/70 mt-0.5">Here's an overview of your transportation system</p>
+                  </div>
                 </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+                <div className="flex flex-wrap gap-2.5">
+                  <div className="flex items-center gap-2 bg-primary-foreground/15 backdrop-blur-sm rounded-full px-4 py-2">
+                    <School className="h-4 w-4" />
+                    <span className="font-bold text-sm">{registrations.length}</span>
+                    <span className="text-xs text-primary-foreground/80">Students</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-primary-foreground/15 backdrop-blur-sm rounded-full px-4 py-2">
+                    <CheckCircle className="h-4 w-4" />
+                    <span className="font-bold text-sm">{paymentSummary.paid.toLocaleString()}</span>
+                    <span className="text-xs text-primary-foreground/80">Paid</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-primary-foreground/15 backdrop-blur-sm rounded-full px-4 py-2">
+                    <CreditCard className="h-4 w-4" />
+                    <span className="font-bold text-sm">{paymentSummary.pending.toLocaleString()}</span>
+                    <span className="text-xs text-primary-foreground/80">Remaining</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-        {/* Stats Row */}
-        <div className="grid grid-cols-3 gap-2 sm:gap-3">
-          <Card className="border-0 shadow-md bg-gradient-to-br from-primary/5 to-primary/10">
-            <CardContent className="pt-3 sm:pt-4 pb-2 sm:pb-3 px-2 sm:px-4 text-center">
-              <School className="h-4 w-4 sm:h-5 sm:w-5 mx-auto text-primary mb-1" />
-              <div className="text-xl sm:text-2xl font-bold text-primary">{registrations.length}</div>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">طلاب</p>
-            </CardContent>
-          </Card>
-          <Card className="border-0 shadow-md bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-900/20">
-            <CardContent className="pt-3 sm:pt-4 pb-2 sm:pb-3 px-2 sm:px-4 text-center">
-              <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mx-auto text-green-600 mb-1" />
-              <div className="text-xl sm:text-2xl font-bold text-green-600">{paymentSummary.paid.toLocaleString()}</div>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">ج.م مدفوع</p>
-            </CardContent>
-          </Card>
-          <Card className="border-0 shadow-md bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950/30 dark:to-amber-900/20">
-            <CardContent className="pt-3 sm:pt-4 pb-2 sm:pb-3 px-2 sm:px-4 text-center">
-              <CreditCard className="h-4 w-4 sm:h-5 sm:w-5 mx-auto text-amber-600 mb-1" />
-              <div className="text-xl sm:text-2xl font-bold text-amber-600">{paymentSummary.pending.toLocaleString()}</div>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">ج.م متبقي</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Tabs - scrollable on mobile */}
-        <Tabs defaultValue="dashboard" className="space-y-4">
-          <TabsList className={`${isMobile ? 'flex overflow-x-auto w-full gap-1' : 'grid w-full grid-cols-7'} h-11 sm:h-12 bg-muted/50 p-1 rounded-xl`}>
-            <TabsTrigger value="dashboard" className="rounded-lg gap-1 text-xs sm:text-sm whitespace-nowrap data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md flex-shrink-0">
-              <LayoutDashboard className="h-4 w-4" />
-              <span className={isMobile ? "hidden" : ""}>الرئيسية</span>
-            </TabsTrigger>
-            <TabsTrigger value="tracking" className="rounded-lg gap-1 text-xs sm:text-sm whitespace-nowrap data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md flex-shrink-0">
-              <Navigation className="h-4 w-4" />
-              <span className={isMobile ? "hidden" : ""}>التتبع</span>
-            </TabsTrigger>
-            <TabsTrigger value="children" className="rounded-lg text-xs sm:text-sm whitespace-nowrap data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md flex-shrink-0">
-              <School className="h-4 w-4" />
-              <span className={isMobile ? "hidden" : ""}>أبنائي</span>
-            </TabsTrigger>
-            <TabsTrigger value="routes" className="rounded-lg text-xs sm:text-sm whitespace-nowrap data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md flex-shrink-0">
-              <Route className="h-4 w-4" />
-              <span className={isMobile ? "hidden" : ""}>المسارات</span>
-            </TabsTrigger>
-            <TabsTrigger value="payments" className="rounded-lg text-xs sm:text-sm whitespace-nowrap data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md flex-shrink-0">
-              <Wallet className="h-4 w-4" />
-              <span className={isMobile ? "hidden" : ""}>المدفوعات</span>
-            </TabsTrigger>
-            <TabsTrigger value="absences" className="rounded-lg gap-1 text-xs sm:text-sm whitespace-nowrap data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md flex-shrink-0">
-              <CalendarOff className="h-4 w-4" />
-              <span className={isMobile ? "hidden" : ""}>الغياب</span>
-            </TabsTrigger>
-            <TabsTrigger value="chat" className="rounded-lg gap-1 text-xs sm:text-sm whitespace-nowrap data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md flex-shrink-0">
-              <MessageCircle className="h-4 w-4" />
-              <span className={isMobile ? "hidden" : ""}>الرسائل</span>
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Dashboard Tab - Overview inspired by reference image 5.GIF */}
-          <TabsContent value="dashboard" className="space-y-4">
-            {/* Active Route Status */}
+            {/* Current Route Status */}
             {routeAssignments.length > 0 && routeAssignments[0]?.routes && (
               <Card className="border-0 shadow-md overflow-hidden">
                 <div className="h-1 bg-gradient-to-r from-green-500 to-emerald-500" />
                 <CardContent className="p-4">
                   <div className="flex items-center gap-2 mb-3">
                     <div className="h-2.5 w-2.5 rounded-full bg-green-500 animate-pulse" />
-                    <span className="text-xs font-semibold text-green-600 uppercase tracking-wider">حالة المسار</span>
+                    <span className="text-xs font-semibold text-green-600 uppercase tracking-wider">Current Route Status</span>
                   </div>
                   <h3 className="font-bold text-base sm:text-lg">
                     {routeAssignments[0].routes?.name}
                   </h3>
                   <p className="text-sm text-muted-foreground mt-1">
-                    الطالب: {routeAssignments[0].registrations?.student_name}
-                    {routeAssignments[0].routes?.drivers && ` • السائق: ${routeAssignments[0].routes.drivers.full_name}`}
+                    Student: {routeAssignments[0].registrations?.student_name}
+                    {routeAssignments[0].routes?.drivers && ` • Driver: ${routeAssignments[0].routes.drivers.full_name}`}
                   </p>
                 </CardContent>
               </Card>
             )}
 
-            {/* Next Payment Due - inspired by reference */}
+            {/* Next Payment Due */}
             {(() => {
               const nextPayment = registrations
                 .flatMap((r: any) => r.subscriptions?.[0]?.payments || [])
@@ -275,30 +206,30 @@ export default function ParentDashboard() {
                         <Receipt className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                       </div>
                       <div className="min-w-0">
-                        <h4 className="font-semibold text-sm sm:text-base">القسط القادم</h4>
+                        <h4 className="font-semibold text-sm sm:text-base">Next Payment Due</h4>
                         <p className="text-xs text-muted-foreground truncate">
-                          {Number(nextPayment.amount).toLocaleString()} ج.م • الاستحقاق {format(new Date(nextPayment.due_date), "dd MMM", { locale: ar })}
+                          {Number(nextPayment.amount).toLocaleString()} EGP • Due {format(new Date(nextPayment.due_date), "dd MMM")}
                         </p>
                       </div>
                     </div>
                     <Button
                       size="sm"
                       className="shrink-0 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-md text-xs sm:text-sm"
-                      onClick={() => toast({ title: "الدفع الإلكتروني", description: "سيتم تفعيل الدفع الإلكتروني قريباً" })}
+                      onClick={() => toast({ title: "Online Payment", description: "Online payment will be available soon" })}
                     >
-                      <Wallet className="h-3.5 w-3.5 ml-1" />
-                      ادفع الآن
+                      <Wallet className="h-3.5 w-3.5 mr-1" />
+                      Pay Now
                     </Button>
                   </CardContent>
                 </Card>
               );
             })()}
 
-            {/* Children Quick Cards */}
+            {/* Registered Children */}
             <div>
               <h3 className="font-bold text-base mb-3 flex items-center gap-2">
                 <School className="h-4 w-4 text-primary" />
-                الأبناء المسجلين
+                Registered Children
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {registrations.map((reg: any) => (
@@ -319,22 +250,25 @@ export default function ParentDashboard() {
                 ))}
               </div>
             </div>
-          </TabsContent>
+          </div>
+        );
 
-          {/* Live Tracking Tab */}
-          <TabsContent value="tracking">
-            <GoogleMapsProvider>
-              <ParentLiveTracking />
-            </GoogleMapsProvider>
-          </TabsContent>
+      case "tracking":
+        return (
+          <GoogleMapsProvider>
+            <ParentLiveTracking />
+          </GoogleMapsProvider>
+        );
 
-          {/* Children Tab */}
-          <TabsContent value="children" className="space-y-4">
+      case "children":
+        return (
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold">My Kids</h2>
             {registrations.length === 0 ? (
               <Card className="border-0 shadow-md">
                 <CardContent className="py-12 text-center text-muted-foreground">
                   <School className="h-12 w-12 mx-auto mb-3 text-muted-foreground/40" />
-                  <p>لا يوجد طلاب مسجلين</p>
+                  <p>No registered students</p>
                 </CardContent>
               </Card>
             ) : (
@@ -360,13 +294,13 @@ export default function ParentDashboard() {
                   <CardContent className="px-4 sm:px-6">
                     <div className="grid grid-cols-2 gap-2 sm:gap-3 text-sm">
                       <div className="p-2 sm:p-2.5 bg-muted/50 rounded-lg">
-                        <span className="text-muted-foreground text-[10px] sm:text-xs block">نوع السيارة</span>
-                        <span className="font-medium text-xs sm:text-sm">{reg.car_type === "ac" ? "مكيف" : "بدون تكييف"}</span>
+                        <span className="text-muted-foreground text-[10px] sm:text-xs block">Car Type</span>
+                        <span className="font-medium text-xs sm:text-sm">{reg.car_type === "ac" ? "AC" : "Non-AC"}</span>
                       </div>
                       <div className="p-2 sm:p-2.5 bg-muted/50 rounded-lg">
-                        <span className="text-muted-foreground text-[10px] sm:text-xs block">قسم التعليم</span>
+                        <span className="text-muted-foreground text-[10px] sm:text-xs block">Department</span>
                         <span className="font-medium text-xs sm:text-sm">
-                          {reg.education_department === "national" ? "وطني" : reg.education_department === "ig" ? "IG" : "أمريكي"}
+                          {reg.education_department === "national" ? "National" : reg.education_department === "ig" ? "IG" : "American"}
                         </span>
                       </div>
                     </div>
@@ -374,16 +308,19 @@ export default function ParentDashboard() {
                 </Card>
               ))
             )}
-          </TabsContent>
+          </div>
+        );
 
-          {/* Routes Tab */}
-          <TabsContent value="routes" className="space-y-4">
+      case "routes":
+        return (
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold">Routes</h2>
             {routeAssignments.length === 0 ? (
               <Card className="border-0 shadow-md">
                 <CardContent className="py-12 text-center text-muted-foreground">
                   <Route className="h-12 w-12 mx-auto mb-3 text-muted-foreground/40" />
-                  <h3 className="font-semibold text-lg mb-1">لم يتم تعيين مسار بعد</h3>
-                  <p className="text-sm">سيظهر هنا تفاصيل المسار عند تعيينه</p>
+                  <h3 className="font-semibold text-lg mb-1">No route assigned yet</h3>
+                  <p className="text-sm">Route details will appear here once assigned</p>
                 </CardContent>
               </Card>
             ) : (
@@ -397,7 +334,7 @@ export default function ParentDashboard() {
                       <div>
                         <h3 className="text-base sm:text-lg font-bold">{assignment.routes?.name}</h3>
                         <p className="text-xs sm:text-sm text-primary-foreground/80">
-                          الطالب: {assignment.registrations?.student_name}
+                          Student: {assignment.registrations?.student_name}
                         </p>
                       </div>
                     </div>
@@ -407,11 +344,11 @@ export default function ParentDashboard() {
                     <div className="flex flex-wrap gap-2">
                       <Badge variant="outline" className="gap-1 px-2 sm:px-3 py-1 text-xs">
                         <Car className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                        {assignment.routes?.car_type === "ac" ? "سيارة مكيفة" : "بدون تكييف"}
+                        {assignment.routes?.car_type === "ac" ? "AC Car" : "Non-AC"}
                       </Badge>
                       {assignment.pickup_order && (
                         <Badge variant="secondary" className="gap-1 px-2 sm:px-3 py-1 text-xs">
-                          ترتيب: {assignment.pickup_order}
+                          Order: {assignment.pickup_order}
                         </Badge>
                       )}
                     </div>
@@ -425,7 +362,7 @@ export default function ParentDashboard() {
                                 <User className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 dark:text-blue-400" />
                               </div>
                               <div>
-                                <p className="text-[10px] sm:text-xs text-muted-foreground font-medium uppercase tracking-wider">السائق</p>
+                                <p className="text-[10px] sm:text-xs text-muted-foreground font-medium uppercase tracking-wider">Driver</p>
                                 <p className="font-semibold text-sm">{assignment.routes.drivers.full_name}</p>
                               </div>
                             </div>
@@ -447,7 +384,7 @@ export default function ParentDashboard() {
                                 <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600 dark:text-purple-400" />
                               </div>
                               <div>
-                                <p className="text-[10px] sm:text-xs text-muted-foreground font-medium uppercase tracking-wider">المشرفة</p>
+                                <p className="text-[10px] sm:text-xs text-muted-foreground font-medium uppercase tracking-wider">Supervisor</p>
                                 <p className="font-semibold text-sm">{assignment.routes.supervisors.full_name}</p>
                               </div>
                             </div>
@@ -465,46 +402,45 @@ export default function ParentDashboard() {
                     {!assignment.routes?.drivers && !assignment.routes?.supervisors && (
                       <div className="p-4 bg-muted/50 rounded-xl text-center text-sm text-muted-foreground">
                         <AlertCircle className="h-5 w-5 mx-auto mb-2" />
-                        لم يتم تعيين سائق أو مشرفة بعد
+                        No driver or supervisor assigned yet
                       </div>
                     )}
                   </CardContent>
                 </Card>
               ))
             )}
-          </TabsContent>
+          </div>
+        );
 
-          {/* Payments Tab - inspired by reference 7.GIF */}
-          <TabsContent value="payments" className="space-y-3">
-            {/* Payment Summary Header */}
+      case "payments":
+        return (
+          <div className="space-y-3">
+            <h2 className="text-xl font-bold">Payments</h2>
+            {/* Payment Summary */}
             <Card className="border-0 shadow-md">
               <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-bold text-base">الاشتراكات والمدفوعات</h3>
-                </div>
                 <div className="grid grid-cols-3 gap-2 text-center">
                   <div className="p-2 bg-muted/50 rounded-lg">
                     <p className="text-lg sm:text-xl font-bold">{paymentSummary.total.toLocaleString()}</p>
-                    <p className="text-[10px] text-muted-foreground">الإجمالي</p>
+                    <p className="text-[10px] text-muted-foreground">Total</p>
                   </div>
                   <div className="p-2 bg-green-50 dark:bg-green-950/20 rounded-lg">
                     <p className="text-lg sm:text-xl font-bold text-green-600">{paymentSummary.paid.toLocaleString()}</p>
-                    <p className="text-[10px] text-muted-foreground">مدفوع</p>
+                    <p className="text-[10px] text-muted-foreground">Paid</p>
                   </div>
                   <div className="p-2 bg-amber-50 dark:bg-amber-950/20 rounded-lg">
                     <p className="text-lg sm:text-xl font-bold text-amber-600">{paymentSummary.pending.toLocaleString()}</p>
-                    <p className="text-[10px] text-muted-foreground">متبقي</p>
+                    <p className="text-[10px] text-muted-foreground">Remaining</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Student subscription cards */}
             {registrations.filter((r: any) => r.subscriptions?.[0]?.payments?.length).length === 0 ? (
               <Card className="border-0 shadow-md">
                 <CardContent className="py-12 text-center text-muted-foreground">
                   <Wallet className="h-12 w-12 mx-auto mb-3 text-muted-foreground/40" />
-                  <p className="font-medium">لا توجد مدفوعات حالياً</p>
+                  <p className="font-medium">No payments yet</p>
                 </CardContent>
               </Card>
             ) : (
@@ -531,12 +467,12 @@ export default function ParentDashboard() {
                         <div className="flex-1 min-w-0">
                           <h3 className="font-semibold text-sm truncate">{reg.student_name}</h3>
                           <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
-                            {subscription.subscription_type === "monthly" ? "شهري" : "سنوي"} • {totalAmount.toLocaleString()} ج.م
+                            {subscription.subscription_type === "monthly" ? "Monthly" : "Yearly"} • {totalAmount.toLocaleString()} EGP
                           </p>
                         </div>
-                        <div className="text-left shrink-0">
+                        <div className="text-right shrink-0">
                           <div className="text-sm font-bold text-green-600">{paidCount}/{payments.length}</div>
-                          <p className="text-[10px] text-muted-foreground">أقساط</p>
+                          <p className="text-[10px] text-muted-foreground">installments</p>
                         </div>
                         <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground/50 shrink-0" />
                       </div>
@@ -549,7 +485,7 @@ export default function ParentDashboard() {
                       {nextPayment && (
                         <p className="text-[10px] sm:text-xs text-muted-foreground mt-2 flex items-center gap-1">
                           <Clock className="h-3 w-3" />
-                          القسط القادم: {format(new Date(nextPayment.due_date), "dd MMM yyyy", { locale: ar })} - {Number(nextPayment.amount).toLocaleString()} ج.م
+                          Next: {format(new Date(nextPayment.due_date), "dd MMM yyyy")} - {Number(nextPayment.amount).toLocaleString()} EGP
                         </p>
                       )}
                     </CardContent>
@@ -557,91 +493,166 @@ export default function ParentDashboard() {
                 );
               })
             )}
-          </TabsContent>
+          </div>
+        );
 
-          {/* Payment Detail Dialog */}
-          <Dialog open={!!selectedPaymentReg} onOpenChange={() => setSelectedPaymentReg(null)}>
-            <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto mx-2 sm:mx-auto">
-              {selectedPaymentReg && (() => {
-                const subscription = selectedPaymentReg.subscriptions?.[0];
-                const payments = subscription?.payments?.sort((a: any, b: any) => a.installment_number - b.installment_number) || [];
-                return (
-                  <>
-                    <DialogHeader>
-                      <DialogTitle className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/20 flex items-center justify-center">
-                          <Receipt className="h-5 w-5 text-green-600" />
-                        </div>
-                        <div>
-                          <div>{selectedPaymentReg.student_name}</div>
-                          <p className="text-sm font-normal text-muted-foreground">
-                            {subscription?.subscription_type === "monthly" ? "اشتراك شهري" : "اشتراك سنوي"} - {Number(subscription?.value).toLocaleString()} ج.م
-                          </p>
-                        </div>
-                      </DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-3 mt-2">
-                      {payments.map((payment: any) => (
-                        <div
-                          key={payment.id}
-                          className={`p-3 sm:p-4 rounded-xl border transition-all ${
-                            payment.status === "paid"
-                              ? "bg-green-50/50 border-green-200 dark:bg-green-950/20 dark:border-green-800/30"
-                              : payment.status === "overdue"
-                              ? "bg-red-50/50 border-red-200 dark:bg-red-950/20 dark:border-red-800/30"
-                              : "bg-muted/30 border-border"
-                          }`}
-                        >
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs sm:text-sm font-semibold">القسط {payment.installment_number}</span>
-                              <Badge
-                                variant={payment.status === "paid" ? "default" : payment.status === "overdue" ? "destructive" : "secondary"}
-                                className="text-[10px] h-5"
-                              >
-                                {paymentStatusLabels[payment.status]?.icon}
-                                <span className="mr-1">{paymentStatusLabels[payment.status]?.label}</span>
-                              </Badge>
-                            </div>
-                            <span className="font-bold text-xs sm:text-sm">{Number(payment.amount).toLocaleString()} ج.م</span>
-                          </div>
-                          <div className="flex items-center justify-between text-[10px] sm:text-xs text-muted-foreground">
-                            <span>الاستحقاق: {format(new Date(payment.due_date), "dd MMM yyyy", { locale: ar })}</span>
-                            {payment.paid_date && (
-                              <span>تم الدفع: {format(new Date(payment.paid_date), "dd MMM yyyy", { locale: ar })}</span>
-                            )}
-                          </div>
-                          {payment.status !== "paid" && (
-                            <Button
-                              size="sm"
-                              className="w-full mt-3 gap-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-md text-xs sm:text-sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toast({ title: "الدفع الإلكتروني", description: "سيتم تفعيل الدفع الإلكتروني قريباً" });
-                              }}
-                            >
-                              <Wallet className="h-4 w-4" />
-                              ادفع الآن
-                            </Button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                );
-              })()}
-            </DialogContent>
-          </Dialog>
+      case "absences":
+        return <AbsenceRegistration />;
 
-          <TabsContent value="absences">
-            <AbsenceRegistration />
-          </TabsContent>
+      case "chat":
+        return <ParentChat />;
 
-          <TabsContent value="chat">
-            <ParentChat />
-          </TabsContent>
-        </Tabs>
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
+      {/* Top Navbar - BusTrack style */}
+      <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-xl">
+        <div className="container mx-auto px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <img src={seaterLogo} alt="Seater" className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl shadow-md" />
+            <div>
+              <h1 className="text-base sm:text-lg font-bold text-foreground">Seater</h1>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">Parent Portal</p>
+            </div>
+          </div>
+
+          {/* Desktop nav tabs */}
+          <nav className="hidden md:flex items-center gap-1">
+            {navItems.map((item) => (
+              <button
+                key={item.key}
+                onClick={() => setActiveTab(item.key)}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  activeTab === item.key
+                    ? "bg-primary text-primary-foreground shadow-md"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </nav>
+
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="hidden sm:block text-right">
+              <p className="text-sm font-medium truncate max-w-[120px]">{parentAccount?.parent_name}</p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground hover:text-destructive h-8 px-2 sm:px-3"
+              onClick={signOut}
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Mobile bottom-style nav inside header for scrollable tabs */}
+        <div className="md:hidden border-t overflow-x-auto">
+          <div className="flex items-center gap-0.5 px-2 py-1.5">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.key}
+                  onClick={() => setActiveTab(item.key)}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-colors shrink-0 ${
+                    activeTab === item.key
+                      ? "bg-primary text-primary-foreground shadow-md"
+                      : "text-muted-foreground hover:bg-muted"
+                  }`}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {item.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </header>
+
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 max-w-4xl">
+        {renderContent()}
       </main>
+
+      {/* Payment Detail Dialog */}
+      <Dialog open={!!selectedPaymentReg} onOpenChange={() => setSelectedPaymentReg(null)}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto mx-2 sm:mx-auto">
+          {selectedPaymentReg && (() => {
+            const subscription = selectedPaymentReg.subscriptions?.[0];
+            const payments = subscription?.payments?.sort((a: any, b: any) => a.installment_number - b.installment_number) || [];
+            return (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/20 flex items-center justify-center">
+                      <Receipt className="h-5 w-5 text-green-600" />
+                    </div>
+                    <div>
+                      <div>{selectedPaymentReg.student_name}</div>
+                      <p className="text-sm font-normal text-muted-foreground">
+                        {subscription?.subscription_type === "monthly" ? "Monthly" : "Yearly"} - {Number(subscription?.value).toLocaleString()} EGP
+                      </p>
+                    </div>
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-3 mt-2">
+                  {payments.map((payment: any) => (
+                    <div
+                      key={payment.id}
+                      className={`p-3 sm:p-4 rounded-xl border transition-all ${
+                        payment.status === "paid"
+                          ? "bg-green-50/50 border-green-200 dark:bg-green-950/20 dark:border-green-800/30"
+                          : payment.status === "overdue"
+                          ? "bg-red-50/50 border-red-200 dark:bg-red-950/20 dark:border-red-800/30"
+                          : "bg-muted/30 border-border"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs sm:text-sm font-semibold">Installment {payment.installment_number}</span>
+                          <Badge
+                            variant={payment.status === "paid" ? "default" : payment.status === "overdue" ? "destructive" : "secondary"}
+                            className="text-[10px] h-5"
+                          >
+                            {paymentStatusLabels[payment.status]?.icon}
+                            <span className="ml-1">{paymentStatusLabels[payment.status]?.label}</span>
+                          </Badge>
+                        </div>
+                        <span className="font-bold text-xs sm:text-sm">{Number(payment.amount).toLocaleString()} EGP</span>
+                      </div>
+                      <div className="flex items-center justify-between text-[10px] sm:text-xs text-muted-foreground">
+                        <span>Due: {format(new Date(payment.due_date), "dd MMM yyyy")}</span>
+                        {payment.paid_date && (
+                          <span>Paid: {format(new Date(payment.paid_date), "dd MMM yyyy")}</span>
+                        )}
+                      </div>
+                      {payment.status !== "paid" && (
+                        <Button
+                          size="sm"
+                          className="w-full mt-3 gap-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-md text-xs sm:text-sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toast({ title: "Online Payment", description: "Online payment will be available soon" });
+                          }}
+                        >
+                          <Wallet className="h-4 w-4" />
+                          Pay Now
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
 
       <SetPasswordDialog
         open={showPasswordDialog}
