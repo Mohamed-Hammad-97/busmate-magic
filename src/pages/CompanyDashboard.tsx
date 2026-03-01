@@ -5,17 +5,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
-  Building2, LogOut, Truck, FileText, Users, MapPin, Clock,
+  Building2, Truck, FileText, Users, MapPin, Clock,
   CheckCircle, XCircle, User, Copy, Link2, Bus, Navigation,
-  Shield, MessageCircle,
+  Menu,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import seaterLogo from "@/assets/seater-logo.jpg";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { GoogleMapsProvider } from "@/components/maps/GoogleMapsProvider";
 import { CompanyLiveTracking } from "@/components/corporate/CompanyLiveTracking";
@@ -23,6 +21,10 @@ import { CompanyDriversView } from "@/components/corporate/CompanyDriversView";
 import { CompanyAccountsManager } from "@/components/corporate/CompanyAccountsManager";
 import { CompanyNotificationBell } from "@/components/corporate/CompanyNotificationBell";
 import { CompanyChatView } from "@/components/corporate/CompanyChatView";
+import { CompanyPortalSidebar } from "@/components/corporate/CompanyPortalSidebar";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { cn } from "@/lib/utils";
+import seaterLogo from "@/assets/seater-logo.jpg";
 
 function useCompanyPortalData(action: string, token: string | null, options?: { refetchInterval?: number }) {
   return useQuery({
@@ -42,9 +44,11 @@ function useCompanyPortalData(action: string, token: string | null, options?: { 
 }
 
 export default function CompanyDashboard() {
-  const { account, token, signOut } = useCompanyAuth();
+  const { account, token } = useCompanyAuth();
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
+  const [activeTab, setActiveTab] = useState("dashboard");
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
   const [comment, setComment] = useState("");
@@ -74,12 +78,12 @@ export default function CompanyDashboard() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["company-portal", "get-invoices"] });
-      toast.success("تم تحديث حالة الفاتورة");
+      toast.success("Invoice status updated");
       setInvoiceDialogOpen(false);
       setSelectedInvoice(null);
       setComment("");
     },
-    onError: () => toast.error("حدث خطأ"),
+    onError: () => toast.error("An error occurred"),
   });
 
   const activeLines = lines.filter((l: any) => l.is_active).length;
@@ -88,132 +92,87 @@ export default function CompanyDashboard() {
 
   const copyFormLink = () => {
     navigator.clipboard.writeText(formLink);
-    toast.success("تم نسخ رابط التسجيل");
+    toast.success("Registration link copied");
   };
 
   const getApprovalBadge = (status: string) => {
     switch (status) {
-      case "approved": return <Badge className="bg-green-100 text-green-700 border-green-200">معتمدة</Badge>;
-      case "rejected": return <Badge className="bg-red-100 text-red-700 border-red-200">مرفوضة</Badge>;
-      default: return <Badge className="bg-amber-100 text-amber-700 border-amber-200">في الانتظار</Badge>;
+      case "approved": return <Badge className="bg-green-100 text-green-700 border-green-200">Approved</Badge>;
+      case "rejected": return <Badge className="bg-red-100 text-red-700 border-red-200">Rejected</Badge>;
+      default: return <Badge className="bg-amber-100 text-amber-700 border-amber-200">Pending</Badge>;
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-xl">
-        <div className="container mx-auto px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2.5 sm:gap-3">
-            <img src={seaterLogo} alt="Seater" className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl shadow-md" />
-            <div>
-              <h1 className="text-base sm:text-lg font-bold text-foreground">Seater</h1>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">بوابة الشركات</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            <CompanyNotificationBell />
-            <div className="hidden sm:block text-left">
-              <p className="text-sm font-medium truncate max-w-[150px]">{account?.company_name}</p>
-              <p className="text-xs text-muted-foreground">{account?.full_name}</p>
-            </div>
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive h-8 px-2 sm:px-3" onClick={signOut}>
-              <LogOut className="h-4 w-4" />
-              <span className="hidden sm:inline mr-1">خروج</span>
-            </Button>
-          </div>
-        </div>
-      </header>
+  // Sidebar width for main content offset
+  const sidebarOffset = isMobile ? "" : "pl-64";
 
-      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6 max-w-5xl">
-        {/* Welcome Card */}
-        <Card className="overflow-hidden border-0 shadow-xl rounded-2xl">
-          <div className="h-20 sm:h-28 bg-gradient-to-r from-primary via-primary/80 to-primary/60 rounded-t-2xl" />
-          <CardContent className="relative -mt-7 sm:-mt-9 pb-4 sm:pb-5 px-4 sm:px-5">
-            <div className="flex items-end gap-3 sm:gap-4">
-              <div className="h-14 w-14 sm:h-[72px] sm:w-[72px] rounded-2xl bg-background border-4 border-background shadow-xl flex items-center justify-center shrink-0">
-                <Building2 className="h-8 w-8 sm:h-10 sm:w-10 text-primary" />
-              </div>
-              <div className="pb-0.5 min-w-0">
-                <h2 className="text-lg sm:text-xl font-bold truncate">{account?.company_name}</h2>
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs sm:text-sm text-muted-foreground">
-                  <span className="flex items-center gap-1.5"><User className="h-3.5 w-3.5 text-primary" />{account?.full_name}</span>
-                  <span className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-primary" />{account?.company_city}</span>
+  const renderContent = () => {
+    switch (activeTab) {
+      case "dashboard":
+        return (
+          <div className="space-y-6">
+            {/* Welcome Card */}
+            <Card className="overflow-hidden border-0 shadow-xl rounded-2xl">
+              <div className="h-24 sm:h-32 bg-gradient-to-r from-primary via-primary/80 to-primary/60 rounded-t-2xl" />
+              <CardContent className="relative -mt-8 sm:-mt-10 pb-5 px-5 sm:px-6">
+                <div className="flex items-end gap-4">
+                  <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl bg-background border-4 border-background shadow-xl flex items-center justify-center shrink-0">
+                    <Building2 className="h-9 w-9 sm:h-11 sm:w-11 text-primary" />
+                  </div>
+                  <div className="pb-1 min-w-0">
+                    <h2 className="text-xl sm:text-2xl font-bold truncate">{account?.company_name}</h2>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-sm text-muted-foreground">
+                      <span className="flex items-center gap-1.5"><User className="h-3.5 w-3.5 text-primary" />{account?.full_name}</span>
+                      <span className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-primary" />{account?.company_city}</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              </CardContent>
+            </Card>
+
+            {/* Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <Card className="border-0 shadow-md bg-gradient-to-br from-primary/5 to-primary/10">
+                <CardContent className="pt-4 pb-3 px-4 text-center">
+                  <Truck className="h-5 w-5 mx-auto text-primary mb-1" />
+                  <div className="text-2xl font-bold text-primary">{lines.length}</div>
+                  <p className="text-xs text-muted-foreground">Lines</p>
+                </CardContent>
+              </Card>
+              <Card className="border-0 shadow-md bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-900/20">
+                <CardContent className="pt-4 pb-3 px-4 text-center">
+                  <CheckCircle className="h-5 w-5 mx-auto text-green-600 mb-1" />
+                  <div className="text-2xl font-bold text-green-600">{activeLines}</div>
+                  <p className="text-xs text-muted-foreground">Active</p>
+                </CardContent>
+              </Card>
+              <Card className="border-0 shadow-md bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950/30 dark:to-amber-900/20">
+                <CardContent className="pt-4 pb-3 px-4 text-center">
+                  <FileText className="h-5 w-5 mx-auto text-amber-600 mb-1" />
+                  <div className="text-2xl font-bold text-amber-600">{pendingInvoices}</div>
+                  <p className="text-xs text-muted-foreground">Pending Invoices</p>
+                </CardContent>
+              </Card>
+              <Card className="border-0 shadow-md bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/20">
+                <CardContent className="pt-4 pb-3 px-4 text-center">
+                  <Bus className="h-5 w-5 mx-auto text-blue-600 mb-1" />
+                  <div className="text-2xl font-bold text-blue-600">{activeTrips.length}</div>
+                  <p className="text-xs text-muted-foreground">Active Trips</p>
+                </CardContent>
+              </Card>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Stats */}
-        <div className="grid grid-cols-4 gap-2 sm:gap-3">
-          <Card className="border-0 shadow-md bg-gradient-to-br from-primary/5 to-primary/10">
-            <CardContent className="pt-3 sm:pt-4 pb-2 sm:pb-3 px-2 sm:px-4 text-center">
-              <Truck className="h-4 w-4 sm:h-5 sm:w-5 mx-auto text-primary mb-1" />
-              <div className="text-xl sm:text-2xl font-bold text-primary">{lines.length}</div>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">خطوط</p>
-            </CardContent>
-          </Card>
-          <Card className="border-0 shadow-md bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-900/20">
-            <CardContent className="pt-3 sm:pt-4 pb-2 sm:pb-3 px-2 sm:px-4 text-center">
-              <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mx-auto text-green-600 mb-1" />
-              <div className="text-xl sm:text-2xl font-bold text-green-600">{activeLines}</div>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">نشطة</p>
-            </CardContent>
-          </Card>
-          <Card className="border-0 shadow-md bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950/30 dark:to-amber-900/20">
-            <CardContent className="pt-3 sm:pt-4 pb-2 sm:pb-3 px-2 sm:px-4 text-center">
-              <FileText className="h-4 w-4 sm:h-5 sm:w-5 mx-auto text-amber-600 mb-1" />
-              <div className="text-xl sm:text-2xl font-bold text-amber-600">{pendingInvoices}</div>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">فواتير معلقة</p>
-            </CardContent>
-          </Card>
-          <Card className="border-0 shadow-md bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/20">
-            <CardContent className="pt-3 sm:pt-4 pb-2 sm:pb-3 px-2 sm:px-4 text-center">
-              <Bus className="h-4 w-4 sm:h-5 sm:w-5 mx-auto text-blue-600 mb-1" />
-              <div className="text-xl sm:text-2xl font-bold text-blue-600">{activeTrips.length}</div>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">رحلات نشطة</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Tabs */}
-        <Tabs defaultValue="lines" className="space-y-4">
-          <div className="overflow-x-auto -mx-3 px-3">
-            <TabsList className="inline-flex h-11 sm:h-12 bg-muted/50 p-1 rounded-xl gap-1 min-w-max">
-              <TabsTrigger value="lines" className="rounded-lg gap-1 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md px-3">
-                <Truck className="h-4 w-4" /><span className="hidden sm:inline">الخطوط</span>
-              </TabsTrigger>
-              <TabsTrigger value="tracking" className="rounded-lg gap-1 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md px-3">
-                <Navigation className="h-4 w-4" /><span className="hidden sm:inline">التتبع</span>
-              </TabsTrigger>
-              <TabsTrigger value="drivers" className="rounded-lg gap-1 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md px-3">
-                <User className="h-4 w-4" /><span className="hidden sm:inline">الطاقم</span>
-              </TabsTrigger>
-              <TabsTrigger value="invoices" className="rounded-lg gap-1 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md px-3">
-                <FileText className="h-4 w-4" /><span className="hidden sm:inline">الفواتير</span>
-              </TabsTrigger>
-              <TabsTrigger value="employees" className="rounded-lg gap-1 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md px-3">
-                <Users className="h-4 w-4" /><span className="hidden sm:inline">الموظفون</span>
-              </TabsTrigger>
-              <TabsTrigger value="chat" className="rounded-lg gap-1 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md px-3">
-                <MessageCircle className="h-4 w-4" /><span className="hidden sm:inline">المحادثات</span>
-              </TabsTrigger>
-              {account?.role === "admin" && (
-                <TabsTrigger value="accounts" className="rounded-lg gap-1 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md px-3">
-                  <Shield className="h-4 w-4" /><span className="hidden sm:inline">الحسابات</span>
-                </TabsTrigger>
-              )}
-            </TabsList>
           </div>
+        );
 
-          {/* Lines Tab */}
-          <TabsContent value="lines" className="space-y-4">
+      case "lines":
+        return (
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold">Transport Lines</h2>
             {lines.length === 0 ? (
               <Card className="border-0 shadow-md">
                 <CardContent className="py-12 text-center text-muted-foreground">
                   <Truck className="h-12 w-12 mx-auto mb-3 text-muted-foreground/40" />
-                  <p>لا توجد خطوط مسجلة</p>
+                  <p>No lines registered</p>
                 </CardContent>
               </Card>
             ) : (
@@ -225,16 +184,16 @@ export default function CompanyDashboard() {
                       <div className="flex items-start justify-between">
                         <h3 className="font-bold text-base">{line.name}</h3>
                         {line.is_active ? (
-                          <Badge className="bg-green-100 text-green-700 border-green-200 text-xs">نشط</Badge>
+                          <Badge className="bg-green-100 text-green-700 border-green-200 text-xs">Active</Badge>
                         ) : (
-                          <Badge variant="secondary" className="text-xs">غير نشط</Badge>
+                          <Badge variant="secondary" className="text-xs">Inactive</Badge>
                         )}
                       </div>
                       {line.route_details && <p className="text-sm text-muted-foreground">{line.route_details}</p>}
                       <div className="space-y-1.5 text-sm">
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <Clock className="h-3.5 w-3.5" />
-                          <span>{line.number_of_shifts} شفتات</span>
+                          <span>{line.number_of_shifts} shifts</span>
                           {line.shift_times && Array.isArray(line.shift_times) && line.shift_times.length > 0 && (
                             <span className="text-xs">({(line.shift_times as string[]).join(", ")})</span>
                           )}
@@ -242,13 +201,13 @@ export default function CompanyDashboard() {
                         {line.drivers && (
                           <div className="flex items-center gap-2 text-muted-foreground">
                             <User className="h-3.5 w-3.5" />
-                            <span>السائق: {line.drivers.full_name}</span>
+                            <span>Driver: {line.drivers.full_name}</span>
                           </div>
                         )}
                         {line.supervisors && (
                           <div className="flex items-center gap-2 text-muted-foreground">
                             <User className="h-3.5 w-3.5" />
-                            <span>المشرف: {line.supervisors.full_name}</span>
+                            <span>Supervisor: {line.supervisors.full_name}</span>
                           </div>
                         )}
                       </div>
@@ -257,27 +216,36 @@ export default function CompanyDashboard() {
                 ))}
               </div>
             )}
-          </TabsContent>
+          </div>
+        );
 
-          {/* Tracking Tab */}
-          <TabsContent value="tracking" className="space-y-4">
+      case "tracking":
+        return (
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold">Live Tracking</h2>
             <GoogleMapsProvider>
               <CompanyLiveTracking trips={activeTrips} />
             </GoogleMapsProvider>
-          </TabsContent>
+          </div>
+        );
 
-          {/* Drivers Tab */}
-          <TabsContent value="drivers" className="space-y-4">
+      case "drivers":
+        return (
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold">Drivers & Staff</h2>
             <CompanyDriversView staff={staff} />
-          </TabsContent>
+          </div>
+        );
 
-          {/* Invoices Tab */}
-          <TabsContent value="invoices" className="space-y-4">
+      case "invoices":
+        return (
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold">Invoices</h2>
             {invoices.length === 0 ? (
               <Card className="border-0 shadow-md">
                 <CardContent className="py-12 text-center text-muted-foreground">
                   <FileText className="h-12 w-12 mx-auto mb-3 text-muted-foreground/40" />
-                  <p>لا توجد فواتير</p>
+                  <p>No invoices</p>
                 </CardContent>
               </Card>
             ) : (
@@ -291,22 +259,25 @@ export default function CompanyDashboard() {
                           {getApprovalBadge(inv.company_approval_status)}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          الفترة: {format(new Date(inv.period_start), "dd/MM/yyyy")} - {format(new Date(inv.period_end), "dd/MM/yyyy")}
+                          Period: {format(new Date(inv.period_start), "dd/MM/yyyy")} - {format(new Date(inv.period_end), "dd/MM/yyyy")}
                         </p>
                       </div>
-                      <div className="text-left shrink-0">
+                      <div className="text-right shrink-0">
                         <div className="font-bold text-base text-primary">{Number(inv.total_amount).toLocaleString()}</div>
-                        <p className="text-xs text-muted-foreground">ج.م</p>
+                        <p className="text-xs text-muted-foreground">EGP</p>
                       </div>
                     </CardContent>
                   </Card>
                 ))}
               </div>
             )}
-          </TabsContent>
+          </div>
+        );
 
-          {/* Employees Tab */}
-          <TabsContent value="employees" className="space-y-4">
+      case "employees":
+        return (
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold">Employees</h2>
             <Card className="border-0 shadow-md bg-gradient-to-r from-primary/5 to-primary/10">
               <CardContent className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
@@ -314,13 +285,13 @@ export default function CompanyDashboard() {
                     <Link2 className="h-5 w-5 text-primary" />
                   </div>
                   <div className="min-w-0">
-                    <p className="font-medium text-sm">رابط تسجيل الموظفين</p>
+                    <p className="font-medium text-sm">Employee Registration Link</p>
                     <p className="text-xs text-muted-foreground truncate max-w-[250px]">{formLink}</p>
                   </div>
                 </div>
                 <Button size="sm" variant="outline" className="gap-2 shrink-0" onClick={copyFormLink}>
                   <Copy className="h-4 w-4" />
-                  نسخ الرابط
+                  Copy Link
                 </Button>
               </CardContent>
             </Card>
@@ -328,8 +299,8 @@ export default function CompanyDashboard() {
               <Card className="border-0 shadow-md">
                 <CardContent className="py-12 text-center text-muted-foreground">
                   <Users className="h-12 w-12 mx-auto mb-3 text-muted-foreground/40" />
-                  <p className="font-medium mb-1">لا يوجد موظفون مسجلون</p>
-                  <p className="text-sm">شارك رابط التسجيل مع موظفيك</p>
+                  <p className="font-medium mb-1">No registered employees</p>
+                  <p className="text-sm">Share the registration link with your employees</p>
                 </CardContent>
               </Card>
             ) : (
@@ -341,9 +312,9 @@ export default function CompanyDashboard() {
                         <div className="flex items-center gap-2 mb-1">
                           <h4 className="font-semibold text-sm">{emp.full_name}</h4>
                           {emp.is_active ? (
-                            <Badge className="bg-green-100 text-green-700 border-green-200 text-[10px]">نشط</Badge>
+                            <Badge className="bg-green-100 text-green-700 border-green-200 text-[10px]">Active</Badge>
                           ) : (
-                            <Badge variant="secondary" className="text-[10px]">غير نشط</Badge>
+                            <Badge variant="secondary" className="text-[10px]">Inactive</Badge>
                           )}
                         </div>
                         <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
@@ -363,62 +334,118 @@ export default function CompanyDashboard() {
                 ))}
               </div>
             )}
-          </TabsContent>
+          </div>
+        );
 
-          {/* Chat Tab */}
-          <TabsContent value="chat">
+      case "chat":
+        return (
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold">Chat</h2>
             <CompanyChatView />
-          </TabsContent>
+          </div>
+        );
 
-          {/* Accounts Tab */}
-          {account?.role === "admin" && (
-            <TabsContent value="accounts" className="space-y-4">
-              <CompanyAccountsManager accounts={accounts} />
-            </TabsContent>
+      case "accounts":
+        return (
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold">Accounts Management</h2>
+            <CompanyAccountsManager accounts={accounts} />
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-background relative">
+      {/* Background effects */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/[0.03] rounded-full -translate-y-1/2 translate-x-1/3 blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-primary/[0.03] rounded-full translate-y-1/3 -translate-x-1/4 blur-3xl" />
+      </div>
+
+      {/* Desktop Sidebar */}
+      {!isMobile && <CompanyPortalSidebar activeTab={activeTab} onTabChange={setActiveTab} />}
+
+      {/* Mobile Header */}
+      {isMobile && (
+        <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-xl">
+          <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex items-center gap-3">
+              <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-9 w-9">
+                    <Menu className="h-5 w-5" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="p-0 w-[280px] border-0">
+                  <CompanyPortalSidebar activeTab={activeTab} onTabChange={setActiveTab} onMobileNavigate={() => setMobileOpen(false)} />
+                </SheetContent>
+              </Sheet>
+              <div className="flex items-center gap-2">
+                <img src={seaterLogo} alt="Seater" className="h-8 w-8 rounded-lg object-cover" />
+                <span className="font-bold text-foreground">Seater</span>
+              </div>
+            </div>
+            <CompanyNotificationBell />
+          </div>
+        </header>
+      )}
+
+      <main className={cn("relative z-10 transition-all duration-300", isMobile ? "" : "pl-64")}>
+        <div className={isMobile ? "p-4" : "p-8"}>
+          {/* Desktop header bar */}
+          {!isMobile && (
+            <div className="flex items-center justify-end mb-6">
+              <CompanyNotificationBell />
+            </div>
           )}
-        </Tabs>
+          {renderContent()}
+        </div>
       </main>
 
       {/* Invoice Review Dialog */}
       <Dialog open={invoiceDialogOpen} onOpenChange={(open) => { setInvoiceDialogOpen(open); if (!open) { setSelectedInvoice(null); setComment(""); } }}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>مراجعة الفاتورة - {selectedInvoice?.invoice_number}</DialogTitle>
+            <DialogTitle>Review Invoice - {selectedInvoice?.invoice_number}</DialogTitle>
           </DialogHeader>
           {selectedInvoice && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <p className="text-muted-foreground">الفترة</p>
+                  <p className="text-muted-foreground">Period</p>
                   <p className="font-medium">{format(new Date(selectedInvoice.period_start), "dd/MM/yyyy")} - {format(new Date(selectedInvoice.period_end), "dd/MM/yyyy")}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">المبلغ الإجمالي</p>
-                  <p className="font-bold text-primary text-lg">{Number(selectedInvoice.total_amount).toLocaleString()} ج.م</p>
+                  <p className="text-muted-foreground">Total Amount</p>
+                  <p className="font-bold text-primary text-lg">{Number(selectedInvoice.total_amount).toLocaleString()} EGP</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">حالة المراجعة</p>
+                  <p className="text-muted-foreground">Review Status</p>
                   {getApprovalBadge(selectedInvoice.company_approval_status)}
                 </div>
                 <div>
-                  <p className="text-muted-foreground">حالة الدفع</p>
+                  <p className="text-muted-foreground">Payment Status</p>
                   <Badge variant={selectedInvoice.status === "paid" ? "default" : "secondary"}>
-                    {selectedInvoice.status === "paid" ? "مدفوعة" : selectedInvoice.status === "issued" ? "صادرة" : "مسودة"}
+                    {selectedInvoice.status === "paid" ? "Paid" : selectedInvoice.status === "issued" ? "Issued" : "Draft"}
                   </Badge>
                 </div>
               </div>
 
               {selectedInvoice.line_items && Array.isArray(selectedInvoice.line_items) && (selectedInvoice.line_items as any[]).length > 0 && (
                 <div>
-                  <p className="text-sm font-medium mb-2">بنود الفاتورة</p>
+                  <p className="text-sm font-medium mb-2">Invoice Items</p>
                   <div className="border rounded-xl overflow-hidden">
                     <table className="w-full text-sm">
-                      <thead className="bg-muted/50"><tr><th className="text-right p-2">البند</th><th className="text-right p-2">المبلغ</th></tr></thead>
+                      <thead className="bg-muted/50"><tr><th className="text-left p-2">Item</th><th className="text-left p-2">Amount</th></tr></thead>
                       <tbody>
                         {(selectedInvoice.line_items as any[]).map((item: any, i: number) => (
                           <tr key={i} className="border-t">
-                            <td className="p-2">{item.name || item.line_name || `بند ${i + 1}`}</td>
-                            <td className="p-2 font-medium">{Number(item.amount || item.total || 0).toLocaleString()} ج.م</td>
+                            <td className="p-2">{item.name || item.line_name || `Item ${i + 1}`}</td>
+                            <td className="p-2 font-medium">{Number(item.amount || item.total || 0).toLocaleString()} EGP</td>
                           </tr>
                         ))}
                       </tbody>
@@ -428,24 +455,24 @@ export default function CompanyDashboard() {
               )}
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">تعليق / ملاحظات</label>
-                <Textarea value={comment} onChange={(e) => setComment(e.target.value)} placeholder="أضف تعليقك على الفاتورة..." rows={3} />
+                <label className="text-sm font-medium">Comment / Notes</label>
+                <Textarea value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Add your comment on the invoice..." rows={3} />
               </div>
 
               {selectedInvoice.company_approval_status === "pending" && (
                 <div className="flex gap-3">
                   <Button className="flex-1 gap-2 bg-green-600 hover:bg-green-700" onClick={() => updateInvoiceMutation.mutate({ id: selectedInvoice.id, status: "approved", comment })} disabled={updateInvoiceMutation.isPending}>
-                    <CheckCircle className="h-4 w-4" />اعتماد الفاتورة
+                    <CheckCircle className="h-4 w-4" />Approve
                   </Button>
                   <Button variant="destructive" className="flex-1 gap-2" onClick={() => updateInvoiceMutation.mutate({ id: selectedInvoice.id, status: "rejected", comment })} disabled={updateInvoiceMutation.isPending}>
-                    <XCircle className="h-4 w-4" />رفض
+                    <XCircle className="h-4 w-4" />Reject
                   </Button>
                 </div>
               )}
 
               {selectedInvoice.company_approval_status !== "pending" && (
                 <Button variant="outline" className="w-full" onClick={() => updateInvoiceMutation.mutate({ id: selectedInvoice.id, status: "pending", comment })} disabled={updateInvoiceMutation.isPending}>
-                  إعادة فتح المراجعة
+                  Reopen Review
                 </Button>
               )}
             </div>

@@ -18,8 +18,16 @@ import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import {
   Building2, Plus, Search, Edit, MapPin, User, Truck,
-  TrendingUp, Eye, CalendarDays, CreditCard, FileText, DollarSign,
+  TrendingUp, Eye, CalendarDays, CreditCard, FileText, DollarSign, Trash2,
 } from 'lucide-react';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  Select as UISelect, SelectContent as UISelectContent, SelectItem as UISelectItem,
+  SelectTrigger as UISelectTrigger, SelectValue as UISelectValue,
+} from '@/components/ui/select';
 import { PageHero } from '@/components/layout/PageHero';
 import { CompanyLinesManagement } from '@/components/corporate/CompanyLinesManagement';
 import { CorporateAttendance } from '@/components/corporate/CorporateAttendance';
@@ -51,11 +59,21 @@ const Corporate = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [companyDialogOpen, setCompanyDialogOpen] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<any>(null);
+  const [companyToDelete, setCompanyToDelete] = useState<any>(null);
   const [selectedCompanyForLines, setSelectedCompanyForLines] = useState<any>(null);
   const [companyForm, setCompanyForm] = useState({
     name: '', city: '', location_address: '', contact_person_name: '',
     contact_person_phone: '', notes: '', is_active: true,
     supervisor_email: '', supervisor_password: '',
+  });
+
+  const { data: cities = [] } = useQuery({
+    queryKey: ['cities-list'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('cities').select('id, name').eq('is_active', true).order('name');
+      if (error) throw error;
+      return data;
+    },
   });
 
   const { data: companies = [], isLoading } = useQuery({
@@ -115,6 +133,31 @@ const Corporate = () => {
       resetForm();
     },
     onError: () => toast.error('حدث خطأ'),
+  });
+
+  const deleteCompanyMutation = useMutation({
+    mutationFn: async (companyId: string) => {
+      const { data: lineIds } = await supabase.from('company_lines').select('id').eq('company_id', companyId);
+      const ids = (lineIds || []).map((l: any) => l.id as string);
+      if (ids.length > 0) {
+        await supabase.from('corporate_driver_attendance').delete().in('company_line_id', ids);
+      }
+      await supabase.from('company_portal_messages').delete().eq('company_id', companyId);
+      await supabase.from('company_notifications').delete().eq('company_id', companyId);
+      await supabase.from('company_invoices').delete().eq('company_id', companyId);
+      await supabase.from('company_accounts').delete().eq('company_id', companyId);
+      await supabase.from('company_employees').delete().eq('company_id', companyId);
+      await supabase.from('company_lines').delete().eq('company_id', companyId);
+      const { error } = await supabase.from('companies').delete().eq('id', companyId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+      queryClient.invalidateQueries({ queryKey: ['company-lines-count'] });
+      toast.success('Company and all its data deleted successfully');
+      setCompanyToDelete(null);
+    },
+    onError: () => toast.error('Error deleting company'),
   });
 
   const resetForm = () => {
@@ -259,6 +302,11 @@ const Corporate = () => {
                                 <Edit className="h-4 w-4" />
                               </Button>
                             )}
+                            {isSuperAdmin && (
+                              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-destructive/10 hover:text-destructive" onClick={(e) => { e.stopPropagation(); setCompanyToDelete(company); }}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
                           </div>
                         </div>
 
@@ -335,7 +383,14 @@ const Corporate = () => {
               </div>
               <div className="space-y-2">
                 <Label>{t('corporateMgmt.city')} *</Label>
-                <Input value={companyForm.city} onChange={(e) => setCompanyForm({ ...companyForm, city: e.target.value })} />
+                <UISelect value={companyForm.city} onValueChange={(v) => setCompanyForm({ ...companyForm, city: v })}>
+                  <UISelectTrigger><UISelectValue placeholder="Select city..." /></UISelectTrigger>
+                  <UISelectContent>
+                    {cities.map((c: any) => (
+                      <UISelectItem key={c.id} value={c.name}>{c.name}</UISelectItem>
+                    ))}
+                  </UISelectContent>
+                </UISelect>
               </div>
             </div>
             <div className="space-y-2">
@@ -405,6 +460,27 @@ const Corporate = () => {
           </div>
         </DialogContent>
       </Dialog>
+      {/* Delete Company Confirmation */}
+      <AlertDialog open={!!companyToDelete} onOpenChange={(open) => { if (!open) setCompanyToDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Company</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to permanently delete <strong>{companyToDelete?.name}</strong> and all its data (lines, employees, invoices, accounts, attendance)? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => companyToDelete && deleteCompanyMutation.mutate(companyToDelete.id)}
+              disabled={deleteCompanyMutation.isPending}
+            >
+              {deleteCompanyMutation.isPending ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 };
