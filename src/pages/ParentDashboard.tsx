@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect, useRef } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParentAuth } from "@/contexts/ParentAuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import {
   CheckCircle, Clock, AlertCircle, Navigation, MessageCircle,
   CalendarOff, Wallet, Shield, Route, UserCircle, Car,
   ChevronLeft, Receipt, CircleDollarSign, LayoutDashboard, Settings2,
-  TrendingUp,
+  TrendingUp, Camera, Loader2,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { format } from "date-fns";
@@ -26,11 +26,74 @@ import seaterLogo from "@/assets/seater-logo.jpg";
 
 export default function ParentDashboard() {
   const { parentAccount, signOut, user } = useParentAuth();
+  const queryClient = useQueryClient();
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [selectedPaymentReg, setSelectedPaymentReg] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [uploadingPhotoId, setUploadingPhotoId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const isMobile = useIsMobile();
+
+  const uploadPhotoMutation = useMutation({
+    mutationFn: async ({ regId, file }: { regId: string; file: File }) => {
+      setUploadingPhotoId(regId);
+      const ext = file.name.split('.').pop();
+      const filePath = `${parentAccount?.id}/${regId}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from('student-photos')
+        .upload(filePath, file, { upsert: true });
+      if (uploadError) throw uploadError;
+      const { data: { publicUrl } } = supabase.storage
+        .from('student-photos')
+        .getPublicUrl(filePath);
+      const { error: updateError } = await supabase
+        .from('registrations')
+        .update({ student_photo_url: publicUrl } as any)
+        .eq('id', regId);
+      if (updateError) throw updateError;
+      return publicUrl;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["parent-registrations"] });
+      toast({ title: "Photo uploaded", description: "Student photo has been updated" });
+      setUploadingPhotoId(null);
+    },
+    onError: () => {
+      toast({ title: "Upload failed", description: "Could not upload photo", variant: "destructive" });
+      setUploadingPhotoId(null);
+    },
+  });
+
+  const handlePhotoUpload = (regId: string) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) uploadPhotoMutation.mutate({ regId, file });
+    };
+    input.click();
+  };
+
+  const StudentAvatar = ({ reg, size = "md" }: { reg: any; size?: "sm" | "md" | "lg" }) => {
+    const sizeClasses = size === "lg" ? "h-14 w-14" : size === "md" ? "h-11 w-11" : "h-9 w-9";
+    const iconSize = size === "lg" ? "h-7 w-7" : size === "md" ? "h-5 w-5" : "h-4 w-4";
+    if (reg.student_photo_url) {
+      return (
+        <img
+          src={reg.student_photo_url}
+          alt={reg.student_name}
+          className={`${sizeClasses} rounded-xl object-cover border-2 border-background shadow shrink-0`}
+        />
+      );
+    }
+    return (
+      <div className={`${sizeClasses} rounded-xl bg-primary/10 flex items-center justify-center shrink-0`}>
+        <User className={`${iconSize} text-primary`} />
+      </div>
+    );
+  };
 
   useEffect(() => {
     const checkPasswordStatus = async () => {
@@ -148,7 +211,7 @@ export default function ParentDashboard() {
                   </div>
                   <div className="min-w-0">
                     <h2 className="text-xl sm:text-2xl font-bold truncate">Welcome, {parentAccount?.parent_name}</h2>
-                    <p className="text-sm text-primary-foreground/70 mt-0.5">Here's an overview of your transportation system</p>
+                    <p className="text-sm text-primary-foreground/70 mt-0.5">Here's an overview of your account</p>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2.5">
@@ -235,9 +298,7 @@ export default function ParentDashboard() {
                 {registrations.map((reg: any) => (
                   <Card key={reg.id} className="border-0 shadow-sm hover:shadow-md transition-shadow">
                     <CardContent className="p-4 flex items-center gap-3">
-                      <div className="h-11 w-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                        <User className="h-5 w-5 text-primary" />
-                      </div>
+                      <StudentAvatar reg={reg} />
                       <div className="min-w-0 flex-1">
                         <h4 className="font-semibold text-sm truncate">{reg.student_name}</h4>
                         <p className="text-xs text-muted-foreground truncate">{reg.schools?.name} - {reg.grade}</p>
@@ -278,8 +339,16 @@ export default function ParentDashboard() {
                   <CardHeader className="pb-2 px-4 sm:px-6">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl bg-primary/10 flex items-center justify-center">
-                          <User className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+                        {/* Photo with upload overlay */}
+                        <div className="relative group cursor-pointer" onClick={() => handlePhotoUpload(reg.id)}>
+                          <StudentAvatar reg={reg} size="md" />
+                          <div className="absolute inset-0 bg-black/40 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            {uploadingPhotoId === reg.id ? (
+                              <Loader2 className="h-4 w-4 text-white animate-spin" />
+                            ) : (
+                              <Camera className="h-4 w-4 text-white" />
+                            )}
+                          </div>
                         </div>
                         <div>
                           <CardTitle className="text-sm sm:text-base">{reg.student_name}</CardTitle>
@@ -450,9 +519,7 @@ export default function ParentDashboard() {
                       >
                         <CardContent className="p-4">
                           <div className="flex items-start gap-3 mb-3">
-                            <div className="h-11 w-11 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                              <User className="h-5 w-5 text-primary" />
-                            </div>
+                            <StudentAvatar reg={reg} />
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center justify-between">
                                 <h4 className="font-semibold text-sm truncate">{reg.student_name}</h4>
