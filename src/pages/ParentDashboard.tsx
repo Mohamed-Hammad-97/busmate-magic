@@ -44,15 +44,13 @@ export default function ParentDashboard() {
         .from('student-photos')
         .upload(filePath, file, { upsert: true });
       if (uploadError) throw uploadError;
-      const { data: { publicUrl } } = supabase.storage
-        .from('student-photos')
-        .getPublicUrl(filePath);
+      // Store the storage path (not a public URL) since bucket is private
       const { error: updateError } = await supabase
         .from('registrations')
-        .update({ student_photo_url: publicUrl } as any)
+        .update({ student_photo_url: filePath } as any)
         .eq('id', regId);
       if (updateError) throw updateError;
-      return publicUrl;
+      return filePath;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["parent-registrations"] });
@@ -76,13 +74,24 @@ export default function ParentDashboard() {
     input.click();
   };
 
+  const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
+
+  // Helper to get signed/legacy URL for a storage path
+
+  const getPhotoUrl = (storagePath: string | null) => {
+    if (!storagePath) return null;
+    if (storagePath.startsWith('http')) return storagePath;
+    return signedUrls[storagePath] || null;
+  };
+
   const StudentAvatar = ({ reg, size = "md" }: { reg: any; size?: "sm" | "md" | "lg" }) => {
     const sizeClasses = size === "lg" ? "h-14 w-14" : size === "md" ? "h-11 w-11" : "h-9 w-9";
     const iconSize = size === "lg" ? "h-7 w-7" : size === "md" ? "h-5 w-5" : "h-4 w-4";
-    if (reg.student_photo_url) {
+    const photoUrl = getPhotoUrl(reg.student_photo_url);
+    if (photoUrl) {
       return (
         <img
-          src={reg.student_photo_url}
+          src={photoUrl}
           alt={reg.student_name}
           className={`${sizeClasses} rounded-xl object-cover border-2 border-background shadow shrink-0`}
         />
@@ -131,6 +140,17 @@ export default function ParentDashboard() {
         .eq("parent_id", parentAccount.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
+      // Pre-generate signed URLs for all photos
+      for (const reg of (data || [])) {
+        if (reg.student_photo_url && !reg.student_photo_url.startsWith('http')) {
+          supabase.storage.from('student-photos').createSignedUrl(reg.student_photo_url, 3600)
+            .then(({ data: urlData }) => {
+              if (urlData?.signedUrl) {
+                setSignedUrls(prev => ({ ...prev, [reg.student_photo_url!]: urlData.signedUrl }));
+              }
+            });
+        }
+      }
       return data;
     },
     enabled: !!parentAccount?.id,
