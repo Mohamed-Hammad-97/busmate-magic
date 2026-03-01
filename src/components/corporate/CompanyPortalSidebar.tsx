@@ -5,7 +5,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Building2, LogOut, Truck, FileText, Users, Navigation,
   User, Shield, MessageCircle, LayoutDashboard,
-  ChevronLeft, ChevronRight,
+  ChevronLeft, ChevronRight, Settings,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import seaterLogo from "@/assets/seater-logo.jpg";
@@ -32,6 +32,7 @@ const navItems: NavItem[] = [
   { label: "Employees", value: "employees", icon: Users },
   { label: "Chat", value: "chat", icon: MessageCircle },
   { label: "Accounts", value: "accounts", icon: Shield, adminOnly: true },
+  { label: "Settings", value: "settings", icon: Settings },
 ];
 
 interface CompanyPortalSidebarProps {

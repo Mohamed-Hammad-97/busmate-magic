@@ -83,6 +83,31 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ company, lines: lines || [] }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    // Forgot password - public action
+    if (action === "forgot-password-request") {
+      const { email: reqEmail } = data || {};
+      if (!reqEmail) {
+        return new Response(JSON.stringify({ error: "Missing email" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const sbPublic = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+      const { data: companyAccount } = await sbPublic
+        .from("company_accounts")
+        .select("id, email, full_name, company_id, companies(name)")
+        .eq("email", reqEmail.toLowerCase())
+        .maybeSingle();
+
+      if (companyAccount) {
+        await sbPublic.from("company_notifications").insert({
+          company_id: companyAccount.company_id,
+          notification_type: "password_reset_request",
+          title: "Password Reset Request",
+          message: `${companyAccount.full_name} (${companyAccount.email}) from ${(companyAccount as any).companies?.name || 'Unknown'} has requested a password reset.`,
+          metadata: { account_id: companyAccount.id, email: companyAccount.email },
+        });
+      }
+      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     // === AUTHENTICATED ACTIONS ===
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
@@ -438,6 +463,43 @@ Deno.serve(async (req) => {
         if (error) throw error;
         return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
+
+      case "change-password": {
+        const { current_password, new_password } = data || {};
+        if (!current_password || !new_password) {
+          return new Response(JSON.stringify({ error: "Missing current or new password" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+        if (new_password.length < 6) {
+          return new Response(JSON.stringify({ error: "New password must be at least 6 characters" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+
+        // Import verifyPassword
+        const { verifyPassword } = await import("../_shared/password-utils.ts");
+
+        const { data: account, error: accErr } = await supabase
+          .from("company_accounts")
+          .select("id, password_hash")
+          .eq("id", claims.sub)
+          .single();
+        if (accErr || !account) {
+          return new Response(JSON.stringify({ error: "Account not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+
+        const isValid = await verifyPassword(current_password, account.password_hash);
+        if (!isValid) {
+          return new Response(JSON.stringify({ error: "Current password is incorrect" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+
+        const newHash = await hashPassword(new_password);
+        const { error: updateErr } = await supabase
+          .from("company_accounts")
+          .update({ password_hash: newHash, updated_at: new Date().toISOString() })
+          .eq("id", claims.sub);
+        if (updateErr) throw updateErr;
+
+        return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+
 
       default:
         return new Response(JSON.stringify({ error: "Unknown action" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
