@@ -35,6 +35,38 @@ Deno.serve(async (req) => {
       );
     }
 
+    const userId = claimsData.claims.sub;
+
+    // Verify caller is super_admin or has operation_companies department
+    const serviceClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    const { data: roleData } = await serviceClient
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .single();
+
+    const isSuperAdmin = roleData?.role === "super_admin";
+
+    if (!isSuperAdmin) {
+      const { data: empData } = await serviceClient
+        .from("employees")
+        .select("departments")
+        .eq("user_id", userId)
+        .single();
+
+      const hasOpCompanies = empData?.departments?.includes("operation_companies");
+      if (!hasOpCompanies) {
+        return new Response(
+          JSON.stringify({ error: "Forbidden: insufficient permissions" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     const { company_id, email, password, full_name, phone } = await req.json();
 
     if (!company_id || !email || !password || !full_name) {
@@ -51,12 +83,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const serviceClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-
-    // Check if email already exists
+    // Check if email already exists (serviceClient already created above)
     const { data: existing } = await serviceClient
       .from("company_accounts")
       .select("id")
