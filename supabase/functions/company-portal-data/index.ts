@@ -49,6 +49,49 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Handle public actions first (no auth needed)
+    const body = await req.json();
+    const { action, data } = body;
+
+    if (action === "get-public-company-info") {
+      const companyId = data?.company_id;
+      if (!companyId) {
+        return new Response(
+          JSON.stringify({ error: "Missing company_id" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      const supabase = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      );
+      const { data: company } = await supabase
+        .from("companies")
+        .select("id, name, city, is_active")
+        .eq("id", companyId)
+        .eq("is_active", true)
+        .single();
+
+      if (!company) {
+        return new Response(
+          JSON.stringify({ error: "Company not found" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const { data: lines } = await supabase
+        .from("company_lines")
+        .select("id, name, route_details")
+        .eq("company_id", companyId)
+        .eq("is_active", true)
+        .order("name");
+
+      return new Response(
+        JSON.stringify({ company, lines: lines || [] }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(
@@ -68,7 +111,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { action, data } = await req.json();
+    // action and data already parsed from body above
+    const supabase = createClient(
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -136,6 +180,67 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({ success: true }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
+      }
+
+      case "get-employees": {
+        const { data: employees, error } = await supabase
+          .from("company_employees")
+          .select("*, company_lines(name)")
+          .eq("company_id", companyId)
+          .order("created_at", { ascending: false });
+        if (error) throw error;
+        return new Response(JSON.stringify({ employees }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      case "get-live-trips": {
+        // Get driver IDs from company lines
+        const { data: companyLines } = await supabase
+          .from("company_lines")
+          .select("driver_id, supervisor_id, name")
+          .eq("company_id", companyId)
+          .eq("is_active", true);
+
+        const driverIds = (companyLines || []).map((l: any) => l.driver_id).filter(Boolean);
+        const supervisorIds = (companyLines || []).map((l: any) => l.supervisor_id).filter(Boolean);
+
+        if (driverIds.length === 0 && supervisorIds.length === 0) {
+          return new Response(JSON.stringify({ trips: [], lines: companyLines || [] }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        // Find active trips for these drivers
+        let query = supabase
+          .from("live_trips")
+          .select("id, status, current_latitude, current_longitude, started_at, driver_id, supervisor_id, drivers(full_name, phone), supervisors(full_name, phone)")
+          .eq("status", "in_progress");
+
+        if (driverIds.length > 0) {
+          query = query.in("driver_id", driverIds);
+        }
+
+        const { data: trips, error } = await query;
+        if (error) throw error;
+
+        // Map trip to line name
+        const tripsWithLine = (trips || []).map((trip: any) => {
+          const line = (companyLines || []).find((l: any) => l.driver_id === trip.driver_id);
+          return { ...trip, line_name: line?.name || "غير محدد" };
+        });
+
+        return new Response(JSON.stringify({ trips: tripsWithLine, lines: companyLines || [] }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      case "get-public-company-info": {
+        // This action doesn't need auth - handled separately below
+        return new Response(
+          JSON.stringify({ error: "Use public endpoint" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
 
       default:
