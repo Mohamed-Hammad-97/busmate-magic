@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
+import { hashPassword } from "../_shared/password-utils.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,7 +13,6 @@ async function verifyCompanyToken(token: string): Promise<any> {
   const parts = token.split(".");
   if (parts.length !== 3) throw new Error("Invalid token");
 
-  // Verify signature
   const key = await crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(jwtSecret),
@@ -49,10 +49,10 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Handle public actions first (no auth needed)
     const body = await req.json();
     const { action, data } = body;
 
+    // === PUBLIC ACTIONS (no auth) ===
     if (action === "get-public-company-info") {
       const companyId = data?.company_id;
       if (!companyId) {
@@ -61,10 +61,7 @@ Deno.serve(async (req) => {
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      const supabase = createClient(
-        Deno.env.get("SUPABASE_URL")!,
-        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-      );
+      const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
       const { data: company } = await supabase
         .from("companies")
         .select("id, name, city, is_active")
@@ -73,10 +70,7 @@ Deno.serve(async (req) => {
         .single();
 
       if (!company) {
-        return new Response(
-          JSON.stringify({ error: "Company not found" }),
-          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return new Response(JSON.stringify({ error: "Company not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
       const { data: lines } = await supabase
@@ -86,18 +80,13 @@ Deno.serve(async (req) => {
         .eq("is_active", true)
         .order("name");
 
-      return new Response(
-        JSON.stringify({ company, lines: lines || [] }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ company, lines: lines || [] }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    // === AUTHENTICATED ACTIONS ===
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const token = authHeader.replace("Bearer ", "");
@@ -105,18 +94,10 @@ Deno.serve(async (req) => {
     const companyId = claims.company_id;
 
     if (!companyId) {
-      return new Response(
-        JSON.stringify({ error: "Invalid token: no company_id" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Invalid token: no company_id" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // action and data already parsed from body above
-    const supabase = createClient(
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
     switch (action) {
       case "get-lines": {
@@ -126,9 +107,7 @@ Deno.serve(async (req) => {
           .eq("company_id", companyId)
           .order("name");
         if (error) throw error;
-        return new Response(JSON.stringify({ lines }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(JSON.stringify({ lines }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
       case "get-invoices": {
@@ -138,21 +117,14 @@ Deno.serve(async (req) => {
           .eq("company_id", companyId)
           .order("created_at", { ascending: false });
         if (error) throw error;
-        return new Response(JSON.stringify({ invoices }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(JSON.stringify({ invoices }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
       case "update-invoice-approval": {
         const { invoice_id, status, comment } = data || {};
         if (!invoice_id || !status) {
-          return new Response(
-            JSON.stringify({ error: "Missing invoice_id or status" }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
+          return new Response(JSON.stringify({ error: "Missing invoice_id or status" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
         }
-
-        // Verify invoice belongs to this company
         const { data: invoice } = await supabase
           .from("company_invoices")
           .select("company_id")
@@ -160,10 +132,7 @@ Deno.serve(async (req) => {
           .single();
 
         if (!invoice || invoice.company_id !== companyId) {
-          return new Response(
-            JSON.stringify({ error: "Invoice not found" }),
-            { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
+          return new Response(JSON.stringify({ error: "Invoice not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
         }
 
         const { error } = await supabase
@@ -177,9 +146,7 @@ Deno.serve(async (req) => {
           .eq("id", invoice_id);
 
         if (error) throw error;
-        return new Response(JSON.stringify({ success: true }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
       case "get-employees": {
@@ -189,13 +156,10 @@ Deno.serve(async (req) => {
           .eq("company_id", companyId)
           .order("created_at", { ascending: false });
         if (error) throw error;
-        return new Response(JSON.stringify({ employees }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(JSON.stringify({ employees }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
       case "get-live-trips": {
-        // Get driver IDs from company lines
         const { data: companyLines } = await supabase
           .from("company_lines")
           .select("driver_id, supervisor_id, name")
@@ -203,59 +167,285 @@ Deno.serve(async (req) => {
           .eq("is_active", true);
 
         const driverIds = (companyLines || []).map((l: any) => l.driver_id).filter(Boolean);
-        const supervisorIds = (companyLines || []).map((l: any) => l.supervisor_id).filter(Boolean);
 
-        if (driverIds.length === 0 && supervisorIds.length === 0) {
-          return new Response(JSON.stringify({ trips: [], lines: companyLines || [] }), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+        if (driverIds.length === 0) {
+          return new Response(JSON.stringify({ trips: [], lines: companyLines || [] }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
         }
 
-        // Find active trips for these drivers
-        let query = supabase
+        const { data: trips, error } = await supabase
           .from("live_trips")
           .select("id, status, current_latitude, current_longitude, started_at, driver_id, supervisor_id, drivers(full_name, phone), supervisors(full_name, phone)")
-          .eq("status", "in_progress");
+          .eq("status", "in_progress")
+          .in("driver_id", driverIds);
 
-        if (driverIds.length > 0) {
-          query = query.in("driver_id", driverIds);
-        }
-
-        const { data: trips, error } = await query;
         if (error) throw error;
 
-        // Map trip to line name
         const tripsWithLine = (trips || []).map((trip: any) => {
           const line = (companyLines || []).find((l: any) => l.driver_id === trip.driver_id);
           return { ...trip, line_name: line?.name || "غير محدد" };
         });
 
-        return new Response(JSON.stringify({ trips: tripsWithLine, lines: companyLines || [] }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(JSON.stringify({ trips: tripsWithLine, lines: companyLines || [] }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
-      case "get-public-company-info": {
-        // This action doesn't need auth - handled separately below
-        return new Response(
-          JSON.stringify({ error: "Use public endpoint" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+      // === DRIVER DETAILS (no salary) ===
+      case "get-drivers": {
+        const { data: companyLines } = await supabase
+          .from("company_lines")
+          .select("driver_id, supervisor_id, name")
+          .eq("company_id", companyId);
+
+        const driverIds = [...new Set((companyLines || []).map((l: any) => l.driver_id).filter(Boolean))];
+        const supervisorIds = [...new Set((companyLines || []).map((l: any) => l.supervisor_id).filter(Boolean))];
+
+        let drivers: any[] = [];
+        let supervisors: any[] = [];
+
+        if (driverIds.length > 0) {
+          const { data } = await supabase
+            .from("drivers")
+            .select("id, full_name, phone, license_number, documents_url, is_active, city")
+            .in("id", driverIds);
+          drivers = data || [];
+        }
+
+        if (supervisorIds.length > 0) {
+          const { data } = await supabase
+            .from("supervisors")
+            .select("id, full_name, phone, documents_url, is_active, city")
+            .in("id", supervisorIds);
+          supervisors = data || [];
+        }
+
+        // Map line assignments
+        const driversWithLines = drivers.map((d: any) => ({
+          ...d,
+          type: "driver",
+          assigned_lines: (companyLines || []).filter((l: any) => l.driver_id === d.id).map((l: any) => l.name),
+        }));
+
+        const supervisorsWithLines = supervisors.map((s: any) => ({
+          ...s,
+          type: "supervisor",
+          assigned_lines: (companyLines || []).filter((l: any) => l.supervisor_id === s.id).map((l: any) => l.name),
+        }));
+
+        return new Response(JSON.stringify({ staff: [...driversWithLines, ...supervisorsWithLines] }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      // === INTERNAL ACCOUNTS MANAGEMENT ===
+      case "get-accounts": {
+        if (claims.role !== "admin") {
+          return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+        const { data: accounts, error } = await supabase
+          .from("company_accounts")
+          .select("id, email, full_name, phone, role, permissions, is_active, created_at")
+          .eq("company_id", companyId)
+          .order("created_at");
+        if (error) throw error;
+        return new Response(JSON.stringify({ accounts }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      case "create-account": {
+        if (claims.role !== "admin") {
+          return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+        const { email, password, full_name, phone, role, permissions } = data || {};
+        if (!email || !password || !full_name) {
+          return new Response(JSON.stringify({ error: "Missing required fields" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+        if (password.length < 6) {
+          return new Response(JSON.stringify({ error: "Password must be at least 6 characters" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+
+        const { data: existing } = await supabase
+          .from("company_accounts")
+          .select("id")
+          .eq("email", email.toLowerCase())
+          .maybeSingle();
+
+        if (existing) {
+          return new Response(JSON.stringify({ error: "Email already exists" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+
+        const passwordHash = await hashPassword(password);
+        const { error } = await supabase
+          .from("company_accounts")
+          .insert({
+            company_id: companyId,
+            email: email.toLowerCase(),
+            password_hash: passwordHash,
+            full_name,
+            phone: phone || null,
+            role: role || "employee",
+            permissions: permissions || [],
+          });
+
+        if (error) throw error;
+        return new Response(JSON.stringify({ success: true }), { status: 201, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      case "toggle-account": {
+        if (claims.role !== "admin") {
+          return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+        const { account_id, is_active } = data || {};
+        if (!account_id) {
+          return new Response(JSON.stringify({ error: "Missing account_id" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+        // Can't deactivate yourself
+        if (account_id === claims.sub) {
+          return new Response(JSON.stringify({ error: "Cannot modify your own account" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+        const { error } = await supabase
+          .from("company_accounts")
+          .update({ is_active })
+          .eq("id", account_id)
+          .eq("company_id", companyId);
+
+        if (error) throw error;
+        return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      // === NOTIFICATIONS ===
+      case "get-notifications": {
+        const { data: notifications, error } = await supabase
+          .from("company_notifications")
+          .select("*")
+          .eq("company_id", companyId)
+          .order("created_at", { ascending: false })
+          .limit(50);
+        if (error) throw error;
+        return new Response(JSON.stringify({ notifications }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      case "mark-notifications-read": {
+        const { error } = await supabase
+          .from("company_notifications")
+          .update({ is_read: true })
+          .eq("company_id", companyId)
+          .eq("is_read", false);
+        if (error) throw error;
+        return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      // === CHAT ===
+      case "get-chat-channels": {
+        // Get driver channels from company lines
+        const { data: companyLines } = await supabase
+          .from("company_lines")
+          .select("driver_id, name, drivers(full_name, phone)")
+          .eq("company_id", companyId)
+          .not("driver_id", "is", null);
+
+        const channels: any[] = [];
+
+        // Driver channels
+        for (const line of (companyLines || [])) {
+          if (line.driver_id) {
+            const { count } = await supabase
+              .from("company_portal_messages")
+              .select("*", { count: "exact", head: true })
+              .eq("company_id", companyId)
+              .eq("channel_type", "driver_chat")
+              .eq("channel_ref_id", line.driver_id)
+              .eq("is_read", false)
+              .neq("sender_type", "company_account");
+
+            channels.push({
+              id: `driver_${line.driver_id}`,
+              type: "driver_chat",
+              ref_id: line.driver_id,
+              name: `${line.drivers?.full_name || "سائق"} - ${line.name}`,
+              phone: line.drivers?.phone,
+              unread: count || 0,
+            });
+          }
+        }
+
+        // Seater support channel
+        const { count: seaterUnread } = await supabase
+          .from("company_portal_messages")
+          .select("*", { count: "exact", head: true })
+          .eq("company_id", companyId)
+          .eq("channel_type", "seater_support")
+          .eq("is_read", false)
+          .neq("sender_type", "company_account");
+
+        channels.push({
+          id: "seater_support",
+          type: "seater_support",
+          ref_id: null,
+          name: "دعم Seater",
+          unread: seaterUnread || 0,
+        });
+
+        return new Response(JSON.stringify({ channels }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      case "get-chat-messages": {
+        const { channel_type, channel_ref_id } = data || {};
+        if (!channel_type) {
+          return new Response(JSON.stringify({ error: "Missing channel_type" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+
+        let query = supabase
+          .from("company_portal_messages")
+          .select("*")
+          .eq("company_id", companyId)
+          .eq("channel_type", channel_type)
+          .order("created_at", { ascending: true })
+          .limit(100);
+
+        if (channel_ref_id) {
+          query = query.eq("channel_ref_id", channel_ref_id);
+        }
+
+        const { data: messages, error } = await query;
+        if (error) throw error;
+
+        // Mark as read
+        await supabase
+          .from("company_portal_messages")
+          .update({ is_read: true })
+          .eq("company_id", companyId)
+          .eq("channel_type", channel_type)
+          .eq("is_read", false)
+          .neq("sender_type", "company_account");
+
+        return new Response(JSON.stringify({ messages }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      case "send-chat-message": {
+        const { channel_type, channel_ref_id, message } = data || {};
+        if (!channel_type || !message?.trim()) {
+          return new Response(JSON.stringify({ error: "Missing fields" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+
+        const { error } = await supabase
+          .from("company_portal_messages")
+          .insert({
+            company_id: companyId,
+            channel_type,
+            channel_ref_id: channel_ref_id || null,
+            sender_type: "company_account",
+            sender_id: claims.sub,
+            sender_name: claims.full_name || "مسؤول الشركة",
+            message: message.trim(),
+          });
+
+        if (error) throw error;
+        return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
       default:
-        return new Response(
-          JSON.stringify({ error: "Unknown action" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return new Response(JSON.stringify({ error: "Unknown action" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
   } catch (error: unknown) {
     console.error("Error in company-portal-data:", error);
     const errorMessage = error instanceof Error ? error.message : "Internal server error";
     const status = errorMessage.includes("Unauthorized") || errorMessage.includes("expired") ? 401 : 500;
-    return new Response(
-      JSON.stringify({ error: errorMessage }),
-      { status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: errorMessage }), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
