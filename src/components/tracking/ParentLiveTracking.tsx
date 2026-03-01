@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useParentNotifications, type LiveTrip, type TripStudentStatus } from "@/hooks/useLiveTrip";
@@ -27,6 +27,7 @@ export function ParentLiveTracking() {
   const { user, parentAccount } = useParentAuth();
   const { notifications, markAsRead } = useParentNotifications(user?.id);
   const isMobile = useIsMobile();
+  const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
 
   const { data: registrations = [], isLoading: registrationsLoading } = useQuery({
     queryKey: ["parent-registrations-tracking", parentAccount?.id],
@@ -49,6 +50,17 @@ export function ParentLiveTracking() {
         .eq("parent_id", parentAccount.id)
         .eq("status", "complete");
       if (error) throw error;
+      // Pre-generate signed URLs for photos
+      for (const reg of (data || [])) {
+        if (reg.student_photo_url && !reg.student_photo_url.startsWith('http')) {
+          supabase.storage.from('student-photos').createSignedUrl(reg.student_photo_url, 3600)
+            .then(({ data: urlData }) => {
+              if (urlData?.signedUrl) {
+                setSignedUrls(prev => ({ ...prev, [reg.student_photo_url!]: urlData.signedUrl }));
+              }
+            });
+        }
+      }
       return data;
     },
     enabled: !!parentAccount?.id,
@@ -262,17 +274,23 @@ export function ParentLiveTracking() {
                 {studentReg && (
                   <div className="p-3 border-t bg-muted/30">
                     <div className="flex items-center gap-2.5">
-                      {(studentReg as any).student_photo_url ? (
-                        <img
-                          src={(studentReg as any).student_photo_url}
-                          alt={studentReg.student_name}
-                          className="h-9 w-9 rounded-full object-cover border-2 border-background shadow"
-                        />
-                      ) : (
-                        <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
-                          <User className="h-4 w-4 text-primary" />
-                        </div>
-                      )}
+                      {(() => {
+                        const photoPath = (studentReg as any).student_photo_url;
+                        const photoUrl = photoPath
+                          ? (photoPath.startsWith('http') ? photoPath : signedUrls[photoPath])
+                          : null;
+                        return photoUrl ? (
+                          <img
+                            src={photoUrl}
+                            alt={studentReg.student_name}
+                            className="h-9 w-9 rounded-full object-cover border-2 border-background shadow"
+                          />
+                        ) : (
+                          <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
+                            <User className="h-4 w-4 text-primary" />
+                          </div>
+                        );
+                      })()}
                       <div>
                         <p className="text-[10px] text-muted-foreground uppercase">Your Child</p>
                         <p className="text-xs font-semibold">{studentReg.student_name}</p>
