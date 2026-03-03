@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
@@ -32,11 +32,12 @@ export function CorporateAttendance({ canEdit, staffContext, companyId }: Corpor
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>(companyId || 'all');
   const [selectedLineId, setSelectedLineId] = useState<string>('all');
+  const [selectedSchoolCompanyId, setSelectedSchoolCompanyId] = useState<string>('all');
 
   const isSchoolContext = staffContext === 'school';
   const isFixedCompany = !!companyId;
 
-  // Companies — only for corporate context
+  // Companies — for corporate context dropdown
   const { data: companies = [] } = useQuery({
     queryKey: ['companies'],
     queryFn: async () => {
@@ -47,9 +48,20 @@ export function CorporateAttendance({ canEdit, staffContext, companyId }: Corpor
     enabled: !isSchoolContext,
   });
 
+  // Companies for school context — fetched from all companies to populate filter
+  const { data: allCompaniesForSchool = [] } = useQuery({
+    queryKey: ['companies-for-school-attendance'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('companies').select('id, name').eq('is_active', true).order('name');
+      if (error) throw error;
+      return data;
+    },
+    enabled: isSchoolContext,
+  });
+
   // Lines query — differs by context
   const { data: lines = [] } = useQuery({
-    queryKey: ['company-lines-for-attendance', selectedCompanyId, selectedLineId, staffContext],
+    queryKey: ['company-lines-for-attendance', selectedCompanyId, selectedLineId, staffContext, selectedSchoolCompanyId],
     queryFn: async () => {
       let query = supabase
         .from('company_lines')
@@ -62,7 +74,10 @@ export function CorporateAttendance({ canEdit, staffContext, companyId }: Corpor
         .eq('is_active', true);
 
       if (isSchoolContext) {
-        // For school: no company filter, we filter by driver/supervisor belongs_to after fetch
+        // For school: optionally filter by company
+        if (selectedSchoolCompanyId !== 'all') {
+          query = query.eq('company_id', selectedSchoolCompanyId);
+        }
       } else {
         // Corporate context
         if (selectedCompanyId !== 'all') {
@@ -224,6 +239,21 @@ export function CorporateAttendance({ canEdit, staffContext, companyId }: Corpor
           <Label>{t('attendance.date')}</Label>
           <Input type="date" value={selectedDate} onChange={(e) => { setSelectedDate(e.target.value); setLocalAttendance({}); setLocalExtraFees({}); }} dir="ltr" className="w-44" />
         </div>
+
+        {isSchoolContext && (
+          <div className="space-y-2">
+            <Label>{t('attendance.company')}</Label>
+            <Select value={selectedSchoolCompanyId} onValueChange={setSelectedSchoolCompanyId}>
+              <SelectTrigger className="w-48"><SelectValue placeholder={t('attendance.allCompanies')} /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('attendance.allCompanies')}</SelectItem>
+                {allCompaniesForSchool.map((c: any) => (
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         {!isSchoolContext && !isFixedCompany && (
           <>

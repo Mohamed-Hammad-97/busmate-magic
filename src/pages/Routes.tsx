@@ -135,31 +135,60 @@ const Routes = () => {
     );
   }, [routes, selectedCity]);
 
-  const { data: drivers = [] } = useQuery({
+  const { data: allDrivers = [] } = useQuery({
     queryKey: ['drivers-active'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('drivers')
         .select('*')
         .eq('is_active', true)
+        .in('belongs_to', ['school', 'both'])
         .order('full_name');
       if (error) throw error;
       return data;
     },
   });
 
-  const { data: supervisors = [] } = useQuery({
+  const { data: allSupervisors = [] } = useQuery({
     queryKey: ['supervisors-active'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('supervisors')
         .select('*')
         .eq('is_active', true)
+        .in('belongs_to', ['school', 'both'])
         .order('full_name');
       if (error) throw error;
       return data;
     },
   });
+
+  // Filter drivers and supervisors by selected city
+  const drivers = useMemo(() => {
+    if (selectedCity === 'all') return allDrivers;
+    const cityMapping: Record<string, string[]> = {
+      cairo: ['cairo', 'القاهرة', 'قاهرة'],
+      giza: ['giza', 'الجيزة', 'جيزة'],
+      alexandria: ['alexandria', 'الإسكندرية', 'اسكندرية', 'إسكندرية'],
+    };
+    const cityNames = cityMapping[selectedCity] || [];
+    return allDrivers.filter((d) =>
+      cityNames.some((name) => d.city?.toLowerCase().includes(name.toLowerCase()))
+    );
+  }, [allDrivers, selectedCity]);
+
+  const supervisors = useMemo(() => {
+    if (selectedCity === 'all') return allSupervisors;
+    const cityMapping: Record<string, string[]> = {
+      cairo: ['cairo', 'القاهرة', 'قاهرة'],
+      giza: ['giza', 'الجيزة', 'جيزة'],
+      alexandria: ['alexandria', 'الإسكندرية', 'اسكندرية', 'إسكندرية'],
+    };
+    const cityNames = cityMapping[selectedCity] || [];
+    return allSupervisors.filter((s) =>
+      cityNames.some((name) => s.city?.toLowerCase().includes(name.toLowerCase()))
+    );
+  }, [allSupervisors, selectedCity]);
 
   const { data: routeAssignments = [] } = useQuery({
     queryKey: ['route-assignments-with-locations'],
