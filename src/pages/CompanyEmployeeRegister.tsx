@@ -24,6 +24,7 @@ const defaultCenter = { lat: 30.0444, lng: 31.2357 }; // Cairo
 export default function CompanyEmployeeRegister() {
   const { companyId } = useParams<{ companyId: string }>();
   const [companyName, setCompanyName] = useState("");
+  const [companyLogo, setCompanyLogo] = useState<string | null>(null);
   const [lines, setLines] = useState<CompanyLine[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -64,6 +65,7 @@ export default function CompanyEmployeeRegister() {
         setInvalidCompany(true);
       } else {
         setCompanyName(res.data.company.name);
+        setCompanyLogo(res.data.company.logo_url || null);
         setLines(res.data.lines || []);
         if (!res.data.lines?.length) setPickupMode("custom");
       }
@@ -176,7 +178,11 @@ export default function CompanyEmployeeRegister() {
       <div className="max-w-lg mx-auto space-y-6">
         {/* Header */}
         <div className="text-center space-y-3">
-          <img src={seaterLogo} alt="Seater" className="h-14 w-14 mx-auto rounded-xl shadow-lg" />
+          {companyLogo ? (
+            <img src={companyLogo} alt={companyName} className="h-16 w-16 mx-auto rounded-xl shadow-lg object-cover ring-2 ring-border/50" />
+          ) : (
+            <img src={seaterLogo} alt="Seater" className="h-14 w-14 mx-auto rounded-xl shadow-lg" />
+          )}
           <div>
             <h1 className="text-2xl font-bold">Employee Registration</h1>
             <p className="text-muted-foreground mt-1">

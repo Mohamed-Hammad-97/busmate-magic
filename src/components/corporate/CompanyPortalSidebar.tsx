@@ -129,16 +129,26 @@ export function CompanyPortalSidebar({ activeTab, onTabChange, onMobileNavigate 
             effectiveCollapsed ? "justify-center px-2" : "gap-3 px-5"
           )}>
             <div className="relative">
-              <img
-                src={seaterLogo}
-                alt="Seater"
-                className="h-9 w-9 rounded-lg object-cover ring-2 ring-sidebar-accent/50 shadow-lg"
-              />
+              {account?.company_logo_url ? (
+                <img
+                  src={account.company_logo_url}
+                  alt={account.company_name || "Company"}
+                  className="h-9 w-9 rounded-lg object-cover ring-2 ring-sidebar-accent/50 shadow-lg"
+                />
+              ) : (
+                <img
+                  src={seaterLogo}
+                  alt="Seater"
+                  className="h-9 w-9 rounded-lg object-cover ring-2 ring-sidebar-accent/50 shadow-lg"
+                />
+              )}
               <div className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-success ring-2 ring-sidebar-background" />
             </div>
             {!effectiveCollapsed && (
               <div className="overflow-hidden">
-                <span className="text-lg font-bold text-sidebar-foreground tracking-tight">Seater</span>
+                <span className="text-lg font-bold text-sidebar-foreground tracking-tight">
+                  {account?.company_name || "Seater"}
+                </span>
                 <p className="text-[10px] text-sidebar-muted font-medium uppercase tracking-widest">Company Portal</p>
               </div>
             )}

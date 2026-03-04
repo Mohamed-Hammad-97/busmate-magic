@@ -11,6 +11,7 @@ interface CompanyAccount {
   company_id: string;
   company_name: string;
   company_city: string;
+  company_logo_url: string | null;
 }
 
 interface CompanyAuthContextType {
