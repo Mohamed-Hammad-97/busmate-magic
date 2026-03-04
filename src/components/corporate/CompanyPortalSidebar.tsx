@@ -128,18 +128,21 @@ export function CompanyPortalSidebar({ activeTab, onTabChange, onMobileNavigate 
             "flex h-16 items-center border-b border-sidebar-border shrink-0 transition-all duration-300",
             effectiveCollapsed ? "justify-center px-2" : "gap-3 px-5"
           )}>
-            <div className="relative shrink-0">
-              <div className={cn(
-                "rounded-xl bg-white/90 dark:bg-sidebar-accent/60 backdrop-blur-sm ring-1 ring-sidebar-border/30 shadow-lg overflow-hidden flex items-center justify-center",
-                effectiveCollapsed ? "h-10 w-10" : "h-10 w-10"
-              )}>
+            <div className="relative">
+              {account?.company_logo_url ? (
                 <img
-                  src={account?.company_logo_url || seaterLogo}
-                  alt={account?.company_name || "Seater"}
-                  className="max-h-[85%] max-w-[85%] object-contain"
+                  src={account.company_logo_url}
+                  alt={account.company_name || "Company"}
+                  className="h-9 w-9 rounded-lg object-cover ring-2 ring-sidebar-accent/50 shadow-lg"
                 />
-              </div>
-              <div className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-success ring-2 ring-sidebar" />
+              ) : (
+                <img
+                  src={seaterLogo}
+                  alt="Seater"
+                  className="h-9 w-9 rounded-lg object-cover ring-2 ring-sidebar-accent/50 shadow-lg"
+                />
+              )}
+              <div className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-success ring-2 ring-sidebar-background" />
             </div>
             {!effectiveCollapsed && (
               <div className="overflow-hidden">
