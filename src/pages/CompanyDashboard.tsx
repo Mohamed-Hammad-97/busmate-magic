@@ -92,7 +92,8 @@ export default function CompanyDashboard() {
 
   const activeLines = lines.filter((l: any) => l.is_active).length;
   const pendingInvoices = invoices.filter((i: any) => i.company_approval_status === "pending").length;
-  const formLink = `${window.location.origin}/company/register/${account?.company_id}`;
+  const publishedDomain = "https://seater.org";
+  const formLink = `${publishedDomain}/company/register/${account?.company_id}`;
 
   const copyFormLink = () => {
     navigator.clipboard.writeText(formLink);
