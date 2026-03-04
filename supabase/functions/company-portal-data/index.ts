@@ -555,8 +555,7 @@ Deno.serve(async (req) => {
         if (updateErr) throw updateErr;
 
         return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-
-
+      }
 
       default:
         return new Response(JSON.stringify({ error: "Unknown action" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
