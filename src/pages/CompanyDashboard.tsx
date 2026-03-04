@@ -22,6 +22,7 @@ import { CompanyAccountsManager } from "@/components/corporate/CompanyAccountsMa
 import { CompanyNotificationBell } from "@/components/corporate/CompanyNotificationBell";
 import { CompanyChatView } from "@/components/corporate/CompanyChatView";
 import { CompanyPortalSidebar } from "@/components/corporate/CompanyPortalSidebar";
+import { CompanyStaffProfilesView } from "@/components/corporate/CompanyStaffProfilesView";
 import { CompanyChangePassword } from "@/components/corporate/CompanyChangePassword";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
@@ -60,6 +61,7 @@ export default function CompanyDashboard() {
   const { data: trackingData } = useCompanyPortalData("get-live-trips", token, { refetchInterval: 5000 });
   const { data: driversData } = useCompanyPortalData("get-drivers", token);
   const { data: accountsData } = useCompanyPortalData("get-accounts", token);
+  const { data: staffProfilesData } = useCompanyPortalData("get-staff-profiles", token);
 
   const lines = linesData?.lines || [];
   const invoices = invoicesData?.invoices || [];
@@ -67,6 +69,7 @@ export default function CompanyDashboard() {
   const activeTrips = trackingData?.trips || [];
   const staff = driversData?.staff || [];
   const accounts = accountsData?.accounts || [];
+  const staffProfiles = staffProfilesData?.staff || [];
 
   const updateInvoiceMutation = useMutation({
     mutationFn: async ({ id, status, comment }: { id: string; status: string; comment: string }) => {
@@ -221,6 +224,14 @@ export default function CompanyDashboard() {
           <div className="space-y-4">
             <h2 className="text-xl font-bold">Drivers & Staff</h2>
             <CompanyDriversView staff={staff} />
+          </div>
+        );
+
+      case "staff-profiles":
+        return (
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold">Staff Files</h2>
+            <CompanyStaffProfilesView staff={staffProfiles} />
           </div>
         );
 

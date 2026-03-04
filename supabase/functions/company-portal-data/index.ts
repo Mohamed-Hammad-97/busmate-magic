@@ -258,6 +258,63 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({ staff: [...driversWithLines, ...supervisorsWithLines] }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
+      // === STAFF PROFILES (read-only for company portal) ===
+      case "get-staff-profiles": {
+        const { data: companyLines } = await supabase
+          .from("company_lines")
+          .select("driver_id, supervisor_id, name")
+          .eq("company_id", companyId);
+
+        const driverIds = [...new Set((companyLines || []).map((l: any) => l.driver_id).filter(Boolean))];
+        const supervisorIds = [...new Set((companyLines || []).map((l: any) => l.supervisor_id).filter(Boolean))];
+
+        let drivers: any[] = [];
+        let supervisors: any[] = [];
+        let staffProfiles: any[] = [];
+
+        if (driverIds.length > 0) {
+          const { data } = await supabase
+            .from("drivers")
+            .select("id, full_name, phone, license_number, is_active")
+            .in("id", driverIds);
+          drivers = data || [];
+
+          const { data: profiles } = await supabase
+            .from("staff_profiles")
+            .select("driver_id, bank_name, bank_account_name, bank_account_number, bank_iban, id_document_url, license_document_url, contract_document_url")
+            .in("driver_id", driverIds);
+          staffProfiles.push(...(profiles || []));
+        }
+
+        if (supervisorIds.length > 0) {
+          const { data } = await supabase
+            .from("supervisors")
+            .select("id, full_name, phone, is_active")
+            .in("id", supervisorIds);
+          supervisors = data || [];
+
+          const { data: profiles } = await supabase
+            .from("staff_profiles")
+            .select("supervisor_id, bank_name, bank_account_name, bank_account_number, bank_iban, id_document_url, license_document_url, contract_document_url")
+            .in("supervisor_id", supervisorIds);
+          staffProfiles.push(...(profiles || []));
+        }
+
+        const driversWithProfiles = drivers.map((d: any) => {
+          const profile = staffProfiles.find((p: any) => p.driver_id === d.id);
+          const assignedLines = (companyLines || []).filter((l: any) => l.driver_id === d.id).map((l: any) => l.name);
+          return { ...d, type: "driver", profile: profile || null, assigned_lines: assignedLines };
+        });
+
+        const supervisorsWithProfiles = supervisors.map((s: any) => {
+          const profile = staffProfiles.find((p: any) => p.supervisor_id === s.id);
+          const assignedLines = (companyLines || []).filter((l: any) => l.supervisor_id === s.id).map((l: any) => l.name);
+          return { ...s, type: "supervisor", profile: profile || null, assigned_lines: assignedLines };
+        });
+
+        return new Response(JSON.stringify({ staff: [...driversWithProfiles, ...supervisorsWithProfiles] }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
       // === INTERNAL ACCOUNTS MANAGEMENT ===
       case "get-accounts": {
         if (claims.role !== "admin") {
