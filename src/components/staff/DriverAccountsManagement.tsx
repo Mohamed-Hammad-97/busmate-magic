@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -32,16 +32,25 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Plus, UserPlus, User, Phone, Key, Eye, EyeOff } from "lucide-react";
 import { z } from "zod";
+import { useCity } from "@/contexts/CityContext";
 
 const phoneSchema = z.string().regex(/^01[0125]\d{8}$/, "رقم الهاتف غير صالح");
 
+const cityMapping: Record<string, string[]> = {
+  cairo: ['cairo', 'القاهرة', 'قاهرة', 'Cairo'],
+  giza: ['giza', 'الجيزة', 'جيزة', 'Giza'],
+  alexandria: ['alexandria', 'الإسكندرية', 'اسكندرية', 'إسكندرية', 'Alexandria'],
+};
+
 interface DriverAccountsManagementProps {
   cityFilter?: string;
+  staffContext?: "school" | "corporate";
 }
 
-export function DriverAccountsManagement({ cityFilter }: DriverAccountsManagementProps) {
+export function DriverAccountsManagement({ cityFilter, staffContext = "school" }: DriverAccountsManagementProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { selectedCity } = useCity();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [accountType, setAccountType] = useState<"driver" | "supervisor">("driver");
   const [selectedPersonId, setSelectedPersonId] = useState<string>("");
@@ -50,7 +59,9 @@ export function DriverAccountsManagement({ cityFilter }: DriverAccountsManagemen
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Fetch driver accounts
+  const belongsToValues = staffContext === "school" ? ["school", "both"] : ["corporate", "both"];
+
+  // Fetch driver accounts with related driver/supervisor info
   const { data: accounts = [], isLoading: loadingAccounts } = useQuery({
     queryKey: ["driver-accounts"],
     queryFn: async () => {
@@ -67,9 +78,31 @@ export function DriverAccountsManagement({ cityFilter }: DriverAccountsManagemen
     },
   });
 
-  // Fetch drivers without accounts
+  // Filter accounts by city and belongs_to
+  const filteredAccounts = useMemo(() => {
+    const activeCityKey = (cityFilter || selectedCity || "").toLowerCase();
+    const cityNames = cityMapping[activeCityKey] || [];
+
+    return accounts.filter((acc: any) => {
+      const person = acc.driver || acc.supervisor;
+      if (!person) return false;
+
+      // Filter by belongs_to
+      if (!belongsToValues.includes(person.belongs_to)) return false;
+
+      // Filter by city if applicable
+      if (cityNames.length > 0) {
+        const personCity = (person.city || "").toLowerCase();
+        if (!cityNames.some((name) => personCity.includes(name.toLowerCase()))) return false;
+      }
+
+      return true;
+    });
+  }, [accounts, selectedCity, cityFilter, belongsToValues]);
+
+  // Fetch drivers without accounts (filtered by city and belongs_to)
   const { data: availableDrivers = [] } = useQuery({
-    queryKey: ["available-drivers"],
+    queryKey: ["available-drivers", selectedCity, staffContext],
     queryFn: async () => {
       const existingDriverIds = accounts
         .filter((a) => a.driver_id)
@@ -78,7 +111,8 @@ export function DriverAccountsManagement({ cityFilter }: DriverAccountsManagemen
       let query = supabase
         .from("drivers")
         .select("*")
-        .eq("is_active", true);
+        .eq("is_active", true)
+        .in("belongs_to", belongsToValues);
 
       if (existingDriverIds.length > 0) {
         query = query.not("id", "in", `(${existingDriverIds.join(",")})`);
@@ -86,14 +120,24 @@ export function DriverAccountsManagement({ cityFilter }: DriverAccountsManagemen
 
       const { data, error } = await query;
       if (error) throw error;
+      
+      // Filter by city client-side
+      const activeCityKey = (cityFilter || selectedCity || "").toLowerCase();
+      const cityNames = cityMapping[activeCityKey] || [];
+      if (cityNames.length > 0) {
+        return (data || []).filter((d: any) => {
+          const dCity = (d.city || "").toLowerCase();
+          return cityNames.some((name) => dCity.includes(name.toLowerCase()));
+        });
+      }
       return data;
     },
     enabled: accounts !== undefined,
   });
 
-  // Fetch supervisors without accounts
+  // Fetch supervisors without accounts (filtered by city and belongs_to)
   const { data: availableSupervisors = [] } = useQuery({
-    queryKey: ["available-supervisors"],
+    queryKey: ["available-supervisors", selectedCity, staffContext],
     queryFn: async () => {
       const existingSupervisorIds = accounts
         .filter((a) => a.supervisor_id)
@@ -102,7 +146,8 @@ export function DriverAccountsManagement({ cityFilter }: DriverAccountsManagemen
       let query = supabase
         .from("supervisors")
         .select("*")
-        .eq("is_active", true);
+        .eq("is_active", true)
+        .in("belongs_to", belongsToValues);
 
       if (existingSupervisorIds.length > 0) {
         query = query.not("id", "in", `(${existingSupervisorIds.join(",")})`);
@@ -110,6 +155,16 @@ export function DriverAccountsManagement({ cityFilter }: DriverAccountsManagemen
 
       const { data, error } = await query;
       if (error) throw error;
+      
+      // Filter by city client-side
+      const activeCityKey = (cityFilter || selectedCity || "").toLowerCase();
+      const cityNames = cityMapping[activeCityKey] || [];
+      if (cityNames.length > 0) {
+        return (data || []).filter((s: any) => {
+          const sCity = (s.city || "").toLowerCase();
+          return cityNames.some((name) => sCity.includes(name.toLowerCase()));
+        });
+      }
       return data;
     },
     enabled: accounts !== undefined,
@@ -316,7 +371,7 @@ export function DriverAccountsManagement({ cityFilter }: DriverAccountsManagemen
           <div className="flex justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
-        ) : accounts.length === 0 ? (
+        ) : filteredAccounts.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <UserPlus className="h-12 w-12 mx-auto mb-3 opacity-50" />
             <p>لا توجد حسابات بعد</p>
@@ -327,23 +382,35 @@ export function DriverAccountsManagement({ cityFilter }: DriverAccountsManagemen
               <TableRow>
                 <TableHead className="text-right">الاسم</TableHead>
                 <TableHead className="text-right">النوع</TableHead>
+                <TableHead className="text-right">المدينة</TableHead>
+                <TableHead className="text-right">القسم</TableHead>
                 <TableHead className="text-right">رقم الهاتف</TableHead>
                 <TableHead className="text-right">الحالة</TableHead>
                 <TableHead className="text-right">إجراءات</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {accounts.map((account: any) => (
+              {filteredAccounts.map((account: any) => {
+                const person = account.driver || account.supervisor;
+                return (
                 <TableRow key={account.id}>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2">
                       <User className="h-4 w-4 text-muted-foreground" />
-                      {account.driver?.full_name || account.supervisor?.full_name}
+                      {person?.full_name}
                     </div>
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline">
                       {account.driver_id ? "سائق" : "مشرف"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-sm text-muted-foreground">{person?.city || "-"}</span>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary" className="text-xs">
+                      {person?.belongs_to === "school" ? "مدارس" : person?.belongs_to === "corporate" ? "شركات" : "الكل"}
                     </Badge>
                   </TableCell>
                   <TableCell dir="ltr">{account.phone}</TableCell>
@@ -365,7 +432,8 @@ export function DriverAccountsManagement({ cityFilter }: DriverAccountsManagemen
                     </Button>
                   </TableCell>
                 </TableRow>
-              ))}
+                );
+              })}
             </TableBody>
           </Table>
         )}
