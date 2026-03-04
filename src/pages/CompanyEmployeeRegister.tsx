@@ -13,13 +13,58 @@ import seaterLogo from "@/assets/seater-logo.jpg";
 import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
 import { useGoogleMapsToken } from "@/hooks/useGoogleMapsToken";
 
+const defaultMapCenter = { lat: 30.0444, lng: 31.2357 };
+
+function PickupMapSection({ markerPos, onMapClick }: { markerPos: { lat: number; lng: number } | null; onMapClick: (e: google.maps.MapMouseEvent) => void }) {
+  const { token } = useGoogleMapsToken();
+
+  if (!token) {
+    return (
+      <div className="h-[250px] rounded-xl bg-muted/50 flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return <PickupMapInner token={token} markerPos={markerPos} onMapClick={onMapClick} />;
+}
+
+function PickupMapInner({ token, markerPos, onMapClick }: { token: string; markerPos: { lat: number; lng: number } | null; onMapClick: (e: google.maps.MapMouseEvent) => void }) {
+  const { isLoaded } = useJsApiLoader({
+    googleMapsApiKey: token,
+    id: "google-map-employee-register",
+  });
+
+  if (!isLoaded) {
+    return (
+      <div className="h-[250px] rounded-xl bg-muted/50 flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-xl overflow-hidden border border-border/50 h-[250px]">
+      <GoogleMap
+        mapContainerStyle={{ width: "100%", height: "100%" }}
+        center={markerPos || defaultMapCenter}
+        zoom={12}
+        onClick={onMapClick}
+        options={{ streetViewControl: false, mapTypeControl: false, fullscreenControl: false }}
+      >
+        {markerPos && <Marker position={markerPos} />}
+      </GoogleMap>
+    </div>
+  );
+}
+
 interface CompanyLine {
   id: string;
   name: string;
   route_details: string | null;
 }
 
-const defaultCenter = { lat: 30.0444, lng: 31.2357 }; // Cairo
+const defaultCenter = { lat: 30.0444, lng: 31.2357 };
 
 export default function CompanyEmployeeRegister() {
   const { companyId } = useParams<{ companyId: string }>();
@@ -34,11 +79,8 @@ export default function CompanyEmployeeRegister() {
   const [pickupMode, setPickupMode] = useState<"line" | "custom">("line");
   const [markerPos, setMarkerPos] = useState<{ lat: number; lng: number } | null>(null);
 
-  const { token: mapsToken } = useGoogleMapsToken();
-  const { isLoaded: mapsLoaded } = useJsApiLoader({
-    googleMapsApiKey: mapsToken || "",
-    id: "google-map-employee-register",
-  });
+
+
 
   const [form, setForm] = useState({
     full_name: "",
@@ -282,23 +324,7 @@ export default function CompanyEmployeeRegister() {
                 <div className="space-y-3">
                   <Label className="text-sm font-medium">Pickup Location</Label>
                   <p className="text-xs text-muted-foreground">Tap on the map to set your pickup point</p>
-                  {mapsLoaded ? (
-                    <div className="rounded-xl overflow-hidden border border-border/50 h-[250px]">
-                      <GoogleMap
-                        mapContainerStyle={{ width: "100%", height: "100%" }}
-                        center={markerPos || defaultCenter}
-                        zoom={12}
-                        onClick={onMapClick}
-                        options={{ streetViewControl: false, mapTypeControl: false, fullscreenControl: false }}
-                      >
-                        {markerPos && <Marker position={markerPos} />}
-                      </GoogleMap>
-                    </div>
-                  ) : (
-                    <div className="h-[250px] rounded-xl bg-muted/50 flex items-center justify-center">
-                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                    </div>
-                  )}
+                  <PickupMapSection markerPos={markerPos} onMapClick={onMapClick} />
                   {markerPos && (
                     <p className="text-xs text-muted-foreground">
                       📍 {markerPos.lat.toFixed(5)}, {markerPos.lng.toFixed(5)}
