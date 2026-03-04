@@ -1,9 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useCity } from '@/contexts/CityContext';
+
+const cityMapping: Record<string, string[]> = {
+  cairo: ['cairo', 'القاهرة', 'قاهرة', 'Cairo'],
+  giza: ['giza', 'الجيزة', 'جيزة', 'Giza'],
+  alexandria: ['alexandria', 'الإسكندرية', 'اسكندرية', 'إسكندرية', 'Alexandria'],
+};
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -24,6 +31,7 @@ interface StaffProfilesManagementProps {
 }
 
 export function StaffProfilesManagement({ canEdit, staffContext, companyId }: StaffProfilesManagementProps) {
+  const { selectedCity } = useCity();
   const queryClient = useQueryClient();
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   const [selectedPerson, setSelectedPerson] = useState<any>(null);
@@ -49,32 +57,52 @@ export function StaffProfilesManagement({ canEdit, staffContext, companyId }: St
   });
 
   const { data: drivers = [] } = useQuery({
-    queryKey: ['staff-profiles-drivers', staffContext, companyId],
+    queryKey: ['staff-profiles-drivers', staffContext, companyId, selectedCity],
     queryFn: async () => {
-      let query = supabase.from('drivers').select('id, full_name, phone, belongs_to').order('full_name');
+      let query = supabase.from('drivers').select('id, full_name, phone, belongs_to, city').order('full_name');
       if (staffContext) query = query.in('belongs_to', [staffContext, 'both']);
       const { data, error } = await query;
       if (error) throw error;
+      let filtered = data || [];
       if (companyId) {
         const driverIds = companyLineStaff.map((l: any) => l.driver_id).filter(Boolean);
-        return (data || []).filter((d: any) => driverIds.includes(d.id));
+        filtered = filtered.filter((d: any) => driverIds.includes(d.id));
       }
-      return data;
+      // Filter by city
+      const activeCityKey = (selectedCity || '').toLowerCase();
+      const cityNames = cityMapping[activeCityKey] || [];
+      if (cityNames.length > 0) {
+        filtered = filtered.filter((d: any) => {
+          const c = (d.city || '').toLowerCase();
+          return cityNames.some((name) => c.includes(name.toLowerCase()));
+        });
+      }
+      return filtered;
     },
   });
 
   const { data: supervisors = [] } = useQuery({
-    queryKey: ['staff-profiles-supervisors', staffContext, companyId],
+    queryKey: ['staff-profiles-supervisors', staffContext, companyId, selectedCity],
     queryFn: async () => {
-      let query = supabase.from('supervisors').select('id, full_name, phone, belongs_to').order('full_name');
+      let query = supabase.from('supervisors').select('id, full_name, phone, belongs_to, city').order('full_name');
       if (staffContext) query = query.in('belongs_to', [staffContext, 'both']);
       const { data, error } = await query;
       if (error) throw error;
+      let filtered = data || [];
       if (companyId) {
         const supervisorIds = companyLineStaff.map((l: any) => l.supervisor_id).filter(Boolean);
-        return (data || []).filter((s: any) => supervisorIds.includes(s.id));
+        filtered = filtered.filter((s: any) => supervisorIds.includes(s.id));
       }
-      return data;
+      // Filter by city
+      const activeCityKey = (selectedCity || '').toLowerCase();
+      const cityNames = cityMapping[activeCityKey] || [];
+      if (cityNames.length > 0) {
+        filtered = filtered.filter((s: any) => {
+          const c = (s.city || '').toLowerCase();
+          return cityNames.some((name) => c.includes(name.toLowerCase()));
+        });
+      }
+      return filtered;
     },
   });
 
