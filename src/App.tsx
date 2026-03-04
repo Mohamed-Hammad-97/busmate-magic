@@ -76,7 +76,7 @@ const App = () => (
           <Route path="/register/corporate" element={<RegisterCorporate />} />
           <Route path="/register/private" element={<RegisterPrivate />} />
           <Route path="/services/:serviceType" element={<ServiceDetails />} />
-          <Route path="/company/register/:companyId" element={<CompanyEmployeeRegister />} />
+          
           
           {/* Parent Portal routes */}
           <Route path="/parent/*" element={
@@ -105,6 +105,7 @@ const App = () => (
             <CompanyAuthProvider>
               <Routes>
                 <Route path="/auth" element={<CompanyAuth />} />
+                <Route path="/register/:companyId" element={<CompanyEmployeeRegister />} />
                 <Route path="/" element={<CompanyProtectedRoute><CompanyDashboard /></CompanyProtectedRoute>} />
                 <Route path="*" element={<Navigate to="/company" replace />} />
               </Routes>

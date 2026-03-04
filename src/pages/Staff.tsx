@@ -454,7 +454,7 @@ const Staff = () => {
             </TabsContent>
 
             <TabsContent value="accounts">
-              <DriverAccountsManagement />
+              <DriverAccountsManagement staffContext="school" />
             </TabsContent>
           </Tabs>
         </div>
