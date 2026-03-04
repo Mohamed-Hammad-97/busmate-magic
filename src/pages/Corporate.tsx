@@ -35,6 +35,7 @@ import { StaffProfilesManagement } from '@/components/corporate/StaffProfilesMan
 import { SalaryManagement } from '@/components/corporate/SalaryManagement';
 import { CompanyInvoices } from '@/components/corporate/CompanyInvoices';
 import { CompanyDetailView } from '@/components/corporate/CompanyDetailView';
+import { ImageUploadInput } from '@/components/shared/ImageUploadInput';
 
 const Corporate = () => {
   const queryClient = useQueryClient();
@@ -64,7 +65,7 @@ const Corporate = () => {
   const [companyForm, setCompanyForm] = useState({
     name: '', city: '', location_address: '', contact_person_name: '',
     contact_person_phone: '', notes: '', is_active: true,
-    supervisor_email: '', supervisor_password: '',
+    supervisor_email: '', supervisor_password: '', logo_url: '',
   });
 
   const { data: cities = [] } = useQuery({
@@ -96,15 +97,16 @@ const Corporate = () => {
 
   const saveCompanyMutation = useMutation({
     mutationFn: async () => {
-      const { supervisor_email, supervisor_password, ...companyData } = companyForm;
+      const { supervisor_email, supervisor_password, logo_url, ...companyData } = companyForm;
+      const dataToSave = { ...companyData, logo_url: logo_url || null };
       let companyIdForAccount: string | null = null;
 
       if (selectedCompany) {
-        const { error } = await supabase.from('companies').update(companyData).eq('id', selectedCompany.id);
+        const { error } = await supabase.from('companies').update(dataToSave).eq('id', selectedCompany.id);
         if (error) throw error;
         companyIdForAccount = selectedCompany.id;
       } else {
-        const { data: newCompany, error } = await supabase.from('companies').insert(companyData).select().single();
+        const { data: newCompany, error } = await supabase.from('companies').insert(dataToSave).select().single();
         if (error) throw error;
         companyIdForAccount = newCompany.id;
       }
@@ -161,7 +163,7 @@ const Corporate = () => {
   });
 
   const resetForm = () => {
-    setCompanyForm({ name: '', city: '', location_address: '', contact_person_name: '', contact_person_phone: '', notes: '', is_active: true, supervisor_email: '', supervisor_password: '' });
+    setCompanyForm({ name: '', city: '', location_address: '', contact_person_name: '', contact_person_phone: '', notes: '', is_active: true, supervisor_email: '', supervisor_password: '', logo_url: '' });
     setSelectedCompany(null);
   };
 
@@ -171,7 +173,7 @@ const Corporate = () => {
       name: company.name, city: company.city, location_address: company.location_address || '',
       contact_person_name: company.contact_person_name, contact_person_phone: company.contact_person_phone,
       notes: company.notes || '', is_active: company.is_active,
-      supervisor_email: '', supervisor_password: '',
+      supervisor_email: '', supervisor_password: '', logo_url: company.logo_url || '',
     });
     setCompanyDialogOpen(true);
   };
@@ -293,9 +295,18 @@ const Corporate = () => {
                         
                         {/* Header */}
                         <div className="flex items-start justify-between mb-4">
-                          <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">
-                            {company.name}
-                          </h3>
+                          <div className="flex items-center gap-3">
+                            {company.logo_url ? (
+                              <img src={company.logo_url} alt={company.name} className="h-11 w-11 rounded-xl object-cover ring-2 ring-border/50 shadow-md shrink-0" />
+                            ) : (
+                              <div className="h-11 w-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                                <Building2 className="h-5 w-5 text-primary" />
+                              </div>
+                            )}
+                            <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">
+                              {company.name}
+                            </h3>
+                          </div>
                           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             {canEdit && (
                               <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary" onClick={(e) => { e.stopPropagation(); handleEdit(company); }}>
@@ -411,6 +422,14 @@ const Corporate = () => {
               <Label>{t('corporateMgmt.notes')}</Label>
               <Textarea value={companyForm.notes} onChange={(e) => setCompanyForm({ ...companyForm, notes: e.target.value })} />
             </div>
+            <ImageUploadInput
+              value={companyForm.logo_url}
+              onChange={(url) => setCompanyForm({ ...companyForm, logo_url: url })}
+              label="شعار الشركة"
+              bucket="homepage-assets"
+              folder="company-logos"
+              previewVariant="logo"
+            />
             <div className="border-t pt-4 mt-2">
               <p className="text-sm font-semibold mb-1 text-primary">
                 {selectedCompany ? 'إنشاء حساب مشرف جديد (اختياري)' : 'حساب مشرف الشركة'}

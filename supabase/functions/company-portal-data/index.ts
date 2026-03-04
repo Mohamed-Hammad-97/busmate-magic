@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
       const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
       const { data: company } = await supabase
         .from("companies")
-        .select("id, name, city, is_active")
+        .select("id, name, city, is_active, logo_url")
         .eq("id", companyId)
         .eq("is_active", true)
         .single();

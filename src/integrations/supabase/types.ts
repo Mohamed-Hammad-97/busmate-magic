@@ -176,6 +176,7 @@ export type Database = {
           is_active: boolean
           latitude: number | null
           location_address: string | null
+          logo_url: string | null
           longitude: number | null
           name: string
           notes: string | null
@@ -190,6 +191,7 @@ export type Database = {
           is_active?: boolean
           latitude?: number | null
           location_address?: string | null
+          logo_url?: string | null
           longitude?: number | null
           name: string
           notes?: string | null
@@ -204,6 +206,7 @@ export type Database = {
           is_active?: boolean
           latitude?: number | null
           location_address?: string | null
+          logo_url?: string | null
           longitude?: number | null
           name?: string
           notes?: string | null

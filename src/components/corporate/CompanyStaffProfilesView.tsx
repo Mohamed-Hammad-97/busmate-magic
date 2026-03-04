@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { User, FileText, CreditCard, Truck, CheckCircle, XCircle } from "lucide-react";
+import { User, FileText, Truck, CheckCircle, XCircle } from "lucide-react";
 
 interface StaffMember {
   id: string;
@@ -86,16 +86,7 @@ export function CompanyStaffProfilesView({ staff }: CompanyStaffProfilesViewProp
               </div>
             </div>
 
-            {/* Bank Info */}
-            {member.profile?.bank_name && (
-              <div className="pt-2 border-t border-border/50">
-                <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5 mb-1">
-                  <CreditCard className="h-3.5 w-3.5" />
-                  Bank Details
-                </p>
-                <p className="text-xs text-foreground">{member.profile.bank_name} — {member.profile.bank_account_name || "N/A"}</p>
-              </div>
-            )}
+            {/* Bank info intentionally hidden from company portal for confidentiality */}
           </CardContent>
         </Card>
       ))}

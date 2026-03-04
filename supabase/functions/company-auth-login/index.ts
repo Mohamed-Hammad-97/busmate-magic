@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
     // Find company account
     const { data: account, error: fetchError } = await supabase
       .from("company_accounts")
-      .select("*, companies(id, name, city, is_active)")
+      .select("*, companies(id, name, city, is_active, logo_url)")
       .eq("email", email.toLowerCase())
       .eq("is_active", true)
       .maybeSingle();
@@ -109,6 +109,7 @@ Deno.serve(async (req) => {
           company_id: account.company_id,
           company_name: account.companies.name,
           company_city: account.companies.city,
+          company_logo_url: account.companies.logo_url || null,
         },
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
