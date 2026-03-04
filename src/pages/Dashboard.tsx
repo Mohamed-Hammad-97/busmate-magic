@@ -3,6 +3,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PageHero } from "@/components/layout/PageHero";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCity } from "@/contexts/CityContext";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Users,
@@ -24,8 +25,15 @@ interface DashboardStats {
   totalDrivers: number;
 }
 
+const cityMapping: Record<string, string[]> = {
+  cairo: ['cairo', 'القاهرة', 'قاهرة', 'Cairo'],
+  giza: ['giza', 'الجيزة', 'جيزة', 'Giza'],
+  alexandria: ['alexandria', 'الإسكندرية', 'اسكندرية', 'إسكندرية', 'Alexandria'],
+};
+
 export default function Dashboard() {
   const { employee, hasDepartment, isSuperAdmin } = useAuth();
+  const { selectedCity } = useCity();
   const [stats, setStats] = useState<DashboardStats>({
     totalStudents: 0,
     totalSchools: 0,
@@ -39,29 +47,48 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
+        // Fetch all data to filter client-side by city
         const [
-          { count: students },
-          { count: schools },
-          { count: routes },
-          { count: pendingPayments },
-          { count: pendingRegs },
-          { count: drivers },
+          { data: registrations },
+          { data: schools },
+          { data: routes },
+          { data: pendingPaymentsData },
+          { data: pendingRegsData },
+          { data: driversData },
         ] = await Promise.all([
-          supabase.from("registrations").select("*", { count: "exact", head: true }),
-          supabase.from("schools").select("*", { count: "exact", head: true }).eq("is_active", true),
-          supabase.from("routes").select("*", { count: "exact", head: true }).eq("is_active", true),
-          supabase.from("payments").select("*", { count: "exact", head: true }).eq("status", "pending"),
-          supabase.from("registrations").select("*", { count: "exact", head: true }).eq("status", "pending_fees"),
-          supabase.from("drivers").select("*", { count: "exact", head: true }).eq("is_active", true),
+          supabase.from("registrations").select("id, school_id, status, schools!inner(city)"),
+          supabase.from("schools").select("id, city, is_active").eq("is_active", true),
+          supabase.from("routes").select("id, school_id, is_active, schools!inner(city)").eq("is_active", true),
+          supabase.from("payments").select("id, status").eq("status", "pending"),
+          supabase.from("registrations").select("id, school_id, status, schools!inner(city)").eq("status", "pending_fees"),
+          supabase.from("drivers").select("id, city, is_active").eq("is_active", true),
         ]);
 
+        const cityNames = selectedCity !== 'all' ? (cityMapping[selectedCity] || []) : [];
+        const matchesCity = (city: string | null) => {
+          if (cityNames.length === 0) return true;
+          const c = (city || "").toLowerCase();
+          return cityNames.some((name) => c.includes(name.toLowerCase()));
+        };
+
+        const filteredStudents = selectedCity === 'all' ? (registrations || []) :
+          (registrations || []).filter((r: any) => matchesCity(r.schools?.city));
+        const filteredSchools = selectedCity === 'all' ? (schools || []) :
+          (schools || []).filter((s: any) => matchesCity(s.city));
+        const filteredRoutes = selectedCity === 'all' ? (routes || []) :
+          (routes || []).filter((r: any) => matchesCity(r.schools?.city));
+        const filteredPendingRegs = selectedCity === 'all' ? (pendingRegsData || []) :
+          (pendingRegsData || []).filter((r: any) => matchesCity(r.schools?.city));
+        const filteredDrivers = selectedCity === 'all' ? (driversData || []) :
+          (driversData || []).filter((d: any) => matchesCity(d.city));
+
         setStats({
-          totalStudents: students || 0,
-          totalSchools: schools || 0,
-          activeRoutes: routes || 0,
-          pendingPayments: pendingPayments || 0,
-          pendingRegistrations: pendingRegs || 0,
-          totalDrivers: drivers || 0,
+          totalStudents: filteredStudents.length,
+          totalSchools: filteredSchools.length,
+          activeRoutes: filteredRoutes.length,
+          pendingPayments: pendingPaymentsData?.length || 0,
+          pendingRegistrations: filteredPendingRegs.length,
+          totalDrivers: filteredDrivers.length,
         });
       } catch (error) {
         console.error("Error fetching stats:", error);
@@ -71,7 +98,7 @@ export default function Dashboard() {
     };
 
     fetchStats();
-  }, []);
+  }, [selectedCity]);
 
   const statCards = [
     {
