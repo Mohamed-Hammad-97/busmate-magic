@@ -31,9 +31,10 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Plus, Search, Users, Car, UserCheck, Edit, MapPin, KeyRound, TrendingUp } from 'lucide-react';
+import { Plus, Search, Users, Car, UserCheck, Edit, MapPin, KeyRound, TrendingUp, CreditCard } from 'lucide-react';
 import { useCity } from '@/contexts/CityContext';
 import { DriverAccountsManagement } from '@/components/staff/DriverAccountsManagement';
+import { StaffProfilesManagement } from '@/components/corporate/StaffProfilesManagement';
 import { PageHero } from '@/components/layout/PageHero';
 
 const Staff = () => {
@@ -256,6 +257,10 @@ const Staff = () => {
                 <Users className="h-4 w-4" />
                 {t('staff.supervisors')}
               </TabsTrigger>
+              <TabsTrigger value="profiles" className="gap-2 rounded-lg px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
+                <CreditCard className="h-4 w-4" />
+                ملفات الطاقم
+              </TabsTrigger>
               <TabsTrigger value="accounts" className="gap-2 rounded-lg px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
                 <KeyRound className="h-4 w-4" />
                 {t('staff.accounts')}
@@ -442,6 +447,10 @@ const Staff = () => {
                   </div>
                 )}
               </div>
+            </TabsContent>
+
+            <TabsContent value="profiles">
+              <StaffProfilesManagement canEdit={true} staffContext="school" />
             </TabsContent>
 
             <TabsContent value="accounts">

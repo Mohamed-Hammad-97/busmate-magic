@@ -5,7 +5,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Building2, LogOut, Truck, FileText, Users, Navigation,
   User, Shield, MessageCircle, LayoutDashboard,
-  ChevronLeft, ChevronRight, Settings,
+  ChevronLeft, ChevronRight, Settings, CreditCard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import seaterLogo from "@/assets/seater-logo.jpg";
@@ -28,6 +28,7 @@ const navItems: NavItem[] = [
   { label: "Lines", value: "lines", icon: Truck },
   { label: "Live Tracking", value: "tracking", icon: Navigation },
   { label: "Drivers & Staff", value: "drivers", icon: User },
+  { label: "Staff Files", value: "staff-profiles", icon: CreditCard },
   { label: "Invoices", value: "invoices", icon: FileText },
   { label: "Employees", value: "employees", icon: Users },
   { label: "Chat", value: "chat", icon: MessageCircle },
