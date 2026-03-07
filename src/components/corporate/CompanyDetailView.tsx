@@ -44,8 +44,8 @@ export function CompanyDetailView({ company, onBack, canEdit, isFinance }: Compa
       <div className="relative overflow-hidden rounded-3xl border border-border/30 bg-card shadow-xl">
         {/* Background decorative elements */}
         <div className="absolute inset-0 opacity-[0.03]">
-          <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-primary" />
-          <div className="absolute -bottom-32 -left-32 w-96 h-96 rounded-full bg-primary" />
+          <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-primary/50" />
+          <div className="absolute -bottom-32 -left-32 w-96 h-96 rounded-full bg-primary/50" />
         </div>
 
         {/* Top accent bar */}
@@ -91,7 +91,7 @@ export function CompanyDetailView({ company, onBack, canEdit, isFinance }: Compa
                   <Building2 className="h-7 w-7 text-primary-foreground" />
                 </div>
               )}
-              <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 border-2 border-card" />
+              <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-success border-2 border-card" />
             </div>
 
             <div className="flex-1 min-w-0">
