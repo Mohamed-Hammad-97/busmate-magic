@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, Bell, Clock, ChevronRight, ChevronDown } from 'lucide-react';
+import { AlertTriangle, Bell, Clock, ChevronRight, ChevronDown, ExternalLink } from 'lucide-react';
 import { differenceInDays, isAfter, isBefore, addDays } from 'date-fns';
 
 interface Payment {
@@ -28,6 +29,7 @@ interface PaymentRemindersProps {
 
 export const PaymentReminders: React.FC<PaymentRemindersProps> = ({ payments, onViewPayment }) => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const today = new Date();
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
 
@@ -155,8 +157,8 @@ export const PaymentReminders: React.FC<PaymentRemindersProps> = ({ payments, on
           <div key={section.key} className="space-y-0">
             {/* Summary Card */}
             <button
-              onClick={() => toggleSection(section.key)}
-              className={`w-full rounded-2xl border p-4 transition-all duration-200 hover:shadow-md ${section.bgClass} ${isExpanded ? 'rounded-b-none' : ''}`}
+              onClick={() => navigate(`/payment-reminders?type=${section.key}`)}
+              className={`w-full rounded-2xl border p-4 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 ${section.bgClass}`}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -172,22 +174,11 @@ export const PaymentReminders: React.FC<PaymentRemindersProps> = ({ payments, on
                   <Badge variant="secondary" className={`text-xs ${section.badgeBg}`}>
                     {section.payments.length}
                   </Badge>
-                  <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                  <ExternalLink className="h-4 w-4 text-muted-foreground" />
                 </div>
               </div>
             </button>
 
-            {/* Expanded Details */}
-            {isExpanded && (
-              <div className={`rounded-b-2xl border border-t-0 ${section.bgClass} p-3 space-y-2 animate-fade-in`}>
-                {section.payments.slice(0, 5).map(p => renderPaymentItem(p, section.type))}
-                {section.payments.length > 5 && (
-                  <p className="text-xs text-muted-foreground text-center py-1">
-                    +{section.payments.length - 5} {t('paymentReminders.morePayments')}
-                  </p>
-                )}
-              </div>
-            )}
           </div>
         );
       })}
