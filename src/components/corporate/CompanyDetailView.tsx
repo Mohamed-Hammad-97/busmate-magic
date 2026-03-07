@@ -65,8 +65,8 @@ export function CompanyDetailView({ company, onBack, canEdit, isFinance }: Compa
             </Button>
 
             {company.is_active ? (
-              <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-xs font-semibold px-4 py-1.5 rounded-full backdrop-blur-sm">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block me-2 animate-pulse" />
+              <Badge className="bg-success/10 text-success border-success/20 text-xs font-semibold px-4 py-1.5 rounded-full backdrop-blur-sm">
+                <span className="w-1.5 h-1.5 rounded-full bg-success inline-block me-2 animate-pulse" />
                 نشط
               </Badge>
             ) : (
