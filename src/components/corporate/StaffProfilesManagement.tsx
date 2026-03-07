@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -12,7 +13,6 @@ const cityMapping: Record<string, string[]> = {
   alexandria: ['alexandria', 'الإسكندرية', 'اسكندرية', 'إسكندرية', 'Alexandria'],
 };
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
@@ -31,20 +31,15 @@ interface StaffProfilesManagementProps {
 }
 
 export function StaffProfilesManagement({ canEdit, staffContext, companyId }: StaffProfilesManagementProps) {
+  const { t } = useTranslation();
   const { selectedCity } = useCity();
   const queryClient = useQueryClient();
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   const [selectedPerson, setSelectedPerson] = useState<any>(null);
   const [personType, setPersonType] = useState<'driver' | 'supervisor'>('driver');
-  const [profileForm, setProfileForm] = useState({
-    bank_account_name: '',
-    bank_name: '',
-    bank_account_number: '',
-    bank_iban: '',
-  });
+  const [profileForm, setProfileForm] = useState({ bank_account_name: '', bank_name: '', bank_account_number: '', bank_iban: '' });
   const [uploading, setUploading] = useState(false);
 
-  // Get line assignments for company filtering
   const { data: companyLineStaff = [] } = useQuery({
     queryKey: ['company-line-staff', companyId],
     queryFn: async () => {
@@ -68,14 +63,10 @@ export function StaffProfilesManagement({ canEdit, staffContext, companyId }: St
         const driverIds = companyLineStaff.map((l: any) => l.driver_id).filter(Boolean);
         filtered = filtered.filter((d: any) => driverIds.includes(d.id));
       }
-      // Filter by city
       const activeCityKey = (selectedCity || '').toLowerCase();
       const cityNames = cityMapping[activeCityKey] || [];
       if (cityNames.length > 0) {
-        filtered = filtered.filter((d: any) => {
-          const c = (d.city || '').toLowerCase();
-          return cityNames.some((name) => c.includes(name.toLowerCase()));
-        });
+        filtered = filtered.filter((d: any) => { const c = (d.city || '').toLowerCase(); return cityNames.some((name) => c.includes(name.toLowerCase())); });
       }
       return filtered;
     },
@@ -93,14 +84,10 @@ export function StaffProfilesManagement({ canEdit, staffContext, companyId }: St
         const supervisorIds = companyLineStaff.map((l: any) => l.supervisor_id).filter(Boolean);
         filtered = filtered.filter((s: any) => supervisorIds.includes(s.id));
       }
-      // Filter by city
       const activeCityKey = (selectedCity || '').toLowerCase();
       const cityNames = cityMapping[activeCityKey] || [];
       if (cityNames.length > 0) {
-        filtered = filtered.filter((s: any) => {
-          const c = (s.city || '').toLowerCase();
-          return cityNames.some((name) => c.includes(name.toLowerCase()));
-        });
+        filtered = filtered.filter((s: any) => { const c = (s.city || '').toLowerCase(); return cityNames.some((name) => c.includes(name.toLowerCase())); });
       }
       return filtered;
     },
@@ -122,11 +109,7 @@ export function StaffProfilesManagement({ canEdit, staffContext, companyId }: St
   const saveProfileMutation = useMutation({
     mutationFn: async () => {
       const existing = getProfile(selectedPerson.id, personType);
-      const payload = {
-        ...profileForm,
-        [personType === 'driver' ? 'driver_id' : 'supervisor_id']: selectedPerson.id,
-      };
-
+      const payload = { ...profileForm, [personType === 'driver' ? 'driver_id' : 'supervisor_id']: selectedPerson.id };
       if (existing) {
         const { error } = await supabase.from('staff_profiles').update(payload).eq('id', existing.id);
         if (error) throw error;
@@ -135,24 +118,14 @@ export function StaffProfilesManagement({ canEdit, staffContext, companyId }: St
         if (error) throw error;
       }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['staff-profiles'] });
-      toast.success('تم حفظ البيانات');
-      setProfileDialogOpen(false);
-    },
-    onError: () => toast.error('حدث خطأ'),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['staff-profiles'] }); toast.success(t('corporateMgmt.dataSaved')); setProfileDialogOpen(false); },
+    onError: () => toast.error(t('corporateMgmt.error')),
   });
 
   const handleOpenProfile = (person: any, type: 'driver' | 'supervisor') => {
-    setSelectedPerson(person);
-    setPersonType(type);
+    setSelectedPerson(person); setPersonType(type);
     const profile = getProfile(person.id, type);
-    setProfileForm({
-      bank_account_name: profile?.bank_account_name || '',
-      bank_name: profile?.bank_name || '',
-      bank_account_number: profile?.bank_account_number || '',
-      bank_iban: profile?.bank_iban || '',
-    });
+    setProfileForm({ bank_account_name: profile?.bank_account_name || '', bank_name: profile?.bank_name || '', bank_account_number: profile?.bank_account_number || '', bank_iban: profile?.bank_iban || '' });
     setProfileDialogOpen(true);
   };
 
@@ -164,26 +137,14 @@ export function StaffProfilesManagement({ canEdit, staffContext, companyId }: St
       const path = `${personType}/${selectedPerson.id}/${fieldName}-${Date.now()}.${ext}`;
       const { error: uploadError } = await supabase.storage.from('staff-documents').upload(path, file);
       if (uploadError) throw uploadError;
-
       const { data: { publicUrl } } = supabase.storage.from('staff-documents').getPublicUrl(path);
-
       const existing = getProfile(selectedPerson.id, personType);
       const update: any = { [`${fieldName}_url`]: publicUrl };
-      if (existing) {
-        await supabase.from('staff_profiles').update(update).eq('id', existing.id);
-      } else {
-        await supabase.from('staff_profiles').insert({
-          ...update,
-          [personType === 'driver' ? 'driver_id' : 'supervisor_id']: selectedPerson.id,
-        });
-      }
+      if (existing) { await supabase.from('staff_profiles').update(update).eq('id', existing.id); }
+      else { await supabase.from('staff_profiles').insert({ ...update, [personType === 'driver' ? 'driver_id' : 'supervisor_id']: selectedPerson.id }); }
       queryClient.invalidateQueries({ queryKey: ['staff-profiles'] });
-      toast.success('تم رفع الملف');
-    } catch (err) {
-      toast.error('خطأ في رفع الملف');
-    } finally {
-      setUploading(false);
-    }
+      toast.success(t('corporateMgmt.fileUploaded'));
+    } catch { toast.error(t('corporateMgmt.fileUploadError')); } finally { setUploading(false); }
   };
 
   const allStaff = [
@@ -197,21 +158,20 @@ export function StaffProfilesManagement({ canEdit, staffContext, companyId }: St
         <div className="px-6 py-4 border-b border-border/50 flex items-center gap-3">
           <div className="p-1.5 rounded-lg bg-primary/10"><User className="h-4 w-4 text-primary" /></div>
           <div>
-            <h2 className="text-sm font-semibold text-foreground">ملفات السائقين والمشرفين</h2>
-            <p className="text-xs text-muted-foreground">{allStaff.length} شخص</p>
+            <h2 className="text-sm font-semibold text-foreground">{t('corporateMgmt.staffDriversFiles')}</h2>
+            <p className="text-xs text-muted-foreground">{allStaff.length} {t('corporateMgmt.persons')}</p>
           </div>
         </div>
-
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/30 hover:bg-muted/30">
-                <TableHead className="text-xs font-semibold uppercase text-muted-foreground text-right">الاسم</TableHead>
-                <TableHead className="text-xs font-semibold uppercase text-muted-foreground text-right">النوع</TableHead>
-                <TableHead className="text-xs font-semibold uppercase text-muted-foreground text-right">الهاتف</TableHead>
-                <TableHead className="text-xs font-semibold uppercase text-muted-foreground text-right">البنك</TableHead>
-                <TableHead className="text-xs font-semibold uppercase text-muted-foreground text-right">المستندات</TableHead>
-                <TableHead className="text-xs font-semibold uppercase text-muted-foreground text-right">إجراءات</TableHead>
+                <TableHead className="text-xs font-semibold uppercase text-muted-foreground text-right">{t('corporateMgmt.name')}</TableHead>
+                <TableHead className="text-xs font-semibold uppercase text-muted-foreground text-right">{t('corporateMgmt.type')}</TableHead>
+                <TableHead className="text-xs font-semibold uppercase text-muted-foreground text-right">{t('common.phone')}</TableHead>
+                <TableHead className="text-xs font-semibold uppercase text-muted-foreground text-right">{t('corporateMgmt.bank')}</TableHead>
+                <TableHead className="text-xs font-semibold uppercase text-muted-foreground text-right">{t('corporateMgmt.documents')}</TableHead>
+                <TableHead className="text-xs font-semibold uppercase text-muted-foreground text-right">{t('corporateMgmt.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -223,30 +183,24 @@ export function StaffProfilesManagement({ canEdit, staffContext, companyId }: St
                   <TableRow key={`${person.type}-${person.id}`} className="hover:bg-muted/20">
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
-                          {person.full_name[0]}
-                        </div>
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">{person.full_name[0]}</div>
                         <span className="font-medium text-sm">{person.full_name}</span>
                       </div>
                     </TableCell>
                     <TableCell>
                       <Badge variant={person.type === 'driver' ? 'outline' : 'secondary'} className="text-xs">
-                        {person.type === 'driver' ? 'سائق' : 'مشرف'}
+                        {person.type === 'driver' ? t('attendance.driver') : t('attendance.supervisor')}
                       </Badge>
                     </TableCell>
                     <TableCell dir="ltr" className="text-sm text-muted-foreground text-right">{person.phone}</TableCell>
                     <TableCell>
                       {hasBank ? (
-                        <div className="inline-flex items-center gap-1 text-xs text-success">
-                          <CreditCard className="h-3 w-3" /> مسجل
-                        </div>
+                        <div className="inline-flex items-center gap-1 text-xs text-success"><CreditCard className="h-3 w-3" /> {t('corporateMgmt.registered')}</div>
                       ) : (
-                        <span className="text-xs text-muted-foreground">غير مسجل</span>
+                        <span className="text-xs text-muted-foreground">{t('corporateMgmt.notRegistered')}</span>
                       )}
                     </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="text-xs font-mono">{docCount}/3</Badge>
-                    </TableCell>
+                    <TableCell><Badge variant="outline" className="text-xs font-mono">{docCount}/3</Badge></TableCell>
                     <TableCell>
                       <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary" onClick={() => handleOpenProfile(person, person.type)}>
                         <Edit className="h-4 w-4" />
@@ -264,23 +218,22 @@ export function StaffProfilesManagement({ canEdit, staffContext, companyId }: St
       <Dialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>ملف {selectedPerson?.full_name}</DialogTitle>
+            <DialogTitle>{t('corporateMgmt.profileOf')} {selectedPerson?.full_name}</DialogTitle>
           </DialogHeader>
           <div className="space-y-6">
-            {/* Bank Details */}
             <div className="space-y-4">
-              <h3 className="text-sm font-semibold flex items-center gap-2"><CreditCard className="h-4 w-4" /> بيانات الحساب البنكي</h3>
+              <h3 className="text-sm font-semibold flex items-center gap-2"><CreditCard className="h-4 w-4" /> {t('corporateMgmt.bankDetails')}</h3>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label className="text-xs">اسم صاحب الحساب</Label>
+                  <Label className="text-xs">{t('corporateMgmt.accountHolder')}</Label>
                   <Input value={profileForm.bank_account_name} onChange={(e) => setProfileForm({ ...profileForm, bank_account_name: e.target.value })} disabled={!canEdit} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">اسم البنك</Label>
+                  <Label className="text-xs">{t('corporateMgmt.bankName')}</Label>
                   <Input value={profileForm.bank_name} onChange={(e) => setProfileForm({ ...profileForm, bank_name: e.target.value })} disabled={!canEdit} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">رقم الحساب</Label>
+                  <Label className="text-xs">{t('corporateMgmt.accountNumber')}</Label>
                   <Input value={profileForm.bank_account_number} onChange={(e) => setProfileForm({ ...profileForm, bank_account_number: e.target.value })} dir="ltr" disabled={!canEdit} />
                 </div>
                 <div className="space-y-1.5">
@@ -290,18 +243,16 @@ export function StaffProfilesManagement({ canEdit, staffContext, companyId }: St
               </div>
               {canEdit && (
                 <Button size="sm" onClick={() => saveProfileMutation.mutate()} disabled={saveProfileMutation.isPending}>
-                  {saveProfileMutation.isPending ? 'جاري الحفظ...' : 'حفظ البيانات البنكية'}
+                  {saveProfileMutation.isPending ? t('corporateMgmt.savingData') : t('corporateMgmt.saveBankDetails')}
                 </Button>
               )}
             </div>
-
-            {/* Document Uploads */}
             <div className="space-y-4">
-              <h3 className="text-sm font-semibold flex items-center gap-2"><FileText className="h-4 w-4" /> المستندات</h3>
+              <h3 className="text-sm font-semibold flex items-center gap-2"><FileText className="h-4 w-4" /> {t('corporateMgmt.documentsSection')}</h3>
               {[
-                { key: 'id_document', label: 'البطاقة الشخصية' },
-                { key: 'license_document', label: 'رخصة القيادة' },
-                { key: 'contract_document', label: 'العقد' },
+                { key: 'id_document', label: t('corporateMgmt.nationalId') },
+                { key: 'license_document', label: t('corporateMgmt.driverLicense') },
+                { key: 'contract_document', label: t('corporateMgmt.contract') },
               ].map(doc => {
                 const profile = selectedPerson ? getProfile(selectedPerson.id, personType) : null;
                 const url = profile?.[`${doc.key}_url` as keyof typeof profile] as string | undefined;
@@ -310,7 +261,7 @@ export function StaffProfilesManagement({ canEdit, staffContext, companyId }: St
                     <div className="flex items-center gap-2">
                       <FileText className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm">{doc.label}</span>
-                      {url && <Badge variant="outline" className="text-xs text-success">مرفوع</Badge>}
+                      {url && <Badge variant="outline" className="text-xs text-success">{t('corporateMgmt.uploaded')}</Badge>}
                     </div>
                     <div className="flex items-center gap-2">
                       {url && (
@@ -320,18 +271,10 @@ export function StaffProfilesManagement({ canEdit, staffContext, companyId }: St
                       )}
                       {canEdit && (
                         <label className="cursor-pointer">
-                          <input
-                            type="file"
-                            className="hidden"
-                            accept=".pdf,.jpg,.jpeg,.png"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) handleFileUpload(file, doc.key);
-                            }}
-                          />
+                          <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => { const file = e.target.files?.[0]; if (file) handleFileUpload(file, doc.key); }} />
                           <div className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 px-2 py-1 rounded-md hover:bg-primary/5">
                             {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
-                            رفع
+                            {t('corporateMgmt.upload')}
                           </div>
                         </label>
                       )}
