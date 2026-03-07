@@ -342,14 +342,13 @@ export function Sidebar({ onMobileNavigate }: SidebarProps = {}) {
             </div>
             {!effectiveCollapsed && (
               <div className="overflow-hidden">
-                <span className="text-lg font-bold text-sidebar-foreground tracking-tight">Seater</span>
-                <p className="text-[10px] text-sidebar-muted font-medium uppercase tracking-widest">Transport</p>
+                <span className="text-lg font-extrabold text-sidebar-foreground tracking-tight" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Seater</span>
               </div>
             )}
           </div>
 
           {/* Scrollable content */}
-          <div className="flex-1 overflow-y-auto scrollbar-thin">
+          <div className="flex-1 overflow-y-auto sidebar-scroll">
             <nav className={cn("space-y-0.5 py-4", effectiveCollapsed ? "px-2" : "px-3")}>
               {navEntries.map(entry => {
                 if (isGroup(entry)) {
