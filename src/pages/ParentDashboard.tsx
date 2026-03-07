@@ -183,15 +183,15 @@ export default function ParentDashboard() {
   });
 
   const statusLabels: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-    pending_fees: { label: "Pending Fees", variant: "secondary" },
-    complete: { label: "Complete", variant: "default" },
-    cancelled: { label: "Cancelled", variant: "destructive" },
+    pending_fees: { label: t('parentPortal.pendingFees'), variant: "secondary" },
+    complete: { label: t('parentPortal.complete'), variant: "default" },
+    cancelled: { label: t('parentPortal.cancelled'), variant: "destructive" },
   };
 
   const paymentStatusLabels: Record<string, { label: string; icon: React.ReactNode }> = {
-    paid: { label: "Paid", icon: <CheckCircle className="h-4 w-4 text-green-500" /> },
-    pending: { label: "Pending", icon: <Clock className="h-4 w-4 text-yellow-500" /> },
-    overdue: { label: "Overdue", icon: <AlertCircle className="h-4 w-4 text-red-500" /> },
+    paid: { label: t('parentPortal.paid'), icon: <CheckCircle className="h-4 w-4 text-green-500" /> },
+    pending: { label: t('parentPortal.pending'), icon: <Clock className="h-4 w-4 text-yellow-500" /> },
+    overdue: { label: t('parentPortal.overdue'), icon: <AlertCircle className="h-4 w-4 text-red-500" /> },
   };
 
   const paymentSummary = registrations.reduce(
@@ -210,13 +210,13 @@ export default function ParentDashboard() {
   );
 
   const navItems = [
-    { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { key: "tracking", label: "Tracking", icon: Navigation },
-    { key: "payments", label: "Payments", icon: Wallet },
-    { key: "children", label: "My Kids", icon: School },
-    { key: "routes", label: "Routes", icon: Route },
-    { key: "absences", label: "Absences", icon: CalendarOff },
-    { key: "chat", label: "Messages", icon: MessageCircle },
+    { key: "dashboard", label: t('parentPortal.dashboard'), icon: LayoutDashboard },
+    { key: "tracking", label: t('parentPortal.tracking'), icon: Navigation },
+    { key: "payments", label: t('parentPortal.payments'), icon: Wallet },
+    { key: "children", label: t('parentPortal.myKids'), icon: School },
+    { key: "routes", label: t('parentPortal.routes'), icon: Route },
+    { key: "absences", label: t('parentPortal.absences'), icon: CalendarOff },
+    { key: "chat", label: t('parentPortal.messages'), icon: MessageCircle },
   ];
 
   const renderContent = () => {
