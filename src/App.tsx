@@ -30,6 +30,7 @@ import RoutesPage from "./pages/Routes";
 import AIRoutes from "./pages/AIRoutes";
 import LiveTracking from "./pages/LiveTracking";
 import Payments from "./pages/Payments";
+import PaymentReminderDetails from "./pages/PaymentReminderDetails";
 import Staff from "./pages/Staff";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
@@ -127,6 +128,7 @@ const App = () => (
                 <Route path="/live-tracking" element={<ProtectedRoute><LiveTracking /></ProtectedRoute>} />
                 <Route path="/ai-routes" element={<ProtectedRoute><AIRoutes /></ProtectedRoute>} />
                 <Route path="/payments" element={<ProtectedRoute><Payments /></ProtectedRoute>} />
+                <Route path="/payment-reminders" element={<ProtectedRoute><PaymentReminderDetails /></ProtectedRoute>} />
                 <Route path="/staff" element={<ProtectedRoute><Staff /></ProtectedRoute>} />
                 <Route path="/support-chat" element={<ProtectedRoute><SupportChat /></ProtectedRoute>} />
                 <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
