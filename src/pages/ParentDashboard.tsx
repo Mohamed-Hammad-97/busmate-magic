@@ -232,25 +232,25 @@ export default function ParentDashboard() {
                     <TrendingUp className="h-6 w-6" />
                   </div>
                   <div className="min-w-0">
-                    <h2 className="text-xl sm:text-2xl font-bold truncate">Welcome, {parentAccount?.parent_name}</h2>
-                    <p className="text-sm text-primary-foreground/70 mt-0.5">Here's an overview of your account</p>
+                    <h2 className="text-xl sm:text-2xl font-bold truncate">{t('parentPortal.welcome')}, {parentAccount?.parent_name}</h2>
+                    <p className="text-sm text-primary-foreground/70 mt-0.5">{t('parentPortal.accountOverview')}</p>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2.5">
                   <div className="flex items-center gap-2 bg-primary-foreground/15 backdrop-blur-sm rounded-full px-4 py-2">
                     <School className="h-4 w-4" />
                     <span className="font-bold text-sm">{registrations.length}</span>
-                    <span className="text-xs text-primary-foreground/80">Students</span>
+                    <span className="text-xs text-primary-foreground/80">{t('parentPortal.students')}</span>
                   </div>
                   <div className="flex items-center gap-2 bg-primary-foreground/15 backdrop-blur-sm rounded-full px-4 py-2">
                     <CheckCircle className="h-4 w-4" />
                     <span className="font-bold text-sm">{paymentSummary.paid.toLocaleString()}</span>
-                    <span className="text-xs text-primary-foreground/80">Paid</span>
+                    <span className="text-xs text-primary-foreground/80">{t('parentPortal.paid')}</span>
                   </div>
                   <div className="flex items-center gap-2 bg-primary-foreground/15 backdrop-blur-sm rounded-full px-4 py-2">
                     <CreditCard className="h-4 w-4" />
                     <span className="font-bold text-sm">{paymentSummary.pending.toLocaleString()}</span>
-                    <span className="text-xs text-primary-foreground/80">Remaining</span>
+                    <span className="text-xs text-primary-foreground/80">{t('parentPortal.remaining')}</span>
                   </div>
                 </div>
               </CardContent>
@@ -263,14 +263,14 @@ export default function ParentDashboard() {
                 <CardContent className="p-4">
                   <div className="flex items-center gap-2 mb-3">
                     <div className="h-2.5 w-2.5 rounded-full bg-green-500 animate-pulse" />
-                    <span className="text-xs font-semibold text-green-600 uppercase tracking-wider">Current Route Status</span>
+                    <span className="text-xs font-semibold text-green-600 uppercase tracking-wider">{t('parentPortal.currentRouteStatus')}</span>
                   </div>
                   <h3 className="font-bold text-base sm:text-lg">
                     {routeAssignments[0].routes?.name}
                   </h3>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Student: {routeAssignments[0].registrations?.student_name}
-                    {routeAssignments[0].routes?.drivers && ` • Driver: ${routeAssignments[0].routes.drivers.full_name}`}
+                    {t('parentPortal.student')}: {routeAssignments[0].registrations?.student_name}
+                    {routeAssignments[0].routes?.drivers && ` • ${t('parentPortal.driverLabel')}: ${routeAssignments[0].routes.drivers.full_name}`}
                   </p>
                 </CardContent>
               </Card>
@@ -291,7 +291,7 @@ export default function ParentDashboard() {
                         <Receipt className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                       </div>
                       <div className="min-w-0">
-                        <h4 className="font-semibold text-sm sm:text-base">Next Payment Due</h4>
+                        <h4 className="font-semibold text-sm sm:text-base">{t('parentPortal.nextPaymentDue')}</h4>
                         <p className="text-xs text-muted-foreground truncate">
                           {Number(nextPayment.amount).toLocaleString()} EGP • Due {format(new Date(nextPayment.due_date), "dd MMM")}
                         </p>
@@ -300,10 +300,10 @@ export default function ParentDashboard() {
                     <Button
                       size="sm"
                       className="shrink-0 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-md text-xs sm:text-sm"
-                      onClick={() => toast({ title: "Online Payment", description: "Online payment will be available soon" })}
+                      onClick={() => toast({ title: t('parentPortal.onlinePayment'), description: t('parentPortal.onlinePaymentSoon') })}
                     >
                       <Wallet className="h-3.5 w-3.5 mr-1" />
-                      Pay Now
+                      {t('parentPortal.payNow')}
                     </Button>
                   </CardContent>
                 </Card>
@@ -314,7 +314,7 @@ export default function ParentDashboard() {
             <div>
               <h3 className="font-bold text-base mb-3 flex items-center gap-2">
                 <School className="h-4 w-4 text-primary" />
-                Registered Children
+                {t('parentPortal.registeredChildren')}
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {registrations.map((reg: any) => (
@@ -346,12 +346,12 @@ export default function ParentDashboard() {
       case "children":
         return (
           <div className="space-y-4">
-            <h2 className="text-xl font-bold">My Kids</h2>
+            <h2 className="text-xl font-bold">{t('parentPortal.myKidsTitle')}</h2>
             {registrations.length === 0 ? (
               <Card className="border-0 shadow-md">
                 <CardContent className="py-12 text-center text-muted-foreground">
                   <School className="h-12 w-12 mx-auto mb-3 text-muted-foreground/40" />
-                  <p>No registered students</p>
+                  <p>{t('parentPortal.noStudents')}</p>
                 </CardContent>
               </Card>
             ) : (
@@ -385,13 +385,13 @@ export default function ParentDashboard() {
                   <CardContent className="px-4 sm:px-6">
                     <div className="grid grid-cols-2 gap-2 sm:gap-3 text-sm">
                       <div className="p-2 sm:p-2.5 bg-muted/50 rounded-lg">
-                        <span className="text-muted-foreground text-[10px] sm:text-xs block">Car Type</span>
-                        <span className="font-medium text-xs sm:text-sm">{reg.car_type === "ac" ? "AC" : "Non-AC"}</span>
+                        <span className="text-muted-foreground text-[10px] sm:text-xs block">{t('parentPortal.carType')}</span>
+                        <span className="font-medium text-xs sm:text-sm">{reg.car_type === "ac" ? t('parentPortal.ac') : t('parentPortal.nonAc')}</span>
                       </div>
                       <div className="p-2 sm:p-2.5 bg-muted/50 rounded-lg">
-                        <span className="text-muted-foreground text-[10px] sm:text-xs block">Department</span>
+                        <span className="text-muted-foreground text-[10px] sm:text-xs block">{t('parentPortal.department')}</span>
                         <span className="font-medium text-xs sm:text-sm">
-                          {reg.education_department === "national" ? "National" : reg.education_department === "ig" ? "IG" : "American"}
+                          {reg.education_department === "national" ? t('parentPortal.national') : reg.education_department === "ig" ? t('parentPortal.ig') : t('parentPortal.american')}
                         </span>
                       </div>
                     </div>
@@ -405,13 +405,13 @@ export default function ParentDashboard() {
       case "routes":
         return (
           <div className="space-y-4">
-            <h2 className="text-xl font-bold">Routes</h2>
+            <h2 className="text-xl font-bold">{t('parentPortal.routesTitle')}</h2>
             {routeAssignments.length === 0 ? (
               <Card className="border-0 shadow-md">
                 <CardContent className="py-12 text-center text-muted-foreground">
                   <Route className="h-12 w-12 mx-auto mb-3 text-muted-foreground/40" />
-                  <h3 className="font-semibold text-lg mb-1">No route assigned yet</h3>
-                  <p className="text-sm">Route details will appear here once assigned</p>
+                  <h3 className="font-semibold text-lg mb-1">{t('parentPortal.noRouteAssigned')}</h3>
+                  <p className="text-sm">{t('parentPortal.routeDetailsAppear')}</p>
                 </CardContent>
               </Card>
             ) : (
@@ -425,7 +425,7 @@ export default function ParentDashboard() {
                       <div>
                         <h3 className="text-base sm:text-lg font-bold">{assignment.routes?.name}</h3>
                         <p className="text-xs sm:text-sm text-primary-foreground/80">
-                          Student: {assignment.registrations?.student_name}
+                          {t('parentPortal.student')}: {assignment.registrations?.student_name}
                         </p>
                       </div>
                     </div>
@@ -435,7 +435,7 @@ export default function ParentDashboard() {
                     <div className="flex flex-wrap gap-2">
                       <Badge variant="outline" className="gap-1 px-2 sm:px-3 py-1 text-xs">
                         <Car className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                        {assignment.routes?.car_type === "ac" ? "AC Car" : "Non-AC"}
+                        {assignment.routes?.car_type === "ac" ? t('parentPortal.acCar') : t('parentPortal.nonAc')}
                       </Badge>
                       {assignment.pickup_order && (
                         <Badge variant="secondary" className="gap-1 px-2 sm:px-3 py-1 text-xs">
@@ -453,7 +453,7 @@ export default function ParentDashboard() {
                                 <User className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 dark:text-blue-400" />
                               </div>
                               <div>
-                                <p className="text-[10px] sm:text-xs text-muted-foreground font-medium uppercase tracking-wider">Driver</p>
+                                <p className="text-[10px] sm:text-xs text-muted-foreground font-medium uppercase tracking-wider">{t('parentPortal.driver')}</p>
                                 <p className="font-semibold text-sm">{assignment.routes.drivers.full_name}</p>
                               </div>
                             </div>
@@ -475,7 +475,7 @@ export default function ParentDashboard() {
                                 <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600 dark:text-purple-400" />
                               </div>
                               <div>
-                                <p className="text-[10px] sm:text-xs text-muted-foreground font-medium uppercase tracking-wider">Supervisor</p>
+                                <p className="text-[10px] sm:text-xs text-muted-foreground font-medium uppercase tracking-wider">{t('parentPortal.supervisor')}</p>
                                 <p className="font-semibold text-sm">{assignment.routes.supervisors.full_name}</p>
                               </div>
                             </div>
@@ -493,7 +493,7 @@ export default function ParentDashboard() {
                     {!assignment.routes?.drivers && !assignment.routes?.supervisors && (
                       <div className="p-4 bg-muted/50 rounded-xl text-center text-sm text-muted-foreground">
                         <AlertCircle className="h-5 w-5 mx-auto mb-2" />
-                        No driver or supervisor assigned yet
+                        {t('parentPortal.noStaffAssigned')}
                       </div>
                     )}
                   </CardContent>
@@ -508,21 +508,21 @@ export default function ParentDashboard() {
           <div className="space-y-5">
             {/* Header */}
             <div>
-              <h2 className="text-xl sm:text-2xl font-bold">Subscription & Payments</h2>
-              <p className="text-sm text-muted-foreground mt-1">Manage your family's bus routes and track payment history in one place.</p>
+              <h2 className="text-xl sm:text-2xl font-bold">{t('parentPortal.subscriptionPayments')}</h2>
+              <p className="text-sm text-muted-foreground mt-1">{t('parentPortal.subscriptionDesc')}</p>
             </div>
 
             {/* Active Child Subscriptions */}
             <div>
               <h3 className="font-semibold text-base mb-3 flex items-center gap-2">
                 <School className="h-4 w-4 text-primary" />
-                Active Child Subscriptions
+                {t('parentPortal.activeChildSubscriptions')}
               </h3>
               {registrations.length === 0 ? (
                 <Card className="border-0 shadow-md">
                   <CardContent className="py-12 text-center text-muted-foreground">
                     <Wallet className="h-12 w-12 mx-auto mb-3 text-muted-foreground/40" />
-                    <p className="font-medium">No subscriptions yet</p>
+                    <p className="font-medium">{t('parentPortal.noSubscriptions')}</p>
                   </CardContent>
                 </Card>
               ) : (
@@ -546,7 +546,7 @@ export default function ParentDashboard() {
                               <div className="flex items-center justify-between">
                                 <h4 className="font-semibold text-sm truncate">{reg.student_name}</h4>
                                 <Badge variant={subscription ? "default" : "secondary"} className="text-[10px] shrink-0">
-                                  {subscription?.subscription_type === "monthly" ? "Monthly" : subscription?.subscription_type === "yearly" ? "Yearly" : "Active"}
+                                  {subscription?.subscription_type === "monthly" ? t('parentPortal.monthly') : subscription?.subscription_type === "yearly" ? t('parentPortal.yearly') : t('parentPortal.active')}
                                 </Badge>
                               </div>
                               <p className="text-xs text-muted-foreground mt-0.5 truncate">
@@ -557,12 +557,12 @@ export default function ParentDashboard() {
                           {subscription && (
                             <div className="grid grid-cols-2 gap-2 text-xs">
                               <div>
-                                <span className="text-muted-foreground">Plan</span>
-                                <p className="font-semibold">{subscription.subscription_type === "monthly" ? "Monthly Pass" : "Annual Pass"}</p>
+                                <span className="text-muted-foreground">{t('parentPortal.plan')}</span>
+                                <p className="font-semibold">{subscription.subscription_type === "monthly" ? t('parentPortal.monthlyPass') : t('parentPortal.annualPass')}</p>
                               </div>
                               <div>
-                                <span className="text-muted-foreground">Progress</span>
-                                <p className="font-semibold text-green-600">{paidCount}/{payments.length} paid</p>
+                                <span className="text-muted-foreground">{t('parentPortal.progress')}</span>
+                                <p className="font-semibold text-green-600">{paidCount}/{payments.length} {t('parentPortal.paidOf')}</p>
                               </div>
                             </div>
                           )}
@@ -587,24 +587,24 @@ export default function ParentDashboard() {
                 <div>
                   <h3 className="font-semibold text-base mb-3 flex items-center gap-2">
                     <Receipt className="h-4 w-4 text-primary" />
-                    Recent Transactions
+                    {t('parentPortal.recentTransactions')}
                   </h3>
                   <Card className="border-0 shadow-md overflow-hidden">
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="border-b bg-muted/30">
-                            <th className="text-left p-3 text-xs font-medium text-muted-foreground uppercase">Date</th>
-                            <th className="text-left p-3 text-xs font-medium text-muted-foreground uppercase">Description</th>
-                            <th className="text-left p-3 text-xs font-medium text-muted-foreground uppercase">Amount</th>
-                            <th className="text-left p-3 text-xs font-medium text-muted-foreground uppercase">Status</th>
+                            <th className="text-left p-3 text-xs font-medium text-muted-foreground uppercase">{t('parentPortal.date')}</th>
+                            <th className="text-left p-3 text-xs font-medium text-muted-foreground uppercase">{t('parentPortal.description')}</th>
+                            <th className="text-left p-3 text-xs font-medium text-muted-foreground uppercase">{t('parentPortal.amount')}</th>
+                            <th className="text-left p-3 text-xs font-medium text-muted-foreground uppercase">{t('parentPortal.status')}</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y">
                           {allPayments.slice(0, 5).map((payment: any) => (
                             <tr key={payment.id} className="hover:bg-muted/20 transition-colors">
                               <td className="p-3 text-xs text-muted-foreground">{format(new Date(payment.due_date), "MMM dd, yyyy")}</td>
-                              <td className="p-3 text-xs font-medium">{payment.studentName} - Installment {payment.installment_number}</td>
+                              <td className="p-3 text-xs font-medium">{payment.studentName} - {t('parentPortal.installment')} {payment.installment_number}</td>
                               <td className="p-3 text-xs font-semibold">{Number(payment.amount).toLocaleString()} EGP</td>
                               <td className="p-3">
                                 <Badge
@@ -635,22 +635,22 @@ export default function ParentDashboard() {
                 <Card className="border-0 shadow-md">
                   <CardContent className="p-5">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-semibold text-base">Make a Payment</h3>
+                      <h3 className="font-semibold text-base">{t('parentPortal.makePayment')}</h3>
                       <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
                         <Shield className="h-5 w-5 text-muted-foreground" />
                       </div>
                     </div>
                     <div className="mb-4">
-                      <p className="text-xs text-muted-foreground">Upcoming Total</p>
+                      <p className="text-xs text-muted-foreground">{t('parentPortal.upcomingTotal')}</p>
                       <p className="text-2xl sm:text-3xl font-bold">{Number(nextPayment.amount).toLocaleString()} EGP</p>
-                      <p className="text-xs text-muted-foreground mt-1">Due by {format(new Date(nextPayment.due_date), "MMMM dd, yyyy")}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{t('parentPortal.dueBy')} {format(new Date(nextPayment.due_date), "MMMM dd, yyyy")}</p>
                     </div>
                     <Button
                       className="w-full gap-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-md"
-                      onClick={() => toast({ title: "Online Payment", description: "Online payment will be available soon" })}
+                      onClick={() => toast({ title: t('parentPortal.onlinePayment'), description: t('parentPortal.onlinePaymentSoon') })}
                     >
                       <Wallet className="h-4 w-4" />
-                      Pay Now
+                      {t('parentPortal.payNow')}
                     </Button>
                   </CardContent>
                 </Card>
@@ -679,7 +679,7 @@ export default function ParentDashboard() {
             <img src={seaterLogo} alt="Seater" className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl shadow-md" />
             <div>
               <h1 className="text-base sm:text-lg font-bold text-foreground">Seater</h1>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">Parent Portal</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">{t('parentPortal.portalName')}</p>
             </div>
           </div>
 
@@ -778,7 +778,7 @@ export default function ParentDashboard() {
                     >
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs sm:text-sm font-semibold">Installment {payment.installment_number}</span>
+                          <span className="text-xs sm:text-sm font-semibold">{t('parentPortal.installment')} {payment.installment_number}</span>
                           <Badge
                             variant={payment.status === "paid" ? "default" : payment.status === "overdue" ? "destructive" : "secondary"}
                             className="text-[10px] h-5"
@@ -790,9 +790,9 @@ export default function ParentDashboard() {
                         <span className="font-bold text-xs sm:text-sm">{Number(payment.amount).toLocaleString()} EGP</span>
                       </div>
                       <div className="flex items-center justify-between text-[10px] sm:text-xs text-muted-foreground">
-                        <span>Due: {format(new Date(payment.due_date), "dd MMM yyyy")}</span>
+                        <span>{t('parentPortal.due')}: {format(new Date(payment.due_date), "dd MMM yyyy")}</span>
                         {payment.paid_date && (
-                          <span>Paid: {format(new Date(payment.paid_date), "dd MMM yyyy")}</span>
+                          <span>{t('parentPortal.paid')}: {format(new Date(payment.paid_date), "dd MMM yyyy")}</span>
                         )}
                       </div>
                       {payment.status !== "paid" && (
@@ -801,11 +801,11 @@ export default function ParentDashboard() {
                           className="w-full mt-3 gap-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-md text-xs sm:text-sm"
                           onClick={(e) => {
                             e.stopPropagation();
-                            toast({ title: "Online Payment", description: "Online payment will be available soon" });
+                            toast({ title: t('parentPortal.onlinePayment'), description: t('parentPortal.onlinePaymentSoon') });
                           }}
                         >
                           <Wallet className="h-4 w-4" />
-                          Pay Now
+                          {t('parentPortal.payNow')}
                         </Button>
                       )}
                     </div>
