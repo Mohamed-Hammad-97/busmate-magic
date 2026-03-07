@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParentAuth } from "@/contexts/ParentAuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,6 +26,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import seaterLogo from "@/assets/seater-logo.jpg";
 
 export default function ParentDashboard() {
+  const { t } = useTranslation();
   const { parentAccount, signOut, user } = useParentAuth();
   const queryClient = useQueryClient();
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
