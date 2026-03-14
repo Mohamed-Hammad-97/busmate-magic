@@ -585,18 +585,18 @@ const Home = () => {
                           <div className="absolute inset-0 bg-gradient-to-t from-card via-card/20 to-transparent"></div>
                         </>
                       ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-primary/20 via-primary/10 to-primary/5 flex items-center justify-center">
+                        <div className={`w-full h-full bg-gradient-to-br ${service.iconBgLight} flex items-center justify-center`}>
                           <div className="relative">
-                            <div className="absolute inset-0 bg-primary/20 rounded-full blur-2xl scale-150"></div>
-                            <service.icon className="relative h-24 w-24 text-primary/70 group-hover:text-primary group-hover:scale-110 transition-all duration-500" />
+                            <div className={`absolute inset-0 ${service.iconColor} opacity-20 rounded-full blur-2xl scale-150`}></div>
+                            <service.icon className={`relative h-24 w-24 ${service.iconColor} opacity-70 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500`} />
                           </div>
                         </div>
                       )}
                       
                       {/* Floating Icon Badge */}
                       <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 z-10">
-                        <div className="bg-primary rounded-2xl p-4 shadow-xl shadow-primary/30 group-hover:scale-110 transition-transform duration-300">
-                          <service.icon className="h-6 w-6 text-primary-foreground" />
+                        <div className={`${service.badgeGradient} rounded-2xl p-4 shadow-xl ${service.badgeShadow} group-hover:scale-110 transition-transform duration-300`}>
+                          <service.icon className="h-6 w-6 text-white" />
                         </div>
                       </div>
                     </div>
