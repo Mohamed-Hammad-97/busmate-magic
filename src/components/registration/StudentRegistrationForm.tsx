@@ -107,9 +107,9 @@ const StudentRegistrationForm: React.FC = () => {
           body: JSON.stringify({
             student_name: formData.student_name,
             parent_name: formData.parent_name,
-            national_id: formData.national_id,
+            national_id: formData.national_id || undefined,
             father_phone: formData.father_phone,
-            mother_phone: formData.mother_phone || undefined,
+            mother_phone: formData.mother_phone,
             emergency_phone: formData.emergency_phone,
             city: formData.city,
             job: formData.job || undefined,
@@ -148,12 +148,12 @@ const StudentRegistrationForm: React.FC = () => {
       toast({ title: t('register.student.validation.parentName'), variant: 'destructive' });
       return;
     }
-    if (!formData.national_id.trim()) {
-      toast({ title: t('register.student.validation.nationalId'), variant: 'destructive' });
-      return;
-    }
     if (!formData.father_phone.trim()) {
       toast({ title: t('register.student.validation.fatherPhone'), variant: 'destructive' });
+      return;
+    }
+    if (!formData.mother_phone.trim()) {
+      toast({ title: t('register.student.validation.motherPhone') || 'رقم هاتف الأم مطلوب', variant: 'destructive' });
       return;
     }
     if (!formData.emergency_phone.trim()) {
@@ -257,7 +257,7 @@ const StudentRegistrationForm: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">{t('register.student.fields.nationalId')} *</Label>
+                  <Label className="text-sm font-medium">{t('register.student.fields.nationalId')}</Label>
                   <Input
                     value={formData.national_id}
                     onChange={(e) => setFormData((f) => ({ ...f, national_id: e.target.value }))}
@@ -275,7 +275,7 @@ const StudentRegistrationForm: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">{t('register.student.fields.motherPhone')}</Label>
+                  <Label className="text-sm font-medium">{t('register.student.fields.motherPhone')} *</Label>
                   <Input
                     value={formData.mother_phone}
                     onChange={(e) => setFormData((f) => ({ ...f, mother_phone: e.target.value }))}
@@ -332,12 +332,12 @@ const StudentRegistrationForm: React.FC = () => {
                   toast({ title: t('register.student.validation.parentName'), variant: 'destructive' });
                   return;
                 }
-                if (!formData.national_id.trim()) {
-                  toast({ title: t('register.student.validation.nationalId'), variant: 'destructive' });
-                  return;
-                }
                 if (!formData.father_phone.trim()) {
                   toast({ title: t('register.student.validation.fatherPhone'), variant: 'destructive' });
+                  return;
+                }
+                if (!formData.mother_phone.trim()) {
+                  toast({ title: t('register.student.validation.motherPhone') || 'رقم هاتف الأم مطلوب', variant: 'destructive' });
                   return;
                 }
                 if (!formData.emergency_phone.trim()) {
