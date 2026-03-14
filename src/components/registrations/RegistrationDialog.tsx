@@ -181,7 +181,7 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
           .from('parent_accounts')
           .update({
             parent_name: parentData.parent_name,
-            national_id: parentData.national_id,
+            national_id: parentData.national_id || '',
             father_phone: parentData.father_phone,
             mother_phone: parentData.mother_phone || null,
             emergency_phone: parentData.emergency_phone,
@@ -265,12 +265,12 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
       toast({ title: 'Please enter parent name', variant: 'destructive' });
       return;
     }
-    if (!parentData.national_id.trim()) {
-      toast({ title: 'Please enter national ID', variant: 'destructive' });
-      return;
-    }
     if (!parentData.father_phone.trim()) {
       toast({ title: 'Please enter father phone', variant: 'destructive' });
+      return;
+    }
+    if (!parentData.mother_phone.trim()) {
+      toast({ title: 'Please enter mother phone', variant: 'destructive' });
       return;
     }
     if (!parentData.emergency_phone.trim()) {
@@ -326,7 +326,7 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>National ID *</Label>
+                  <Label>National ID</Label>
                   <Input
                     value={parentData.national_id}
                     onChange={(e) => setParentData((p) => ({ ...p, national_id: e.target.value }))}
@@ -342,7 +342,7 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Mother Phone</Label>
+                  <Label>Mother Phone *</Label>
                   <Input
                     value={parentData.mother_phone}
                     onChange={(e) => setParentData((p) => ({ ...p, mother_phone: e.target.value }))}
@@ -369,7 +369,10 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
                   <Label>City *</Label>
                   <Select
                     value={parentData.city}
-                    onValueChange={(v) => setParentData((p) => ({ ...p, city: v }))}
+                    onValueChange={(v) => {
+                      setParentData((p) => ({ ...p, city: v }));
+                      setRegData((r) => ({ ...r, school_id: '' }));
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select city" />
@@ -416,8 +419,10 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
                     <SelectTrigger>
                       <SelectValue placeholder="Select school" />
                     </SelectTrigger>
-                    <SelectContent className="bg-background border border-border z-50">
-                      {schools.map((school) => (
+                 <SelectContent className="bg-background border border-border z-50">
+                      {schools
+                        .filter((school) => !parentData.city || school.city === parentData.city)
+                        .map((school) => (
                         <SelectItem key={school.id} value={school.id}>
                           {school.name}
                         </SelectItem>
