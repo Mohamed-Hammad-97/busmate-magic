@@ -332,10 +332,6 @@ const StudentRegistrationForm: React.FC = () => {
                   toast({ title: t('register.student.validation.parentName'), variant: 'destructive' });
                   return;
                 }
-                if (!formData.national_id.trim()) {
-                  toast({ title: t('register.student.validation.nationalId'), variant: 'destructive' });
-                  return;
-                }
                 if (!formData.father_phone.trim()) {
                   toast({ title: t('register.student.validation.fatherPhone'), variant: 'destructive' });
                   return;
