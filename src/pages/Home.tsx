@@ -573,32 +573,36 @@ const Home = () => {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {services.map((service, index) => {
               const cardContent = (
-                <div key={index} className={`group relative ${service.enabled ? 'cursor-pointer' : ''}`}>
+                <div key={index} className={`group relative ${service.enabled ? 'cursor-pointer' : ''} animate-fade-in`} style={{ animationDelay: `${index * 0.1}s` }}>
+                  {/* Card Glow Effect */}
+                  <div className={`absolute -inset-1 ${service.bgGlow} rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
+                  
                   {/* Card Container */}
-                  <div className="relative bg-card rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 hover:-translate-y-1 border border-border/30 p-8 space-y-4">
-                    {/* Icon Badge */}
-                    <div className={`${service.badgeGradient} rounded-2xl p-3.5 w-14 h-14 flex items-center justify-center shadow-lg ${service.badgeShadow} group-hover:scale-110 transition-transform duration-300`}>
-                      <service.icon className="h-7 w-7 text-white" />
+                  <div className="relative bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-8 hover:border-primary/30 hover:shadow-2xl hover:shadow-primary/10 transition-all duration-500 hover:-translate-y-2">
+                    {/* Centered Icon */}
+                    <div className="flex justify-center mb-6">
+                      <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl ${service.badgeGradient} text-white shadow-lg ${service.badgeShadow} group-hover:scale-110 transition-transform duration-300`}>
+                        <service.icon className="h-8 w-8" />
+                      </div>
                     </div>
                     
                     {/* Title */}
-                    <h3 className="text-xl font-bold group-hover:text-primary transition-colors duration-300">
+                    <h3 className="text-xl font-bold mb-3 text-center group-hover:text-primary transition-colors">
                       {service.title}
                     </h3>
                     
                     {/* Description */}
                     {service.hasShort && (
-                      <p className="text-muted-foreground text-sm leading-relaxed line-clamp-2">
+                      <p className="text-muted-foreground text-sm leading-relaxed text-center mb-6">
                         {service.shortDescription}
                       </p>
                     )}
                     
+                    {/* CTA */}
                     {service.enabled && (
-                      <div className="pt-2">
-                        <Button className="gap-2 px-6 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300 group-hover:gap-4">
-                          {t('homepage.services.moreDetails')}
-                          <ChevronRight className="h-4 w-4 rtl:rotate-180 transition-transform" />
-                        </Button>
+                      <div className="flex items-center justify-center gap-2 text-sm font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <span>{t('homepage.services.moreDetails')}</span>
+                        <ChevronRight className="h-4 w-4 rtl:rotate-180 group-hover:translate-x-1 transition-transform" />
                       </div>
                     )}
                   </div>
