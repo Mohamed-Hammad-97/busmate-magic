@@ -275,7 +275,7 @@ const StudentRegistrationForm: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">{t('register.student.fields.motherPhone')}</Label>
+                  <Label className="text-sm font-medium">{t('register.student.fields.motherPhone')} *</Label>
                   <Input
                     value={formData.mother_phone}
                     onChange={(e) => setFormData((f) => ({ ...f, mother_phone: e.target.value }))}
