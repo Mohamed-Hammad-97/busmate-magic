@@ -265,10 +265,6 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
       toast({ title: 'Please enter parent name', variant: 'destructive' });
       return;
     }
-    if (!parentData.national_id.trim()) {
-      toast({ title: 'Please enter national ID', variant: 'destructive' });
-      return;
-    }
     if (!parentData.father_phone.trim()) {
       toast({ title: 'Please enter father phone', variant: 'destructive' });
       return;
