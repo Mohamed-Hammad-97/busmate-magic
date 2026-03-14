@@ -601,8 +601,6 @@ const Home = () => {
                   </div>
                 </div>
               );
-                </div>
-              );
 
               return service.enabled ? (
                 <Link key={index} to={service.link}>
