@@ -416,8 +416,10 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
                     <SelectTrigger>
                       <SelectValue placeholder="Select school" />
                     </SelectTrigger>
-                    <SelectContent className="bg-background border border-border z-50">
-                      {schools.map((school) => (
+                 <SelectContent className="bg-background border border-border z-50">
+                      {schools
+                        .filter((school) => !parentData.city || school.city === parentData.city)
+                        .map((school) => (
                         <SelectItem key={school.id} value={school.id}>
                           {school.name}
                         </SelectItem>
