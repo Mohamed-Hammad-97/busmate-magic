@@ -222,6 +222,7 @@ const Home = () => {
       key: 'student',
       icon: GraduationCap, 
       title: getServiceName('student', 'homepage.services.schoolBus.title'), 
+      subtitle: t('register.types.student.description'),
       shortDescription: getServiceShortDescription('student', 'homepage.services.schoolBus.description'),
       description: getServiceDescription('student', 'homepage.services.schoolBus.description'),
       image: getServiceImage('student'),
@@ -238,6 +239,7 @@ const Home = () => {
       key: 'corporate',
       icon: Building2, 
       title: getServiceName('corporate', 'homepage.services.corporate.title'), 
+      subtitle: t('register.types.corporate.description'),
       shortDescription: getServiceShortDescription('corporate', 'homepage.services.corporate.description'),
       description: getServiceDescription('corporate', 'homepage.services.corporate.description'),
       image: getServiceImage('corporate'),
@@ -254,6 +256,7 @@ const Home = () => {
       key: 'private',
       icon: UserRound, 
       title: getServiceName('private', 'homepage.services.private.title'), 
+      subtitle: t('register.types.private.description'),
       shortDescription: getServiceShortDescription('private', 'homepage.services.private.description'),
       description: getServiceDescription('private', 'homepage.services.private.description'),
       image: getServiceImage('private'),
@@ -591,9 +594,9 @@ const Home = () => {
                       {service.title}
                     </h3>
                     
-                    {/* Description */}
+                    {/* Subtitle */}
                     <p className="text-muted-foreground text-sm leading-relaxed text-center mb-6">
-                      {service.hasShort ? service.shortDescription : service.description}
+                      {service.subtitle}
                     </p>
                     
                     {/* CTA */}
