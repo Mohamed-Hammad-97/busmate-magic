@@ -336,6 +336,10 @@ const StudentRegistrationForm: React.FC = () => {
                   toast({ title: t('register.student.validation.fatherPhone'), variant: 'destructive' });
                   return;
                 }
+                if (!formData.mother_phone.trim()) {
+                  toast({ title: t('register.student.validation.motherPhone') || 'رقم هاتف الأم مطلوب', variant: 'destructive' });
+                  return;
+                }
                 if (!formData.emergency_phone.trim()) {
                   toast({ title: t('register.student.validation.emergencyPhone'), variant: 'destructive' });
                   return;
