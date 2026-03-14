@@ -181,7 +181,7 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
           .from('parent_accounts')
           .update({
             parent_name: parentData.parent_name,
-            national_id: parentData.national_id,
+            national_id: parentData.national_id || '',
             father_phone: parentData.father_phone,
             mother_phone: parentData.mother_phone || null,
             emergency_phone: parentData.emergency_phone,
