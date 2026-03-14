@@ -28,7 +28,9 @@ import {
   Linkedin,
   Youtube,
   Sparkles,
-  CheckCircle2
+  CheckCircle2,
+  GraduationCap,
+  UserRound
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import seaterLogo from "@/assets/seater-logo.jpg";
@@ -218,14 +220,18 @@ const Home = () => {
   const services = [
     { 
       key: 'student',
-      icon: Bus, 
+      icon: GraduationCap, 
       title: getServiceName('student', 'homepage.services.schoolBus.title'), 
       shortDescription: getServiceShortDescription('student', 'homepage.services.schoolBus.description'),
       description: getServiceDescription('student', 'homepage.services.schoolBus.description'),
       image: getServiceImage('student'),
       enabled: isServiceEnabled('student'),
       hasShort: hasShortDescription('student'),
-      link: getServiceLink('student')
+      link: getServiceLink('student'),
+      badgeGradient: 'bg-gradient-to-br from-blue-500 to-blue-600',
+      badgeShadow: 'shadow-blue-500/30',
+      iconBgLight: 'from-blue-500/20 via-blue-500/10 to-blue-500/5',
+      iconColor: 'text-blue-500'
     },
     { 
       key: 'corporate',
@@ -236,18 +242,26 @@ const Home = () => {
       image: getServiceImage('corporate'),
       enabled: isServiceEnabled('corporate'),
       hasShort: hasShortDescription('corporate'),
-      link: getServiceLink('corporate')
+      link: getServiceLink('corporate'),
+      badgeGradient: 'bg-gradient-to-br from-emerald-500 to-emerald-600',
+      badgeShadow: 'shadow-emerald-500/30',
+      iconBgLight: 'from-emerald-500/20 via-emerald-500/10 to-emerald-500/5',
+      iconColor: 'text-emerald-500'
     },
     { 
       key: 'private',
-      icon: Car, 
+      icon: UserRound, 
       title: getServiceName('private', 'homepage.services.private.title'), 
       shortDescription: getServiceShortDescription('private', 'homepage.services.private.description'),
       description: getServiceDescription('private', 'homepage.services.private.description'),
       image: getServiceImage('private'),
       enabled: isServiceEnabled('private'),
       hasShort: hasShortDescription('private'),
-      link: getServiceLink('private')
+      link: getServiceLink('private'),
+      badgeGradient: 'bg-gradient-to-br from-purple-500 to-purple-600',
+      badgeShadow: 'shadow-purple-500/30',
+      iconBgLight: 'from-purple-500/20 via-purple-500/10 to-purple-500/5',
+      iconColor: 'text-purple-500'
     }
   ];
   const getSetting = (key: string, fallback: string = "") => settings?.[key] || fallback;
@@ -571,18 +585,18 @@ const Home = () => {
                           <div className="absolute inset-0 bg-gradient-to-t from-card via-card/20 to-transparent"></div>
                         </>
                       ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-primary/20 via-primary/10 to-primary/5 flex items-center justify-center">
+                        <div className={`w-full h-full bg-gradient-to-br ${service.iconBgLight} flex items-center justify-center`}>
                           <div className="relative">
-                            <div className="absolute inset-0 bg-primary/20 rounded-full blur-2xl scale-150"></div>
-                            <service.icon className="relative h-24 w-24 text-primary/70 group-hover:text-primary group-hover:scale-110 transition-all duration-500" />
+                            <div className={`absolute inset-0 ${service.iconColor} opacity-20 rounded-full blur-2xl scale-150`}></div>
+                            <service.icon className={`relative h-24 w-24 ${service.iconColor} opacity-70 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500`} />
                           </div>
                         </div>
                       )}
                       
                       {/* Floating Icon Badge */}
                       <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 z-10">
-                        <div className="bg-primary rounded-2xl p-4 shadow-xl shadow-primary/30 group-hover:scale-110 transition-transform duration-300">
-                          <service.icon className="h-6 w-6 text-primary-foreground" />
+                        <div className={`${service.badgeGradient} rounded-2xl p-4 shadow-xl ${service.badgeShadow} group-hover:scale-110 transition-transform duration-300`}>
+                          <service.icon className="h-6 w-6 text-white" />
                         </div>
                       </div>
                     </div>
