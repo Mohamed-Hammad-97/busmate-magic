@@ -263,7 +263,8 @@ const Home = () => {
       badgeGradient: 'bg-gradient-to-br from-purple-500 to-purple-600',
       badgeShadow: 'shadow-purple-500/30',
       iconBgLight: 'from-purple-500/20 via-purple-500/10 to-purple-500/5',
-      iconColor: 'text-purple-500'
+      iconColor: 'text-purple-500',
+      bgGlow: 'bg-purple-500/20'
     }
   ];
   const getSetting = (key: string, fallback: string = "") => settings?.[key] || fallback;
