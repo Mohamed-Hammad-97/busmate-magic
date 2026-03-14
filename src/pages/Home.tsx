@@ -220,14 +220,18 @@ const Home = () => {
   const services = [
     { 
       key: 'student',
-      icon: Bus, 
+      icon: GraduationCap, 
       title: getServiceName('student', 'homepage.services.schoolBus.title'), 
       shortDescription: getServiceShortDescription('student', 'homepage.services.schoolBus.description'),
       description: getServiceDescription('student', 'homepage.services.schoolBus.description'),
       image: getServiceImage('student'),
       enabled: isServiceEnabled('student'),
       hasShort: hasShortDescription('student'),
-      link: getServiceLink('student')
+      link: getServiceLink('student'),
+      badgeGradient: 'bg-gradient-to-br from-blue-500 to-blue-600',
+      badgeShadow: 'shadow-blue-500/30',
+      iconBgLight: 'from-blue-500/20 via-blue-500/10 to-blue-500/5',
+      iconColor: 'text-blue-500'
     },
     { 
       key: 'corporate',
@@ -238,18 +242,26 @@ const Home = () => {
       image: getServiceImage('corporate'),
       enabled: isServiceEnabled('corporate'),
       hasShort: hasShortDescription('corporate'),
-      link: getServiceLink('corporate')
+      link: getServiceLink('corporate'),
+      badgeGradient: 'bg-gradient-to-br from-emerald-500 to-emerald-600',
+      badgeShadow: 'shadow-emerald-500/30',
+      iconBgLight: 'from-emerald-500/20 via-emerald-500/10 to-emerald-500/5',
+      iconColor: 'text-emerald-500'
     },
     { 
       key: 'private',
-      icon: Car, 
+      icon: UserRound, 
       title: getServiceName('private', 'homepage.services.private.title'), 
       shortDescription: getServiceShortDescription('private', 'homepage.services.private.description'),
       description: getServiceDescription('private', 'homepage.services.private.description'),
       image: getServiceImage('private'),
       enabled: isServiceEnabled('private'),
       hasShort: hasShortDescription('private'),
-      link: getServiceLink('private')
+      link: getServiceLink('private'),
+      badgeGradient: 'bg-gradient-to-br from-purple-500 to-purple-600',
+      badgeShadow: 'shadow-purple-500/30',
+      iconBgLight: 'from-purple-500/20 via-purple-500/10 to-purple-500/5',
+      iconColor: 'text-purple-500'
     }
   ];
   const getSetting = (key: string, fallback: string = "") => settings?.[key] || fallback;
