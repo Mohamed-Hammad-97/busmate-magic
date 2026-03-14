@@ -592,11 +592,9 @@ const Home = () => {
                     </h3>
                     
                     {/* Description */}
-                    {service.hasShort && (
-                      <p className="text-muted-foreground text-sm leading-relaxed text-center mb-6">
-                        {service.shortDescription}
-                      </p>
-                    )}
+                    <p className="text-muted-foreground text-sm leading-relaxed text-center mb-6">
+                      {service.hasShort ? service.shortDescription : service.description}
+                    </p>
                     
                     {/* CTA */}
                     {service.enabled && (
