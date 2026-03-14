@@ -326,7 +326,7 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>National ID *</Label>
+                  <Label>National ID</Label>
                   <Input
                     value={parentData.national_id}
                     onChange={(e) => setParentData((p) => ({ ...p, national_id: e.target.value }))}
