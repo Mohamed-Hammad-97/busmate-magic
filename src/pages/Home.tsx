@@ -231,7 +231,8 @@ const Home = () => {
       badgeGradient: 'bg-gradient-to-br from-blue-500 to-blue-600',
       badgeShadow: 'shadow-blue-500/30',
       iconBgLight: 'from-blue-500/20 via-blue-500/10 to-blue-500/5',
-      iconColor: 'text-blue-500'
+      iconColor: 'text-blue-500',
+      bgGlow: 'bg-blue-500/20'
     },
     { 
       key: 'corporate',
