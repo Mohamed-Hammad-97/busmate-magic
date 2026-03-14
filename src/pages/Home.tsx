@@ -594,9 +594,9 @@ const Home = () => {
                       {service.title}
                     </h3>
                     
-                    {/* Description */}
+                    {/* Subtitle */}
                     <p className="text-muted-foreground text-sm leading-relaxed text-center mb-6">
-                      {service.hasShort ? service.shortDescription : service.description}
+                      {service.subtitle}
                     </p>
                     
                     {/* CTA */}
