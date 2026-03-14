@@ -107,10 +107,10 @@ const StudentRegistrationForm: React.FC = () => {
           body: JSON.stringify({
             student_name: formData.student_name,
             parent_name: formData.parent_name,
-            national_id: formData.national_id,
+            national_id: formData.national_id || undefined,
             father_phone: formData.father_phone,
             mother_phone: formData.mother_phone,
-            national_id: formData.national_id || undefined,
+            emergency_phone: formData.emergency_phone,
             city: formData.city,
             job: formData.job || undefined,
             pickup_latitude: formData.pickup_latitude,
