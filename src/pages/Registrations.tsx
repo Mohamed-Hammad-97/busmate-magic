@@ -196,11 +196,11 @@ const Registrations: React.FC = () => {
     else deleteMutation.mutate(deleteTarget);
   };
 
-  const totalCount = registrations.length;
-  const completeCount = registrations.filter((r) => r.status === 'complete').length;
-  const pendingCount = registrations.filter((r) => r.status === 'pending_fees').length;
-  const cancelledCount = registrations.filter((r) => r.status === 'cancelled').length;
-  const uniqueSchools = new Set(registrations.map((r) => r.school_id)).size;
+  const totalCount = cityFilteredRegistrations.length;
+  const completeCount = cityFilteredRegistrations.filter((r) => r.status === 'complete').length;
+  const pendingCount = cityFilteredRegistrations.filter((r) => r.status === 'pending_fees').length;
+  const cancelledCount = cityFilteredRegistrations.filter((r) => r.status === 'cancelled').length;
+  const uniqueSchools = new Set(cityFilteredRegistrations.map((r) => r.school_id)).size;
   const completionRate = totalCount > 0 ? Math.round((completeCount / totalCount) * 100) : 0;
 
   const getStatusConfig = (status: Enums<'registration_status'>) => {
