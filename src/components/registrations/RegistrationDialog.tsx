@@ -269,6 +269,10 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
       toast({ title: 'Please enter father phone', variant: 'destructive' });
       return;
     }
+    if (!parentData.mother_phone.trim()) {
+      toast({ title: 'Please enter mother phone', variant: 'destructive' });
+      return;
+    }
     if (!parentData.emergency_phone.trim()) {
       toast({ title: 'Please enter emergency phone', variant: 'destructive' });
       return;
