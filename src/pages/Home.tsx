@@ -247,7 +247,8 @@ const Home = () => {
       badgeGradient: 'bg-gradient-to-br from-emerald-500 to-emerald-600',
       badgeShadow: 'shadow-emerald-500/30',
       iconBgLight: 'from-emerald-500/20 via-emerald-500/10 to-emerald-500/5',
-      iconColor: 'text-emerald-500'
+      iconColor: 'text-emerald-500',
+      bgGlow: 'bg-emerald-500/20'
     },
     { 
       key: 'private',
