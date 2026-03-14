@@ -369,7 +369,10 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
                   <Label>City *</Label>
                   <Select
                     value={parentData.city}
-                    onValueChange={(v) => setParentData((p) => ({ ...p, city: v }))}
+                    onValueChange={(v) => {
+                      setParentData((p) => ({ ...p, city: v }));
+                      setRegData((r) => ({ ...r, school_id: '' }));
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select city" />
