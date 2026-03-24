@@ -60,6 +60,7 @@ export function DashboardLayout({ children, title, description }: DashboardLayou
                 <span className="font-bold text-foreground">Seater</span>
               </div>
             </div>
+            <EmployeeNotificationBell />
           </div>
         </header>
       )}
