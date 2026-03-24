@@ -363,8 +363,14 @@ export function Sidebar({ onMobileNavigate }: SidebarProps = {}) {
 
             {/* City Selector */}
             {!effectiveCollapsed && (
-              <div className="px-3 py-2 border-t border-sidebar-border/50">
+              <div className="px-3 py-2 border-t border-sidebar-border/50 flex items-center justify-between">
                 <CitySelector />
+                <EmployeeNotificationBell />
+              </div>
+            )}
+            {effectiveCollapsed && (
+              <div className="px-2 py-2 border-t border-sidebar-border/50 flex justify-center">
+                <EmployeeNotificationBell />
               </div>
             )}
 
