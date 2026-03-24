@@ -360,6 +360,19 @@ const Registrations: React.FC = () => {
               <SelectItem value="cancelled">Cancelled</SelectItem>
             </SelectContent>
           </Select>
+          <Select value={schoolFilter} onValueChange={setSchoolFilter}>
+            <SelectTrigger className="w-full sm:w-[200px] h-11 bg-card border-border/50 rounded-xl">
+              <SelectValue placeholder="All Schools" />
+            </SelectTrigger>
+            <SelectContent className="bg-card border border-border z-50 rounded-xl">
+              <SelectItem value="all">All Schools</SelectItem>
+              {schoolsList.map((school) => (
+                <SelectItem key={school.id} value={school.id}>
+                  {school.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Premium Table */}
