@@ -115,13 +115,13 @@ const Registrations: React.FC = () => {
 
   // Get unique schools for filter dropdown
   const schoolsList = useMemo(() => {
-    const schools = new Map<string, string>();
+    const schoolsMap: Record<string, string> = {};
     cityFilteredRegistrations.forEach((reg) => {
       if (reg.schools?.id && reg.schools?.name) {
-        schools.set(reg.schools.id, reg.schools.name);
+        schoolsMap[reg.schools.id] = reg.schools.name;
       }
     });
-    return Array.from(schools.entries()).map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
+    return Object.entries(schoolsMap).map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
   }, [cityFilteredRegistrations]);
 
   const filteredRegistrations = cityFilteredRegistrations.filter((reg) => {
