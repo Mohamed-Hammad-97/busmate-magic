@@ -65,6 +65,7 @@ const Registrations: React.FC = () => {
   const [selectedRegistration, setSelectedRegistration] = useState<Registration | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [schoolFilter, setSchoolFilter] = useState<string>('all');
   const [deleteTarget, setDeleteTarget] = useState<Registration | null>(null);
   const [deleteMode, setDeleteMode] = useState<'deactivate' | 'delete'>('deactivate');
   const { toast } = useToast();
