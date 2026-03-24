@@ -328,25 +328,33 @@ export function Sidebar({ onMobileNavigate }: SidebarProps = {}) {
             </button>
           )}
 
-          {/* Logo */}
+          {/* Logo + Notification */}
           <div className={cn(
             "flex h-16 items-center border-b border-sidebar-border shrink-0 transition-all duration-300",
-            effectiveCollapsed ? "justify-center px-2" : "gap-3 px-5"
+            effectiveCollapsed ? "justify-center px-2" : "justify-between px-5"
           )}>
-            <div className="relative">
-              <img
-                src={seaterLogo}
-                alt="Seater"
-                className="h-9 w-9 rounded-lg object-cover ring-2 ring-sidebar-accent/50 shadow-lg"
-              />
-              <div className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-success ring-2 ring-sidebar-background" />
-            </div>
-            {!effectiveCollapsed && (
-              <div className="overflow-hidden">
-                <span className="text-lg font-extrabold text-sidebar-foreground tracking-tight" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Seater</span>
+            <div className={cn("flex items-center", effectiveCollapsed ? "" : "gap-3")}>
+              <div className="relative">
+                <img
+                  src={seaterLogo}
+                  alt="Seater"
+                  className="h-9 w-9 rounded-lg object-cover ring-2 ring-sidebar-accent/50 shadow-lg"
+                />
+                <div className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-success ring-2 ring-sidebar-background" />
               </div>
-            )}
+              {!effectiveCollapsed && (
+                <div className="overflow-hidden">
+                  <span className="text-lg font-extrabold text-sidebar-foreground tracking-tight" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Seater</span>
+                </div>
+              )}
+            </div>
+            {!effectiveCollapsed && <EmployeeNotificationBell />}
           </div>
+          {effectiveCollapsed && (
+            <div className="flex justify-center py-2 border-b border-sidebar-border/50">
+              <EmployeeNotificationBell />
+            </div>
+          )}
 
           {/* Scrollable content */}
           <div className="flex-1 overflow-y-auto sidebar-scroll">
@@ -363,14 +371,8 @@ export function Sidebar({ onMobileNavigate }: SidebarProps = {}) {
 
             {/* City Selector */}
             {!effectiveCollapsed && (
-              <div className="px-3 py-2 border-t border-sidebar-border/50 flex items-center justify-between">
+              <div className="px-3 py-2 border-t border-sidebar-border/50">
                 <CitySelector />
-                <EmployeeNotificationBell />
-              </div>
-            )}
-            {effectiveCollapsed && (
-              <div className="px-2 py-2 border-t border-sidebar-border/50 flex justify-center">
-                <EmployeeNotificationBell />
               </div>
             )}
 
