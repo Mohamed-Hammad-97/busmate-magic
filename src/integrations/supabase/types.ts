@@ -850,6 +850,50 @@ export type Database = {
         }
         Relationships: []
       }
+      employee_notifications: {
+        Row: {
+          city: string
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          notification_type: string
+          read_by: string[]
+          registration_id: string
+          title: string
+        }
+        Insert: {
+          city: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          notification_type?: string
+          read_by?: string[]
+          registration_id: string
+          title: string
+        }
+        Update: {
+          city?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          notification_type?: string
+          read_by?: string[]
+          registration_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_notifications_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employees: {
         Row: {
           city: string | null
