@@ -113,6 +113,17 @@ const Registrations: React.FC = () => {
     );
   }, [registrations, selectedCity]);
 
+  // Get unique schools for filter dropdown
+  const schoolsList = useMemo(() => {
+    const schools = new Map<string, string>();
+    cityFilteredRegistrations.forEach((reg) => {
+      if (reg.schools?.id && reg.schools?.name) {
+        schools.set(reg.schools.id, reg.schools.name);
+      }
+    });
+    return Array.from(schools.entries()).map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
+  }, [cityFilteredRegistrations]);
+
   const filteredRegistrations = cityFilteredRegistrations.filter((reg) => {
     const matchesSearch =
       reg.student_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -120,7 +131,8 @@ const Registrations: React.FC = () => {
       reg.parent_accounts?.national_id?.includes(searchQuery) ||
       reg.schools?.name?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'all' || reg.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesSchool = schoolFilter === 'all' || reg.school_id === schoolFilter;
+    return matchesSearch && matchesStatus && matchesSchool;
   });
 
   const handleViewDetails = (registration: Registration) => {
