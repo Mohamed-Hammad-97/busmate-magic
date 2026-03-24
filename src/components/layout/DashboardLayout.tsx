@@ -7,6 +7,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
 import seaterLogo from "@/assets/seater-logo.jpg";
+import { EmployeeNotificationBell } from "./EmployeeNotificationBell";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -59,6 +60,7 @@ export function DashboardLayout({ children, title, description }: DashboardLayou
                 <span className="font-bold text-foreground">Seater</span>
               </div>
             </div>
+            <EmployeeNotificationBell />
           </div>
         </header>
       )}

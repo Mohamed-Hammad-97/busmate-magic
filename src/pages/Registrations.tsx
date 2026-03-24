@@ -65,6 +65,7 @@ const Registrations: React.FC = () => {
   const [selectedRegistration, setSelectedRegistration] = useState<Registration | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [schoolFilter, setSchoolFilter] = useState<string>('all');
   const [deleteTarget, setDeleteTarget] = useState<Registration | null>(null);
   const [deleteMode, setDeleteMode] = useState<'deactivate' | 'delete'>('deactivate');
   const { toast } = useToast();
@@ -112,6 +113,17 @@ const Registrations: React.FC = () => {
     );
   }, [registrations, selectedCity]);
 
+  // Get unique schools for filter dropdown
+  const schoolsList = useMemo(() => {
+    const schoolsMap: Record<string, string> = {};
+    cityFilteredRegistrations.forEach((reg) => {
+      if (reg.schools?.id && reg.schools?.name) {
+        schoolsMap[reg.schools.id] = reg.schools.name;
+      }
+    });
+    return Object.entries(schoolsMap).map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
+  }, [cityFilteredRegistrations]);
+
   const filteredRegistrations = cityFilteredRegistrations.filter((reg) => {
     const matchesSearch =
       reg.student_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -119,7 +131,8 @@ const Registrations: React.FC = () => {
       reg.parent_accounts?.national_id?.includes(searchQuery) ||
       reg.schools?.name?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'all' || reg.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesSchool = schoolFilter === 'all' || reg.school_id === schoolFilter;
+    return matchesSearch && matchesStatus && matchesSchool;
   });
 
   const handleViewDetails = (registration: Registration) => {
@@ -345,6 +358,19 @@ const Registrations: React.FC = () => {
               <SelectItem value="pending_fees">Pending Fees</SelectItem>
               <SelectItem value="complete">Complete</SelectItem>
               <SelectItem value="cancelled">Cancelled</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={schoolFilter} onValueChange={setSchoolFilter}>
+            <SelectTrigger className="w-full sm:w-[200px] h-11 bg-card border-border/50 rounded-xl">
+              <SelectValue placeholder="All Schools" />
+            </SelectTrigger>
+            <SelectContent className="bg-card border border-border z-50 rounded-xl">
+              <SelectItem value="all">All Schools</SelectItem>
+              {schoolsList.map((school) => (
+                <SelectItem key={school.id} value={school.id}>
+                  {school.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
