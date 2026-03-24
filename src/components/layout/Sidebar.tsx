@@ -32,6 +32,7 @@ import {
 import { Button } from "@/components/ui/button";
 import seaterLogo from "@/assets/seater-logo.jpg";
 import { CitySelector } from "./CitySelector";
+import { EmployeeNotificationBell } from "./EmployeeNotificationBell";
 import {
   Tooltip,
   TooltipContent,
