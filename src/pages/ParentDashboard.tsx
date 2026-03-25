@@ -11,7 +11,7 @@ import {
   CheckCircle, Clock, AlertCircle, Navigation, MessageCircle,
   CalendarOff, Wallet, Shield, Route, UserCircle, Car,
   ChevronLeft, Receipt, CircleDollarSign, LayoutDashboard, Settings2,
-  TrendingUp, Camera, Loader2,
+  TrendingUp, Camera, Loader2, Eye,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { format } from "date-fns";
