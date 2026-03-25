@@ -11,7 +11,7 @@ import {
   CheckCircle, Clock, AlertCircle, Navigation, MessageCircle,
   CalendarOff, Wallet, Shield, Route, UserCircle, Car,
   ChevronLeft, Receipt, CircleDollarSign, LayoutDashboard, Settings2,
-  TrendingUp, Camera, Loader2,
+  TrendingUp, Camera, Loader2, Eye,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { format } from "date-fns";
@@ -791,9 +791,30 @@ export default function ParentDashboard() {
                       </div>
                       <div className="flex items-center justify-between text-[10px] sm:text-xs text-muted-foreground">
                         <span>{t('parentPortal.due')}: {format(new Date(payment.due_date), "dd MMM yyyy")}</span>
-                        {payment.paid_date && (
-                          <span>{t('parentPortal.paid')}: {format(new Date(payment.paid_date), "dd MMM yyyy")}</span>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {payment.paid_date && (
+                            <span>{t('parentPortal.paid')}: {format(new Date(payment.paid_date), "dd MMM yyyy")}</span>
+                          )}
+                          {payment.receipt_url && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 px-2 text-[10px] gap-1 hover:bg-info/10 hover:text-info"
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                const { data } = await supabase.storage
+                                  .from('payment-receipts')
+                                  .createSignedUrl(payment.receipt_url, 3600);
+                                if (data?.signedUrl) {
+                                  window.open(data.signedUrl, '_blank');
+                                }
+                              }}
+                            >
+                              <Eye className="h-3 w-3" />
+                              إيصال
+                            </Button>
+                          )}
+                        </div>
                       </div>
                       {payment.status !== "paid" && (
                         <Button
