@@ -416,13 +416,14 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
                                     <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg hover:bg-primary/10 hover:text-primary" onClick={() => startEditing(payment)}>
                                       <Edit2 className="h-3.5 w-3.5" />
                                     </Button>
-                                    {payment.status !== 'paid' && (
-                                      <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg hover:bg-success/10 hover:text-success" onClick={() => markPaidMutation.mutate(payment.id)} disabled={markPaidMutation.isPending}>
-                                        <Check className="h-3.5 w-3.5" />
-                                      </Button>
-                                    )}
-                                  </>
-                                )}
+                                     {payment.status !== 'paid' && (
+                                       <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg hover:bg-success/10 hover:text-success" onClick={() => markPaidMutation.mutate(payment.id)} disabled={markPaidMutation.isPending}>
+                                         <Check className="h-3.5 w-3.5" />
+                                       </Button>
+                                     )}
+                                     <ReceiptUpload paymentId={payment.id} receiptUrl={payment.receipt_url} canEdit={canEdit} />
+                                   </>
+                                 )}
                               </div>
                               )}
                             </TableCell>
