@@ -1275,6 +1275,7 @@ export type Database = {
           installment_number: number
           notes: string | null
           paid_date: string | null
+          receipt_url: string | null
           status: Database["public"]["Enums"]["payment_status"]
           subscription_id: string
           updated_at: string
@@ -1287,6 +1288,7 @@ export type Database = {
           installment_number: number
           notes?: string | null
           paid_date?: string | null
+          receipt_url?: string | null
           status?: Database["public"]["Enums"]["payment_status"]
           subscription_id: string
           updated_at?: string
@@ -1299,6 +1301,7 @@ export type Database = {
           installment_number?: number
           notes?: string | null
           paid_date?: string | null
+          receipt_url?: string | null
           status?: Database["public"]["Enums"]["payment_status"]
           subscription_id?: string
           updated_at?: string
