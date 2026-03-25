@@ -48,6 +48,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { InvoiceGenerator } from './InvoiceGenerator';
+import { ReceiptUpload } from './ReceiptUpload';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface PaymentProfileDialogProps {
