@@ -91,17 +91,38 @@ const Staff = () => {
     },
   });
 
+  // Determine belongs_to filter based on employee departments
+  const belongsToFilter = useMemo(() => {
+    if (isSuperAdmin) return null; // no filter for super admins
+    const depts = employee?.departments || [];
+    const hasSchoolOps = depts.includes('operations');
+    const hasCorpOps = depts.includes('operation_companies');
+    if (hasSchoolOps && hasCorpOps) return null; // both — no filter
+    if (hasSchoolOps) return 'school';
+    if (hasCorpOps) return 'corporate';
+    return null;
+  }, [employee, isSuperAdmin]);
+
   const drivers = useMemo(() => {
-    if (selectedCity === 'all') return allDrivers;
+    let filtered = allDrivers;
+    // Filter by belongs_to based on employee department
+    if (belongsToFilter) {
+      filtered = filtered.filter((d: any) => d.belongs_to === belongsToFilter || d.belongs_to === 'both');
+    }
+    if (selectedCity === 'all') return filtered;
     const cityNames = cityMapping[selectedCity] || [];
-    return allDrivers.filter((d: any) => cityNames.some((name) => d.city?.toLowerCase().includes(name.toLowerCase())));
-  }, [allDrivers, selectedCity]);
+    return filtered.filter((d: any) => cityNames.some((name) => d.city?.toLowerCase().includes(name.toLowerCase())));
+  }, [allDrivers, selectedCity, belongsToFilter]);
 
   const supervisors = useMemo(() => {
-    if (selectedCity === 'all') return allSupervisors;
+    let filtered = allSupervisors;
+    if (belongsToFilter) {
+      filtered = filtered.filter((s: any) => s.belongs_to === belongsToFilter || s.belongs_to === 'both');
+    }
+    if (selectedCity === 'all') return filtered;
     const cityNames = cityMapping[selectedCity] || [];
-    return allSupervisors.filter((s: any) => cityNames.some((name) => s.city?.toLowerCase().includes(name.toLowerCase())));
-  }, [allSupervisors, selectedCity]);
+    return filtered.filter((s: any) => cityNames.some((name) => s.city?.toLowerCase().includes(name.toLowerCase())));
+  }, [allSupervisors, selectedCity, belongsToFilter]);
 
   const saveDriverMutation = useMutation({
     mutationFn: async () => {
