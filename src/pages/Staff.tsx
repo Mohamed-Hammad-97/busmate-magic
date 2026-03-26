@@ -33,6 +33,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { Plus, Search, Users, Car, UserCheck, Edit, MapPin, KeyRound, TrendingUp, CreditCard } from 'lucide-react';
 import { useCity } from '@/contexts/CityContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { DriverAccountsManagement } from '@/components/staff/DriverAccountsManagement';
 import { StaffProfilesManagement } from '@/components/corporate/StaffProfilesManagement';
 import { PageHero } from '@/components/layout/PageHero';
