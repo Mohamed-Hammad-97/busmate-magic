@@ -75,7 +75,7 @@ const navEntries: NavEntry[] = [
   { label: "Live Tracking", href: "/live-tracking", icon: Navigation },
   { label: "AI Route Planner", href: "/ai-routes", icon: Sparkles, department: "operations" },
   { label: "Drivers & Staff", href: "/staff", icon: Bus, department: "operations" },
-  { label: "Payments", href: "/payments", icon: CreditCard },
+  { label: "Payments", href: "/payments", icon: CreditCard, multiDepartment: ["customer_support", "finance"] },
   { label: "Submissions", href: "/submissions", icon: MessageCircle, department: "customer_support" },
   { label: "Support Chat", href: "/support-chat", icon: MessageCircle, department: "customer_support" },
   {
