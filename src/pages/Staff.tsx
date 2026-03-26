@@ -42,6 +42,7 @@ const Staff = () => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { selectedCity } = useCity();
+  const { employee, isSuperAdmin } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('drivers');
   
