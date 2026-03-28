@@ -35,6 +35,7 @@ import {
 import { Link } from "react-router-dom";
 import seaterLogo from "@/assets/seater-logo.jpg";
 import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
+import PhoneMockup from "@/components/home/PhoneMockup";
 
 interface HomepageSetting {
   key: string;
@@ -489,24 +490,16 @@ const Home = () => {
       {/* Premium About Section */}
       <section id="about" className="py-24 px-4 relative section-premium">
         <div className="container mx-auto">
-          <div className={`grid ${hasSetting("about_image") ? 'lg:grid-cols-2' : 'lg:grid-cols-1 max-w-3xl mx-auto'} gap-16 items-center`}>
-            {/* About Image - only show if about_image is set */}
-            {hasSetting("about_image") && (
-              <div className="relative flex justify-center">
-                <div className="relative">
-                  <div className="absolute -inset-4 bg-gradient-to-r from-primary/20 to-primary/5 rounded-3xl blur-2xl"></div>
-                  <div className="rounded-2xl overflow-hidden shadow-premium relative">
-                    <img 
-                      src={getSetting("about_image")} 
-                      alt="About Seater" 
-                      className="w-full h-auto object-contain max-w-sm"
-                    />
-                  </div>
-                </div>
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            {/* Phone Mockup */}
+            <div className="relative flex justify-center order-2 lg:order-1">
+              <div className="relative">
+                <div className="absolute -inset-8 bg-gradient-to-r from-primary/20 to-primary/5 rounded-full blur-3xl"></div>
+                <PhoneMockup />
               </div>
-            )}
+            </div>
             {/* About Content */}
-            <div className={`space-y-6 ${!hasSetting("about_image") ? 'text-center' : ''}`}>
+            <div className="space-y-6 order-1 lg:order-2">
               <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight">
                 {isRtl 
                   ? getSetting("about_title_ar", getSetting("about_title", t('homepage.about.defaultTitle')))
