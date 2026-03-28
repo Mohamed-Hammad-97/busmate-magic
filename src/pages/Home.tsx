@@ -34,6 +34,9 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import seaterLogo from "@/assets/seater-logo.jpg";
+import serviceSchoolBus from "@/assets/service-school-bus.png";
+import serviceCorporateBus from "@/assets/service-corporate-bus.png";
+import servicePrivateCar from "@/assets/service-private-car.png";
 import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 import PhoneMockup from "@/components/home/PhoneMockup";
 
