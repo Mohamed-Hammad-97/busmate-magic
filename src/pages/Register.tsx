@@ -3,6 +3,9 @@ import { useNavigate, Link } from 'react-router-dom';
 import { GraduationCap, Building2, User, ArrowLeft, ArrowRight, Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import seaterLogo from '@/assets/seater-logo.jpg';
+import serviceSchoolBus from '@/assets/service-school-bus.png';
+import serviceCorporateBus from '@/assets/service-corporate-bus.png';
+import servicePrivateCar from '@/assets/service-private-car.png';
 import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher';
 
 const Register: React.FC = () => {
