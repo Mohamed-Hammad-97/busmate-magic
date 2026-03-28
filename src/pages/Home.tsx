@@ -260,7 +260,8 @@ const Home = () => {
     },
     { 
       key: 'private',
-      icon: UserRound, 
+      icon: UserRound,
+      vehicleImage: servicePrivateCar,
       title: getServiceName('private', 'homepage.services.private.title'), 
       subtitle: t('register.types.private.description'),
       shortDescription: getServiceShortDescription('private', 'homepage.services.private.description'),
