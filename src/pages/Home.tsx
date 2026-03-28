@@ -35,6 +35,7 @@ import {
 import { Link } from "react-router-dom";
 import seaterLogo from "@/assets/seater-logo.jpg";
 import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
+import PhoneMockup from "@/components/home/PhoneMockup";
 
 interface HomepageSetting {
   key: string;
