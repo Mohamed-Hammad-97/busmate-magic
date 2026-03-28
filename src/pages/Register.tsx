@@ -26,6 +26,7 @@ const Register: React.FC = () => {
     {
       id: 'corporate',
       icon: Building2,
+      vehicleImage: serviceCorporateBus,
       title: t('register.types.corporate.title'),
       description: t('register.types.corporate.description'),
       path: '/register/corporate',
