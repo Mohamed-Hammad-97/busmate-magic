@@ -102,8 +102,10 @@ const Register: React.FC = () => {
                 {/* Card */}
                 <div className="relative bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-8 hover:border-primary/30 hover:shadow-2xl hover:shadow-primary/10 transition-all duration-500 hover:-translate-y-2">
                   {/* Icon */}
-                  <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br ${type.gradient} text-white shadow-lg mb-6 group-hover:scale-110 transition-transform duration-300`}>
-                    <type.icon className="h-8 w-8" />
+                  <div className="flex justify-center mb-6">
+                    <div className="w-28 h-28 rounded-2xl overflow-hidden group-hover:scale-110 transition-transform duration-300">
+                      <img src={type.vehicleImage} alt={type.title} className="w-full h-full object-contain" loading="lazy" width={112} height={112} />
+                    </div>
                   </div>
 
                   {/* Content */}
