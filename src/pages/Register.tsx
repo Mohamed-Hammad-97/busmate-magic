@@ -3,6 +3,9 @@ import { useNavigate, Link } from 'react-router-dom';
 import { GraduationCap, Building2, User, ArrowLeft, ArrowRight, Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import seaterLogo from '@/assets/seater-logo.jpg';
+import serviceSchoolBus from '@/assets/service-school-bus.png';
+import serviceCorporateBus from '@/assets/service-corporate-bus.png';
+import servicePrivateCar from '@/assets/service-private-car.png';
 import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher';
 
 const Register: React.FC = () => {
@@ -13,6 +16,7 @@ const Register: React.FC = () => {
     {
       id: 'student',
       icon: GraduationCap,
+      vehicleImage: serviceSchoolBus,
       title: t('register.types.student.title'),
       description: t('register.types.student.description'),
       path: '/register/student',
@@ -22,6 +26,7 @@ const Register: React.FC = () => {
     {
       id: 'corporate',
       icon: Building2,
+      vehicleImage: serviceCorporateBus,
       title: t('register.types.corporate.title'),
       description: t('register.types.corporate.description'),
       path: '/register/corporate',
@@ -31,6 +36,7 @@ const Register: React.FC = () => {
     {
       id: 'private',
       icon: User,
+      vehicleImage: servicePrivateCar,
       title: t('register.types.private.title'),
       description: t('register.types.private.description'),
       path: '/register/private',
@@ -96,8 +102,10 @@ const Register: React.FC = () => {
                 {/* Card */}
                 <div className="relative bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-8 hover:border-primary/30 hover:shadow-2xl hover:shadow-primary/10 transition-all duration-500 hover:-translate-y-2">
                   {/* Icon */}
-                  <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br ${type.gradient} text-white shadow-lg mb-6 group-hover:scale-110 transition-transform duration-300`}>
-                    <type.icon className="h-8 w-8" />
+                  <div className="flex justify-center mb-6">
+                    <div className="w-28 h-28 rounded-2xl overflow-hidden group-hover:scale-110 transition-transform duration-300">
+                      <img src={type.vehicleImage} alt={type.title} className="w-full h-full object-contain" loading="lazy" width={112} height={112} />
+                    </div>
                   </div>
 
                   {/* Content */}
