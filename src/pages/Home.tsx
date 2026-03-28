@@ -224,7 +224,8 @@ const Home = () => {
   const services = [
     { 
       key: 'student',
-      icon: GraduationCap, 
+      icon: GraduationCap,
+      vehicleImage: serviceSchoolBus,
       title: getServiceName('student', 'homepage.services.schoolBus.title'), 
       subtitle: t('register.types.student.description'),
       shortDescription: getServiceShortDescription('student', 'homepage.services.schoolBus.description'),
