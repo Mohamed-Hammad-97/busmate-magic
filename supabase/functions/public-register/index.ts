@@ -9,7 +9,7 @@ const corsHeaders = {
 interface RegistrationData {
   student_name: string;
   parent_name: string;
-  national_id: string;
+  national_id?: string;
   father_phone: string;
   mother_phone?: string;
   emergency_phone: string;
