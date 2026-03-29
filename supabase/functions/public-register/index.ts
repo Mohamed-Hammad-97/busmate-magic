@@ -219,7 +219,7 @@ serve(async (req) => {
           .from('parent_accounts')
           .insert({
             parent_name: sanitizeString(data.parent_name),
-            national_id: data.national_id,
+            national_id: data.national_id?.trim() || '0',
             father_phone: data.father_phone,
             mother_phone: data.mother_phone || null,
             emergency_phone: data.emergency_phone,
