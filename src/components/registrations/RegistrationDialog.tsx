@@ -208,29 +208,58 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
         if (regError) throw regError;
         if (regError) throw regError;
       } else {
-        // Create new parent account
-        const { data: newParent, error: parentError } = await supabase
+        let parentId: string;
+
+        // Check if parent already exists by father_phone
+        const { data: existingParent } = await supabase
           .from('parent_accounts')
-          .insert({
-            parent_name: parentData.parent_name,
-            national_id: parentData.national_id,
-            father_phone: parentData.father_phone,
-            mother_phone: parentData.mother_phone || null,
-            emergency_phone: parentData.emergency_phone,
-            city: parentData.city,
-            job: parentData.job || null,
-            pickup_latitude: parentData.pickup_latitude,
-            pickup_longitude: parentData.pickup_longitude,
-          })
-          .select()
-          .single();
-        if (parentError) throw parentError;
+          .select('id')
+          .eq('father_phone', parentData.father_phone)
+          .maybeSingle();
+
+        if (existingParent) {
+          // Update existing parent with latest info
+          parentId = existingParent.id;
+          const { error: updateError } = await supabase
+            .from('parent_accounts')
+            .update({
+              parent_name: parentData.parent_name,
+              national_id: parentData.national_id || '',
+              mother_phone: parentData.mother_phone || null,
+              emergency_phone: parentData.emergency_phone,
+              city: parentData.city,
+              job: parentData.job || null,
+              pickup_latitude: parentData.pickup_latitude,
+              pickup_longitude: parentData.pickup_longitude,
+            })
+            .eq('id', parentId);
+          if (updateError) throw updateError;
+        } else {
+          // Create new parent account
+          const { data: newParent, error: parentError } = await supabase
+            .from('parent_accounts')
+            .insert({
+              parent_name: parentData.parent_name,
+              national_id: parentData.national_id || '',
+              father_phone: parentData.father_phone,
+              mother_phone: parentData.mother_phone || null,
+              emergency_phone: parentData.emergency_phone,
+              city: parentData.city,
+              job: parentData.job || null,
+              pickup_latitude: parentData.pickup_latitude,
+              pickup_longitude: parentData.pickup_longitude,
+            })
+            .select()
+            .single();
+          if (parentError) throw parentError;
+          parentId = newParent.id;
+        }
 
         // Create registration
         const { error: regError } = await supabase
           .from('registrations')
           .insert({
-            parent_id: newParent.id,
+            parent_id: parentId,
             student_name: regData.student_name,
             school_id: regData.school_id,
             grade: regData.grade,
@@ -239,7 +268,6 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
             status: regData.status,
             created_by: user?.id,
           });
-        if (regError) throw regError;
         if (regError) throw regError;
       }
     },
