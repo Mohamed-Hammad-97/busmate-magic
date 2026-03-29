@@ -69,13 +69,8 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-    if (!data.national_id?.trim()) {
-      return new Response(
-        JSON.stringify({ error: "National ID is required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-    if (!validateNationalId(data.national_id)) {
+    // National ID is optional, but validate format if provided
+    if (data.national_id?.trim() && !validateNationalId(data.national_id)) {
       return new Response(
         JSON.stringify({ error: "Invalid national ID format (must be 14 digits)" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
