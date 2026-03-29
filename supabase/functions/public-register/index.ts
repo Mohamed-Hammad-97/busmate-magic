@@ -9,7 +9,7 @@ const corsHeaders = {
 interface RegistrationData {
   student_name: string;
   parent_name: string;
-  national_id: string;
+  national_id?: string;
   father_phone: string;
   mother_phone?: string;
   emergency_phone: string;
@@ -69,13 +69,8 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-    if (!data.national_id?.trim()) {
-      return new Response(
-        JSON.stringify({ error: "National ID is required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-    if (!validateNationalId(data.national_id)) {
+    // National ID is optional, but validate format if provided
+    if (data.national_id?.trim() && !validateNationalId(data.national_id)) {
       return new Response(
         JSON.stringify({ error: "Invalid national ID format (must be 14 digits)" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -177,18 +172,22 @@ serve(async (req) => {
       console.log("Existing parent found by phone, adding new registration:", data.father_phone);
       parentId = existingParent.id;
     } else {
-      // Check for duplicate national ID (only for new parents)
-      const { data: existingByNationalId } = await supabase
-        .from('parent_accounts')
-        .select('id')
-        .eq('national_id', data.national_id)
-        .maybeSingle();
+      // Check for duplicate national ID (only for new parents, and only if national_id provided)
+      if (data.national_id?.trim()) {
+        const { data: existingByNationalId } = await supabase
+          .from('parent_accounts')
+          .select('id')
+          .eq('national_id', data.national_id)
+          .maybeSingle();
 
-      if (existingByNationalId) {
-        // Same national ID but different phone - use existing parent
-        console.log("National ID already registered:", data.national_id);
-        parentId = existingByNationalId.id;
-      } else {
+        if (existingByNationalId) {
+          // Same national ID but different phone - use existing parent
+          console.log("National ID already registered:", data.national_id);
+          parentId = existingByNationalId.id;
+        }
+      }
+
+      if (!parentId) {
         // Check phone uniqueness across employees, drivers, supervisors
         const { data: empPhone } = await supabase
           .from('employees')
@@ -220,7 +219,7 @@ serve(async (req) => {
           .from('parent_accounts')
           .insert({
             parent_name: sanitizeString(data.parent_name),
-            national_id: data.national_id,
+            national_id: data.national_id?.trim() || '0',
             father_phone: data.father_phone,
             mother_phone: data.mother_phone || null,
             emergency_phone: data.emergency_phone,

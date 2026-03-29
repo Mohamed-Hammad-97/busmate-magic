@@ -176,6 +176,19 @@ const StudentRegistrationForm: React.FC = () => {
     submitMutation.mutate();
   };
 
+  const handleRegisterAnother = () => {
+    setFormData(prev => ({
+      ...prev,
+      student_name: '',
+      school_id: '',
+      grade: '',
+      car_type: 'ac',
+      education_department: 'national',
+    }));
+    setStep(1);
+    setSubmitted(false);
+  };
+
   if (submitted) {
     return (
       <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-8 text-center space-y-6 max-w-md mx-auto animate-fade-in">
@@ -189,9 +202,14 @@ const StudentRegistrationForm: React.FC = () => {
         <p className="text-sm text-muted-foreground">
           {t('register.student.success.studentLabel')}: <span className="font-medium text-foreground">{formData.student_name}</span>
         </p>
-        <Button onClick={() => navigate('/')} className="w-full" size="lg">
-          {t('register.private.success.backHome') || 'Back to Home'}
-        </Button>
+        <div className="space-y-3">
+          <Button onClick={handleRegisterAnother} variant="outline" className="w-full" size="lg">
+            {t('register.student.registerAnother', 'تسجيل طالب آخر')}
+          </Button>
+          <Button onClick={() => navigate('/')} className="w-full" size="lg">
+            {t('register.private.success.backHome') || 'Back to Home'}
+          </Button>
+        </div>
       </div>
     );
   }
