@@ -172,18 +172,22 @@ serve(async (req) => {
       console.log("Existing parent found by phone, adding new registration:", data.father_phone);
       parentId = existingParent.id;
     } else {
-      // Check for duplicate national ID (only for new parents)
-      const { data: existingByNationalId } = await supabase
-        .from('parent_accounts')
-        .select('id')
-        .eq('national_id', data.national_id)
-        .maybeSingle();
+      // Check for duplicate national ID (only for new parents, and only if national_id provided)
+      if (data.national_id?.trim()) {
+        const { data: existingByNationalId } = await supabase
+          .from('parent_accounts')
+          .select('id')
+          .eq('national_id', data.national_id)
+          .maybeSingle();
 
-      if (existingByNationalId) {
-        // Same national ID but different phone - use existing parent
-        console.log("National ID already registered:", data.national_id);
-        parentId = existingByNationalId.id;
-      } else {
+        if (existingByNationalId) {
+          // Same national ID but different phone - use existing parent
+          console.log("National ID already registered:", data.national_id);
+          parentId = existingByNationalId.id;
+        }
+      }
+
+      if (!parentId) {
         // Check phone uniqueness across employees, drivers, supervisors
         const { data: empPhone } = await supabase
           .from('employees')
