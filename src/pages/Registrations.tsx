@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Search, Eye, Edit2, ClipboardList, DollarSign, Link2, Map, TrendingUp, CheckCircle, Clock, XCircle, GraduationCap, Users, School, Trash2, UserX } from 'lucide-react';
+import { Plus, Search, Eye, Edit2, ClipboardList, DollarSign, Link2, Map, TrendingUp, CheckCircle, Clock, XCircle, GraduationCap, Users, School, Trash2, UserX, Archive } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
