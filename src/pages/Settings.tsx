@@ -298,6 +298,49 @@ const Settings = () => {
                 </div>
               </CardContent>
             </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <KeyRound className="h-5 w-5" />
+                  {isRtl ? 'تغيير كلمة المرور' : 'Change Password'}
+                </CardTitle>
+                <CardDescription>
+                  {isRtl ? 'قم بتحديث كلمة المرور الخاصة بحسابك' : 'Update your account password'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleChangePassword} className="space-y-4 max-w-md">
+                  <div className="space-y-2">
+                    <Label htmlFor="new_password">{isRtl ? 'كلمة المرور الجديدة' : 'New Password'}</Label>
+                    <Input
+                      id="new_password"
+                      type="password"
+                      value={passwordForm.newPassword}
+                      onChange={(e) => setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))}
+                      placeholder={isRtl ? '6 أحرف على الأقل' : 'At least 6 characters'}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirm_password">{isRtl ? 'تأكيد كلمة المرور' : 'Confirm Password'}</Label>
+                    <Input
+                      id="confirm_password"
+                      type="password"
+                      value={passwordForm.confirmPassword}
+                      onChange={(e) => setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                      placeholder={isRtl ? 'أعد إدخال كلمة المرور' : 'Re-enter password'}
+                      required
+                    />
+                  </div>
+                  <Button type="submit" disabled={isChangingPassword}>
+                    {isChangingPassword
+                      ? (isRtl ? 'جاري التحديث...' : 'Updating...')
+                      : (isRtl ? 'تحديث كلمة المرور' : 'Update Password')}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {isSuperAdmin && (
