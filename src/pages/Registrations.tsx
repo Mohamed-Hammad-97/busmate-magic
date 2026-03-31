@@ -130,7 +130,7 @@ const Registrations: React.FC = () => {
       reg.parent_accounts?.parent_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       reg.parent_accounts?.national_id?.includes(searchQuery) ||
       reg.schools?.name?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || reg.status === statusFilter;
+    const matchesStatus = statusFilter === 'all' ? reg.status !== 'archived' : reg.status === statusFilter;
     const matchesSchool = schoolFilter === 'all' || reg.school_id === schoolFilter;
     return matchesSearch && matchesStatus && matchesSchool;
   });
