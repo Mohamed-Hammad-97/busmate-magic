@@ -34,7 +34,17 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Settings as SettingsIcon, Users, Globe, Plus, Edit, Search } from 'lucide-react';
+import { Settings as SettingsIcon, Users, Globe, Plus, Edit, Search, Archive, AlertTriangle } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher';
 import { PageHero } from '@/components/layout/PageHero';
 import type { Tables, Enums } from '@/integrations/supabase/types';
@@ -56,6 +66,7 @@ const Settings = () => {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [isEmployeeDialogOpen, setIsEmployeeDialogOpen] = useState(false);
+  const [isArchiveDialogOpen, setIsArchiveDialogOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [employeeForm, setEmployeeForm] = useState({
     full_name: '',
@@ -66,6 +77,32 @@ const Settings = () => {
     user_id: '',
     password: '',
     city: '',
+  });
+
+  const archiveYearMutation = useMutation({
+    mutationFn: async () => {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const response = await supabase.functions.invoke('archive-school-year', {
+        headers: {
+          Authorization: `Bearer ${sessionData.session?.access_token}`,
+        },
+      });
+      if (response.error) throw new Error(response.error.message);
+      if (response.data?.error) throw new Error(response.data.error);
+      return response.data;
+    },
+    onSuccess: (data) => {
+      toast.success(
+        isRtl
+          ? `تم أرشفة السنة الدراسية بنجاح - ${data.stats.registrations_archived} تسجيل`
+          : `School year archived successfully - ${data.stats.registrations_archived} registrations archived`
+      );
+      setIsArchiveDialogOpen(false);
+      queryClient.invalidateQueries();
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Error archiving school year');
+    },
   });
 
   const { data: employees = [], isLoading } = useQuery({
@@ -207,6 +244,12 @@ const Settings = () => {
                 {t('settings.employees')}
               </TabsTrigger>
             )}
+            {isSuperAdmin && (
+              <TabsTrigger value="school-year" className="gap-2">
+                <Archive className="h-4 w-4" />
+                {isRtl ? 'سنة دراسية جديدة' : 'New School Year'}
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="general" className="space-y-4">
@@ -326,7 +369,82 @@ const Settings = () => {
             </Card>
           </TabsContent>
           )}
+
+          {isSuperAdmin && (
+          <TabsContent value="school-year" className="space-y-4">
+            <Card className="border-destructive/20">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="p-3 rounded-xl bg-destructive/10">
+                    <Archive className="h-6 w-6 text-destructive" />
+                  </div>
+                  <div>
+                    <CardTitle>{isRtl ? 'أرشفة السنة الدراسية وبدء سنة جديدة' : 'Archive School Year & Start New Year'}</CardTitle>
+                    <CardDescription>
+                      {isRtl
+                        ? 'أرشفة جميع التسجيلات والاشتراكات الحالية وتعطيل الخطوط والمسارات للبدء من جديد'
+                        : 'Archive all current registrations & subscriptions, deactivate routes and lines to start fresh'}
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="p-4 bg-destructive/5 border border-destructive/20 rounded-lg space-y-2">
+                  <div className="flex items-center gap-2 text-destructive font-medium">
+                    <AlertTriangle className="h-5 w-5" />
+                    {isRtl ? 'تحذير: هذا الإجراء لا يمكن التراجع عنه' : 'Warning: This action cannot be undone'}
+                  </div>
+                  <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+                    <li>{isRtl ? 'سيتم أرشفة جميع التسجيلات النشطة' : 'All active registrations will be archived'}</li>
+                    <li>{isRtl ? 'سيتم أرشفة الاشتراكات من حسابات أولياء الأمور' : 'Subscriptions will be archived from parent accounts'}</li>
+                    <li>{isRtl ? 'سيتم تعطيل جميع المسارات والخطوط' : 'All routes and lines will be deactivated'}</li>
+                    <li>{isRtl ? 'سيتم تعطيل حسابات أولياء الأمور (يحتاجون لإعادة التسجيل)' : 'Parent accounts will be deactivated (they need to re-register)'}</li>
+                    <li>{isRtl ? 'يمكن لأولياء الأمور التسجيل مجدداً للسنة الجديدة' : 'Parents can register again for the new year'}</li>
+                  </ul>
+                </div>
+                <Button
+                  variant="destructive"
+                  size="lg"
+                  className="w-full"
+                  onClick={() => setIsArchiveDialogOpen(true)}
+                >
+                  <Archive className="h-5 w-5 mr-2" />
+                  {isRtl ? 'بدء سنة دراسية جديدة' : 'Start New School Year'}
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          )}
         </Tabs>
+
+        {/* Archive Confirmation Dialog */}
+        <AlertDialog open={isArchiveDialogOpen} onOpenChange={setIsArchiveDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+                {isRtl ? 'تأكيد أرشفة السنة الدراسية' : 'Confirm School Year Archive'}
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {isRtl
+                  ? 'هل أنت متأكد أنك تريد أرشفة السنة الدراسية الحالية؟ سيتم أرشفة جميع التسجيلات والاشتراكات وتعطيل المسارات والخطوط. هذا الإجراء لا يمكن التراجع عنه.'
+                  : 'Are you sure you want to archive the current school year? All registrations and subscriptions will be archived, and all routes and lines will be deactivated. This action cannot be undone.'}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{isRtl ? 'إلغاء' : 'Cancel'}</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={() => archiveYearMutation.mutate()}
+                disabled={archiveYearMutation.isPending}
+              >
+                {archiveYearMutation.isPending
+                  ? (isRtl ? 'جاري الأرشفة...' : 'Archiving...')
+                  : (isRtl ? 'نعم، أرشف السنة' : 'Yes, Archive Year')}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* Employee Dialog */}
         <Dialog open={isEmployeeDialogOpen} onOpenChange={setIsEmployeeDialogOpen}>

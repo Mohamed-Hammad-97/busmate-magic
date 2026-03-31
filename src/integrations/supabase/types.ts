@@ -2145,7 +2145,11 @@ export type Database = {
         | "operation_companies"
       education_department: "national" | "ig" | "american"
       payment_status: "paid" | "pending" | "overdue"
-      registration_status: "pending_fees" | "complete" | "cancelled"
+      registration_status:
+        | "pending_fees"
+        | "complete"
+        | "cancelled"
+        | "archived"
       subscription_type: "monthly" | "yearly"
       trip_notification_type:
         | "trip_started"
@@ -2299,7 +2303,12 @@ export const Constants = {
       ],
       education_department: ["national", "ig", "american"],
       payment_status: ["paid", "pending", "overdue"],
-      registration_status: ["pending_fees", "complete", "cancelled"],
+      registration_status: [
+        "pending_fees",
+        "complete",
+        "cancelled",
+        "archived",
+      ],
       subscription_type: ["monthly", "yearly"],
       trip_notification_type: [
         "trip_started",

@@ -39,6 +39,7 @@ const RegistrationDetails: React.FC<RegistrationDetailsProps> = ({
     pending_fees: { label: 'Pending Fees', color: 'bg-warning/10 text-warning border-warning/20' },
     complete: { label: 'Complete', color: 'bg-success/10 text-success border-success/20' },
     cancelled: { label: 'Cancelled', color: 'bg-destructive/10 text-destructive border-destructive/20' },
+    archived: { label: 'Archived', color: 'bg-muted text-muted-foreground border-muted' },
   };
 
   const status = statusConfig[registration.status];
