@@ -224,6 +224,8 @@ const Registrations: React.FC = () => {
         return { label: 'Pending Fees', icon: Clock, className: 'bg-warning/10 text-warning border-warning/20' };
       case 'cancelled':
         return { label: 'Cancelled', icon: XCircle, className: 'bg-destructive/10 text-destructive border-destructive/20' };
+      case 'archived':
+        return { label: 'Archived', icon: Archive, className: 'bg-muted text-muted-foreground border-muted' };
     }
   };
 
