@@ -369,7 +369,82 @@ const Settings = () => {
             </Card>
           </TabsContent>
           )}
+
+          {isSuperAdmin && (
+          <TabsContent value="school-year" className="space-y-4">
+            <Card className="border-destructive/20">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="p-3 rounded-xl bg-destructive/10">
+                    <Archive className="h-6 w-6 text-destructive" />
+                  </div>
+                  <div>
+                    <CardTitle>{isRtl ? 'أرشفة السنة الدراسية وبدء سنة جديدة' : 'Archive School Year & Start New Year'}</CardTitle>
+                    <CardDescription>
+                      {isRtl
+                        ? 'أرشفة جميع التسجيلات والاشتراكات الحالية وتعطيل الخطوط والمسارات للبدء من جديد'
+                        : 'Archive all current registrations & subscriptions, deactivate routes and lines to start fresh'}
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="p-4 bg-destructive/5 border border-destructive/20 rounded-lg space-y-2">
+                  <div className="flex items-center gap-2 text-destructive font-medium">
+                    <AlertTriangle className="h-5 w-5" />
+                    {isRtl ? 'تحذير: هذا الإجراء لا يمكن التراجع عنه' : 'Warning: This action cannot be undone'}
+                  </div>
+                  <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+                    <li>{isRtl ? 'سيتم أرشفة جميع التسجيلات النشطة' : 'All active registrations will be archived'}</li>
+                    <li>{isRtl ? 'سيتم أرشفة الاشتراكات من حسابات أولياء الأمور' : 'Subscriptions will be archived from parent accounts'}</li>
+                    <li>{isRtl ? 'سيتم تعطيل جميع المسارات والخطوط' : 'All routes and lines will be deactivated'}</li>
+                    <li>{isRtl ? 'سيتم تعطيل حسابات أولياء الأمور (يحتاجون لإعادة التسجيل)' : 'Parent accounts will be deactivated (they need to re-register)'}</li>
+                    <li>{isRtl ? 'يمكن لأولياء الأمور التسجيل مجدداً للسنة الجديدة' : 'Parents can register again for the new year'}</li>
+                  </ul>
+                </div>
+                <Button
+                  variant="destructive"
+                  size="lg"
+                  className="w-full"
+                  onClick={() => setIsArchiveDialogOpen(true)}
+                >
+                  <Archive className="h-5 w-5 mr-2" />
+                  {isRtl ? 'بدء سنة دراسية جديدة' : 'Start New School Year'}
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          )}
         </Tabs>
+
+        {/* Archive Confirmation Dialog */}
+        <AlertDialog open={isArchiveDialogOpen} onOpenChange={setIsArchiveDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+                {isRtl ? 'تأكيد أرشفة السنة الدراسية' : 'Confirm School Year Archive'}
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {isRtl
+                  ? 'هل أنت متأكد أنك تريد أرشفة السنة الدراسية الحالية؟ سيتم أرشفة جميع التسجيلات والاشتراكات وتعطيل المسارات والخطوط. هذا الإجراء لا يمكن التراجع عنه.'
+                  : 'Are you sure you want to archive the current school year? All registrations and subscriptions will be archived, and all routes and lines will be deactivated. This action cannot be undone.'}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{isRtl ? 'إلغاء' : 'Cancel'}</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={() => archiveYearMutation.mutate()}
+                disabled={archiveYearMutation.isPending}
+              >
+                {archiveYearMutation.isPending
+                  ? (isRtl ? 'جاري الأرشفة...' : 'Archiving...')
+                  : (isRtl ? 'نعم، أرشف السنة' : 'Yes, Archive Year')}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* Employee Dialog */}
         <Dialog open={isEmployeeDialogOpen} onOpenChange={setIsEmployeeDialogOpen}>
