@@ -244,6 +244,12 @@ const Settings = () => {
                 {t('settings.employees')}
               </TabsTrigger>
             )}
+            {isSuperAdmin && (
+              <TabsTrigger value="school-year" className="gap-2">
+                <Archive className="h-4 w-4" />
+                {isRtl ? 'سنة دراسية جديدة' : 'New School Year'}
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="general" className="space-y-4">
