@@ -66,6 +66,7 @@ const Settings = () => {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [isEmployeeDialogOpen, setIsEmployeeDialogOpen] = useState(false);
+  const [isArchiveDialogOpen, setIsArchiveDialogOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [employeeForm, setEmployeeForm] = useState({
     full_name: '',
@@ -76,6 +77,32 @@ const Settings = () => {
     user_id: '',
     password: '',
     city: '',
+  });
+
+  const archiveYearMutation = useMutation({
+    mutationFn: async () => {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const response = await supabase.functions.invoke('archive-school-year', {
+        headers: {
+          Authorization: `Bearer ${sessionData.session?.access_token}`,
+        },
+      });
+      if (response.error) throw new Error(response.error.message);
+      if (response.data?.error) throw new Error(response.data.error);
+      return response.data;
+    },
+    onSuccess: (data) => {
+      toast.success(
+        isRtl
+          ? `تم أرشفة السنة الدراسية بنجاح - ${data.stats.registrations_archived} تسجيل`
+          : `School year archived successfully - ${data.stats.registrations_archived} registrations archived`
+      );
+      setIsArchiveDialogOpen(false);
+      queryClient.invalidateQueries();
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Error archiving school year');
+    },
   });
 
   const { data: employees = [], isLoading } = useQuery({
