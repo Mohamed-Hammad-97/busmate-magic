@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Search, Eye, Edit2, ClipboardList, DollarSign, Link2, Map, TrendingUp, CheckCircle, Clock, XCircle, GraduationCap, Users, School, Trash2, UserX } from 'lucide-react';
+import { Plus, Search, Eye, Edit2, ClipboardList, DollarSign, Link2, Map, TrendingUp, CheckCircle, Clock, XCircle, GraduationCap, Users, School, Trash2, UserX, Archive } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
@@ -130,7 +130,7 @@ const Registrations: React.FC = () => {
       reg.parent_accounts?.parent_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       reg.parent_accounts?.national_id?.includes(searchQuery) ||
       reg.schools?.name?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || reg.status === statusFilter;
+    const matchesStatus = statusFilter === 'all' ? reg.status !== 'archived' : reg.status === statusFilter;
     const matchesSchool = schoolFilter === 'all' || reg.school_id === schoolFilter;
     return matchesSearch && matchesStatus && matchesSchool;
   });
@@ -224,6 +224,8 @@ const Registrations: React.FC = () => {
         return { label: 'Pending Fees', icon: Clock, className: 'bg-warning/10 text-warning border-warning/20' };
       case 'cancelled':
         return { label: 'Cancelled', icon: XCircle, className: 'bg-destructive/10 text-destructive border-destructive/20' };
+      case 'archived':
+        return { label: 'Archived', icon: Archive, className: 'bg-muted text-muted-foreground border-muted' };
     }
   };
 
@@ -358,6 +360,7 @@ const Registrations: React.FC = () => {
               <SelectItem value="pending_fees">Pending Fees</SelectItem>
               <SelectItem value="complete">Complete</SelectItem>
               <SelectItem value="cancelled">Cancelled</SelectItem>
+              <SelectItem value="archived">Archived</SelectItem>
             </SelectContent>
           </Select>
           <Select value={schoolFilter} onValueChange={setSchoolFilter}>

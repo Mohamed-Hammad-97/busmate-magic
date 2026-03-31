@@ -34,7 +34,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Settings as SettingsIcon, Users, Globe, Plus, Edit, Search, Archive, AlertTriangle } from 'lucide-react';
+import { Settings as SettingsIcon, Users, Globe, Plus, Edit, Search, Archive, AlertTriangle, KeyRound } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -67,6 +67,8 @@ const Settings = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isEmployeeDialogOpen, setIsEmployeeDialogOpen] = useState(false);
   const [isArchiveDialogOpen, setIsArchiveDialogOpen] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [employeeForm, setEmployeeForm] = useState({
     full_name: '',
@@ -116,6 +118,29 @@ const Settings = () => {
       return data as Employee[];
     },
   });
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passwordForm.newPassword.length < 6) {
+      toast.error(isRtl ? 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' : 'Password must be at least 6 characters');
+      return;
+    }
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast.error(isRtl ? 'كلمات المرور غير متطابقة' : 'Passwords do not match');
+      return;
+    }
+    setIsChangingPassword(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: passwordForm.newPassword });
+      if (error) throw error;
+      toast.success(isRtl ? 'تم تغيير كلمة المرور بنجاح' : 'Password changed successfully');
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to change password');
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
 
   const saveEmployeeMutation = useMutation({
     mutationFn: async () => {
@@ -271,6 +296,49 @@ const Settings = () => {
                   </div>
                   <LanguageSwitcher />
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <KeyRound className="h-5 w-5" />
+                  {isRtl ? 'تغيير كلمة المرور' : 'Change Password'}
+                </CardTitle>
+                <CardDescription>
+                  {isRtl ? 'قم بتحديث كلمة المرور الخاصة بحسابك' : 'Update your account password'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleChangePassword} className="space-y-4 max-w-md">
+                  <div className="space-y-2">
+                    <Label htmlFor="new_password">{isRtl ? 'كلمة المرور الجديدة' : 'New Password'}</Label>
+                    <Input
+                      id="new_password"
+                      type="password"
+                      value={passwordForm.newPassword}
+                      onChange={(e) => setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))}
+                      placeholder={isRtl ? '6 أحرف على الأقل' : 'At least 6 characters'}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirm_password">{isRtl ? 'تأكيد كلمة المرور' : 'Confirm Password'}</Label>
+                    <Input
+                      id="confirm_password"
+                      type="password"
+                      value={passwordForm.confirmPassword}
+                      onChange={(e) => setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                      placeholder={isRtl ? 'أعد إدخال كلمة المرور' : 'Re-enter password'}
+                      required
+                    />
+                  </div>
+                  <Button type="submit" disabled={isChangingPassword}>
+                    {isChangingPassword
+                      ? (isRtl ? 'جاري التحديث...' : 'Updating...')
+                      : (isRtl ? 'تحديث كلمة المرور' : 'Update Password')}
+                  </Button>
+                </form>
               </CardContent>
             </Card>
           </TabsContent>
