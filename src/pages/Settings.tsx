@@ -34,7 +34,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Settings as SettingsIcon, Users, Globe, Plus, Edit, Search, Archive, AlertTriangle } from 'lucide-react';
+import { Settings as SettingsIcon, Users, Globe, Plus, Edit, Search, Archive, AlertTriangle, KeyRound } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
