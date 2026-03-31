@@ -34,7 +34,17 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Settings as SettingsIcon, Users, Globe, Plus, Edit, Search } from 'lucide-react';
+import { Settings as SettingsIcon, Users, Globe, Plus, Edit, Search, Archive, AlertTriangle } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher';
 import { PageHero } from '@/components/layout/PageHero';
 import type { Tables, Enums } from '@/integrations/supabase/types';
