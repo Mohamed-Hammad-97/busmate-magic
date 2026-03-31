@@ -360,6 +360,7 @@ const Registrations: React.FC = () => {
               <SelectItem value="pending_fees">Pending Fees</SelectItem>
               <SelectItem value="complete">Complete</SelectItem>
               <SelectItem value="cancelled">Cancelled</SelectItem>
+              <SelectItem value="archived">Archived</SelectItem>
             </SelectContent>
           </Select>
           <Select value={schoolFilter} onValueChange={setSchoolFilter}>
