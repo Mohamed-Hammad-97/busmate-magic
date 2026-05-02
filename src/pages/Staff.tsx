@@ -243,7 +243,7 @@ const Staff = () => {
 
   const toggleCategory = <T extends { categories: Category[] }>(
     form: T,
-    setForm: (v: T) => void,
+    setForm: React.Dispatch<React.SetStateAction<T>>,
     cat: Category,
   ) => {
     const has = form.categories.includes(cat);
