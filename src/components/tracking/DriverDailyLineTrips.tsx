@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useDriverAuth } from "@/contexts/DriverAuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,9 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Bus, MapPin, Clock, Play, CheckCircle, Users, Phone, ArrowDownCircle, ArrowUpCircle, Calendar } from "lucide-react";
+import { Bus, MapPin, Clock, Play, CheckCircle, Users, Phone, ArrowDownCircle, ArrowUpCircle, Calendar, Navigation } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { useGeolocation } from "@/hooks/useGeolocation";
+import LineRoutePreviewMap from "@/components/daily-lines/LineRoutePreviewMap";
 
 export function DriverDailyLineTrips() {
   const { driverAccount } = useDriverAuth();
