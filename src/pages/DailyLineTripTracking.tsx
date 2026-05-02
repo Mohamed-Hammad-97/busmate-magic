@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParentAuth } from "@/contexts/ParentAuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ export default function DailyLineTripTracking() {
   const navigate = useNavigate();
   const { bookingId } = useParams<{ bookingId: string }>();
   const { user, parentAccount, isLoading } = useParentAuth();
+  const qc = useQueryClient();
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -93,8 +94,14 @@ export default function DailyLineTripTracking() {
     if (lat && lng) setLivePos({ lat, lng });
   }, [booking?.daily_line_trips?.current_latitude, booking?.daily_line_trips?.current_longitude]);
 
+  // Determine if this passenger's leg is finished (driver dropped them off OR trip completed/cancelled)
+  const isFinished =
+    !!booking?.dropped_at ||
+    booking?.daily_line_trips?.status === "completed" ||
+    booking?.daily_line_trips?.status === "cancelled";
+
   useEffect(() => {
-    if (!tripId) return;
+    if (!tripId || isFinished) return;
     const channel = supabase
       .channel(`dl-trip-${tripId}`)
       .on(
@@ -104,13 +111,33 @@ export default function DailyLineTripTracking() {
           const lat = payload.new?.current_latitude;
           const lng = payload.new?.current_longitude;
           if (lat && lng) setLivePos({ lat, lng });
+          // If driver completed the trip, refetch booking so UI updates
+          if (payload.new?.status === "completed" || payload.new?.status === "cancelled") {
+            qc.invalidateQueries({ queryKey: ["dl-tracking-booking", bookingId] });
+          }
         },
       )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [tripId]);
+  }, [tripId, isFinished, qc, bookingId]);
+
+  // Subscribe to this specific booking row → refetch when driver sets dropped_at / payment changes
+  useEffect(() => {
+    if (!bookingId) return;
+    const channel = supabase
+      .channel(`dl-booking-${bookingId}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "daily_line_bookings", filter: `id=eq.${bookingId}` },
+        () => qc.invalidateQueries({ queryKey: ["dl-tracking-booking", bookingId] }),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [bookingId, qc]);
 
   if (isLoading || loadingBooking) {
     return (
@@ -138,7 +165,8 @@ export default function DailyLineTripTracking() {
 
   const trip = booking.daily_line_trips;
   const tripStatus = trip.status;
-  const isLive = tripStatus === "in_progress";
+  const isLive = tripStatus === "in_progress" && !isFinished;
+  const driverLocationForMap = isFinished ? null : livePos;
   const pickupNav = booking.pickup?.latitude && booking.pickup?.longitude
     ? `https://www.google.com/maps/dir/?api=1&destination=${booking.pickup.latitude},${booking.pickup.longitude}`
     : null;
@@ -160,27 +188,53 @@ export default function DailyLineTripTracking() {
           </div>
           <Badge
             className={
-              isLive
-                ? "bg-green-500 animate-pulse"
-                : tripStatus === "completed"
-                  ? "bg-muted text-muted-foreground"
+              isFinished
+                ? "bg-muted text-muted-foreground"
+                : isLive
+                  ? "bg-green-500 animate-pulse"
                   : "bg-blue-500"
             }
           >
-            {isLive ? (isRtl ? "مباشر" : "LIVE") : tripStatus}
+            {isFinished
+              ? (isRtl ? "انتهت" : "Finished")
+              : isLive
+                ? (isRtl ? "مباشر" : "LIVE")
+                : tripStatus}
           </Badge>
         </div>
       </header>
 
       <main className="container mx-auto p-4 max-w-3xl space-y-4">
-        {/* Live Map */}
+        {/* Finished banner */}
+        {isFinished && (
+          <Card className="border-0 shadow-md bg-gradient-to-r from-blue-500/10 to-emerald-500/10">
+            <CardContent className="p-4 flex items-center gap-3">
+              <CheckCircle2 className="h-6 w-6 text-emerald-600 shrink-0" />
+              <div className="flex-1">
+                <div className="font-semibold">
+                  {isRtl ? "انتهت رحلتك" : "Your trip has ended"}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {booking.dropped_at
+                    ? (isRtl ? "تم تسجيل نزولك بواسطة الكابتن" : "The captain marked you as dropped off")
+                    : (isRtl ? "تم إنهاء الرحلة" : "The trip has been completed")}
+                </div>
+              </div>
+              <Button size="sm" variant="outline" onClick={() => navigate("/daily-line/portal")}>
+                {isRtl ? "رحلاتي السابقة" : "Past trips"}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Map (live until finished, then static preview) */}
         <Card className="overflow-hidden border-0 shadow-lg">
           <div className="relative">
             <LineRoutePreviewMap
               stations={stations as any}
               height="380px"
               highlightStationId={booking.pickup_station_id || undefined}
-              driverLocation={livePos}
+              driverLocation={driverLocationForMap}
             />
             {isLive && livePos && (
               <div className="absolute top-3 left-3 bg-background/95 backdrop-blur-sm rounded-full px-3 py-1.5 shadow-lg border flex items-center gap-2">
@@ -188,12 +242,18 @@ export default function DailyLineTripTracking() {
                 <span className="text-xs font-medium">{isRtl ? "تتبع مباشر" : "Live tracking"}</span>
               </div>
             )}
-            {!livePos && (
+            {!isFinished && !livePos && (
               <div className="absolute bottom-3 left-3 right-3 bg-background/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg border text-center">
                 <div className="text-xs text-muted-foreground flex items-center justify-center gap-1">
                   <Loader2 className="h-3 w-3 animate-spin" />
                   {isRtl ? "في انتظار إشارة GPS من السائق..." : "Waiting for driver GPS signal..."}
                 </div>
+              </div>
+            )}
+            {isFinished && (
+              <div className="absolute top-3 left-3 bg-background/95 backdrop-blur-sm rounded-full px-3 py-1.5 shadow-lg border flex items-center gap-2">
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                <span className="text-xs font-medium">{isRtl ? "تم إيقاف التتبع" : "Tracking stopped"}</span>
               </div>
             )}
           </div>

@@ -59,6 +59,9 @@ export default function DailyLinePortal() {
       bookings.filter((b: any) => {
         const trip = b.daily_line_trips;
         if (!trip) return false;
+        // Once driver dropped passenger off OR trip is completed/cancelled → move to history
+        if (b.dropped_at) return false;
+        if (trip.status === "completed" || trip.status === "cancelled") return false;
         const date = new Date(`${trip.trip_date}T${trip.departure_time}`);
         return date.getTime() >= Date.now() - 4 * 60 * 60 * 1000 && b.payment_status !== "cancelled";
       }),
@@ -117,6 +120,27 @@ export default function DailyLinePortal() {
   useEffect(() => {
     if (!activeConv && conversations.length > 0) setActiveConv(conversations[0].id);
   }, [conversations, activeConv]);
+
+  // Realtime: refresh bookings when driver updates dropped_at / payment / trip status
+  useEffect(() => {
+    if (!parentAccount?.id) return;
+    const channel = supabase
+      .channel(`dl-portal-bookings-${parentAccount.id}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "daily_line_bookings" },
+        () => qc.invalidateQueries({ queryKey: ["dl-bookings"] }),
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "daily_line_trips" },
+        () => qc.invalidateQueries({ queryKey: ["dl-bookings"] }),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [parentAccount?.id, qc]);
 
   const { data: messages = [] } = useQuery({
     queryKey: ["dl-chat-msgs", activeConv],
