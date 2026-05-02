@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Bus, LogOut, User, CreditCard, MessageCircle, Loader2, Send,
-  Calendar, Clock, MapPin, CheckCircle2, AlertCircle, Upload, Receipt, Plus,
+  Calendar, Clock, MapPin, CheckCircle2, AlertCircle, Upload, Receipt, Plus, Navigation,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -47,7 +47,7 @@ export default function DailyLinePortal() {
       phones.forEach((p) => orParts.push(`passenger_phone.eq.${p}`));
       const { data } = await supabase
         .from("daily_line_bookings")
-        .select("*, daily_line_trips(*, daily_lines(name, city)), pickup:pickup_station_id(name), dropoff:dropoff_station_id(name)")
+        .select("*, daily_line_trips(*, daily_lines(name, city)), pickup:pickup_station_id(name, latitude, longitude), dropoff:dropoff_station_id(name, latitude, longitude)")
         .or(orParts.join(","))
         .order("created_at", { ascending: false });
       return data || [];
