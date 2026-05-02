@@ -1,0 +1,1 @@
+ALTER TYPE public.department ADD VALUE IF NOT EXISTS 'operation_daily_lines';

@@ -2143,6 +2143,7 @@ export type Database = {
         | "finance"
         | "reports"
         | "operation_companies"
+        | "operation_daily_lines"
       education_department: "national" | "ig" | "american"
       payment_status: "paid" | "pending" | "overdue"
       registration_status:
@@ -2300,6 +2301,7 @@ export const Constants = {
         "finance",
         "reports",
         "operation_companies",
+        "operation_daily_lines",
       ],
       education_department: ["national", "ig", "american"],
       payment_status: ["paid", "pending", "overdue"],
