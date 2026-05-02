@@ -176,6 +176,9 @@ const resources = {
         school: 'Schools',
         corporate: 'Corporate',
         both: 'Both',
+        dailyLines: 'Daily Lines',
+        categories: 'Categories',
+        selectAtLeastOne: 'Select at least one category',
       },
       // School Management
       schoolMgmt: {
