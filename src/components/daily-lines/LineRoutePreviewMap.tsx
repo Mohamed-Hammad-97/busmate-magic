@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { GoogleMap, Marker, Polyline, InfoWindow } from "@react-google-maps/api";
 import { GoogleMapsProvider, useGoogleMaps } from "@/components/maps/GoogleMapsProvider";
 import { Loader2 } from "lucide-react";
+import { computeDrivingRoute } from "@/lib/googleRoutes";
 
 export interface PreviewStation {
   id: string;
@@ -33,6 +34,7 @@ export default function LineRoutePreviewMap(props: Props) {
 function Inner({ stations, height = "300px", highlightStationId, driverLocation, onStationClick }: Props) {
   const { isLoaded } = useGoogleMaps();
   const [routePath, setRoutePath] = useState<google.maps.LatLngLiteral[]>([]);
+  const [routeSource, setRouteSource] = useState<string>("");
   const [openId, setOpenId] = useState<string | null>(null);
 
   const valid = useMemo(
@@ -54,23 +56,16 @@ function Inner({ stations, height = "300px", highlightStationId, driverLocation,
       setRoutePath([]);
       return;
     }
-    const svc = new google.maps.DirectionsService();
-    const origin = { lat: valid[0].latitude!, lng: valid[0].longitude! };
-    const destination = { lat: valid[valid.length - 1].latitude!, lng: valid[valid.length - 1].longitude! };
-    const waypoints = valid.slice(1, -1).map((s) => ({
-      location: { lat: s.latitude!, lng: s.longitude! },
-      stopover: true,
-    }));
-    svc.route(
-      { origin, destination, waypoints, travelMode: google.maps.TravelMode.DRIVING },
-      (res, status) => {
-        if (status === "OK" && res?.routes[0]) {
-          setRoutePath(res.routes[0].overview_path.map((p) => ({ lat: p.lat(), lng: p.lng() })));
-        } else {
-          setRoutePath(valid.map((s) => ({ lat: s.latitude!, lng: s.longitude! })));
-        }
-      },
-    );
+    let cancelled = false;
+    const stops = valid.map((s) => ({ lat: s.latitude!, lng: s.longitude! }));
+    computeDrivingRoute(stops).then((res) => {
+      if (cancelled) return;
+      setRoutePath(res.path);
+      setRouteSource(res.source);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [isLoaded, valid]);
 
   if (!isLoaded) {
