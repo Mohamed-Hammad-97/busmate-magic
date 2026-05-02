@@ -432,3 +432,77 @@
     animation: pulseGlow 2s ease-in-out infinite;
   }
 }
+
+/* Premium Google Places Autocomplete dropdown */
+.pac-container {
+  margin-top: 8px;
+  border-radius: 16px;
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--popover) / 0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow:
+    0 20px 50px -12px hsl(var(--primary) / 0.18),
+    0 8px 24px -8px hsl(0 0% 0% / 0.12);
+  overflow: hidden;
+  font-family: inherit;
+  padding: 6px;
+}
+.pac-container:after {
+  display: none !important; /* hide "powered by Google" */
+  height: 0 !important;
+  background-image: none !important;
+  padding: 0 !important;
+}
+.pac-item {
+  border: none;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 0.875rem;
+  color: hsl(var(--popover-foreground));
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pac-item:hover,
+.pac-item-selected {
+  background: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+}
+.pac-item .pac-icon {
+  background-image: none;
+  background: hsl(var(--primary) / 0.12);
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  position: relative;
+  margin-right: 8px;
+  margin-top: 0;
+  flex-shrink: 0;
+}
+.pac-item .pac-icon:before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-color: hsl(var(--primary));
+  -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'><path d='M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z'/></svg>") center/14px no-repeat;
+          mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'><path d='M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z'/></svg>") center/14px no-repeat;
+}
+.pac-item-query {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  padding-right: 4px;
+}
+.pac-matched {
+  font-weight: 700;
+  color: hsl(var(--primary));
+}
+.hdpi.pac-logo:after,
+.pac-logo:after {
+  display: none !important;
+  background-image: none !important;
+  height: 0 !important;
+}
