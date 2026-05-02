@@ -10,6 +10,7 @@ import { Loader2, GripVertical, Trash2, MapPin, Save, Plus, AlertTriangle } from
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { computeDrivingRoute } from "@/lib/googleRoutes";
+import { attachAutocompleteEnterFix } from "@/lib/placesEnterHelper";
 
 export interface StationDraft {
   id?: string;
