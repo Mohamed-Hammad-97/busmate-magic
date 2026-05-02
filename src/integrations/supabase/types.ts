@@ -763,6 +763,335 @@ export type Database = {
           },
         ]
       }
+      daily_line_bookings: {
+        Row: {
+          boarded_at: string | null
+          boarding_code: string
+          created_at: string
+          discount_amount: number
+          dropoff_station_id: string | null
+          dropped_at: string | null
+          final_price: number
+          id: string
+          marked_paid_at: string | null
+          marked_paid_by: string | null
+          original_price: number
+          parent_id: string | null
+          passenger_name: string
+          passenger_phone: string
+          payment_method: Database["public"]["Enums"]["daily_line_payment_method"]
+          payment_proof_url: string | null
+          payment_status: Database["public"]["Enums"]["daily_line_payment_status"]
+          pickup_station_id: string | null
+          promocode_id: string | null
+          trip_id: string
+          updated_at: string
+        }
+        Insert: {
+          boarded_at?: string | null
+          boarding_code: string
+          created_at?: string
+          discount_amount?: number
+          dropoff_station_id?: string | null
+          dropped_at?: string | null
+          final_price?: number
+          id?: string
+          marked_paid_at?: string | null
+          marked_paid_by?: string | null
+          original_price?: number
+          parent_id?: string | null
+          passenger_name: string
+          passenger_phone: string
+          payment_method: Database["public"]["Enums"]["daily_line_payment_method"]
+          payment_proof_url?: string | null
+          payment_status?: Database["public"]["Enums"]["daily_line_payment_status"]
+          pickup_station_id?: string | null
+          promocode_id?: string | null
+          trip_id: string
+          updated_at?: string
+        }
+        Update: {
+          boarded_at?: string | null
+          boarding_code?: string
+          created_at?: string
+          discount_amount?: number
+          dropoff_station_id?: string | null
+          dropped_at?: string | null
+          final_price?: number
+          id?: string
+          marked_paid_at?: string | null
+          marked_paid_by?: string | null
+          original_price?: number
+          parent_id?: string | null
+          passenger_name?: string
+          passenger_phone?: string
+          payment_method?: Database["public"]["Enums"]["daily_line_payment_method"]
+          payment_proof_url?: string | null
+          payment_status?: Database["public"]["Enums"]["daily_line_payment_status"]
+          pickup_station_id?: string | null
+          promocode_id?: string | null
+          trip_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_line_bookings_dropoff_station_id_fkey"
+            columns: ["dropoff_station_id"]
+            isOneToOne: false
+            referencedRelation: "daily_line_stations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_line_bookings_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "parent_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_line_bookings_pickup_station_id_fkey"
+            columns: ["pickup_station_id"]
+            isOneToOne: false
+            referencedRelation: "daily_line_stations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_line_bookings_promocode_id_fkey"
+            columns: ["promocode_id"]
+            isOneToOne: false
+            referencedRelation: "daily_line_promocodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_line_bookings_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "daily_line_trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      daily_line_promocodes: {
+        Row: {
+          code: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          max_uses: number | null
+          promo_type: Database["public"]["Enums"]["daily_line_promo_type"]
+          updated_at: string
+          used_count: number
+          value: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          promo_type?: Database["public"]["Enums"]["daily_line_promo_type"]
+          updated_at?: string
+          used_count?: number
+          value?: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          promo_type?: Database["public"]["Enums"]["daily_line_promo_type"]
+          updated_at?: string
+          used_count?: number
+          value?: number
+        }
+        Relationships: []
+      }
+      daily_line_settings: {
+        Row: {
+          created_at: string
+          id: string
+          key: string
+          updated_at: string
+          value: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          key: string
+          updated_at?: string
+          value?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: string | null
+        }
+        Relationships: []
+      }
+      daily_line_stations: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          latitude: number | null
+          line_id: string
+          longitude: number | null
+          name: string
+          station_order: number
+          station_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          latitude?: number | null
+          line_id: string
+          longitude?: number | null
+          name: string
+          station_order?: number
+          station_type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          latitude?: number | null
+          line_id?: string
+          longitude?: number | null
+          name?: string
+          station_order?: number
+          station_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_line_stations_line_id_fkey"
+            columns: ["line_id"]
+            isOneToOne: false
+            referencedRelation: "daily_lines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      daily_line_trips: {
+        Row: {
+          available_seats: number
+          cash_price: number
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          current_latitude: number | null
+          current_longitude: number | null
+          departure_time: string
+          driver_id: string | null
+          id: string
+          instapay_price: number
+          last_location_update: string | null
+          line_id: string
+          notes: string | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["daily_line_trip_status"]
+          total_seats: number
+          trip_date: string
+          updated_at: string
+        }
+        Insert: {
+          available_seats?: number
+          cash_price?: number
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          current_latitude?: number | null
+          current_longitude?: number | null
+          departure_time: string
+          driver_id?: string | null
+          id?: string
+          instapay_price?: number
+          last_location_update?: string | null
+          line_id: string
+          notes?: string | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["daily_line_trip_status"]
+          total_seats?: number
+          trip_date: string
+          updated_at?: string
+        }
+        Update: {
+          available_seats?: number
+          cash_price?: number
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          current_latitude?: number | null
+          current_longitude?: number | null
+          departure_time?: string
+          driver_id?: string | null
+          id?: string
+          instapay_price?: number
+          last_location_update?: string | null
+          line_id?: string
+          notes?: string | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["daily_line_trip_status"]
+          total_seats?: number
+          trip_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_line_trips_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_line_trips_line_id_fkey"
+            columns: ["line_id"]
+            isOneToOne: false
+            referencedRelation: "daily_lines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      daily_lines: {
+        Row: {
+          city: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          city: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          city?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       driver_accounts: {
         Row: {
           created_at: string
@@ -2137,6 +2466,14 @@ export type Database = {
         | "customer_dm"
         | "route_group"
         | "customer_supervisor"
+      daily_line_payment_method: "cash" | "instapay"
+      daily_line_payment_status: "pending" | "paid" | "cancelled" | "refunded"
+      daily_line_promo_type: "percentage" | "fixed"
+      daily_line_trip_status:
+        | "scheduled"
+        | "in_progress"
+        | "completed"
+        | "cancelled"
       department:
         | "customer_support"
         | "operations"
@@ -2294,6 +2631,15 @@ export const Constants = {
         "customer_dm",
         "route_group",
         "customer_supervisor",
+      ],
+      daily_line_payment_method: ["cash", "instapay"],
+      daily_line_payment_status: ["pending", "paid", "cancelled", "refunded"],
+      daily_line_promo_type: ["percentage", "fixed"],
+      daily_line_trip_status: [
+        "scheduled",
+        "in_progress",
+        "completed",
+        "cancelled",
       ],
       department: [
         "customer_support",
