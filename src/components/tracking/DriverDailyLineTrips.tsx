@@ -272,6 +272,36 @@ function DailyTripPassengers({ tripId, onComplete, completing }: { tripId: strin
     onError: (e: any) => toast.error(e.message),
   });
 
+  const markPaidMutation = useMutation({
+    mutationFn: async (bookingId: string) => {
+      const { error } = await supabase
+        .from("daily_line_bookings")
+        .update({ payment_status: "paid", marked_paid_at: new Date().toISOString() })
+        .eq("id", bookingId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Marked as paid");
+      queryClient.invalidateQueries({ queryKey: ["daily-line-trip-bookings", tripId] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const cancelMutation = useMutation({
+    mutationFn: async (bookingId: string) => {
+      const { error } = await supabase
+        .from("daily_line_bookings")
+        .update({ payment_status: "cancelled" })
+        .eq("id", bookingId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Booking cancelled");
+      queryClient.invalidateQueries({ queryKey: ["daily-line-trip-bookings", tripId] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   if (isLoading) return <div className="flex-1 flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>;
 
   const onboard = bookings.filter((b: any) => b.boarded_at && !b.dropped_at).length;
