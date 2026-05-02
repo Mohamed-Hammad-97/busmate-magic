@@ -382,7 +382,7 @@ const RegisterDailyLine: React.FC = () => {
                 <p className="text-sm text-muted-foreground">Total: <span className="font-bold">{bookingResult.final_price} EGP</span></p>
                 <div className="flex gap-2 justify-center pt-4">
                   <Button onClick={() => navigate('/')} variant="outline">Home</Button>
-                  <Button onClick={() => navigate('/parent')} className="bg-gradient-to-r from-orange-500 to-amber-500 text-white">View my trips</Button>
+                  <Button onClick={() => navigate('/daily-line/portal')} className="bg-gradient-to-r from-orange-500 to-amber-500 text-white">View my trips</Button>
                 </div>
               </CardContent>
             )}
