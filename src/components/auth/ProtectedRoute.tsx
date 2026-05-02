@@ -5,7 +5,7 @@ import { Loader2 } from "lucide-react";
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requireAdmin?: boolean;
-  requireDepartment?: "customer_support" | "operations" | "operation_companies" | "finance" | "reports";
+  requireDepartment?: "customer_support" | "operations" | "operation_companies" | "operation_daily_lines" | "finance" | "reports";
 }
 
 export function ProtectedRoute({
