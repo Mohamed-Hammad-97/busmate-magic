@@ -235,6 +235,19 @@ function DailyTripPassengers({ tripId, onComplete, completing }: { tripId: strin
     }
   }, [latitude, longitude, stations]);
 
+  // Push driver GPS to trip for live tracking (every position change, throttled)
+  useEffect(() => {
+    if (!latitude || !longitude || !tripId) return;
+    const t = setTimeout(() => {
+      supabase
+        .from("daily_line_trips")
+        .update({ current_latitude: latitude, current_longitude: longitude })
+        .eq("id", tripId)
+        .then(() => {});
+    }, 1000);
+    return () => clearTimeout(t);
+  }, [latitude, longitude, tripId]);
+
   const boardMutation = useMutation({
     mutationFn: async (bookingId: string) => {
       const { error } = await supabase.from("daily_line_bookings").update({ boarded_at: new Date().toISOString() }).eq("id", bookingId);
