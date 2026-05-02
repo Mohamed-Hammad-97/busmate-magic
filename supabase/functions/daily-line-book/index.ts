@@ -94,6 +94,24 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
+    // Upload receipt server-side using service role (anonymous direct uploads are blocked)
+    const pendingReceipt = (globalThis as unknown as { __pendingReceipt?: { path: string; bytes: Uint8Array; type: string } }).__pendingReceipt;
+    if (pendingReceipt) {
+      const { error: upErr } = await admin.storage
+        .from("daily-line-receipts")
+        .upload(pendingReceipt.path, pendingReceipt.bytes, {
+          contentType: pendingReceipt.type,
+          upsert: false,
+        });
+      delete (globalThis as unknown as { __pendingReceipt?: unknown }).__pendingReceipt;
+      if (upErr) {
+        return new Response(JSON.stringify({ error: `Receipt upload failed: ${upErr.message}` }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     // Load trip
     const { data: trip, error: tripErr } = await admin
       .from("daily_line_trips")
