@@ -68,6 +68,7 @@ function LinesTab({ isRtl }: { isRtl: boolean }) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [stationsLineId, setStationsLineId] = useState<string | null>(null);
+  const [previewLineId, setPreviewLineId] = useState<string | null>(null);
 
   const { data: lines = [], isLoading } = useQuery({
     queryKey: ["dla-lines"],
@@ -141,6 +142,7 @@ function LinesTab({ isRtl }: { isRtl: boolean }) {
                     <TableCell><Badge variant={l.is_active ? "default" : "secondary"}>{l.is_active ? (isRtl ? "نشط" : "Active") : (isRtl ? "متوقف" : "Inactive")}</Badge></TableCell>
                     <TableCell className="text-end space-x-2">
                       <Button size="sm" variant="outline" onClick={() => setStationsLineId(l.id)}><MapPin className="h-3 w-3 mr-1" />{isRtl ? "محطات" : "Stations"}</Button>
+                      <Button size="sm" variant="outline" onClick={() => setPreviewLineId(l.id)}><Eye className="h-3 w-3 mr-1" />{isRtl ? "معاينة" : "Preview"}</Button>
                       <Button size="sm" variant="ghost" onClick={() => { setEditing(l); setOpen(true); }}><Pencil className="h-3 w-3" /></Button>
                       <Button size="sm" variant="ghost" onClick={() => { if (confirm(isRtl ? "حذف؟" : "Delete?")) remove.mutate(l.id); }}><Trash2 className="h-3 w-3 text-destructive" /></Button>
                     </TableCell>
@@ -153,13 +155,30 @@ function LinesTab({ isRtl }: { isRtl: boolean }) {
         </CardContent>
       </Card>
 
-      <Dialog open={!!stationsLineId} onOpenChange={(o) => !o && setStationsLineId(null)}>
-        <DialogContent className="max-w-2xl">
-          {stationsLineId && <StationsManager lineId={stationsLineId} isRtl={isRtl} />}
+      <Dialog open={!!stationsLineId} onOpenChange={(o) => { if (!o) { setStationsLineId(null); qc.invalidateQueries({ queryKey: ["dla-lines"] }); } }}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-auto">
+          <DialogHeader><DialogTitle>{isRtl ? "محطات الخط على الخريطة" : "Line Stations on Map"}</DialogTitle></DialogHeader>
+          {stationsLineId && <LineMapEditor lineId={stationsLineId} isRtl={isRtl} />}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!previewLineId} onOpenChange={(o) => !o && setPreviewLineId(null)}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader><DialogTitle>{isRtl ? "معاينة الخط" : "Line Preview"}</DialogTitle></DialogHeader>
+          {previewLineId && <LinePreviewBlock lineId={previewLineId} />}
         </DialogContent>
       </Dialog>
     </div>
   );
+}
+
+function LinePreviewBlock({ lineId }: { lineId: string }) {
+  const { data: stations = [], isLoading } = useQuery({
+    queryKey: ["dla-line-preview", lineId],
+    queryFn: async () => (await supabase.from("daily_line_stations").select("*").eq("line_id", lineId).order("station_order")).data || [],
+  });
+  if (isLoading) return <Loader2 className="h-6 w-6 animate-spin mx-auto" />;
+  return <LineRoutePreviewMap stations={stations as any} height="500px" />;
 }
 
 function LineDialog({ editing, cities, onSubmit, saving, isRtl }: any) {
