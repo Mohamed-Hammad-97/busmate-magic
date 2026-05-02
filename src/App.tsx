@@ -38,6 +38,7 @@ import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import ParentAuth from "./pages/ParentAuth";
 import ParentDashboard from "./pages/ParentDashboard";
+import DailyLinePortal from "./pages/DailyLinePortal";
 import DriverAuth from "./pages/DriverAuth";
 import DriverDashboard from "./pages/DriverDashboard";
 import CompanyAuth from "./pages/CompanyAuth";
@@ -89,6 +90,16 @@ const App = () => (
                 <Route path="/auth" element={<ParentAuth />} />
                 <Route path="/" element={<ParentProtectedRoute><ParentDashboard /></ParentProtectedRoute>} />
                 <Route path="*" element={<Navigate to="/parent" replace />} />
+              </Routes>
+            </ParentAuthProvider>
+          } />
+
+          {/* Daily Line customer portal (reuses parent OTP auth) */}
+          <Route path="/daily-line/*" element={
+            <ParentAuthProvider>
+              <Routes>
+                <Route path="/portal" element={<DailyLinePortal />} />
+                <Route path="*" element={<Navigate to="/daily-line/portal" replace />} />
               </Routes>
             </ParentAuthProvider>
           } />

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Navigate, Link } from "react-router-dom";
+import { Navigate, Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useParentAuth } from "@/contexts/ParentAuthContext";
 import { Button } from "@/components/ui/button";
@@ -51,8 +51,11 @@ export default function ParentAuth() {
     }, 1000);
   };
 
+  const [searchParams] = useSearchParams();
+  const redirectTo = searchParams.get("redirect") || "/parent";
+
   if (!authLoading && user && parentAccount) {
-    return <Navigate to="/parent" replace />;
+    return <Navigate to={redirectTo} replace />;
   }
 
   const handlePhoneSubmit = async (e: React.FormEvent) => {
