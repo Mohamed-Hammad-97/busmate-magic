@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, GripVertical, Trash2, MapPin, Save, Plus } from "lucide-react";
+import { Loader2, GripVertical, Trash2, MapPin, Save, Plus, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { computeDrivingRoute } from "@/lib/googleRoutes";
 
 export interface StationDraft {
   id?: string;
@@ -48,6 +49,8 @@ function Inner({ lineId, isRtl }: Props) {
   const [pendingType, setPendingType] = useState<"pickup" | "dropoff" | "both">("both");
   const [routePath, setRoutePath] = useState<google.maps.LatLngLiteral[]>([]);
   const [routeLoading, setRouteLoading] = useState(false);
+  const [routeError, setRouteError] = useState<string | null>(null);
+  const [routeSource, setRouteSource] = useState<string>("");
   const mapRef = useRef<google.maps.Map | null>(null);
   const acRef = useRef<google.maps.places.Autocomplete | null>(null);
   const dragIdx = useRef<number | null>(null);
@@ -81,35 +84,27 @@ function Inner({ lineId, isRtl }: Props) {
     return DEFAULT_CENTER;
   }, [stations]);
 
-  // Compute driving route via Google Directions when stations change
+  // Compute driving route via Google Routes API when stations change
   useEffect(() => {
     if (!isLoaded || stations.length < 2) {
       setRoutePath([]);
+      setRouteError(null);
       return;
     }
+    let cancelled = false;
     setRouteLoading(true);
-    const svc = new google.maps.DirectionsService();
-    const origin = { lat: stations[0].latitude, lng: stations[0].longitude };
-    const destination = {
-      lat: stations[stations.length - 1].latitude,
-      lng: stations[stations.length - 1].longitude,
+    setRouteError(null);
+    const stops = stations.map((s) => ({ lat: s.latitude, lng: s.longitude }));
+    computeDrivingRoute(stops).then((res) => {
+      if (cancelled) return;
+      setRoutePath(res.path);
+      setRouteSource(res.source);
+      setRouteError(res.source === "straight_fallback" ? res.error || "No driving route available" : null);
+      setRouteLoading(false);
+    });
+    return () => {
+      cancelled = true;
     };
-    const waypoints = stations.slice(1, -1).map((s) => ({
-      location: { lat: s.latitude, lng: s.longitude },
-      stopover: true,
-    }));
-    svc.route(
-      { origin, destination, waypoints, travelMode: google.maps.TravelMode.DRIVING },
-      (res, status) => {
-        setRouteLoading(false);
-        if (status === "OK" && res?.routes[0]) {
-          setRoutePath(res.routes[0].overview_path.map((p) => ({ lat: p.lat(), lng: p.lng() })));
-        } else {
-          // Fallback: straight lines
-          setRoutePath(stations.map((s) => ({ lat: s.latitude, lng: s.longitude })));
-        }
-      },
-    );
   }, [isLoaded, stations]);
 
   const handleMapClick = useCallback((e: google.maps.MapMouseEvent) => {
@@ -265,11 +260,44 @@ function Inner({ lineId, isRtl }: Props) {
             {routePath.length > 0 && (
               <Polyline
                 path={routePath}
-                options={{ strokeColor: "#3b82f6", strokeWeight: 4, strokeOpacity: 0.85 }}
+                options={
+                  routeSource === "straight_fallback"
+                    ? {
+                        strokeColor: "#94a3b8",
+                        strokeWeight: 3,
+                        strokeOpacity: 0,
+                        icons: [
+                          {
+                            icon: { path: "M 0,-1 0,1", strokeOpacity: 1, scale: 3 },
+                            offset: "0",
+                            repeat: "12px",
+                          },
+                        ],
+                      }
+                    : { strokeColor: "#3b82f6", strokeWeight: 5, strokeOpacity: 0.9 }
+                }
               />
             )}
           </GoogleMap>
         </div>
+
+        {routeError && (
+          <div className="flex items-start gap-2 p-2 border border-amber-300 bg-amber-50 dark:bg-amber-950/30 rounded text-xs text-amber-800 dark:text-amber-300">
+            <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+            <div>
+              <div className="font-medium">
+                {isRtl
+                  ? "تعذر رسم المسار على الطريق — يتم عرض خطوط مستقيمة"
+                  : "Could not draw road route — showing straight lines"}
+              </div>
+              <div className="opacity-80">
+                {isRtl
+                  ? "فعّل Routes API (أو Directions API) في Google Cloud Console لمفتاح الخرائط الخاص بك."
+                  : "Enable the Routes API (or Directions API) in Google Cloud Console for your Maps key."}
+              </div>
+            </div>
+          </div>
+        )}
 
         {pendingPoint && (
           <div className="grid grid-cols-12 gap-2 p-3 border rounded-lg bg-muted/30">
