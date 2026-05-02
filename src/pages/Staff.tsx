@@ -424,9 +424,13 @@ const Staff = () => {
                               </div>
                             </TableCell>
                             <TableCell>
-                              <Badge variant="secondary" className="text-xs">
-                                {driver.belongs_to === 'school' ? t('staff.school') : driver.belongs_to === 'corporate' ? t('staff.corporate') : t('staff.both')}
-                              </Badge>
+                              <div className="flex flex-wrap gap-1">
+                                {normalizeCategories(driver).map((c) => (
+                                  <Badge key={c} variant="secondary" className="text-xs">
+                                    {c === 'school' ? t('staff.school') : c === 'corporate' ? t('staff.corporate') : t('staff.dailyLines')}
+                                  </Badge>
+                                ))}
+                              </div>
                             </TableCell>
                             <TableCell>
                               {driver.is_active ? (
