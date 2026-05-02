@@ -50,6 +50,7 @@ import Submissions from "./pages/Submissions";
 import Corporate from "./pages/Corporate";
 import SchoolManagement from "./pages/SchoolManagement";
 import DailyLinesAdmin from "./pages/DailyLinesAdmin";
+import DailyLinesTracking from "./pages/DailyLinesTracking";
 const queryClient = new QueryClient();
 
 // Component to handle RTL direction globally
