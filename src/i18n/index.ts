@@ -176,6 +176,9 @@ const resources = {
         school: 'Schools',
         corporate: 'Corporate',
         both: 'Both',
+        dailyLines: 'Daily Lines',
+        categories: 'Categories',
+        selectAtLeastOne: 'Select at least one category',
       },
       // School Management
       schoolMgmt: {
@@ -1124,6 +1127,9 @@ const resources = {
         school: 'مدارس',
         corporate: 'شركات',
         both: 'الكل',
+        dailyLines: 'الخطوط اليومية',
+        categories: 'الفئات',
+        selectAtLeastOne: 'اختر فئة واحدة على الأقل',
       },
       // School Management
       schoolMgmt: {

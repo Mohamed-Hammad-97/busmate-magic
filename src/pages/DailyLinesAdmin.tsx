@@ -223,7 +223,13 @@ function TripsTab({ isRtl }: { isRtl: boolean }) {
   });
   const { data: drivers = [] } = useQuery({
     queryKey: ["dla-drivers"],
-    queryFn: async () => (await supabase.from("drivers").select("id,full_name").eq("is_active", true)).data || [],
+    queryFn: async () =>
+      (await supabase
+        .from("drivers")
+        .select("id,full_name,categories")
+        .eq("is_active", true)
+        .contains("categories", ["daily_lines"])
+      ).data || [],
   });
   const { data: trips = [], isLoading } = useQuery({
     queryKey: ["dla-trips"],

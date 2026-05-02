@@ -29,6 +29,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { Plus, Search, Users, Car, UserCheck, Edit, MapPin, KeyRound, TrendingUp, CreditCard } from 'lucide-react';
@@ -52,6 +53,18 @@ const Staff = () => {
     alexandria: ['alexandria', 'الإسكندرية', 'اسكندرية', 'إسكندرية', 'Alexandria'],
   };
 
+  type Category = 'school' | 'corporate' | 'daily_lines';
+  const ALL_CATEGORIES: Category[] = ['school', 'corporate', 'daily_lines'];
+
+  // Derive legacy belongs_to from categories array (for back-compat with existing queries)
+  const deriveBelongsTo = (cats: Category[]): 'school' | 'corporate' | 'both' => {
+    const hasSchool = cats.includes('school');
+    const hasCorp = cats.includes('corporate');
+    if (hasSchool && hasCorp) return 'both';
+    if (hasCorp) return 'corporate';
+    return 'school';
+  };
+
   const [isDriverDialogOpen, setIsDriverDialogOpen] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState<any>(null);
   const [driverForm, setDriverForm] = useState({
@@ -60,7 +73,7 @@ const Staff = () => {
     license_number: '',
     city: 'Cairo',
     is_active: true,
-    belongs_to: 'school' as 'school' | 'corporate' | 'both',
+    categories: ['school'] as Category[],
   });
 
   const [isSupervisorDialogOpen, setIsSupervisorDialogOpen] = useState(false);
@@ -70,7 +83,7 @@ const Staff = () => {
     phone: '',
     city: 'Cairo',
     is_active: true,
-    belongs_to: 'school' as 'school' | 'corporate' | 'both',
+    categories: ['school'] as Category[],
   });
 
   const { data: allDrivers = [], isLoading: driversLoading } = useQuery({
@@ -124,13 +137,33 @@ const Staff = () => {
     return filtered.filter((s: any) => cityNames.some((name) => s.city?.toLowerCase().includes(name.toLowerCase())));
   }, [allSupervisors, selectedCity, belongsToFilter]);
 
+  const buildDriverPayload = () => ({
+    full_name: driverForm.full_name,
+    phone: driverForm.phone,
+    license_number: driverForm.license_number,
+    city: driverForm.city,
+    is_active: driverForm.is_active,
+    categories: driverForm.categories,
+    belongs_to: deriveBelongsTo(driverForm.categories),
+  });
+
+  const buildSupervisorPayload = () => ({
+    full_name: supervisorForm.full_name,
+    phone: supervisorForm.phone,
+    city: supervisorForm.city,
+    is_active: supervisorForm.is_active,
+    categories: supervisorForm.categories,
+    belongs_to: deriveBelongsTo(supervisorForm.categories),
+  });
+
   const saveDriverMutation = useMutation({
     mutationFn: async () => {
+      const payload = buildDriverPayload();
       if (selectedDriver) {
-        const { error } = await supabase.from('drivers').update(driverForm).eq('id', selectedDriver.id);
+        const { error } = await supabase.from('drivers').update(payload).eq('id', selectedDriver.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from('drivers').insert(driverForm);
+        const { error } = await supabase.from('drivers').insert(payload);
         if (error) throw error;
       }
     },
@@ -145,11 +178,12 @@ const Staff = () => {
 
   const saveSupervisorMutation = useMutation({
     mutationFn: async () => {
+      const payload = buildSupervisorPayload();
       if (selectedSupervisor) {
-        const { error } = await supabase.from('supervisors').update(supervisorForm).eq('id', selectedSupervisor.id);
+        const { error } = await supabase.from('supervisors').update(payload).eq('id', selectedSupervisor.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from('supervisors').insert(supervisorForm);
+        const { error } = await supabase.from('supervisors').insert(payload);
         if (error) throw error;
       }
     },
@@ -162,26 +196,59 @@ const Staff = () => {
     onError: (error) => { toast.error(t('staff.saveError')); console.error(error); },
   });
 
+  const normalizeCategories = (record: any): Category[] => {
+    if (Array.isArray(record?.categories) && record.categories.length > 0) {
+      return record.categories.filter((c: string) => ALL_CATEGORIES.includes(c as Category)) as Category[];
+    }
+    if (record?.belongs_to === 'both') return ['school', 'corporate'];
+    if (record?.belongs_to === 'corporate') return ['corporate'];
+    if (record?.belongs_to === 'daily_lines') return ['daily_lines'];
+    return ['school'];
+  };
+
   const resetDriverForm = () => {
-    setDriverForm({ full_name: '', phone: '', license_number: '', city: 'Cairo', is_active: true, belongs_to: 'school' });
+    setDriverForm({ full_name: '', phone: '', license_number: '', city: 'Cairo', is_active: true, categories: ['school'] });
     setSelectedDriver(null);
   };
 
   const resetSupervisorForm = () => {
-    setSupervisorForm({ full_name: '', phone: '', city: 'Cairo', is_active: true, belongs_to: 'school' });
+    setSupervisorForm({ full_name: '', phone: '', city: 'Cairo', is_active: true, categories: ['school'] });
     setSelectedSupervisor(null);
   };
 
   const handleEditDriver = (driver: any) => {
     setSelectedDriver(driver);
-    setDriverForm({ full_name: driver.full_name, phone: driver.phone, license_number: driver.license_number, city: driver.city || 'Cairo', is_active: driver.is_active, belongs_to: driver.belongs_to || 'school' });
+    setDriverForm({
+      full_name: driver.full_name,
+      phone: driver.phone,
+      license_number: driver.license_number,
+      city: driver.city || 'Cairo',
+      is_active: driver.is_active,
+      categories: normalizeCategories(driver),
+    });
     setIsDriverDialogOpen(true);
   };
 
   const handleEditSupervisor = (supervisor: any) => {
     setSelectedSupervisor(supervisor);
-    setSupervisorForm({ full_name: supervisor.full_name, phone: supervisor.phone, city: supervisor.city || 'Cairo', is_active: supervisor.is_active, belongs_to: supervisor.belongs_to || 'school' });
+    setSupervisorForm({
+      full_name: supervisor.full_name,
+      phone: supervisor.phone,
+      city: supervisor.city || 'Cairo',
+      is_active: supervisor.is_active,
+      categories: normalizeCategories(supervisor),
+    });
     setIsSupervisorDialogOpen(true);
+  };
+
+  const toggleCategory = <T extends { categories: Category[] }>(
+    form: T,
+    setForm: React.Dispatch<React.SetStateAction<T>>,
+    cat: Category,
+  ) => {
+    const has = form.categories.includes(cat);
+    const next = has ? form.categories.filter((c) => c !== cat) : [...form.categories, cat];
+    setForm({ ...form, categories: next });
   };
 
   const filteredDrivers = drivers.filter((d: any) =>
@@ -357,9 +424,13 @@ const Staff = () => {
                               </div>
                             </TableCell>
                             <TableCell>
-                              <Badge variant="secondary" className="text-xs">
-                                {driver.belongs_to === 'school' ? t('staff.school') : driver.belongs_to === 'corporate' ? t('staff.corporate') : t('staff.both')}
-                              </Badge>
+                              <div className="flex flex-wrap gap-1">
+                                {normalizeCategories(driver).map((c) => (
+                                  <Badge key={c} variant="secondary" className="text-xs">
+                                    {c === 'school' ? t('staff.school') : c === 'corporate' ? t('staff.corporate') : t('staff.dailyLines')}
+                                  </Badge>
+                                ))}
+                              </div>
                             </TableCell>
                             <TableCell>
                               {driver.is_active ? (
@@ -442,9 +513,13 @@ const Staff = () => {
                               </div>
                             </TableCell>
                             <TableCell>
-                              <Badge variant="secondary" className="text-xs">
-                                {supervisor.belongs_to === 'school' ? t('staff.school') : supervisor.belongs_to === 'corporate' ? t('staff.corporate') : t('staff.both')}
-                              </Badge>
+                              <div className="flex flex-wrap gap-1">
+                                {normalizeCategories(supervisor).map((c) => (
+                                  <Badge key={c} variant="secondary" className="text-xs">
+                                    {c === 'school' ? t('staff.school') : c === 'corporate' ? t('staff.corporate') : t('staff.dailyLines')}
+                                  </Badge>
+                                ))}
+                              </div>
                             </TableCell>
                             <TableCell>
                               {supervisor.is_active ? (
@@ -488,7 +563,7 @@ const Staff = () => {
             <DialogHeader>
               <DialogTitle>{selectedDriver ? t('staff.editDriver') : t('staff.addNewDriver')}</DialogTitle>
             </DialogHeader>
-            <form onSubmit={(e) => { e.preventDefault(); if (!driverForm.full_name || !driverForm.phone || !driverForm.license_number || !driverForm.city) { toast.error(t('staff.fillRequired')); return; } saveDriverMutation.mutate(); }} className="space-y-4">
+            <form onSubmit={(e) => { e.preventDefault(); if (!driverForm.full_name || !driverForm.phone || !driverForm.license_number || !driverForm.city) { toast.error(t('staff.fillRequired')); return; } if (driverForm.categories.length === 0) { toast.error(t('staff.selectAtLeastOne')); return; } saveDriverMutation.mutate(); }} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="driver_name">{t('common.name')} *</Label>
                 <Input id="driver_name" value={driverForm.full_name} onChange={(e) => setDriverForm({ ...driverForm, full_name: e.target.value })} required />
@@ -513,15 +588,22 @@ const Staff = () => {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="driver_belongs_to">{t('staff.belongsTo')} *</Label>
-                <Select value={driverForm.belongs_to} onValueChange={(value) => setDriverForm({ ...driverForm, belongs_to: value as any })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent className="bg-background border border-border z-50">
-                    <SelectItem value="school">{t('staff.school')}</SelectItem>
-                    <SelectItem value="corporate">{t('staff.corporate')}</SelectItem>
-                    <SelectItem value="both">{t('staff.both')}</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label>{t('staff.categories')} *</Label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {ALL_CATEGORIES.map((cat) => {
+                    const checked = driverForm.categories.includes(cat);
+                    const label = cat === 'school' ? t('staff.school') : cat === 'corporate' ? t('staff.corporate') : t('staff.dailyLines');
+                    return (
+                      <label
+                        key={cat}
+                        className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 cursor-pointer transition-colors ${checked ? 'bg-primary/10 border-primary/40' : 'bg-card border-border hover:bg-muted/40'}`}
+                      >
+                        <Checkbox checked={checked} onCheckedChange={() => toggleCategory(driverForm, setDriverForm, cat)} />
+                        <span className="text-sm font-medium">{label}</span>
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
               <div className="flex items-center justify-between">
                 <Label htmlFor="driver_active">{t('common.active')}</Label>
@@ -541,7 +623,7 @@ const Staff = () => {
             <DialogHeader>
               <DialogTitle>{selectedSupervisor ? t('staff.editSupervisor') : t('staff.addNewSupervisor')}</DialogTitle>
             </DialogHeader>
-            <form onSubmit={(e) => { e.preventDefault(); if (!supervisorForm.full_name || !supervisorForm.phone || !supervisorForm.city) { toast.error(t('staff.fillRequired')); return; } saveSupervisorMutation.mutate(); }} className="space-y-4">
+            <form onSubmit={(e) => { e.preventDefault(); if (!supervisorForm.full_name || !supervisorForm.phone || !supervisorForm.city) { toast.error(t('staff.fillRequired')); return; } if (supervisorForm.categories.length === 0) { toast.error(t('staff.selectAtLeastOne')); return; } saveSupervisorMutation.mutate(); }} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="supervisor_name">{t('common.name')} *</Label>
                 <Input id="supervisor_name" value={supervisorForm.full_name} onChange={(e) => setSupervisorForm({ ...supervisorForm, full_name: e.target.value })} required />
@@ -562,15 +644,22 @@ const Staff = () => {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="supervisor_belongs_to">{t('staff.belongsTo')} *</Label>
-                <Select value={supervisorForm.belongs_to} onValueChange={(value) => setSupervisorForm({ ...supervisorForm, belongs_to: value as any })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent className="bg-background border border-border z-50">
-                    <SelectItem value="school">{t('staff.school')}</SelectItem>
-                    <SelectItem value="corporate">{t('staff.corporate')}</SelectItem>
-                    <SelectItem value="both">{t('staff.both')}</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label>{t('staff.categories')} *</Label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {ALL_CATEGORIES.map((cat) => {
+                    const checked = supervisorForm.categories.includes(cat);
+                    const label = cat === 'school' ? t('staff.school') : cat === 'corporate' ? t('staff.corporate') : t('staff.dailyLines');
+                    return (
+                      <label
+                        key={cat}
+                        className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 cursor-pointer transition-colors ${checked ? 'bg-primary/10 border-primary/40' : 'bg-card border-border hover:bg-muted/40'}`}
+                      >
+                        <Checkbox checked={checked} onCheckedChange={() => toggleCategory(supervisorForm, setSupervisorForm, cat)} />
+                        <span className="text-sm font-medium">{label}</span>
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
               <div className="flex items-center justify-between">
                 <Label htmlFor="supervisor_active">{t('common.active')}</Label>
