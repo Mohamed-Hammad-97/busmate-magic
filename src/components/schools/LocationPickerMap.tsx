@@ -155,6 +155,7 @@ const LocationPickerMap: React.FC<LocationPickerMapProps> = ({
         }}
       >
         <Input
+          ref={searchInputRef}
           type="text"
           placeholder="ابحث عن موقع..."
           className="w-full mb-2"
