@@ -59,6 +59,9 @@ export default function DailyLinePortal() {
       bookings.filter((b: any) => {
         const trip = b.daily_line_trips;
         if (!trip) return false;
+        // Once driver dropped passenger off OR trip is completed/cancelled → move to history
+        if (b.dropped_at) return false;
+        if (trip.status === "completed" || trip.status === "cancelled") return false;
         const date = new Date(`${trip.trip_date}T${trip.departure_time}`);
         return date.getTime() >= Date.now() - 4 * 60 * 60 * 1000 && b.payment_status !== "cancelled";
       }),
