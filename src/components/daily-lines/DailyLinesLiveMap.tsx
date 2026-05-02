@@ -194,6 +194,3 @@ export default function DailyLinesLiveMap({ trips }: { trips: LiveTrip[] }) {
   );
 }
 
-interface BadgeProps {}
-// dummy to avoid unused import if tree-shake misses
-export const _b: typeof Badge = Badge;
