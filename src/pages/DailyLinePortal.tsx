@@ -444,7 +444,9 @@ function BookingCard({ booking: b, isRtl, compact }: { booking: any; isRtl: bool
       : null;
   const pickupNav = navUrl(pickup);
   const dropoffNav = navUrl(dropoff);
-  const isLive = trip?.status === "in_progress";
+  const isFinishedForPassenger =
+    !!b.dropped_at || trip?.status === "completed" || trip?.status === "cancelled";
+  const isLive = trip?.status === "in_progress" && !isFinishedForPassenger;
   return (
     <Card className={`overflow-hidden transition hover:shadow-md ${isLive ? "ring-2 ring-green-500/50" : ""}`}>
       <CardContent className="p-4">
@@ -458,6 +460,11 @@ function BookingCard({ booking: b, isRtl, compact }: { booking: any; isRtl: bool
                 {isLive && (
                   <Badge className="bg-green-500 text-[10px] animate-pulse">
                     {isRtl ? "مباشر" : "LIVE"}
+                  </Badge>
+                )}
+                {isFinishedForPassenger && (
+                  <Badge variant="outline" className="text-[10px] bg-muted text-muted-foreground">
+                    {isRtl ? "انتهت" : "Finished"}
                   </Badge>
                 )}
               </div>
