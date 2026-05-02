@@ -3,7 +3,7 @@ import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
 type AppRole = "super_admin" | "employee";
-type Department = "customer_support" | "operations" | "operation_companies" | "finance" | "reports";
+type Department = "customer_support" | "operations" | "operation_companies" | "operation_daily_lines" | "finance" | "reports";
 
 interface Employee {
   id: string;
