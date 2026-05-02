@@ -56,6 +56,7 @@ const departmentLabels: Record<Department, { en: string; ar: string }> = {
   customer_support: { en: 'Customer Support', ar: 'دعم العملاء' },
   operations: { en: 'Operations (Schools)', ar: 'عمليات (مدارس)' },
   operation_companies: { en: 'Operations (Companies)', ar: 'عمليات (شركات)' },
+  operation_daily_lines: { en: 'Operations (Daily Lines)', ar: 'عمليات (الخطوط اليومية)' },
   finance: { en: 'Finance', ar: 'المالية' },
   reports: { en: 'Reports', ar: 'التقارير' },
 };
