@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Bus, LogOut, User, CreditCard, MessageCircle, Loader2, Send,
-  Calendar, Clock, MapPin, CheckCircle2, AlertCircle, Upload, Receipt, Plus,
+  Calendar, Clock, MapPin, CheckCircle2, AlertCircle, Upload, Receipt, Plus, Navigation,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -47,7 +47,7 @@ export default function DailyLinePortal() {
       phones.forEach((p) => orParts.push(`passenger_phone.eq.${p}`));
       const { data } = await supabase
         .from("daily_line_bookings")
-        .select("*, daily_line_trips(*, daily_lines(name, city)), pickup:pickup_station_id(name), dropoff:dropoff_station_id(name)")
+        .select("*, daily_line_trips(*, daily_lines(name, city)), pickup:pickup_station_id(name, latitude, longitude), dropoff:dropoff_station_id(name, latitude, longitude)")
         .or(orParts.join(","))
         .order("created_at", { ascending: false });
       return data || [];
@@ -412,6 +412,14 @@ function PaymentStatusBadge({ status, isRtl }: { status: string; isRtl: boolean 
 
 function BookingCard({ booking: b, isRtl, compact }: { booking: any; isRtl: boolean; compact?: boolean }) {
   const trip = b.daily_line_trips;
+  const pickup = b.pickup;
+  const dropoff = b.dropoff;
+  const navUrl = (s: any) =>
+    s?.latitude && s?.longitude
+      ? `https://www.google.com/maps/dir/?api=1&destination=${s.latitude},${s.longitude}`
+      : null;
+  const pickupNav = navUrl(pickup);
+  const dropoffNav = navUrl(dropoff);
   return (
     <Card className="overflow-hidden">
       <CardContent className="p-4">
@@ -429,7 +437,7 @@ function BookingCard({ booking: b, isRtl, compact }: { booking: any; isRtl: bool
             {!compact && (
               <div className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
                 <MapPin className="h-3 w-3" />
-                {b.pickup?.name || "—"} → {b.dropoff?.name || "—"}
+                {pickup?.name || "—"} → {dropoff?.name || "—"}
               </div>
             )}
           </div>
@@ -439,6 +447,26 @@ function BookingCard({ booking: b, isRtl, compact }: { booking: any; isRtl: bool
             <div className="text-[10px] text-muted-foreground">{isRtl ? "كود الركوب" : "Boarding code"}</div>
           </div>
         </div>
+        {!compact && (pickupNav || dropoffNav) && (
+          <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t">
+            {pickupNav && (
+              <Button size="sm" variant="outline" asChild className="flex-1 min-w-[140px]">
+                <a href={pickupNav} target="_blank" rel="noreferrer">
+                  <Navigation className="h-3 w-3 mr-1" />
+                  {isRtl ? "الذهاب لمحطة الركوب" : "Go to pickup"}
+                </a>
+              </Button>
+            )}
+            {dropoffNav && (
+              <Button size="sm" variant="outline" asChild className="flex-1 min-w-[140px]">
+                <a href={dropoffNav} target="_blank" rel="noreferrer">
+                  <Navigation className="h-3 w-3 mr-1" />
+                  {isRtl ? "محطة النزول" : "Drop-off location"}
+                </a>
+              </Button>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

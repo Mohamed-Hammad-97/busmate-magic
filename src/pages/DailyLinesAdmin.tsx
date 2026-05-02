@@ -26,6 +26,8 @@ import {
   Pencil, Loader2, CheckCircle2, XCircle, Eye,
 } from "lucide-react";
 import { format } from "date-fns";
+import LineMapEditor from "@/components/daily-lines/LineMapEditor";
+import LineRoutePreviewMap from "@/components/daily-lines/LineRoutePreviewMap";
 
 export default function DailyLinesAdmin() {
   const { t, i18n } = useTranslation();
@@ -66,6 +68,7 @@ function LinesTab({ isRtl }: { isRtl: boolean }) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [stationsLineId, setStationsLineId] = useState<string | null>(null);
+  const [previewLineId, setPreviewLineId] = useState<string | null>(null);
 
   const { data: lines = [], isLoading } = useQuery({
     queryKey: ["dla-lines"],
@@ -139,6 +142,7 @@ function LinesTab({ isRtl }: { isRtl: boolean }) {
                     <TableCell><Badge variant={l.is_active ? "default" : "secondary"}>{l.is_active ? (isRtl ? "نشط" : "Active") : (isRtl ? "متوقف" : "Inactive")}</Badge></TableCell>
                     <TableCell className="text-end space-x-2">
                       <Button size="sm" variant="outline" onClick={() => setStationsLineId(l.id)}><MapPin className="h-3 w-3 mr-1" />{isRtl ? "محطات" : "Stations"}</Button>
+                      <Button size="sm" variant="outline" onClick={() => setPreviewLineId(l.id)}><Eye className="h-3 w-3 mr-1" />{isRtl ? "معاينة" : "Preview"}</Button>
                       <Button size="sm" variant="ghost" onClick={() => { setEditing(l); setOpen(true); }}><Pencil className="h-3 w-3" /></Button>
                       <Button size="sm" variant="ghost" onClick={() => { if (confirm(isRtl ? "حذف؟" : "Delete?")) remove.mutate(l.id); }}><Trash2 className="h-3 w-3 text-destructive" /></Button>
                     </TableCell>
@@ -151,13 +155,30 @@ function LinesTab({ isRtl }: { isRtl: boolean }) {
         </CardContent>
       </Card>
 
-      <Dialog open={!!stationsLineId} onOpenChange={(o) => !o && setStationsLineId(null)}>
-        <DialogContent className="max-w-2xl">
-          {stationsLineId && <StationsManager lineId={stationsLineId} isRtl={isRtl} />}
+      <Dialog open={!!stationsLineId} onOpenChange={(o) => { if (!o) { setStationsLineId(null); qc.invalidateQueries({ queryKey: ["dla-lines"] }); } }}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-auto">
+          <DialogHeader><DialogTitle>{isRtl ? "محطات الخط على الخريطة" : "Line Stations on Map"}</DialogTitle></DialogHeader>
+          {stationsLineId && <LineMapEditor lineId={stationsLineId} isRtl={isRtl} />}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!previewLineId} onOpenChange={(o) => !o && setPreviewLineId(null)}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader><DialogTitle>{isRtl ? "معاينة الخط" : "Line Preview"}</DialogTitle></DialogHeader>
+          {previewLineId && <LinePreviewBlock lineId={previewLineId} />}
         </DialogContent>
       </Dialog>
     </div>
   );
+}
+
+function LinePreviewBlock({ lineId }: { lineId: string }) {
+  const { data: stations = [], isLoading } = useQuery({
+    queryKey: ["dla-line-preview", lineId],
+    queryFn: async () => (await supabase.from("daily_line_stations").select("*").eq("line_id", lineId).order("station_order")).data || [],
+  });
+  if (isLoading) return <Loader2 className="h-6 w-6 animate-spin mx-auto" />;
+  return <LineRoutePreviewMap stations={stations as any} height="500px" />;
 }
 
 function LineDialog({ editing, cities, onSubmit, saving, isRtl }: any) {
@@ -188,61 +209,6 @@ function LineDialog({ editing, cities, onSubmit, saving, isRtl }: any) {
   );
 }
 
-function StationsManager({ lineId, isRtl }: { lineId: string; isRtl: boolean }) {
-  const qc = useQueryClient();
-  const { toast } = useToast();
-  const { data: stations = [] } = useQuery({
-    queryKey: ["dla-stations", lineId],
-    queryFn: async () => (await supabase.from("daily_line_stations").select("*").eq("line_id", lineId).order("station_order")).data || [],
-  });
-  const [form, setForm] = useState({ name: "", station_type: "both", station_order: 0 });
-  const add = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.from("daily_line_stations").insert({ ...form, line_id: lineId });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["dla-stations", lineId] });
-      setForm({ name: "", station_type: "both", station_order: 0 });
-    },
-    onError: (e: any) => toast({ title: e.message, variant: "destructive" }),
-  });
-  const del = useMutation({
-    mutationFn: async (id: string) => { const { error } = await supabase.from("daily_line_stations").delete().eq("id", id); if (error) throw error; },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["dla-stations", lineId] }),
-  });
-  return (
-    <>
-      <DialogHeader><DialogTitle>{isRtl ? "محطات الخط" : "Line Stations"}</DialogTitle></DialogHeader>
-      <div className="space-y-2 max-h-[400px] overflow-auto">
-        {stations.map((s: any) => (
-          <div key={s.id} className="flex items-center justify-between p-2 border rounded">
-            <div>
-              <span className="font-medium">{s.name}</span>
-              <Badge variant="outline" className="ml-2 text-xs">{s.station_type}</Badge>
-              <span className="text-xs text-muted-foreground ml-2">#{s.station_order}</span>
-            </div>
-            <Button size="sm" variant="ghost" onClick={() => del.mutate(s.id)}><Trash2 className="h-3 w-3 text-destructive" /></Button>
-          </div>
-        ))}
-        {stations.length === 0 && <p className="text-center text-muted-foreground py-4">{isRtl ? "لا توجد محطات" : "No stations"}</p>}
-      </div>
-      <div className="grid grid-cols-12 gap-2 pt-3 border-t">
-        <Input className="col-span-5" placeholder={isRtl ? "اسم المحطة" : "Station name"} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-        <Select value={form.station_type} onValueChange={(v) => setForm({ ...form, station_type: v })}>
-          <SelectTrigger className="col-span-3"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="both">{isRtl ? "ركوب/نزول" : "Both"}</SelectItem>
-            <SelectItem value="pickup">{isRtl ? "ركوب فقط" : "Pickup only"}</SelectItem>
-            <SelectItem value="dropoff">{isRtl ? "نزول فقط" : "Dropoff only"}</SelectItem>
-          </SelectContent>
-        </Select>
-        <Input className="col-span-2" type="number" placeholder="#" value={form.station_order} onChange={(e) => setForm({ ...form, station_order: Number(e.target.value) })} />
-        <Button className="col-span-2" onClick={() => add.mutate()} disabled={!form.name || add.isPending}><Plus className="h-3 w-3" /></Button>
-      </div>
-    </>
-  );
-}
 
 /* ============================ TRIPS ============================ */
 function TripsTab({ isRtl }: { isRtl: boolean }) {

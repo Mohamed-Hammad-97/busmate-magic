@@ -13,9 +13,10 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher';
 import seaterLogo from '@/assets/seater-logo.jpg';
+import LineRoutePreviewMap from '@/components/daily-lines/LineRoutePreviewMap';
 
 type Line = { id: string; name: string; city: string; description: string | null };
-type Station = { id: string; line_id: string; name: string; station_type: string; station_order: number };
+type Station = { id: string; line_id: string; name: string; station_type: string; station_order: number; latitude: number | null; longitude: number | null };
 type Trip = {
   id: string; line_id: string; trip_date: string; departure_time: string;
   total_seats: number; available_seats: number; cash_price: number; instapay_price: number;
@@ -274,6 +275,16 @@ const RegisterDailyLine: React.FC = () => {
               <>
                 <CardHeader><CardTitle>Pickup & drop-off</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
+                  <LineRoutePreviewMap
+                    stations={stations as any}
+                    height="240px"
+                    highlightStationId={pickupId || dropoffId || undefined}
+                    onStationClick={(id) => {
+                      // tap on a marker selects it as pickup if not set, otherwise dropoff
+                      if (!pickupId) setPickupId(id);
+                      else if (id !== pickupId) setDropoffId(id);
+                    }}
+                  />
                   <div>
                     <Label>Pickup station</Label>
                     <Select value={pickupId} onValueChange={setPickupId}>
