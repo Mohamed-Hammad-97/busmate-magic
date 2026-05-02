@@ -114,6 +114,7 @@ const navEntries: NavEntry[] = [
       { label: "Lines & Stations", href: "/daily-lines-admin?tab=lines", icon: MapPin },
       { label: "Trips", href: "/daily-lines-admin?tab=trips", icon: CalendarDays },
       { label: "Bookings", href: "/daily-lines-admin?tab=bookings", icon: ClipboardList },
+      { label: "Live Tracking", href: "/daily-lines-tracking", icon: Navigation },
       { label: "Promocodes", href: "/daily-lines-admin?tab=promocodes", icon: Sparkles },
     ],
   },
