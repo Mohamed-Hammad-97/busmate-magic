@@ -644,15 +644,22 @@ const Staff = () => {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="supervisor_belongs_to">{t('staff.belongsTo')} *</Label>
-                <Select value={supervisorForm.belongs_to} onValueChange={(value) => setSupervisorForm({ ...supervisorForm, belongs_to: value as any })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent className="bg-background border border-border z-50">
-                    <SelectItem value="school">{t('staff.school')}</SelectItem>
-                    <SelectItem value="corporate">{t('staff.corporate')}</SelectItem>
-                    <SelectItem value="both">{t('staff.both')}</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label>{t('staff.categories')} *</Label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {ALL_CATEGORIES.map((cat) => {
+                    const checked = supervisorForm.categories.includes(cat);
+                    const label = cat === 'school' ? t('staff.school') : cat === 'corporate' ? t('staff.corporate') : t('staff.dailyLines');
+                    return (
+                      <label
+                        key={cat}
+                        className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 cursor-pointer transition-colors ${checked ? 'bg-primary/10 border-primary/40' : 'bg-card border-border hover:bg-muted/40'}`}
+                      >
+                        <Checkbox checked={checked} onCheckedChange={() => toggleCategory(supervisorForm, setSupervisorForm, cat)} />
+                        <span className="text-sm font-medium">{label}</span>
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
               <div className="flex items-center justify-between">
                 <Label htmlFor="supervisor_active">{t('common.active')}</Label>
