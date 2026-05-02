@@ -147,7 +147,20 @@ function Inner({ stations, height = "300px", highlightStationId, driverLocation,
         {routePath.length > 0 && (
           <Polyline
             path={routePath}
-            options={{ strokeColor: "#3b82f6", strokeWeight: 4, strokeOpacity: 0.8 }}
+            options={
+              routeSource === "straight_fallback"
+                ? {
+                    strokeOpacity: 0,
+                    icons: [
+                      {
+                        icon: { path: "M 0,-1 0,1", strokeOpacity: 1, scale: 3, strokeColor: "#94a3b8" },
+                        offset: "0",
+                        repeat: "12px",
+                      },
+                    ],
+                  }
+                : { strokeColor: "#3b82f6", strokeWeight: 5, strokeOpacity: 0.9 }
+            }
           />
         )}
         {driverLocation && (
