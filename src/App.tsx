@@ -38,6 +38,7 @@ import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import ParentAuth from "./pages/ParentAuth";
 import ParentDashboard from "./pages/ParentDashboard";
+import ParentServiceSelector from "./pages/ParentServiceSelector";
 import DailyLinePortal from "./pages/DailyLinePortal";
 import DriverAuth from "./pages/DriverAuth";
 import DriverDashboard from "./pages/DriverDashboard";
@@ -90,7 +91,8 @@ const App = () => (
             <ParentAuthProvider>
               <Routes>
                 <Route path="/auth" element={<ParentAuth />} />
-                <Route path="/" element={<ParentProtectedRoute><ParentDashboard /></ParentProtectedRoute>} />
+                <Route path="/" element={<ParentProtectedRoute><ParentServiceSelector /></ParentProtectedRoute>} />
+                <Route path="/dashboard" element={<ParentProtectedRoute><ParentDashboard /></ParentProtectedRoute>} />
                 <Route path="*" element={<Navigate to="/parent" replace />} />
               </Routes>
             </ParentAuthProvider>
