@@ -11,8 +11,10 @@ interface VerifyOtpRequest {
   code: string;
 }
 
+const MAX_ATTEMPTS = 5;
+const GENERIC_ERROR = "Verification failed. Please check the code and try again.";
+
 const handler = async (req: Request): Promise<Response> => {
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -20,14 +22,13 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const { phone, code }: VerifyOtpRequest = await req.json();
 
-    if (!phone || !code) {
+    if (!phone || !code || typeof phone !== "string" || typeof code !== "string" || code.length > 10 || phone.length > 20) {
       return new Response(
         JSON.stringify({ error: "Phone and code are required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Clean phone number
     const cleanPhone = phone.replace(/\s/g, "").replace(/^0/, "").replace(/^\+2/, "");
 
     const supabase = createClient(
@@ -35,29 +36,51 @@ const handler = async (req: Request): Promise<Response> => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Find valid OTP
-    const { data: otpRecord, error: otpError } = await supabase
+    // Look up active OTP record for this phone (regardless of code) to enforce attempts
+    const { data: activeOtp } = await supabase
       .from("otp_codes")
-      .select("*")
+      .select("id, code, attempts, expires_at, verified")
       .eq("phone", cleanPhone)
-      .eq("code", code)
       .eq("verified", false)
       .gt("expires_at", new Date().toISOString())
-      .single();
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-    if (otpError || !otpRecord) {
-      console.log("OTP verification failed for phone:", cleanPhone, "Error:", otpError);
+    if (!activeOtp) {
       return new Response(
-        JSON.stringify({ error: "Invalid or expired OTP" }),
+        JSON.stringify({ error: GENERIC_ERROR }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Mark OTP as verified
-    await supabase
-      .from("otp_codes")
-      .update({ verified: true })
-      .eq("id", otpRecord.id);
+    // Block if too many attempts already
+    if ((activeOtp.attempts ?? 0) >= MAX_ATTEMPTS) {
+      // Invalidate to force a new OTP request
+      await supabase.from("otp_codes").update({ verified: true }).eq("id", activeOtp.id);
+      return new Response(
+        JSON.stringify({ error: "Too many failed attempts. Please request a new code." }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Check code (constant-time-ish via length-equal compare)
+    const codeOk = activeOtp.code.length === code.length && activeOtp.code === code;
+
+    if (!codeOk) {
+      const newAttempts = (activeOtp.attempts ?? 0) + 1;
+      await supabase
+        .from("otp_codes")
+        .update({ attempts: newAttempts })
+        .eq("id", activeOtp.id);
+      return new Response(
+        JSON.stringify({ error: GENERIC_ERROR }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Mark OTP verified
+    await supabase.from("otp_codes").update({ verified: true }).eq("id", activeOtp.id);
 
     // Find parent account by phone
     const { data: parentAccount, error: parentError } = await supabase
@@ -67,22 +90,19 @@ const handler = async (req: Request): Promise<Response> => {
       .single();
 
     if (parentError || !parentAccount) {
-      console.log("Parent account not found for phone:", cleanPhone);
+      // Use a generic message to avoid phone enumeration
       return new Response(
-        JSON.stringify({ error: "No account found with this phone number" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: GENERIC_ERROR }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Create a stable email for this parent
     const parentEmail = `parent_${parentAccount.id}@parent.seaterapp.local`;
     const tempPassword = crypto.randomUUID();
 
-    // Check if parent already has a user account
     let userId = parentAccount.user_id;
 
     if (!userId) {
-      // Create a new auth user for this parent
       const { data: authData, error: authError } = await supabase.auth.admin.createUser({
         email: parentEmail,
         password: tempPassword,
@@ -103,15 +123,11 @@ const handler = async (req: Request): Promise<Response> => {
 
       userId = authData.user.id;
 
-      // Link user to parent account
       await supabase
         .from("parent_accounts")
         .update({ user_id: userId })
         .eq("id", parentAccount.id);
-      
-      console.log("Created new auth user for parent:", parentAccount.id, "userId:", userId);
     } else {
-      // User exists, update password so we can sign in
       const { error: updateError } = await supabase.auth.admin.updateUserById(userId, {
         password: tempPassword,
       });
@@ -123,25 +139,13 @@ const handler = async (req: Request): Promise<Response> => {
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-
-      // Get the user's email (it might have been set differently)
-      const { data: userData } = await supabase.auth.admin.getUserById(userId);
-      if (userData?.user?.email) {
-        // Use existing email
-      }
     }
 
-    // Delete used OTP
-    await supabase
-      .from("otp_codes")
-      .delete()
-      .eq("id", otpRecord.id);
+    await supabase.from("otp_codes").delete().eq("id", activeOtp.id);
 
-    // Sign in to get a real session
     const { data: userData } = await supabase.auth.admin.getUserById(userId);
     const userEmail = userData?.user?.email || parentEmail;
 
-    // Use signInWithPassword via a separate client with anon key to generate real tokens
     const anonClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!
@@ -159,8 +163,6 @@ const handler = async (req: Request): Promise<Response> => {
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    console.log("OTP verified and session created for parent:", parentAccount.id);
 
     return new Response(
       JSON.stringify({
@@ -180,9 +182,8 @@ const handler = async (req: Request): Promise<Response> => {
 
   } catch (error: unknown) {
     console.error("Error in verify-otp:", error);
-    const errorMessage = error instanceof Error ? error.message : "Internal server error";
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

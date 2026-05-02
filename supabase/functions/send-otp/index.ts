@@ -15,7 +15,6 @@ const generateOtp = (): string => {
 };
 
 const handler = async (req: Request): Promise<Response> => {
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -23,36 +22,61 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const { phone }: SendOtpRequest = await req.json();
 
-    if (!phone) {
+    if (!phone || typeof phone !== "string" || phone.length > 20) {
       return new Response(
         JSON.stringify({ error: "Phone number is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Clean phone number - remove spaces and ensure it starts with country code
     const cleanPhone = phone.replace(/\s/g, "").replace(/^0/, "");
     const formattedPhone = cleanPhone.startsWith("+") ? cleanPhone : `+20${cleanPhone}`;
-    
-    // For CEQUENS, we need the number without + prefix
     const cequensPhone = formattedPhone.replace("+", "");
 
-    const otp = generateOtp();
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes expiry
-
-    // Store OTP in database
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Delete any existing OTP for this phone
-    await supabase
+    // Rate limit: max 3 OTP requests per phone per 10 minutes
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    const { data: recentRequests } = await supabase
       .from("otp_codes")
-      .delete()
-      .eq("phone", cleanPhone);
+      .select("created_at")
+      .eq("phone", cleanPhone)
+      .gte("created_at", tenMinutesAgo);
 
-    // Insert new OTP
+    if (recentRequests && recentRequests.length >= 3) {
+      console.log("Rate limit hit for phone:", cleanPhone);
+      return new Response(
+        JSON.stringify({ error: "Too many OTP requests. Please wait before trying again." }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Cooldown: min 30 seconds between requests for same phone
+    const thirtySecondsAgo = new Date(Date.now() - 30 * 1000).toISOString();
+    const { data: lastRequest } = await supabase
+      .from("otp_codes")
+      .select("created_at")
+      .eq("phone", cleanPhone)
+      .gte("created_at", thirtySecondsAgo)
+      .limit(1)
+      .maybeSingle();
+
+    if (lastRequest) {
+      return new Response(
+        JSON.stringify({ error: "Please wait a few seconds before requesting another code." }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const otp = generateOtp();
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+
+    // Delete any existing OTP for this phone
+    await supabase.from("otp_codes").delete().eq("phone", cleanPhone);
+
     const { error: insertError } = await supabase
       .from("otp_codes")
       .insert({
@@ -69,7 +93,6 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Send SMS via CEQUENS
     const cequensApiToken = Deno.env.get("CEQUENS_API_TOKEN");
     const senderName = Deno.env.get("CEQUENS_SENDER_NAME") || "Seater";
 
@@ -88,8 +111,6 @@ const handler = async (req: Request): Promise<Response> => {
       recipients: cequensPhone,
     };
 
-    console.log("Sending SMS to:", cequensPhone, "from sender:", senderName);
-
     const smsResponse = await fetch("https://apis.cequens.com/sms/v1/messages", {
       method: "POST",
       headers: {
@@ -101,12 +122,11 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     const smsResult = await smsResponse.json();
-    console.log("CEQUENS response:", JSON.stringify(smsResult));
 
     if (!smsResponse.ok) {
       console.error("CEQUENS SMS failed:", smsResult);
       return new Response(
-        JSON.stringify({ error: "Failed to send SMS", details: smsResult }),
+        JSON.stringify({ error: "Failed to send SMS" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -118,9 +138,8 @@ const handler = async (req: Request): Promise<Response> => {
 
   } catch (error: unknown) {
     console.error("Error in send-otp:", error);
-    const errorMessage = error instanceof Error ? error.message : "Internal server error";
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
