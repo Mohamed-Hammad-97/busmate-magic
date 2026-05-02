@@ -164,12 +164,41 @@ export function DriverDailyLineTrips() {
 
 function DailyTripPassengers({ tripId, onComplete, completing }: { tripId: string; onComplete: () => void; completing: boolean }) {
   const queryClient = useQueryClient();
+  const [selectedStationId, setSelectedStationId] = useState<string | null>(null);
+  const { latitude, longitude, startTracking, stopTracking } = useGeolocation();
+
+  // Get the trip with its line stations
+  const { data: tripInfo } = useQuery({
+    queryKey: ["daily-trip-line", tripId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("daily_line_trips")
+        .select("line_id, daily_lines(id, name)")
+        .eq("id", tripId)
+        .single();
+      return data;
+    },
+  });
+
+  const { data: stations = [] } = useQuery({
+    queryKey: ["daily-trip-stations", tripInfo?.line_id],
+    enabled: !!tripInfo?.line_id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("daily_line_stations")
+        .select("*")
+        .eq("line_id", tripInfo!.line_id)
+        .order("station_order");
+      return data || [];
+    },
+  });
+
   const { data: bookings = [], isLoading } = useQuery({
     queryKey: ["daily-line-trip-bookings", tripId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("daily_line_bookings")
-        .select("*, pickup:daily_line_stations!pickup_station_id(name), dropoff:daily_line_stations!dropoff_station_id(name)")
+        .select("*, pickup:daily_line_stations!pickup_station_id(id, name), dropoff:daily_line_stations!dropoff_station_id(id, name)")
         .eq("trip_id", tripId)
         .neq("payment_status", "cancelled")
         .order("boarding_code");
@@ -179,12 +208,36 @@ function DailyTripPassengers({ tripId, onComplete, completing }: { tripId: strin
     refetchInterval: 5000,
   });
 
+  // Start GPS tracking
+  useEffect(() => {
+    startTracking();
+    return () => stopTracking();
+  }, [startTracking, stopTracking]);
+
+  // Auto-detect arrival within 50m
+  useEffect(() => {
+    if (!latitude || !longitude || stations.length === 0) return;
+    const haversine = (lat1: number, lng1: number, lat2: number, lng2: number) => {
+      const R = 6371000;
+      const toRad = (d: number) => (d * Math.PI) / 180;
+      const dLat = toRad(lat2 - lat1);
+      const dLng = toRad(lng2 - lng1);
+      const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+      return 2 * R * Math.asin(Math.sqrt(a));
+    };
+    for (const s of stations as any[]) {
+      if (s.latitude == null || s.longitude == null) continue;
+      const d = haversine(latitude, longitude, s.latitude, s.longitude);
+      if (d <= 50) {
+        setSelectedStationId((cur) => cur ?? s.id);
+        break;
+      }
+    }
+  }, [latitude, longitude, stations]);
+
   const boardMutation = useMutation({
     mutationFn: async (bookingId: string) => {
-      const { error } = await supabase
-        .from("daily_line_bookings")
-        .update({ boarded_at: new Date().toISOString() })
-        .eq("id", bookingId);
+      const { error } = await supabase.from("daily_line_bookings").update({ boarded_at: new Date().toISOString() }).eq("id", bookingId);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -196,10 +249,7 @@ function DailyTripPassengers({ tripId, onComplete, completing }: { tripId: strin
 
   const dropMutation = useMutation({
     mutationFn: async (bookingId: string) => {
-      const { error } = await supabase
-        .from("daily_line_bookings")
-        .update({ dropped_at: new Date().toISOString() })
-        .eq("id", bookingId);
+      const { error } = await supabase.from("daily_line_bookings").update({ dropped_at: new Date().toISOString() }).eq("id", bookingId);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -212,10 +262,22 @@ function DailyTripPassengers({ tripId, onComplete, completing }: { tripId: strin
   if (isLoading) return <div className="flex-1 flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>;
 
   const onboard = bookings.filter((b: any) => b.boarded_at && !b.dropped_at).length;
+  const stationPickups = (sid: string) => bookings.filter((b: any) => b.pickup?.id === sid);
+  const stationDropoffs = (sid: string) => bookings.filter((b: any) => b.dropoff?.id === sid);
+  const selectedStation = (stations as any[]).find((s) => s.id === selectedStationId);
 
   return (
     <div className="flex-1 overflow-y-auto space-y-3 pr-2">
-      <div className="grid grid-cols-3 gap-2 text-center text-sm sticky top-0 bg-background pb-2">
+      {/* Trip Map */}
+      <LineRoutePreviewMap
+        stations={stations as any}
+        height="220px"
+        highlightStationId={selectedStationId || undefined}
+        driverLocation={latitude && longitude ? { lat: latitude, lng: longitude } : null}
+        onStationClick={(id) => setSelectedStationId(id)}
+      />
+
+      <div className="grid grid-cols-3 gap-2 text-center text-sm">
         <div className="p-2 bg-muted/50 rounded-lg">
           <div className="font-bold text-lg">{bookings.length}</div>
           <div className="text-xs text-muted-foreground">Total</div>
@@ -230,61 +292,121 @@ function DailyTripPassengers({ tripId, onComplete, completing }: { tripId: strin
         </div>
       </div>
 
-      {bookings.map((b: any) => {
-        const boarded = !!b.boarded_at;
-        const dropped = !!b.dropped_at;
-        return (
-          <Card key={b.id} className={`border ${dropped ? "opacity-60" : boarded ? "border-green-500" : ""}`}>
-            <CardContent className="p-3 space-y-2">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="h-12 w-12 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-bold text-xl shrink-0">
-                    {b.boarding_code}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="font-semibold truncate">{b.passenger_name}</p>
-                    <a href={`tel:${b.passenger_phone}`} className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Phone className="h-3 w-3" /> {b.passenger_phone}
-                    </a>
-                  </div>
-                </div>
-                <Badge variant={b.payment_status === "paid" ? "default" : "secondary"} className="shrink-0">
-                  {b.payment_status}
-                </Badge>
+      {/* Stations strip */}
+      <div className="flex gap-2 overflow-x-auto pb-2">
+        {(stations as any[]).map((s, i) => {
+          const active = selectedStationId === s.id;
+          const pCount = stationPickups(s.id).length;
+          const dCount = stationDropoffs(s.id).length;
+          return (
+            <button
+              key={s.id}
+              onClick={() => setSelectedStationId(s.id)}
+              className={`shrink-0 px-3 py-2 rounded-lg border text-left transition ${active ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-muted/50"}`}
+            >
+              <div className="flex items-center gap-2 text-xs font-bold">
+                <span className="h-5 w-5 rounded-full bg-white/20 flex items-center justify-center">{i + 1}</span>
+                <span className="max-w-[120px] truncate">{s.name}</span>
               </div>
-              <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                <div className="flex items-center gap-1">
-                  <ArrowUpCircle className="h-3 w-3 text-green-600" />
-                  {b.pickup?.name || "—"}
-                </div>
-                <div className="flex items-center gap-1">
-                  <ArrowDownCircle className="h-3 w-3 text-blue-600" />
-                  {b.dropoff?.name || "—"}
-                </div>
+              <div className="flex gap-2 text-[10px] mt-1 opacity-90">
+                <span className="flex items-center gap-0.5"><ArrowUpCircle className="h-3 w-3" />{pCount}</span>
+                <span className="flex items-center gap-0.5"><ArrowDownCircle className="h-3 w-3" />{dCount}</span>
               </div>
-              <div className="flex gap-2">
-                {!boarded ? (
-                  <Button size="sm" className="flex-1 gap-1" onClick={() => boardMutation.mutate(b.id)} disabled={boardMutation.isPending}>
-                    <ArrowUpCircle className="h-4 w-4" /> Mark Boarded
-                  </Button>
-                ) : !dropped ? (
-                  <Button size="sm" className="flex-1 gap-1 bg-blue-600 hover:bg-blue-700" onClick={() => dropMutation.mutate(b.id)} disabled={dropMutation.isPending}>
-                    <ArrowDownCircle className="h-4 w-4" /> Mark Dropped
-                  </Button>
-                ) : (
-                  <div className="flex-1 text-center text-xs text-muted-foreground py-1.5 flex items-center justify-center gap-1">
-                    <CheckCircle className="h-4 w-4 text-green-600" /> Completed
-                  </div>
-                )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Selected station passengers */}
+      {selectedStation ? (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-primary" />
+                {selectedStation.name}
+              </h3>
+            </div>
+            {selectedStation.latitude && selectedStation.longitude && (
+              <Button size="sm" variant="outline" asChild>
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${selectedStation.latitude},${selectedStation.longitude}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <Navigation className="h-3 w-3 mr-1" /> Navigate
+                </a>
+              </Button>
+            )}
+          </div>
+
+          {/* Pickups */}
+          {stationPickups(selectedStation.id).length > 0 && (
+            <div className="space-y-2">
+              <div className="text-xs font-semibold text-green-700 flex items-center gap-1">
+                <ArrowUpCircle className="h-3 w-3" /> PICKUP ({stationPickups(selectedStation.id).length})
               </div>
-            </CardContent>
-          </Card>
-        );
-      })}
+              {stationPickups(selectedStation.id).map((b: any) => (
+                <PassengerRow key={b.id} b={b} mode="pickup" onAction={() => boardMutation.mutate(b.id)} pending={boardMutation.isPending} />
+              ))}
+            </div>
+          )}
+
+          {/* Dropoffs */}
+          {stationDropoffs(selectedStation.id).length > 0 && (
+            <div className="space-y-2">
+              <div className="text-xs font-semibold text-blue-700 flex items-center gap-1">
+                <ArrowDownCircle className="h-3 w-3" /> DROP-OFF ({stationDropoffs(selectedStation.id).length})
+              </div>
+              {stationDropoffs(selectedStation.id).map((b: any) => (
+                <PassengerRow key={b.id} b={b} mode="dropoff" onAction={() => dropMutation.mutate(b.id)} pending={dropMutation.isPending} />
+              ))}
+            </div>
+          )}
+
+          {stationPickups(selectedStation.id).length === 0 && stationDropoffs(selectedStation.id).length === 0 && (
+            <div className="text-center text-sm text-muted-foreground py-6">No passengers at this station</div>
+          )}
+        </div>
+      ) : (
+        <div className="text-center text-sm text-muted-foreground py-6">Tap a station above (or arrive within 50m) to see passengers</div>
+      )}
 
       <Button className="w-full bg-green-600 hover:bg-green-700 sticky bottom-0" onClick={onComplete} disabled={completing}>
         <CheckCircle className="h-4 w-4 mr-2" /> Complete Trip
       </Button>
     </div>
+  );
+}
+
+function PassengerRow({ b, mode, onAction, pending }: { b: any; mode: "pickup" | "dropoff"; onAction: () => void; pending: boolean }) {
+  const boarded = !!b.boarded_at;
+  const dropped = !!b.dropped_at;
+  const done = mode === "pickup" ? boarded : dropped;
+  return (
+    <Card className={`border ${done ? "opacity-60 border-green-500" : ""}`}>
+      <CardContent className="p-3 flex items-center gap-3">
+        <div className="h-10 w-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-bold shrink-0">
+          {b.boarding_code}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold truncate text-sm">{b.passenger_name}</p>
+          <a href={`tel:${b.passenger_phone}`} className="text-xs text-muted-foreground flex items-center gap-1">
+            <Phone className="h-3 w-3" /> {b.passenger_phone}
+          </a>
+        </div>
+        <Badge variant={b.payment_status === "paid" ? "default" : "secondary"} className="shrink-0 text-[10px]">
+          {b.payment_status}
+        </Badge>
+        {!done ? (
+          <Button size="sm" onClick={onAction} disabled={pending} className={mode === "dropoff" ? "bg-blue-600 hover:bg-blue-700" : ""}>
+            {mode === "pickup" ? <ArrowUpCircle className="h-3 w-3 mr-1" /> : <ArrowDownCircle className="h-3 w-3 mr-1" />}
+            {mode === "pickup" ? "Board" : "Drop"}
+          </Button>
+        ) : (
+          <CheckCircle className="h-5 w-5 text-green-600 shrink-0" />
+        )}
+      </CardContent>
+    </Card>
   );
 }
