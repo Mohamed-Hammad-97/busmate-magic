@@ -68,6 +68,20 @@ export default function DailyLinesTracking() {
           </Card>
         </div>
 
+        {/* Live map of in-progress trips */}
+        <Card className="border-0 shadow-md overflow-hidden">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Navigation className="h-5 w-5 text-green-600" />
+              Live Bus Locations
+              <Badge className="bg-green-500 ms-auto animate-pulse">{inProgress.length} live</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <DailyLinesLiveMap trips={inProgress as any} />
+          </CardContent>
+        </Card>
+
         {isLoading ? (
           <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>
         ) : trips.length === 0 ? (
