@@ -137,13 +137,33 @@ const Staff = () => {
     return filtered.filter((s: any) => cityNames.some((name) => s.city?.toLowerCase().includes(name.toLowerCase())));
   }, [allSupervisors, selectedCity, belongsToFilter]);
 
+  const buildDriverPayload = () => ({
+    full_name: driverForm.full_name,
+    phone: driverForm.phone,
+    license_number: driverForm.license_number,
+    city: driverForm.city,
+    is_active: driverForm.is_active,
+    categories: driverForm.categories,
+    belongs_to: deriveBelongsTo(driverForm.categories),
+  });
+
+  const buildSupervisorPayload = () => ({
+    full_name: supervisorForm.full_name,
+    phone: supervisorForm.phone,
+    city: supervisorForm.city,
+    is_active: supervisorForm.is_active,
+    categories: supervisorForm.categories,
+    belongs_to: deriveBelongsTo(supervisorForm.categories),
+  });
+
   const saveDriverMutation = useMutation({
     mutationFn: async () => {
+      const payload = buildDriverPayload();
       if (selectedDriver) {
-        const { error } = await supabase.from('drivers').update(driverForm).eq('id', selectedDriver.id);
+        const { error } = await supabase.from('drivers').update(payload).eq('id', selectedDriver.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from('drivers').insert(driverForm);
+        const { error } = await supabase.from('drivers').insert(payload);
         if (error) throw error;
       }
     },
@@ -158,11 +178,12 @@ const Staff = () => {
 
   const saveSupervisorMutation = useMutation({
     mutationFn: async () => {
+      const payload = buildSupervisorPayload();
       if (selectedSupervisor) {
-        const { error } = await supabase.from('supervisors').update(supervisorForm).eq('id', selectedSupervisor.id);
+        const { error } = await supabase.from('supervisors').update(payload).eq('id', selectedSupervisor.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from('supervisors').insert(supervisorForm);
+        const { error } = await supabase.from('supervisors').insert(payload);
         if (error) throw error;
       }
     },
@@ -175,26 +196,59 @@ const Staff = () => {
     onError: (error) => { toast.error(t('staff.saveError')); console.error(error); },
   });
 
+  const normalizeCategories = (record: any): Category[] => {
+    if (Array.isArray(record?.categories) && record.categories.length > 0) {
+      return record.categories.filter((c: string) => ALL_CATEGORIES.includes(c as Category)) as Category[];
+    }
+    if (record?.belongs_to === 'both') return ['school', 'corporate'];
+    if (record?.belongs_to === 'corporate') return ['corporate'];
+    if (record?.belongs_to === 'daily_lines') return ['daily_lines'];
+    return ['school'];
+  };
+
   const resetDriverForm = () => {
-    setDriverForm({ full_name: '', phone: '', license_number: '', city: 'Cairo', is_active: true, belongs_to: 'school' });
+    setDriverForm({ full_name: '', phone: '', license_number: '', city: 'Cairo', is_active: true, categories: ['school'] });
     setSelectedDriver(null);
   };
 
   const resetSupervisorForm = () => {
-    setSupervisorForm({ full_name: '', phone: '', city: 'Cairo', is_active: true, belongs_to: 'school' });
+    setSupervisorForm({ full_name: '', phone: '', city: 'Cairo', is_active: true, categories: ['school'] });
     setSelectedSupervisor(null);
   };
 
   const handleEditDriver = (driver: any) => {
     setSelectedDriver(driver);
-    setDriverForm({ full_name: driver.full_name, phone: driver.phone, license_number: driver.license_number, city: driver.city || 'Cairo', is_active: driver.is_active, belongs_to: driver.belongs_to || 'school' });
+    setDriverForm({
+      full_name: driver.full_name,
+      phone: driver.phone,
+      license_number: driver.license_number,
+      city: driver.city || 'Cairo',
+      is_active: driver.is_active,
+      categories: normalizeCategories(driver),
+    });
     setIsDriverDialogOpen(true);
   };
 
   const handleEditSupervisor = (supervisor: any) => {
     setSelectedSupervisor(supervisor);
-    setSupervisorForm({ full_name: supervisor.full_name, phone: supervisor.phone, city: supervisor.city || 'Cairo', is_active: supervisor.is_active, belongs_to: supervisor.belongs_to || 'school' });
+    setSupervisorForm({
+      full_name: supervisor.full_name,
+      phone: supervisor.phone,
+      city: supervisor.city || 'Cairo',
+      is_active: supervisor.is_active,
+      categories: normalizeCategories(supervisor),
+    });
     setIsSupervisorDialogOpen(true);
+  };
+
+  const toggleCategory = <T extends { categories: Category[] }>(
+    form: T,
+    setForm: (v: T) => void,
+    cat: Category,
+  ) => {
+    const has = form.categories.includes(cat);
+    const next = has ? form.categories.filter((c) => c !== cat) : [...form.categories, cat];
+    setForm({ ...form, categories: next });
   };
 
   const filteredDrivers = drivers.filter((d: any) =>
