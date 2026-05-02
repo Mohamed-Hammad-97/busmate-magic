@@ -272,6 +272,36 @@ function DailyTripPassengers({ tripId, onComplete, completing }: { tripId: strin
     onError: (e: any) => toast.error(e.message),
   });
 
+  const markPaidMutation = useMutation({
+    mutationFn: async (bookingId: string) => {
+      const { error } = await supabase
+        .from("daily_line_bookings")
+        .update({ payment_status: "paid", marked_paid_at: new Date().toISOString() })
+        .eq("id", bookingId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Marked as paid");
+      queryClient.invalidateQueries({ queryKey: ["daily-line-trip-bookings", tripId] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const cancelMutation = useMutation({
+    mutationFn: async (bookingId: string) => {
+      const { error } = await supabase
+        .from("daily_line_bookings")
+        .update({ payment_status: "cancelled" })
+        .eq("id", bookingId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Booking cancelled");
+      queryClient.invalidateQueries({ queryKey: ["daily-line-trip-bookings", tripId] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   if (isLoading) return <div className="flex-1 flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>;
 
   const onboard = bookings.filter((b: any) => b.boarded_at && !b.dropped_at).length;
@@ -360,7 +390,17 @@ function DailyTripPassengers({ tripId, onComplete, completing }: { tripId: strin
                 <ArrowUpCircle className="h-3 w-3" /> PICKUP ({stationPickups(selectedStation.id).length})
               </div>
               {stationPickups(selectedStation.id).map((b: any) => (
-                <PassengerRow key={b.id} b={b} mode="pickup" onAction={() => boardMutation.mutate(b.id)} pending={boardMutation.isPending} />
+                <PassengerRow
+                  key={b.id}
+                  b={b}
+                  mode="pickup"
+                  onAction={() => boardMutation.mutate(b.id)}
+                  pending={boardMutation.isPending}
+                  onMarkPaid={() => markPaidMutation.mutate(b.id)}
+                  onCancel={() => cancelMutation.mutate(b.id)}
+                  paying={markPaidMutation.isPending}
+                  cancelling={cancelMutation.isPending}
+                />
               ))}
             </div>
           )}
@@ -392,32 +432,83 @@ function DailyTripPassengers({ tripId, onComplete, completing }: { tripId: strin
   );
 }
 
-function PassengerRow({ b, mode, onAction, pending }: { b: any; mode: "pickup" | "dropoff"; onAction: () => void; pending: boolean }) {
+function PassengerRow({
+  b,
+  mode,
+  onAction,
+  pending,
+  onMarkPaid,
+  onCancel,
+  paying,
+  cancelling,
+}: {
+  b: any;
+  mode: "pickup" | "dropoff";
+  onAction: () => void;
+  pending: boolean;
+  onMarkPaid?: () => void;
+  onCancel?: () => void;
+  paying?: boolean;
+  cancelling?: boolean;
+}) {
   const boarded = !!b.boarded_at;
   const dropped = !!b.dropped_at;
   const done = mode === "pickup" ? boarded : dropped;
+  const isCash = b.payment_method === "cash";
+  const isPending = b.payment_status === "pending";
+  const showCashControls = mode === "pickup" && isCash && isPending;
   return (
     <Card className={`border ${done ? "opacity-60 border-green-500" : ""}`}>
-      <CardContent className="p-3 flex items-center gap-3">
-        <div className="h-10 w-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-bold shrink-0">
-          {b.boarding_code}
+      <CardContent className="p-3 space-y-2">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-bold shrink-0">
+            {b.boarding_code}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold truncate text-sm">{b.passenger_name}</p>
+            <a href={`tel:${b.passenger_phone}`} className="text-xs text-muted-foreground flex items-center gap-1">
+              <Phone className="h-3 w-3" /> {b.passenger_phone}
+            </a>
+          </div>
+          <div className="flex flex-col items-end gap-0.5 shrink-0">
+            <Badge variant={b.payment_status === "paid" ? "default" : b.payment_status === "cancelled" ? "destructive" : "secondary"} className="text-[10px]">
+              {b.payment_status}
+            </Badge>
+            {isCash && (
+              <span className="text-[10px] text-muted-foreground">Cash · {Number(b.final_price).toFixed(0)} EGP</span>
+            )}
+          </div>
+          {!done ? (
+            <Button size="sm" onClick={onAction} disabled={pending} className={mode === "dropoff" ? "bg-blue-600 hover:bg-blue-700" : ""}>
+              {mode === "pickup" ? <ArrowUpCircle className="h-3 w-3 mr-1" /> : <ArrowDownCircle className="h-3 w-3 mr-1" />}
+              {mode === "pickup" ? "Board" : "Drop"}
+            </Button>
+          ) : (
+            <CheckCircle className="h-5 w-5 text-green-600 shrink-0" />
+          )}
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="font-semibold truncate text-sm">{b.passenger_name}</p>
-          <a href={`tel:${b.passenger_phone}`} className="text-xs text-muted-foreground flex items-center gap-1">
-            <Phone className="h-3 w-3" /> {b.passenger_phone}
-          </a>
-        </div>
-        <Badge variant={b.payment_status === "paid" ? "default" : "secondary"} className="shrink-0 text-[10px]">
-          {b.payment_status}
-        </Badge>
-        {!done ? (
-          <Button size="sm" onClick={onAction} disabled={pending} className={mode === "dropoff" ? "bg-blue-600 hover:bg-blue-700" : ""}>
-            {mode === "pickup" ? <ArrowUpCircle className="h-3 w-3 mr-1" /> : <ArrowDownCircle className="h-3 w-3 mr-1" />}
-            {mode === "pickup" ? "Board" : "Drop"}
-          </Button>
-        ) : (
-          <CheckCircle className="h-5 w-5 text-green-600 shrink-0" />
+
+        {showCashControls && (
+          <div className="flex gap-2 pt-2 border-t">
+            <Button
+              size="sm"
+              variant="outline"
+              className="flex-1 border-green-500 text-green-700 hover:bg-green-50 hover:text-green-700"
+              onClick={onMarkPaid}
+              disabled={paying || cancelling}
+            >
+              <CheckCircle className="h-3 w-3 mr-1" /> Mark Paid
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="flex-1 border-red-500 text-red-700 hover:bg-red-50 hover:text-red-700"
+              onClick={onCancel}
+              disabled={paying || cancelling}
+            >
+              Cancel
+            </Button>
+          </div>
         )}
       </CardContent>
     </Card>

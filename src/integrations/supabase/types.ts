@@ -1152,6 +1152,9 @@ export type Database = {
           license_number: string
           phone: string
           updated_at: string
+          vehicle_color: string | null
+          vehicle_model: string | null
+          vehicle_plate: string | null
         }
         Insert: {
           belongs_to?: string
@@ -1164,6 +1167,9 @@ export type Database = {
           license_number: string
           phone: string
           updated_at?: string
+          vehicle_color?: string | null
+          vehicle_model?: string | null
+          vehicle_plate?: string | null
         }
         Update: {
           belongs_to?: string
@@ -1176,6 +1182,9 @@ export type Database = {
           license_number?: string
           phone?: string
           updated_at?: string
+          vehicle_color?: string | null
+          vehicle_model?: string | null
+          vehicle_plate?: string | null
         }
         Relationships: []
       }
