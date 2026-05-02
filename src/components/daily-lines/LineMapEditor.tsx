@@ -260,11 +260,44 @@ function Inner({ lineId, isRtl }: Props) {
             {routePath.length > 0 && (
               <Polyline
                 path={routePath}
-                options={{ strokeColor: "#3b82f6", strokeWeight: 4, strokeOpacity: 0.85 }}
+                options={
+                  routeSource === "straight_fallback"
+                    ? {
+                        strokeColor: "#94a3b8",
+                        strokeWeight: 3,
+                        strokeOpacity: 0,
+                        icons: [
+                          {
+                            icon: { path: "M 0,-1 0,1", strokeOpacity: 1, scale: 3 },
+                            offset: "0",
+                            repeat: "12px",
+                          },
+                        ],
+                      }
+                    : { strokeColor: "#3b82f6", strokeWeight: 5, strokeOpacity: 0.9 }
+                }
               />
             )}
           </GoogleMap>
         </div>
+
+        {routeError && (
+          <div className="flex items-start gap-2 p-2 border border-amber-300 bg-amber-50 dark:bg-amber-950/30 rounded text-xs text-amber-800 dark:text-amber-300">
+            <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+            <div>
+              <div className="font-medium">
+                {isRtl
+                  ? "تعذر رسم المسار على الطريق — يتم عرض خطوط مستقيمة"
+                  : "Could not draw road route — showing straight lines"}
+              </div>
+              <div className="opacity-80">
+                {isRtl
+                  ? "فعّل Routes API (أو Directions API) في Google Cloud Console لمفتاح الخرائط الخاص بك."
+                  : "Enable the Routes API (or Directions API) in Google Cloud Console for your Maps key."}
+              </div>
+            </div>
+          </div>
+        )}
 
         {pendingPoint && (
           <div className="grid grid-cols-12 gap-2 p-3 border rounded-lg bg-muted/30">
