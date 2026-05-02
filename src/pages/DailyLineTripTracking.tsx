@@ -40,8 +40,8 @@ export default function DailyLineTripTracking() {
             *,
             daily_lines(name, city)
           ),
-          pickup:pickup_station_id(id, name, latitude, longitude),
-          dropoff:dropoff_station_id(id, name, latitude, longitude)
+          pickup:daily_line_stations!pickup_station_id(id, name, latitude, longitude),
+          dropoff:daily_line_stations!dropoff_station_id(id, name, latitude, longitude)
         `)
         .eq("id", bookingId!)
         .maybeSingle();
