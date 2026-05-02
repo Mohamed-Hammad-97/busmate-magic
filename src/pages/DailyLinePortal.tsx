@@ -420,35 +420,49 @@ function BookingCard({ booking: b, isRtl, compact }: { booking: any; isRtl: bool
       : null;
   const pickupNav = navUrl(pickup);
   const dropoffNav = navUrl(dropoff);
+  const isLive = trip?.status === "in_progress";
   return (
-    <Card className="overflow-hidden">
+    <Card className={`overflow-hidden transition hover:shadow-md ${isLive ? "ring-2 ring-green-500/50" : ""}`}>
       <CardContent className="p-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Bus className="h-4 w-4 text-primary" />
-              <span className="font-semibold">{trip?.daily_lines?.name}</span>
-              <Badge variant="secondary" className="text-xs">{trip?.daily_lines?.city}</Badge>
-            </div>
-            <div className="text-sm text-muted-foreground flex items-center gap-3 flex-wrap">
-              <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{trip?.trip_date}</span>
-              <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{trip?.departure_time?.slice(0, 5)}</span>
-            </div>
-            {!compact && (
-              <div className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-                <MapPin className="h-3 w-3" />
-                {pickup?.name || "—"} → {dropoff?.name || "—"}
+        <Link to={!compact ? `/daily-line/trip/${b.id}` : "#"} className={compact ? "pointer-events-none" : "block"}>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Bus className="h-4 w-4 text-primary" />
+                <span className="font-semibold">{trip?.daily_lines?.name}</span>
+                <Badge variant="secondary" className="text-xs">{trip?.daily_lines?.city}</Badge>
+                {isLive && (
+                  <Badge className="bg-green-500 text-[10px] animate-pulse">
+                    {isRtl ? "مباشر" : "LIVE"}
+                  </Badge>
+                )}
               </div>
-            )}
+              <div className="text-sm text-muted-foreground flex items-center gap-3 flex-wrap">
+                <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{trip?.trip_date}</span>
+                <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{trip?.departure_time?.slice(0, 5)}</span>
+              </div>
+              {!compact && (
+                <div className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                  <MapPin className="h-3 w-3" />
+                  {pickup?.name || "—"} → {dropoff?.name || "—"}
+                </div>
+              )}
+            </div>
+            <div className="text-end space-y-2">
+              <PaymentStatusBadge status={b.payment_status} isRtl={isRtl} />
+              <div className="text-2xl font-bold tabular-nums">{b.boarding_code}</div>
+              <div className="text-[10px] text-muted-foreground">{isRtl ? "كود الركوب" : "Boarding code"}</div>
+            </div>
           </div>
-          <div className="text-end space-y-2">
-            <PaymentStatusBadge status={b.payment_status} isRtl={isRtl} />
-            <div className="text-2xl font-bold tabular-nums">{b.boarding_code}</div>
-            <div className="text-[10px] text-muted-foreground">{isRtl ? "كود الركوب" : "Boarding code"}</div>
-          </div>
-        </div>
-        {!compact && (pickupNav || dropoffNav) && (
+        </Link>
+        {!compact && (
           <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t">
+            <Button size="sm" asChild className="flex-1 min-w-[140px]">
+              <Link to={`/daily-line/trip/${b.id}`}>
+                <Bus className="h-3 w-3 mr-1" />
+                {isRtl ? "تتبع الحافلة" : "Track Bus"}
+              </Link>
+            </Button>
             {pickupNav && (
               <Button size="sm" variant="outline" asChild className="flex-1 min-w-[140px]">
                 <a href={pickupNav} target="_blank" rel="noreferrer">
