@@ -10,6 +10,7 @@ import { Loader2, GripVertical, Trash2, MapPin, Save, Plus, AlertTriangle } from
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { computeDrivingRoute } from "@/lib/googleRoutes";
+import { attachAutocompleteEnterFix } from "@/lib/placesEnterHelper";
 
 export interface StationDraft {
   id?: string;
@@ -53,7 +54,22 @@ function Inner({ lineId, isRtl }: Props) {
   const [routeSource, setRouteSource] = useState<string>("");
   const mapRef = useRef<google.maps.Map | null>(null);
   const acRef = useRef<google.maps.places.Autocomplete | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
   const dragIdx = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    return attachAutocompleteEnterFix(searchInputRef.current, (place) => {
+      if (place.geometry?.location) {
+        const lat = place.geometry.location.lat();
+        const lng = place.geometry.location.lng();
+        setPendingPoint({ lat, lng });
+        setPendingName(place.name || place.formatted_address || "");
+        mapRef.current?.panTo({ lat, lng });
+        mapRef.current?.setZoom(15);
+      }
+    });
+  }, [isLoaded]);
 
   // Load existing stations
   useEffect(() => {
@@ -219,7 +235,7 @@ function Inner({ lineId, isRtl }: Props) {
           onPlaceChanged={handlePlaceChange}
           options={{ componentRestrictions: { country: "eg" } }}
         >
-          <Input placeholder={isRtl ? "ابحث عن مكان..." : "Search a place..."} />
+          <Input ref={searchInputRef} placeholder={isRtl ? "ابحث عن مكان..." : "Search a place..."} />
         </Autocomplete>
 
         <div className="rounded-lg overflow-hidden border">

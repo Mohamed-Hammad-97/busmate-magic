@@ -1,10 +1,11 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { GoogleMap, Marker, Autocomplete } from '@react-google-maps/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { MapPin, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useGoogleMaps } from '@/components/maps/GoogleMapsProvider';
+import { attachAutocompleteEnterFix } from '@/lib/placesEnterHelper';
 
 export interface LocationPickerMapProps {
   initialLat?: number;
@@ -27,6 +28,21 @@ const LocationPickerMap: React.FC<LocationPickerMapProps> = ({
   const [markerPosition, setMarkerPosition] = useState({ lat: initialLat, lng: initialLng });
   const [isLocating, setIsLocating] = useState(false);
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    return attachAutocompleteEnterFix(searchInputRef.current, (place) => {
+      if (place.geometry?.location) {
+        const lat = place.geometry.location.lat();
+        const lng = place.geometry.location.lng();
+        setMarkerPosition({ lat, lng });
+        onLocationChange(lat, lng);
+        map?.panTo({ lat, lng });
+        map?.setZoom(15);
+      }
+    });
+  }, [isLoaded, map, onLocationChange]);
 
   const onLoad = useCallback((mapInstance: google.maps.Map) => {
     setMap(mapInstance);
@@ -139,6 +155,7 @@ const LocationPickerMap: React.FC<LocationPickerMapProps> = ({
         }}
       >
         <Input
+          ref={searchInputRef}
           type="text"
           placeholder="ابحث عن موقع..."
           className="w-full mb-2"
