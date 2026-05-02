@@ -121,6 +121,27 @@ export default function DailyLinePortal() {
     if (!activeConv && conversations.length > 0) setActiveConv(conversations[0].id);
   }, [conversations, activeConv]);
 
+  // Realtime: refresh bookings when driver updates dropped_at / payment / trip status
+  useEffect(() => {
+    if (!parentAccount?.id) return;
+    const channel = supabase
+      .channel(`dl-portal-bookings-${parentAccount.id}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "daily_line_bookings" },
+        () => qc.invalidateQueries({ queryKey: ["dl-bookings"] }),
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "daily_line_trips" },
+        () => qc.invalidateQueries({ queryKey: ["dl-bookings"] }),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [parentAccount?.id, qc]);
+
   const { data: messages = [] } = useQuery({
     queryKey: ["dl-chat-msgs", activeConv],
     enabled: !!activeConv,
