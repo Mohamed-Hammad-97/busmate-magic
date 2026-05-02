@@ -40,6 +40,7 @@ import ParentAuth from "./pages/ParentAuth";
 import ParentDashboard from "./pages/ParentDashboard";
 import ParentServiceSelector from "./pages/ParentServiceSelector";
 import DailyLinePortal from "./pages/DailyLinePortal";
+import DailyLineTripTracking from "./pages/DailyLineTripTracking";
 import DriverAuth from "./pages/DriverAuth";
 import DriverDashboard from "./pages/DriverDashboard";
 import CompanyAuth from "./pages/CompanyAuth";
@@ -103,6 +104,7 @@ const App = () => (
             <ParentAuthProvider>
               <Routes>
                 <Route path="/portal" element={<DailyLinePortal />} />
+                <Route path="/trip/:bookingId" element={<DailyLineTripTracking />} />
                 <Route path="*" element={<Navigate to="/daily-line/portal" replace />} />
               </Routes>
             </ParentAuthProvider>
