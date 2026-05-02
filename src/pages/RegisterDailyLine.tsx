@@ -13,9 +13,10 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher';
 import seaterLogo from '@/assets/seater-logo.jpg';
+import LineRoutePreviewMap from '@/components/daily-lines/LineRoutePreviewMap';
 
 type Line = { id: string; name: string; city: string; description: string | null };
-type Station = { id: string; line_id: string; name: string; station_type: string; station_order: number };
+type Station = { id: string; line_id: string; name: string; station_type: string; station_order: number; latitude: number | null; longitude: number | null };
 type Trip = {
   id: string; line_id: string; trip_date: string; departure_time: string;
   total_seats: number; available_seats: number; cash_price: number; instapay_price: number;
