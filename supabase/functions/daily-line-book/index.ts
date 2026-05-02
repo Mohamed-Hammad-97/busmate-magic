@@ -33,7 +33,9 @@ Deno.serve(async (req) => {
       dropoff_station_id,
       payment_method,
       promocode,
-      payment_proof_url,
+      proof_file_base64,
+      proof_file_ext,
+      proof_file_type,
     } = body ?? {};
 
     if (!trip_id || !passenger_name || !passenger_phone || !payment_method) {
@@ -49,10 +51,66 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Validate optional receipt upload
+    let payment_proof_url: string | null = null;
+    if (proof_file_base64) {
+      const allowedExt = ["jpg", "jpeg", "png", "webp", "pdf"];
+      const ext = String(proof_file_ext || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5);
+      if (!allowedExt.includes(ext)) {
+        return new Response(JSON.stringify({ error: "Invalid receipt file type" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      // Decode base64 and enforce size (max 5MB)
+      let bytes: Uint8Array;
+      try {
+        const bin = atob(proof_file_base64);
+        bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      } catch {
+        return new Response(JSON.stringify({ error: "Invalid receipt encoding" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (bytes.byteLength > 5 * 1024 * 1024) {
+        return new Response(JSON.stringify({ error: "Receipt too large (max 5MB)" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      payment_proof_url = `${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
+      // We'll upload after admin client is created below
+      (globalThis as unknown as { __pendingReceipt: { path: string; bytes: Uint8Array; type: string } }).__pendingReceipt = {
+        path: payment_proof_url,
+        bytes,
+        type: proof_file_type || "application/octet-stream",
+      };
+    }
+
     const admin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
+
+    // Upload receipt server-side using service role (anonymous direct uploads are blocked)
+    const pendingReceipt = (globalThis as unknown as { __pendingReceipt?: { path: string; bytes: Uint8Array; type: string } }).__pendingReceipt;
+    if (pendingReceipt) {
+      const { error: upErr } = await admin.storage
+        .from("daily-line-receipts")
+        .upload(pendingReceipt.path, pendingReceipt.bytes, {
+          contentType: pendingReceipt.type,
+          upsert: false,
+        });
+      delete (globalThis as unknown as { __pendingReceipt?: unknown }).__pendingReceipt;
+      if (upErr) {
+        return new Response(JSON.stringify({ error: `Receipt upload failed: ${upErr.message}` }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
 
     // Load trip
     const { data: trip, error: tripErr } = await admin

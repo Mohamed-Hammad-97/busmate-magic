@@ -120,13 +120,22 @@ const RegisterDailyLine: React.FC = () => {
     if (!selectedTrip) return;
     setSubmitting(true);
     try {
-      let payment_proof_url: string | null = null;
+      let proof_file_base64: string | null = null;
+      let proof_file_ext: string | null = null;
+      let proof_file_type: string | null = null;
       if (proofFile) {
-        const ext = proofFile.name.split('.').pop() || 'jpg';
-        const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-        const { error: upErr } = await supabase.storage.from('daily-line-receipts').upload(path, proofFile, { upsert: false });
-        if (upErr) throw upErr;
-        payment_proof_url = path;
+        proof_file_ext = proofFile.name.split('.').pop() || 'jpg';
+        proof_file_type = proofFile.type || 'application/octet-stream';
+        proof_file_base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const result = reader.result as string;
+            // Strip data URL prefix
+            resolve(result.includes(',') ? result.split(',')[1] : result);
+          };
+          reader.onerror = () => reject(reader.error);
+          reader.readAsDataURL(proofFile);
+        });
       }
       const { data, error } = await supabase.functions.invoke('daily-line-book', {
         body: {
@@ -137,7 +146,9 @@ const RegisterDailyLine: React.FC = () => {
           dropoff_station_id: dropoffId,
           payment_method: paymentMethod,
           promocode: promo || undefined,
-          payment_proof_url,
+          proof_file_base64,
+          proof_file_ext,
+          proof_file_type,
         },
       });
       if (error) throw error;
