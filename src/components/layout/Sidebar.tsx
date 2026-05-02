@@ -40,7 +40,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-type Department = "customer_support" | "operations" | "operation_companies" | "finance" | "reports";
+type Department = "customer_support" | "operations" | "operation_companies" | "operation_daily_lines" | "finance" | "reports";
 
 interface NavItem {
   label: string;
@@ -102,6 +102,19 @@ const navEntries: NavEntry[] = [
       { label: "Staff Files", href: "/corporate?tab=profiles", icon: FileText },
       { label: "Salaries", href: "/corporate?tab=salaries", icon: DollarSign, department: "finance" },
       { label: "Invoices", href: "/corporate?tab=invoices", icon: FileText, department: "finance" },
+    ],
+  },
+  {
+    type: 'group',
+    label: 'Daily Lines',
+    labelAr: 'الخطوط اليومية',
+    icon: Bus,
+    multiDepartment: ['operation_daily_lines', 'customer_support'],
+    children: [
+      { label: "Lines & Stations", href: "/daily-lines-admin?tab=lines", icon: MapPin },
+      { label: "Trips", href: "/daily-lines-admin?tab=trips", icon: CalendarDays },
+      { label: "Bookings", href: "/daily-lines-admin?tab=bookings", icon: ClipboardList },
+      { label: "Promocodes", href: "/daily-lines-admin?tab=promocodes", icon: Sparkles },
     ],
   },
   { label: "Reports", href: "/reports", icon: BarChart3, department: "reports" },
