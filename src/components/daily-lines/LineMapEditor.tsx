@@ -235,7 +235,7 @@ function Inner({ lineId, isRtl }: Props) {
           onPlaceChanged={handlePlaceChange}
           options={{ componentRestrictions: { country: "eg" } }}
         >
-          <Input placeholder={isRtl ? "ابحث عن مكان..." : "Search a place..."} />
+          <Input ref={searchInputRef} placeholder={isRtl ? "ابحث عن مكان..." : "Search a place..."} />
         </Autocomplete>
 
         <div className="rounded-lg overflow-hidden border">
