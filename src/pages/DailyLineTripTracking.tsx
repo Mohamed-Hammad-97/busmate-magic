@@ -94,8 +94,14 @@ export default function DailyLineTripTracking() {
     if (lat && lng) setLivePos({ lat, lng });
   }, [booking?.daily_line_trips?.current_latitude, booking?.daily_line_trips?.current_longitude]);
 
+  // Determine if this passenger's leg is finished (driver dropped them off OR trip completed/cancelled)
+  const isFinished =
+    !!booking?.dropped_at ||
+    booking?.daily_line_trips?.status === "completed" ||
+    booking?.daily_line_trips?.status === "cancelled";
+
   useEffect(() => {
-    if (!tripId) return;
+    if (!tripId || isFinished) return;
     const channel = supabase
       .channel(`dl-trip-${tripId}`)
       .on(
@@ -105,13 +111,33 @@ export default function DailyLineTripTracking() {
           const lat = payload.new?.current_latitude;
           const lng = payload.new?.current_longitude;
           if (lat && lng) setLivePos({ lat, lng });
+          // If driver completed the trip, refetch booking so UI updates
+          if (payload.new?.status === "completed" || payload.new?.status === "cancelled") {
+            qc.invalidateQueries({ queryKey: ["dl-tracking-booking", bookingId] });
+          }
         },
       )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [tripId]);
+  }, [tripId, isFinished, qc, bookingId]);
+
+  // Subscribe to this specific booking row → refetch when driver sets dropped_at / payment changes
+  useEffect(() => {
+    if (!bookingId) return;
+    const channel = supabase
+      .channel(`dl-booking-${bookingId}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "daily_line_bookings", filter: `id=eq.${bookingId}` },
+        () => qc.invalidateQueries({ queryKey: ["dl-tracking-booking", bookingId] }),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [bookingId, qc]);
 
   if (isLoading || loadingBooking) {
     return (
