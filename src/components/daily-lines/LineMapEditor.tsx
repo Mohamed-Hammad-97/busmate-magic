@@ -54,7 +54,22 @@ function Inner({ lineId, isRtl }: Props) {
   const [routeSource, setRouteSource] = useState<string>("");
   const mapRef = useRef<google.maps.Map | null>(null);
   const acRef = useRef<google.maps.places.Autocomplete | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
   const dragIdx = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    return attachAutocompleteEnterFix(searchInputRef.current, (place) => {
+      if (place.geometry?.location) {
+        const lat = place.geometry.location.lat();
+        const lng = place.geometry.location.lng();
+        setPendingPoint({ lat, lng });
+        setPendingName(place.name || place.formatted_address || "");
+        mapRef.current?.panTo({ lat, lng });
+        mapRef.current?.setZoom(15);
+      }
+    });
+  }, [isLoaded]);
 
   // Load existing stations
   useEffect(() => {
