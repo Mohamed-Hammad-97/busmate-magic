@@ -295,6 +295,10 @@ export default function DriverDashboard() {
             )}
           </TabsContent>
 
+          <TabsContent value="daily" className="mt-4">
+            <DriverDailyLineTrips />
+          </TabsContent>
+
           <TabsContent value="chat" className="mt-4">
             <DriverChatSection />
           </TabsContent>
