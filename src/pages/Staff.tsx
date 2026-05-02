@@ -563,7 +563,7 @@ const Staff = () => {
             <DialogHeader>
               <DialogTitle>{selectedDriver ? t('staff.editDriver') : t('staff.addNewDriver')}</DialogTitle>
             </DialogHeader>
-            <form onSubmit={(e) => { e.preventDefault(); if (!driverForm.full_name || !driverForm.phone || !driverForm.license_number || !driverForm.city) { toast.error(t('staff.fillRequired')); return; } saveDriverMutation.mutate(); }} className="space-y-4">
+            <form onSubmit={(e) => { e.preventDefault(); if (!driverForm.full_name || !driverForm.phone || !driverForm.license_number || !driverForm.city) { toast.error(t('staff.fillRequired')); return; } if (driverForm.categories.length === 0) { toast.error(t('staff.selectAtLeastOne')); return; } saveDriverMutation.mutate(); }} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="driver_name">{t('common.name')} *</Label>
                 <Input id="driver_name" value={driverForm.full_name} onChange={(e) => setDriverForm({ ...driverForm, full_name: e.target.value })} required />
