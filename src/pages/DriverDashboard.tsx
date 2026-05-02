@@ -180,6 +180,10 @@ export default function DriverDashboard() {
               <Bus className="h-4 w-4" />
               {t('driverPortal.routesTab')}
             </TabsTrigger>
+            <TabsTrigger value="daily" className="flex-1 gap-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
+              <Navigation className="h-4 w-4" />
+              Daily Lines
+            </TabsTrigger>
             <TabsTrigger value="chat" className="flex-1 gap-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
               <MessageCircle className="h-4 w-4" />
               {t('driverPortal.chatTab')}
