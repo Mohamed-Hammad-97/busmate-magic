@@ -50,6 +50,7 @@ import Submissions from "./pages/Submissions";
 import Corporate from "./pages/Corporate";
 import SchoolManagement from "./pages/SchoolManagement";
 import DailyLinesAdmin from "./pages/DailyLinesAdmin";
+import DailyLinesTracking from "./pages/DailyLinesTracking";
 const queryClient = new QueryClient();
 
 // Component to handle RTL direction globally
@@ -154,6 +155,7 @@ const App = () => (
                 <Route path="/corporate" element={<ProtectedRoute requireDepartment="operation_companies"><Corporate /></ProtectedRoute>} />
                 <Route path="/school-management" element={<ProtectedRoute><SchoolManagement /></ProtectedRoute>} />
                 <Route path="/daily-lines-admin" element={<ProtectedRoute><DailyLinesAdmin /></ProtectedRoute>} />
+                <Route path="/daily-lines-tracking" element={<ProtectedRoute><DailyLinesTracking /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
               </CityProvider>
