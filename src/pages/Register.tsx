@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { GraduationCap, Building2, User, ArrowLeft, ArrowRight, Sparkles } from 'lucide-react';
+import { GraduationCap, Building2, User, ArrowLeft, ArrowRight, Sparkles, Bus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import seaterLogo from '@/assets/seater-logo.jpg';
 import serviceSchoolBus from '@/assets/service-school-bus.png';
@@ -42,6 +42,16 @@ const Register: React.FC = () => {
       path: '/register/private',
       gradient: 'from-purple-500 to-purple-600',
       bgGlow: 'bg-purple-500/20',
+    },
+    {
+      id: 'daily-line',
+      icon: Bus,
+      vehicleImage: servicePrivateCar,
+      title: 'Daily Line Trip',
+      description: 'Book a seat on a scheduled daily line. Pay cash or via Instapay.',
+      path: '/register/daily-line',
+      gradient: 'from-orange-500 to-amber-500',
+      bgGlow: 'bg-orange-500/20',
     },
   ];
 
