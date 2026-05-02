@@ -275,6 +275,16 @@ const RegisterDailyLine: React.FC = () => {
               <>
                 <CardHeader><CardTitle>Pickup & drop-off</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
+                  <LineRoutePreviewMap
+                    stations={stations as any}
+                    height="240px"
+                    highlightStationId={pickupId || dropoffId || undefined}
+                    onStationClick={(id) => {
+                      // tap on a marker selects it as pickup if not set, otherwise dropoff
+                      if (!pickupId) setPickupId(id);
+                      else if (id !== pickupId) setDropoffId(id);
+                    }}
+                  />
                   <div>
                     <Label>Pickup station</Label>
                     <Select value={pickupId} onValueChange={setPickupId}>
