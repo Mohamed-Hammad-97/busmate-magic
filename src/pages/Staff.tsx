@@ -513,9 +513,13 @@ const Staff = () => {
                               </div>
                             </TableCell>
                             <TableCell>
-                              <Badge variant="secondary" className="text-xs">
-                                {supervisor.belongs_to === 'school' ? t('staff.school') : supervisor.belongs_to === 'corporate' ? t('staff.corporate') : t('staff.both')}
-                              </Badge>
+                              <div className="flex flex-wrap gap-1">
+                                {normalizeCategories(supervisor).map((c) => (
+                                  <Badge key={c} variant="secondary" className="text-xs">
+                                    {c === 'school' ? t('staff.school') : c === 'corporate' ? t('staff.corporate') : t('staff.dailyLines')}
+                                  </Badge>
+                                ))}
+                              </div>
                             </TableCell>
                             <TableCell>
                               {supervisor.is_active ? (
