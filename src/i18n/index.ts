@@ -1127,6 +1127,9 @@ const resources = {
         school: 'مدارس',
         corporate: 'شركات',
         both: 'الكل',
+        dailyLines: 'الخطوط اليومية',
+        categories: 'الفئات',
+        selectAtLeastOne: 'اختر فئة واحدة على الأقل',
       },
       // School Management
       schoolMgmt: {
