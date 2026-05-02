@@ -1,10 +1,11 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { GoogleMap, Marker, Autocomplete } from '@react-google-maps/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { MapPin, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useGoogleMaps } from '@/components/maps/GoogleMapsProvider';
+import { attachAutocompleteEnterFix } from '@/lib/placesEnterHelper';
 
 export interface LocationPickerMapProps {
   initialLat?: number;
