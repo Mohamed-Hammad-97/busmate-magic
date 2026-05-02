@@ -24,6 +24,7 @@ import Register from "./pages/Register";
 import RegisterStudent from "./pages/RegisterStudent";
 import RegisterCorporate from "./pages/RegisterCorporate";
 import RegisterPrivate from "./pages/RegisterPrivate";
+import RegisterDailyLine from "./pages/RegisterDailyLine";
 import ServiceDetails from "./pages/ServiceDetails";
 import Customers from "./pages/Customers";
 import RoutesPage from "./pages/Routes";
@@ -76,6 +77,8 @@ const App = () => (
           <Route path="/register/student" element={<RegisterStudent />} />
           <Route path="/register/corporate" element={<RegisterCorporate />} />
           <Route path="/register/private" element={<RegisterPrivate />} />
+          <Route path="/register/daily-line" element={<RegisterDailyLine />} />
+          <Route path="/daily-lines" element={<RegisterDailyLine />} />
           <Route path="/services/:serviceType" element={<ServiceDetails />} />
           
           
