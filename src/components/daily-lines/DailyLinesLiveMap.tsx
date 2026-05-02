@@ -2,7 +2,6 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { GoogleMap, Marker } from "@react-google-maps/api";
 import { GoogleMapsProvider, useGoogleMaps } from "@/components/maps/GoogleMapsProvider";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Bus, Phone, Clock, X, Navigation } from "lucide-react";
 import { format } from "date-fns";
