@@ -20,6 +20,7 @@ export default function DailyLineTripTracking() {
   const navigate = useNavigate();
   const { bookingId } = useParams<{ bookingId: string }>();
   const { user, parentAccount, isLoading } = useParentAuth();
+  const qc = useQueryClient();
 
   useEffect(() => {
     if (!isLoading && !user) {
