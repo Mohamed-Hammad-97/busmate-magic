@@ -623,7 +623,7 @@ const Staff = () => {
             <DialogHeader>
               <DialogTitle>{selectedSupervisor ? t('staff.editSupervisor') : t('staff.addNewSupervisor')}</DialogTitle>
             </DialogHeader>
-            <form onSubmit={(e) => { e.preventDefault(); if (!supervisorForm.full_name || !supervisorForm.phone || !supervisorForm.city) { toast.error(t('staff.fillRequired')); return; } saveSupervisorMutation.mutate(); }} className="space-y-4">
+            <form onSubmit={(e) => { e.preventDefault(); if (!supervisorForm.full_name || !supervisorForm.phone || !supervisorForm.city) { toast.error(t('staff.fillRequired')); return; } if (supervisorForm.categories.length === 0) { toast.error(t('staff.selectAtLeastOne')); return; } saveSupervisorMutation.mutate(); }} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="supervisor_name">{t('common.name')} *</Label>
                 <Input id="supervisor_name" value={supervisorForm.full_name} onChange={(e) => setSupervisorForm({ ...supervisorForm, full_name: e.target.value })} required />
