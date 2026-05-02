@@ -53,6 +53,18 @@ const Staff = () => {
     alexandria: ['alexandria', 'الإسكندرية', 'اسكندرية', 'إسكندرية', 'Alexandria'],
   };
 
+  type Category = 'school' | 'corporate' | 'daily_lines';
+  const ALL_CATEGORIES: Category[] = ['school', 'corporate', 'daily_lines'];
+
+  // Derive legacy belongs_to from categories array (for back-compat with existing queries)
+  const deriveBelongsTo = (cats: Category[]): 'school' | 'corporate' | 'both' => {
+    const hasSchool = cats.includes('school');
+    const hasCorp = cats.includes('corporate');
+    if (hasSchool && hasCorp) return 'both';
+    if (hasCorp) return 'corporate';
+    return 'school';
+  };
+
   const [isDriverDialogOpen, setIsDriverDialogOpen] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState<any>(null);
   const [driverForm, setDriverForm] = useState({
@@ -61,7 +73,7 @@ const Staff = () => {
     license_number: '',
     city: 'Cairo',
     is_active: true,
-    belongs_to: 'school' as 'school' | 'corporate' | 'both',
+    categories: ['school'] as Category[],
   });
 
   const [isSupervisorDialogOpen, setIsSupervisorDialogOpen] = useState(false);
@@ -71,7 +83,7 @@ const Staff = () => {
     phone: '',
     city: 'Cairo',
     is_active: true,
-    belongs_to: 'school' as 'school' | 'corporate' | 'both',
+    categories: ['school'] as Category[],
   });
 
   const { data: allDrivers = [], isLoading: driversLoading } = useQuery({
