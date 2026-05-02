@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Bus, Navigation, Users, Clock, Calendar, MapPin, ArrowUpCircle, ArrowDownCircle, Phone, CheckCircle, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
+import DailyLinesLiveMap from "@/components/daily-lines/DailyLinesLiveMap";
 
 export default function DailyLinesTracking() {
   const [openTripId, setOpenTripId] = useState<string | null>(null);
