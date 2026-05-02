@@ -38,7 +38,7 @@ export default function DailyLinesAdmin() {
     <DashboardLayout>
       <PageHero
         title={isRtl ? "الخطوط اليومية" : "Daily Lines"}
-        subtitle={isRtl ? "إدارة الخطوط، المحطات، الرحلات، والحجوزات" : "Manage lines, stations, trips, bookings"}
+        description={isRtl ? "إدارة الخطوط، المحطات، الرحلات، والحجوزات" : "Manage lines, stations, trips, bookings"}
         icon={Bus}
       />
       <div className="container mx-auto p-4">
