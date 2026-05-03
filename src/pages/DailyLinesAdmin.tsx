@@ -608,3 +608,79 @@ function PromoDialog({ editing, onSubmit, saving, isRtl }: any) {
     </DialogContent>
   );
 }
+
+/* ============================ PAYMENT SETTINGS ============================ */
+function SettingsTab({ isRtl }: { isRtl: boolean }) {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  const [form, setForm] = useState<Record<string, string>>({
+    instapay_account_name: "",
+    instapay_ipa: "",
+    instapay_bank_name: "",
+    instapay_instructions: "",
+    whatsapp_number: "",
+  });
+  const [saving, setSaving] = useState(false);
+
+  const { data: rows } = useQuery({
+    queryKey: ["dla-settings"],
+    queryFn: async () => {
+      const { data } = await supabase.from("daily_line_settings").select("key, value");
+      return data || [];
+    },
+  });
+
+  useEffect(() => {
+    if (!rows) return;
+    const map: Record<string, string> = { ...form };
+    rows.forEach((r: { key: string; value: string | null }) => { map[r.key] = r.value ?? ""; });
+    setForm(map);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows]);
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      const upserts = Object.entries(form).map(([key, value]) => ({ key, value }));
+      const { error } = await supabase.from("daily_line_settings").upsert(upserts, { onConflict: "key" });
+      if (error) throw error;
+      qc.invalidateQueries({ queryKey: ["dla-settings"] });
+      toast({ title: isRtl ? "تم الحفظ" : "Saved" });
+    } catch (e) {
+      toast({ title: isRtl ? "خطأ" : "Error", description: (e as Error).message, variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader><CardTitle>{isRtl ? "بيانات Instapay" : "Instapay Bank Details"}</CardTitle></CardHeader>
+      <CardContent className="space-y-4 max-w-2xl">
+        <div>
+          <Label>{isRtl ? "اسم صاحب الحساب" : "Account holder name"}</Label>
+          <Input value={form.instapay_account_name} onChange={(e) => setForm({ ...form, instapay_account_name: e.target.value })} placeholder="Seater Co." />
+        </div>
+        <div>
+          <Label>{isRtl ? "عنوان Instapay (IPA)" : "Instapay address (IPA)"}</Label>
+          <Input value={form.instapay_ipa} onChange={(e) => setForm({ ...form, instapay_ipa: e.target.value })} placeholder="seater@instapay" />
+        </div>
+        <div>
+          <Label>{isRtl ? "اسم البنك" : "Bank name"}</Label>
+          <Input value={form.instapay_bank_name} onChange={(e) => setForm({ ...form, instapay_bank_name: e.target.value })} placeholder="CIB" />
+        </div>
+        <div>
+          <Label>{isRtl ? "تعليمات إضافية" : "Additional instructions"}</Label>
+          <Textarea value={form.instapay_instructions} onChange={(e) => setForm({ ...form, instapay_instructions: e.target.value })} rows={3} />
+        </div>
+        <div>
+          <Label>{isRtl ? "رقم واتساب لإرسال الإيصال" : "WhatsApp number for receipts"}</Label>
+          <Input value={form.whatsapp_number} onChange={(e) => setForm({ ...form, whatsapp_number: e.target.value })} placeholder="201xxxxxxxxx" />
+        </div>
+        <Button onClick={save} disabled={saving}>
+          {saving && <Loader2 className="h-4 w-4 animate-spin mr-1" />}{isRtl ? "حفظ" : "Save"}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
