@@ -23,7 +23,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import {
   Bus, MapPin, CalendarDays, Sparkles, ClipboardList, Plus, Trash2,
-  Pencil, Loader2, CheckCircle2, XCircle, Eye,
+  Pencil, Loader2, CheckCircle2, XCircle, Eye, CreditCard,
 } from "lucide-react";
 import { format } from "date-fns";
 import LineMapEditor from "@/components/daily-lines/LineMapEditor";
