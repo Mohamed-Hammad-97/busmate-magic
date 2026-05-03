@@ -23,7 +23,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import {
   Bus, MapPin, CalendarDays, Sparkles, ClipboardList, Plus, Trash2,
-  Pencil, Loader2, CheckCircle2, XCircle, Eye,
+  Pencil, Loader2, CheckCircle2, XCircle, Eye, CreditCard,
 } from "lucide-react";
 import { format } from "date-fns";
 import LineMapEditor from "@/components/daily-lines/LineMapEditor";
@@ -45,16 +45,18 @@ export default function DailyLinesAdmin() {
       />
       <div className="container mx-auto p-4">
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="lines"><MapPin className="h-4 w-4 mr-1" />{isRtl ? "الخطوط" : "Lines"}</TabsTrigger>
             <TabsTrigger value="trips"><CalendarDays className="h-4 w-4 mr-1" />{isRtl ? "الرحلات" : "Trips"}</TabsTrigger>
             <TabsTrigger value="bookings"><ClipboardList className="h-4 w-4 mr-1" />{isRtl ? "الحجوزات" : "Bookings"}</TabsTrigger>
             <TabsTrigger value="promocodes"><Sparkles className="h-4 w-4 mr-1" />{isRtl ? "أكواد خصم" : "Promocodes"}</TabsTrigger>
+            <TabsTrigger value="settings"><CreditCard className="h-4 w-4 mr-1" />{isRtl ? "إعدادات الدفع" : "Payment"}</TabsTrigger>
           </TabsList>
           <TabsContent value="lines" className="mt-4"><LinesTab isRtl={isRtl} /></TabsContent>
           <TabsContent value="trips" className="mt-4"><TripsTab isRtl={isRtl} /></TabsContent>
           <TabsContent value="bookings" className="mt-4"><BookingsTab isRtl={isRtl} /></TabsContent>
           <TabsContent value="promocodes" className="mt-4"><PromocodesTab isRtl={isRtl} /></TabsContent>
+          <TabsContent value="settings" className="mt-4"><SettingsTab isRtl={isRtl} /></TabsContent>
         </Tabs>
       </div>
     </DashboardLayout>
@@ -604,5 +606,81 @@ function PromoDialog({ editing, onSubmit, saving, isRtl }: any) {
         </Button>
       </DialogFooter>
     </DialogContent>
+  );
+}
+
+/* ============================ PAYMENT SETTINGS ============================ */
+function SettingsTab({ isRtl }: { isRtl: boolean }) {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  const [form, setForm] = useState<Record<string, string>>({
+    instapay_account_name: "",
+    instapay_ipa: "",
+    instapay_bank_name: "",
+    instapay_instructions: "",
+    whatsapp_number: "",
+  });
+  const [saving, setSaving] = useState(false);
+
+  const { data: rows } = useQuery({
+    queryKey: ["dla-settings"],
+    queryFn: async () => {
+      const { data } = await supabase.from("daily_line_settings").select("key, value");
+      return data || [];
+    },
+  });
+
+  useEffect(() => {
+    if (!rows) return;
+    const map: Record<string, string> = { ...form };
+    rows.forEach((r: { key: string; value: string | null }) => { map[r.key] = r.value ?? ""; });
+    setForm(map);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows]);
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      const upserts = Object.entries(form).map(([key, value]) => ({ key, value }));
+      const { error } = await supabase.from("daily_line_settings").upsert(upserts, { onConflict: "key" });
+      if (error) throw error;
+      qc.invalidateQueries({ queryKey: ["dla-settings"] });
+      toast({ title: isRtl ? "تم الحفظ" : "Saved" });
+    } catch (e) {
+      toast({ title: isRtl ? "خطأ" : "Error", description: (e as Error).message, variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader><CardTitle>{isRtl ? "بيانات Instapay" : "Instapay Bank Details"}</CardTitle></CardHeader>
+      <CardContent className="space-y-4 max-w-2xl">
+        <div>
+          <Label>{isRtl ? "اسم صاحب الحساب" : "Account holder name"}</Label>
+          <Input value={form.instapay_account_name} onChange={(e) => setForm({ ...form, instapay_account_name: e.target.value })} placeholder="Seater Co." />
+        </div>
+        <div>
+          <Label>{isRtl ? "عنوان Instapay (IPA)" : "Instapay address (IPA)"}</Label>
+          <Input value={form.instapay_ipa} onChange={(e) => setForm({ ...form, instapay_ipa: e.target.value })} placeholder="seater@instapay" />
+        </div>
+        <div>
+          <Label>{isRtl ? "اسم البنك" : "Bank name"}</Label>
+          <Input value={form.instapay_bank_name} onChange={(e) => setForm({ ...form, instapay_bank_name: e.target.value })} placeholder="CIB" />
+        </div>
+        <div>
+          <Label>{isRtl ? "تعليمات إضافية" : "Additional instructions"}</Label>
+          <Textarea value={form.instapay_instructions} onChange={(e) => setForm({ ...form, instapay_instructions: e.target.value })} rows={3} />
+        </div>
+        <div>
+          <Label>{isRtl ? "رقم واتساب لإرسال الإيصال" : "WhatsApp number for receipts"}</Label>
+          <Input value={form.whatsapp_number} onChange={(e) => setForm({ ...form, whatsapp_number: e.target.value })} placeholder="201xxxxxxxxx" />
+        </div>
+        <Button onClick={save} disabled={saving}>
+          {saving && <Loader2 className="h-4 w-4 animate-spin mr-1" />}{isRtl ? "حفظ" : "Save"}
+        </Button>
+      </CardContent>
+    </Card>
   );
 }

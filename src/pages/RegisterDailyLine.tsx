@@ -82,7 +82,12 @@ const RegisterDailyLine: React.FC = () => {
       supabase.from('daily_line_trips').select('*').eq('line_id', lineId).eq('status', 'scheduled').gte('trip_date', today).order('trip_date').order('departure_time'),
     ]).then(([{ data: st }, { data: tr }]) => {
       setStations(st ?? []);
-      setTrips(tr ?? []);
+      const now = new Date();
+      const upcoming = (tr ?? []).filter((t: Trip) => {
+        const dt = new Date(`${t.trip_date}T${t.departure_time}`);
+        return dt.getTime() > now.getTime();
+      });
+      setTrips(upcoming);
     });
   }, [lineId]);
 
