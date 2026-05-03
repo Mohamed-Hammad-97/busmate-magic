@@ -45,16 +45,18 @@ export default function DailyLinesAdmin() {
       />
       <div className="container mx-auto p-4">
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="lines"><MapPin className="h-4 w-4 mr-1" />{isRtl ? "الخطوط" : "Lines"}</TabsTrigger>
             <TabsTrigger value="trips"><CalendarDays className="h-4 w-4 mr-1" />{isRtl ? "الرحلات" : "Trips"}</TabsTrigger>
             <TabsTrigger value="bookings"><ClipboardList className="h-4 w-4 mr-1" />{isRtl ? "الحجوزات" : "Bookings"}</TabsTrigger>
             <TabsTrigger value="promocodes"><Sparkles className="h-4 w-4 mr-1" />{isRtl ? "أكواد خصم" : "Promocodes"}</TabsTrigger>
+            <TabsTrigger value="settings"><CreditCard className="h-4 w-4 mr-1" />{isRtl ? "إعدادات الدفع" : "Payment"}</TabsTrigger>
           </TabsList>
           <TabsContent value="lines" className="mt-4"><LinesTab isRtl={isRtl} /></TabsContent>
           <TabsContent value="trips" className="mt-4"><TripsTab isRtl={isRtl} /></TabsContent>
           <TabsContent value="bookings" className="mt-4"><BookingsTab isRtl={isRtl} /></TabsContent>
           <TabsContent value="promocodes" className="mt-4"><PromocodesTab isRtl={isRtl} /></TabsContent>
+          <TabsContent value="settings" className="mt-4"><SettingsTab isRtl={isRtl} /></TabsContent>
         </Tabs>
       </div>
     </DashboardLayout>
