@@ -369,6 +369,45 @@ const Registrations: React.FC = () => {
           </div>
         </div>
 
+        {/* Active / Archive Tabs */}
+        <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as 'active' | 'archive')} className="animate-fade-in" style={{ animationDelay: '0.15s' }}>
+          <TabsList>
+            <TabsTrigger value="active" className="gap-2">
+              <ClipboardList className="h-4 w-4" />
+              Active
+              <Badge variant="secondary" className="ml-1">{cityFilteredRegistrations.filter((r) => r.status !== 'archived').length}</Badge>
+            </TabsTrigger>
+            <TabsTrigger value="archive" className="gap-2">
+              <Archive className="h-4 w-4" />
+              Archive
+              <Badge variant="secondary" className="ml-1">{archivedRegistrations.length}</Badge>
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        {/* Archive year pills */}
+        {mainTab === 'archive' && archiveYears.length > 0 && (
+          <div className="flex flex-wrap gap-2 animate-fade-in">
+            <button
+              type="button"
+              onClick={() => setArchiveYear('all')}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${archiveYear === 'all' ? 'bg-primary text-primary-foreground border-primary' : 'bg-card text-foreground border-border/50 hover:bg-muted/50'}`}
+            >
+              All Years <span className="ml-1 opacity-70">({archivedRegistrations.length})</span>
+            </button>
+            {archiveYears.map((y) => (
+              <button
+                key={y.year}
+                type="button"
+                onClick={() => setArchiveYear(y.year)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${archiveYear === y.year ? 'bg-primary text-primary-foreground border-primary' : 'bg-card text-foreground border-border/50 hover:bg-muted/50'}`}
+              >
+                {y.year} <span className="ml-1 opacity-70">({y.count})</span>
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Search & Filter Bar */}
         <div className="flex flex-col sm:flex-row gap-3 animate-fade-in" style={{ animationDelay: '0.2s' }}>
           <div className="relative flex-1">
@@ -380,18 +419,19 @@ const Registrations: React.FC = () => {
               className="pl-10 h-11 bg-card border-border/50 focus:border-primary/50 rounded-xl transition-all"
             />
           </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full sm:w-[160px] h-11 bg-card border-border/50 rounded-xl">
-              <SelectValue placeholder="All Status" />
-            </SelectTrigger>
-            <SelectContent className="bg-card border border-border z-50 rounded-xl">
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="pending_fees">Pending Fees</SelectItem>
-              <SelectItem value="complete">Complete</SelectItem>
-              <SelectItem value="cancelled">Cancelled</SelectItem>
-              <SelectItem value="archived">Archived</SelectItem>
-            </SelectContent>
-          </Select>
+          {mainTab === 'active' && (
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full sm:w-[160px] h-11 bg-card border-border/50 rounded-xl">
+                <SelectValue placeholder="All Status" />
+              </SelectTrigger>
+              <SelectContent className="bg-card border border-border z-50 rounded-xl">
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="pending_fees">Pending Fees</SelectItem>
+                <SelectItem value="complete">Complete</SelectItem>
+                <SelectItem value="cancelled">Cancelled</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
           <Select value={schoolFilter} onValueChange={setSchoolFilter}>
             <SelectTrigger className="w-full sm:w-[200px] h-11 bg-card border-border/50 rounded-xl">
               <SelectValue placeholder="All Schools" />
@@ -412,14 +452,19 @@ const Registrations: React.FC = () => {
           <div className="px-6 py-4 border-b border-border/50 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-1.5 rounded-lg bg-primary/10">
-                <ClipboardList className="h-4 w-4 text-primary" />
+                {mainTab === 'archive' ? <Archive className="h-4 w-4 text-primary" /> : <ClipboardList className="h-4 w-4 text-primary" />}
               </div>
               <div>
-                <h2 className="text-sm font-semibold text-foreground">All Registrations</h2>
+                <h2 className="text-sm font-semibold text-foreground">
+                  {mainTab === 'archive'
+                    ? archiveYear === 'all' ? 'Archived Registrations' : `Archived Registrations · ${archiveYear}`
+                    : 'All Registrations'}
+                </h2>
                 <p className="text-xs text-muted-foreground">{filteredRegistrations.length} records found</p>
               </div>
             </div>
           </div>
+
 
           {isLoading ? (
             <div className="p-16 text-center">
