@@ -23,10 +23,10 @@ export const LanguageSwitcher: React.FC = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2 px-3">
-          <Globe className="h-4 w-4" />
+        <Button variant="outline" size="sm" className="gap-2 px-3" aria-label={`Change language, current language ${currentLabel}`}>
+          <Globe className="h-4 w-4" aria-hidden="true" />
           <span className="hidden sm:inline">{currentLabel}</span>
-          <ChevronDown className="h-3 w-3 opacity-50" />
+          <ChevronDown className="h-3 w-3 opacity-50" aria-hidden="true" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-[140px]">

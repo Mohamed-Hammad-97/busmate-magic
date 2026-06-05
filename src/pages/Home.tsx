@@ -303,7 +303,7 @@ const Home = () => {
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 group">
             <div className="relative">
-              <img src={seaterLogo} alt="Seater" className="h-11 w-auto rounded-xl shadow-md transition-transform duration-300 group-hover:scale-105" />
+              <img src={seaterLogo} alt="Seater company logo" className="h-11 w-auto rounded-xl shadow-md transition-transform duration-300 group-hover:scale-105" />
               <div className="absolute inset-0 rounded-xl bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
             </div>
             <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/80">Seater</span>
@@ -322,33 +322,33 @@ const Home = () => {
             {(hasSetting("social_facebook") || hasSetting("social_twitter") || hasSetting("social_instagram") || hasSetting("social_linkedin") || hasSetting("social_youtube") || hasSetting("social_tiktok")) && (
               <div className="hidden sm:flex items-center gap-2">
                 {hasSetting("social_facebook") && (
-                  <a href={getSetting("social_facebook")} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors p-1.5 rounded-lg hover:bg-primary/10">
-                    <Facebook className="h-4 w-4" />
+                  <a href={getSetting("social_facebook")} target="_blank" rel="noopener noreferrer" aria-label="Seater on Facebook" className="text-muted-foreground hover:text-primary transition-colors p-1.5 rounded-lg hover:bg-primary/10">
+                    <Facebook className="h-4 w-4" aria-hidden="true" />
                   </a>
                 )}
                 {hasSetting("social_twitter") && (
-                  <a href={getSetting("social_twitter")} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors p-1.5 rounded-lg hover:bg-primary/10">
-                    <Twitter className="h-4 w-4" />
+                  <a href={getSetting("social_twitter")} target="_blank" rel="noopener noreferrer" aria-label="Seater on Twitter" className="text-muted-foreground hover:text-primary transition-colors p-1.5 rounded-lg hover:bg-primary/10">
+                    <Twitter className="h-4 w-4" aria-hidden="true" />
                   </a>
                 )}
                 {hasSetting("social_instagram") && (
-                  <a href={getSetting("social_instagram")} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors p-1.5 rounded-lg hover:bg-primary/10">
-                    <Instagram className="h-4 w-4" />
+                  <a href={getSetting("social_instagram")} target="_blank" rel="noopener noreferrer" aria-label="Seater on Instagram" className="text-muted-foreground hover:text-primary transition-colors p-1.5 rounded-lg hover:bg-primary/10">
+                    <Instagram className="h-4 w-4" aria-hidden="true" />
                   </a>
                 )}
                 {hasSetting("social_linkedin") && (
-                  <a href={getSetting("social_linkedin")} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors p-1.5 rounded-lg hover:bg-primary/10">
-                    <Linkedin className="h-4 w-4" />
+                  <a href={getSetting("social_linkedin")} target="_blank" rel="noopener noreferrer" aria-label="Seater on LinkedIn" className="text-muted-foreground hover:text-primary transition-colors p-1.5 rounded-lg hover:bg-primary/10">
+                    <Linkedin className="h-4 w-4" aria-hidden="true" />
                   </a>
                 )}
                 {hasSetting("social_youtube") && (
-                  <a href={getSetting("social_youtube")} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors p-1.5 rounded-lg hover:bg-primary/10">
-                    <Youtube className="h-4 w-4" />
+                  <a href={getSetting("social_youtube")} target="_blank" rel="noopener noreferrer" aria-label="Seater on YouTube" className="text-muted-foreground hover:text-primary transition-colors p-1.5 rounded-lg hover:bg-primary/10">
+                    <Youtube className="h-4 w-4" aria-hidden="true" />
                   </a>
                 )}
                 {hasSetting("social_tiktok") && (
-                  <a href={getSetting("social_tiktok")} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors p-1.5 rounded-lg hover:bg-primary/10">
-                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                  <a href={getSetting("social_tiktok")} target="_blank" rel="noopener noreferrer" aria-label="Seater on TikTok" className="text-muted-foreground hover:text-primary transition-colors p-1.5 rounded-lg hover:bg-primary/10">
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                       <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
                     </svg>
                   </a>
@@ -642,7 +642,7 @@ const Home = () => {
                   className="group aspect-[3/2] bg-card rounded-2xl border border-border/50 flex items-center justify-center p-6 hover:shadow-xl hover:border-primary/30 hover:-translate-y-1 transition-all duration-300"
                 >
                   {partner.logo_url ? (
-                    <img src={partner.logo_url} alt={partner.name} className="max-h-full max-w-full object-contain grayscale group-hover:grayscale-0 transition-all duration-300" />
+                    <img src={partner.logo_url} alt={`${partner.name} partner logo`} className="max-h-full max-w-full object-contain grayscale group-hover:grayscale-0 transition-all duration-300" />
                   ) : (
                     <div className="text-center">
                       <Building2 className="h-10 w-10 text-muted-foreground/30 mx-auto mb-2 group-hover:text-primary transition-colors" />
@@ -785,7 +785,7 @@ const Home = () => {
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-12">
             <div className="space-y-6">
               <div className="flex items-center gap-3">
-                <img src={seaterLogo} alt="Seater" className="h-12 w-auto rounded-xl shadow-lg" />
+                <img src={seaterLogo} alt="Seater company logo" className="h-12 w-auto rounded-xl shadow-lg" />
                 <span className="text-2xl font-bold text-background">Seater</span>
               </div>
               <p className="text-background/70 leading-relaxed">
@@ -795,28 +795,28 @@ const Home = () => {
               {(hasSetting("social_facebook") || hasSetting("social_twitter") || hasSetting("social_instagram") || hasSetting("social_linkedin") || hasSetting("social_youtube") || hasSetting("social_tiktok")) && (
                 <div className="flex items-center gap-2 pt-2">
                   {hasSetting("social_facebook") && (
-                    <a href={getSetting("social_facebook")} target="_blank" rel="noopener noreferrer" className="p-2.5 rounded-xl bg-background/10 hover:bg-primary hover:text-primary-foreground transition-all duration-300">
-                      <Facebook className="h-5 w-5" />
+                    <a href={getSetting("social_facebook")} target="_blank" rel="noopener noreferrer" aria-label="Seater on Facebook" className="p-2.5 rounded-xl bg-background/10 hover:bg-primary hover:text-primary-foreground transition-all duration-300">
+                      <Facebook className="h-5 w-5" aria-hidden="true" />
                     </a>
                   )}
                   {hasSetting("social_twitter") && (
-                    <a href={getSetting("social_twitter")} target="_blank" rel="noopener noreferrer" className="p-2.5 rounded-xl bg-background/10 hover:bg-primary hover:text-primary-foreground transition-all duration-300">
-                      <Twitter className="h-5 w-5" />
+                    <a href={getSetting("social_twitter")} target="_blank" rel="noopener noreferrer" aria-label="Seater on Twitter" className="p-2.5 rounded-xl bg-background/10 hover:bg-primary hover:text-primary-foreground transition-all duration-300">
+                      <Twitter className="h-5 w-5" aria-hidden="true" />
                     </a>
                   )}
                   {hasSetting("social_instagram") && (
-                    <a href={getSetting("social_instagram")} target="_blank" rel="noopener noreferrer" className="p-2.5 rounded-xl bg-background/10 hover:bg-primary hover:text-primary-foreground transition-all duration-300">
-                      <Instagram className="h-5 w-5" />
+                    <a href={getSetting("social_instagram")} target="_blank" rel="noopener noreferrer" aria-label="Seater on Instagram" className="p-2.5 rounded-xl bg-background/10 hover:bg-primary hover:text-primary-foreground transition-all duration-300">
+                      <Instagram className="h-5 w-5" aria-hidden="true" />
                     </a>
                   )}
                   {hasSetting("social_linkedin") && (
-                    <a href={getSetting("social_linkedin")} target="_blank" rel="noopener noreferrer" className="p-2.5 rounded-xl bg-background/10 hover:bg-primary hover:text-primary-foreground transition-all duration-300">
-                      <Linkedin className="h-5 w-5" />
+                    <a href={getSetting("social_linkedin")} target="_blank" rel="noopener noreferrer" aria-label="Seater on LinkedIn" className="p-2.5 rounded-xl bg-background/10 hover:bg-primary hover:text-primary-foreground transition-all duration-300">
+                      <Linkedin className="h-5 w-5" aria-hidden="true" />
                     </a>
                   )}
                   {hasSetting("social_youtube") && (
-                    <a href={getSetting("social_youtube")} target="_blank" rel="noopener noreferrer" className="p-2.5 rounded-xl bg-background/10 hover:bg-primary hover:text-primary-foreground transition-all duration-300">
-                      <Youtube className="h-5 w-5" />
+                    <a href={getSetting("social_youtube")} target="_blank" rel="noopener noreferrer" aria-label="Seater on YouTube" className="p-2.5 rounded-xl bg-background/10 hover:bg-primary hover:text-primary-foreground transition-all duration-300">
+                      <Youtube className="h-5 w-5" aria-hidden="true" />
                     </a>
                   )}
                   {hasSetting("social_tiktok") && (
