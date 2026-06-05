@@ -55,14 +55,13 @@ const RegisterDailyLine: React.FC = () => {
 
   useEffect(() => {
     (async () => {
-      const [{ data: c }, { data: s }] = await Promise.all([
+      const [{ data: c }, settingsResp] = await Promise.all([
         supabase.from('cities').select('id, name').eq('is_active', true).order('name'),
-        supabase.from('daily_line_settings').select('key, value'),
+        supabase.functions.invoke('get-daily-line-payment-info'),
       ]);
       setCities(c ?? []);
-      const map: Record<string, string> = {};
-      (s ?? []).forEach((row: { key: string; value: string | null }) => { map[row.key] = row.value ?? ''; });
-      setSettings(map);
+      const payload = (settingsResp?.data ?? {}) as { settings?: Record<string, string> };
+      setSettings(payload.settings ?? {});
     })();
   }, []);
 
