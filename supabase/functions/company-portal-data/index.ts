@@ -126,9 +126,10 @@ Deno.serve(async (req) => {
 
     switch (action) {
       case "get-lines": {
+        // SECURITY: explicitly omit driver_rate_per_shift (internal Seater cost) from corporate response
         const { data: lines, error } = await supabase
           .from("company_lines")
-          .select("*, drivers(full_name, phone), supervisors(full_name, phone)")
+          .select("id, company_id, name, number_of_shifts, shift_times, route_details, price_per_shift, driver_id, supervisor_id, notes, is_active, created_at, updated_at, drivers(full_name, phone), supervisors(full_name, phone)")
           .eq("company_id", companyId)
           .order("name");
         if (error) throw error;
@@ -279,9 +280,10 @@ Deno.serve(async (req) => {
             .in("id", driverIds);
           drivers = data || [];
 
+          // SECURITY: bank fields are internal payroll PII, never exposed to corporate portal
           const { data: profiles } = await supabase
             .from("staff_profiles")
-            .select("driver_id, bank_name, bank_account_name, bank_account_number, bank_iban, id_document_url, license_document_url, contract_document_url")
+            .select("driver_id, id_document_url, license_document_url, contract_document_url")
             .in("driver_id", driverIds);
           staffProfiles.push(...(profiles || []));
         }
@@ -295,7 +297,7 @@ Deno.serve(async (req) => {
 
           const { data: profiles } = await supabase
             .from("staff_profiles")
-            .select("supervisor_id, bank_name, bank_account_name, bank_account_number, bank_iban, id_document_url, license_document_url, contract_document_url")
+            .select("supervisor_id, id_document_url, license_document_url, contract_document_url")
             .in("supervisor_id", supervisorIds);
           staffProfiles.push(...(profiles || []));
         }
