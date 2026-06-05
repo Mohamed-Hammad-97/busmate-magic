@@ -13,6 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import {
   Select,
@@ -66,6 +67,8 @@ const Registrations: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [schoolFilter, setSchoolFilter] = useState<string>('all');
+  const [mainTab, setMainTab] = useState<'active' | 'archive'>('active');
+  const [archiveYear, setArchiveYear] = useState<string>('all');
   const [deleteTarget, setDeleteTarget] = useState<Registration | null>(null);
   const [deleteMode, setDeleteMode] = useState<'deactivate' | 'delete'>('deactivate');
   const { toast } = useToast();
@@ -124,14 +127,40 @@ const Registrations: React.FC = () => {
     return Object.entries(schoolsMap).map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
   }, [cityFilteredRegistrations]);
 
+  // Archive bucket: all archived registrations, grouped by year (from updated_at)
+  const archivedRegistrations = useMemo(
+    () => cityFilteredRegistrations.filter((r) => r.status === 'archived'),
+    [cityFilteredRegistrations]
+  );
+
+  const archiveYears = useMemo(() => {
+    const counts: Record<string, number> = {};
+    archivedRegistrations.forEach((r) => {
+      const y = String(new Date(r.updated_at || r.created_at).getFullYear());
+      counts[y] = (counts[y] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .map(([year, count]) => ({ year, count }))
+      .sort((a, b) => Number(b.year) - Number(a.year));
+  }, [archivedRegistrations]);
+
   const filteredRegistrations = cityFilteredRegistrations.filter((reg) => {
     const matchesSearch =
       reg.student_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       reg.parent_accounts?.parent_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       reg.parent_accounts?.national_id?.includes(searchQuery) ||
       reg.schools?.name?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' ? reg.status !== 'archived' : reg.status === statusFilter;
     const matchesSchool = schoolFilter === 'all' || reg.school_id === schoolFilter;
+
+    if (mainTab === 'archive') {
+      if (reg.status !== 'archived') return false;
+      const y = String(new Date(reg.updated_at || reg.created_at).getFullYear());
+      const matchesYear = archiveYear === 'all' || y === archiveYear;
+      return matchesSearch && matchesSchool && matchesYear;
+    }
+
+    const matchesStatus =
+      statusFilter === 'all' ? reg.status !== 'archived' : reg.status === statusFilter;
     return matchesSearch && matchesStatus && matchesSchool;
   });
 
