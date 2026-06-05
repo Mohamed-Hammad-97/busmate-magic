@@ -1,0 +1,17 @@
+# Seater
+
+> Smart school, corporate, and private transportation with GPS live tracking, professional drivers, and flexible scheduling.
+
+Seater operates safe, technology-driven transportation services for students, corporate employees, and private customers. Customers can register, book daily-line trips, and track vehicles in real time.
+
+## Pages
+
+- [Home](/): Overview of Seater's transportation services and offerings.
+- [Register](/register): Choose a service type to get started.
+- [Student Registration](/register/student): Sign up children for school bus transportation.
+- [Corporate Registration](/register/corporate): Request corporate shuttle services for employees.
+- [Private Registration](/register/private): Book private transportation.
+- [Daily Line Booking](/register/daily-line): Browse and book scheduled daily-line trips.
+- [Student Service](/services/student): Details about the school bus service.
+- [Corporate Service](/services/corporate): Details about the corporate shuttle service.
+- [Private Service](/services/private): Details about private transportation.
