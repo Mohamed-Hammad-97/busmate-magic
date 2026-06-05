@@ -13,6 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import {
   Select,
@@ -66,6 +67,8 @@ const Registrations: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [schoolFilter, setSchoolFilter] = useState<string>('all');
+  const [mainTab, setMainTab] = useState<'active' | 'archive'>('active');
+  const [archiveYear, setArchiveYear] = useState<string>('all');
   const [deleteTarget, setDeleteTarget] = useState<Registration | null>(null);
   const [deleteMode, setDeleteMode] = useState<'deactivate' | 'delete'>('deactivate');
   const { toast } = useToast();
@@ -124,14 +127,40 @@ const Registrations: React.FC = () => {
     return Object.entries(schoolsMap).map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
   }, [cityFilteredRegistrations]);
 
+  // Archive bucket: all archived registrations, grouped by year (from updated_at)
+  const archivedRegistrations = useMemo(
+    () => cityFilteredRegistrations.filter((r) => r.status === 'archived'),
+    [cityFilteredRegistrations]
+  );
+
+  const archiveYears = useMemo(() => {
+    const counts: Record<string, number> = {};
+    archivedRegistrations.forEach((r) => {
+      const y = String(new Date(r.updated_at || r.created_at).getFullYear());
+      counts[y] = (counts[y] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .map(([year, count]) => ({ year, count }))
+      .sort((a, b) => Number(b.year) - Number(a.year));
+  }, [archivedRegistrations]);
+
   const filteredRegistrations = cityFilteredRegistrations.filter((reg) => {
     const matchesSearch =
       reg.student_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       reg.parent_accounts?.parent_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       reg.parent_accounts?.national_id?.includes(searchQuery) ||
       reg.schools?.name?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' ? reg.status !== 'archived' : reg.status === statusFilter;
     const matchesSchool = schoolFilter === 'all' || reg.school_id === schoolFilter;
+
+    if (mainTab === 'archive') {
+      if (reg.status !== 'archived') return false;
+      const y = String(new Date(reg.updated_at || reg.created_at).getFullYear());
+      const matchesYear = archiveYear === 'all' || y === archiveYear;
+      return matchesSearch && matchesSchool && matchesYear;
+    }
+
+    const matchesStatus =
+      statusFilter === 'all' ? reg.status !== 'archived' : reg.status === statusFilter;
     return matchesSearch && matchesStatus && matchesSchool;
   });
 
@@ -340,6 +369,45 @@ const Registrations: React.FC = () => {
           </div>
         </div>
 
+        {/* Active / Archive Tabs */}
+        <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as 'active' | 'archive')} className="animate-fade-in" style={{ animationDelay: '0.15s' }}>
+          <TabsList>
+            <TabsTrigger value="active" className="gap-2">
+              <ClipboardList className="h-4 w-4" />
+              Active
+              <Badge variant="secondary" className="ml-1">{cityFilteredRegistrations.filter((r) => r.status !== 'archived').length}</Badge>
+            </TabsTrigger>
+            <TabsTrigger value="archive" className="gap-2">
+              <Archive className="h-4 w-4" />
+              Archive
+              <Badge variant="secondary" className="ml-1">{archivedRegistrations.length}</Badge>
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        {/* Archive year pills */}
+        {mainTab === 'archive' && archiveYears.length > 0 && (
+          <div className="flex flex-wrap gap-2 animate-fade-in">
+            <button
+              type="button"
+              onClick={() => setArchiveYear('all')}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${archiveYear === 'all' ? 'bg-primary text-primary-foreground border-primary' : 'bg-card text-foreground border-border/50 hover:bg-muted/50'}`}
+            >
+              All Years <span className="ml-1 opacity-70">({archivedRegistrations.length})</span>
+            </button>
+            {archiveYears.map((y) => (
+              <button
+                key={y.year}
+                type="button"
+                onClick={() => setArchiveYear(y.year)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${archiveYear === y.year ? 'bg-primary text-primary-foreground border-primary' : 'bg-card text-foreground border-border/50 hover:bg-muted/50'}`}
+              >
+                {y.year} <span className="ml-1 opacity-70">({y.count})</span>
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Search & Filter Bar */}
         <div className="flex flex-col sm:flex-row gap-3 animate-fade-in" style={{ animationDelay: '0.2s' }}>
           <div className="relative flex-1">
@@ -351,18 +419,19 @@ const Registrations: React.FC = () => {
               className="pl-10 h-11 bg-card border-border/50 focus:border-primary/50 rounded-xl transition-all"
             />
           </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full sm:w-[160px] h-11 bg-card border-border/50 rounded-xl">
-              <SelectValue placeholder="All Status" />
-            </SelectTrigger>
-            <SelectContent className="bg-card border border-border z-50 rounded-xl">
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="pending_fees">Pending Fees</SelectItem>
-              <SelectItem value="complete">Complete</SelectItem>
-              <SelectItem value="cancelled">Cancelled</SelectItem>
-              <SelectItem value="archived">Archived</SelectItem>
-            </SelectContent>
-          </Select>
+          {mainTab === 'active' && (
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full sm:w-[160px] h-11 bg-card border-border/50 rounded-xl">
+                <SelectValue placeholder="All Status" />
+              </SelectTrigger>
+              <SelectContent className="bg-card border border-border z-50 rounded-xl">
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="pending_fees">Pending Fees</SelectItem>
+                <SelectItem value="complete">Complete</SelectItem>
+                <SelectItem value="cancelled">Cancelled</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
           <Select value={schoolFilter} onValueChange={setSchoolFilter}>
             <SelectTrigger className="w-full sm:w-[200px] h-11 bg-card border-border/50 rounded-xl">
               <SelectValue placeholder="All Schools" />
@@ -383,14 +452,19 @@ const Registrations: React.FC = () => {
           <div className="px-6 py-4 border-b border-border/50 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-1.5 rounded-lg bg-primary/10">
-                <ClipboardList className="h-4 w-4 text-primary" />
+                {mainTab === 'archive' ? <Archive className="h-4 w-4 text-primary" /> : <ClipboardList className="h-4 w-4 text-primary" />}
               </div>
               <div>
-                <h2 className="text-sm font-semibold text-foreground">All Registrations</h2>
+                <h2 className="text-sm font-semibold text-foreground">
+                  {mainTab === 'archive'
+                    ? archiveYear === 'all' ? 'Archived Registrations' : `Archived Registrations · ${archiveYear}`
+                    : 'All Registrations'}
+                </h2>
                 <p className="text-xs text-muted-foreground">{filteredRegistrations.length} records found</p>
               </div>
             </div>
           </div>
+
 
           {isLoading ? (
             <div className="p-16 text-center">
