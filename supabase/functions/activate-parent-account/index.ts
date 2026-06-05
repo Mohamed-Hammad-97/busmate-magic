@@ -44,6 +44,19 @@ serve(async (req) => {
       );
     }
 
+    // Verify caller is an employee or has a role (super_admin/admin staff)
+    const [{ data: role }, { data: emp }] = await Promise.all([
+      supabase.from("user_roles").select("role").eq("user_id", caller.id).maybeSingle(),
+      supabase.from("employees").select("id").eq("user_id", caller.id).maybeSingle(),
+    ]);
+
+    if (!role && !emp) {
+      return new Response(
+        JSON.stringify({ error: "Forbidden" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Fetch parent account
     const { data: parent, error: parentError } = await supabase
       .from("parent_accounts")
