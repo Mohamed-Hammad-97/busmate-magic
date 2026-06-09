@@ -55,6 +55,8 @@ const Payments = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [installmentFilter, setInstallmentFilter] = useState<string>('');
   const [paymentTab, setPaymentTab] = useState<string>('all');
+  const [mainTab, setMainTab] = useState<'active' | 'archive'>('active');
+  const [archiveYear, setArchiveYear] = useState<string>('all');
   const [selectedRegistration, setSelectedRegistration] = useState<{
     registrationId: string;
     payments: any[];
