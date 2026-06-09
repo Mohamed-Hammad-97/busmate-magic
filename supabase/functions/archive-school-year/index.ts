@@ -62,6 +62,29 @@ Deno.serve(async (req) => {
 
     if (regError) throw regError;
     const archivedCount = archivedRegs?.length || 0;
+    const archivedRegIds = (archivedRegs || []).map((r: any) => r.id);
+
+    // 1b. Archive unpaid payments tied to the archived registrations' subscriptions
+    let archivedPaymentsCount = 0;
+    if (archivedRegIds.length > 0) {
+      const { data: subs, error: subsError } = await adminClient
+        .from("subscriptions")
+        .select("id")
+        .in("registration_id", archivedRegIds);
+      if (subsError) throw subsError;
+
+      const subIds = (subs || []).map((s: any) => s.id);
+      if (subIds.length > 0) {
+        const { data: archivedPayments, error: payError } = await adminClient
+          .from("payments")
+          .update({ status: "archived" })
+          .in("subscription_id", subIds)
+          .in("status", ["pending", "overdue"])
+          .select("id");
+        if (payError) throw payError;
+        archivedPaymentsCount = archivedPayments?.length || 0;
+      }
+    }
 
     // 2. Deactivate all routes
     const { data: archivedRoutes, error: routeError } = await adminClient
@@ -95,6 +118,7 @@ Deno.serve(async (req) => {
         message: "School year archived successfully",
         stats: {
           registrations_archived: archivedCount,
+          payments_archived: archivedPaymentsCount,
           routes_deactivated: routesCount,
         },
       }),
