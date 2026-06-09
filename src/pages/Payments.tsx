@@ -92,7 +92,7 @@ const Payments = () => {
     },
   });
 
-  const payments = useMemo(() => {
+  const cityPayments = useMemo(() => {
     if (selectedCity === 'all') return allPayments;
     const cityMapping: Record<string, string[]> = {
       cairo: ['cairo', 'القاهرة', 'قاهرة'],
@@ -105,6 +105,37 @@ const Payments = () => {
       return cityNames.some((name) => city?.toLowerCase().includes(name.toLowerCase()));
     });
   }, [allPayments, selectedCity]);
+
+  const archivedPayments = useMemo(
+    () => cityPayments.filter((p: any) => p.status === 'archived'),
+    [cityPayments]
+  );
+
+  const activePayments = useMemo(
+    () => cityPayments.filter((p: any) => p.status !== 'archived'),
+    [cityPayments]
+  );
+
+  const archiveYears = useMemo(() => {
+    const counts: Record<string, number> = {};
+    archivedPayments.forEach((p: any) => {
+      const d = p.updated_at || p.created_at;
+      if (!d) return;
+      const year = String(new Date(d).getFullYear());
+      counts[year] = (counts[year] || 0) + 1;
+    });
+    return Object.entries(counts).sort((a, b) => Number(b[0]) - Number(a[0]));
+  }, [archivedPayments]);
+
+  const payments = useMemo(() => {
+    if (mainTab === 'active') return activePayments;
+    if (archiveYear === 'all') return archivedPayments;
+    return archivedPayments.filter((p: any) => {
+      const d = p.updated_at || p.created_at;
+      return d && String(new Date(d).getFullYear()) === archiveYear;
+    });
+  }, [mainTab, archiveYear, activePayments, archivedPayments]);
+
 
   const deleteSubscriptionMutation = useMutation({
     mutationFn: async (subscriptionId: string) => {
