@@ -55,6 +55,8 @@ const Payments = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [installmentFilter, setInstallmentFilter] = useState<string>('');
   const [paymentTab, setPaymentTab] = useState<string>('all');
+  const [mainTab, setMainTab] = useState<'active' | 'archive'>('active');
+  const [archiveYear, setArchiveYear] = useState<string>('all');
   const [selectedRegistration, setSelectedRegistration] = useState<{
     registrationId: string;
     payments: any[];
@@ -90,7 +92,7 @@ const Payments = () => {
     },
   });
 
-  const payments = useMemo(() => {
+  const cityPayments = useMemo(() => {
     if (selectedCity === 'all') return allPayments;
     const cityMapping: Record<string, string[]> = {
       cairo: ['cairo', 'القاهرة', 'قاهرة'],
@@ -103,6 +105,37 @@ const Payments = () => {
       return cityNames.some((name) => city?.toLowerCase().includes(name.toLowerCase()));
     });
   }, [allPayments, selectedCity]);
+
+  const archivedPayments = useMemo(
+    () => cityPayments.filter((p: any) => p.status === 'archived'),
+    [cityPayments]
+  );
+
+  const activePayments = useMemo(
+    () => cityPayments.filter((p: any) => p.status !== 'archived'),
+    [cityPayments]
+  );
+
+  const archiveYears = useMemo(() => {
+    const counts: Record<string, number> = {};
+    archivedPayments.forEach((p: any) => {
+      const d = p.updated_at || p.created_at;
+      if (!d) return;
+      const year = String(new Date(d).getFullYear());
+      counts[year] = (counts[year] || 0) + 1;
+    });
+    return Object.entries(counts).sort((a, b) => Number(b[0]) - Number(a[0]));
+  }, [archivedPayments]);
+
+  const payments = useMemo(() => {
+    if (mainTab === 'active') return activePayments;
+    if (archiveYear === 'all') return archivedPayments;
+    return archivedPayments.filter((p: any) => {
+      const d = p.updated_at || p.created_at;
+      return d && String(new Date(d).getFullYear()) === archiveYear;
+    });
+  }, [mainTab, archiveYear, activePayments, archivedPayments]);
+
 
   const deleteSubscriptionMutation = useMutation({
     mutationFn: async (subscriptionId: string) => {
@@ -299,6 +332,42 @@ const Payments = () => {
               <p className="text-xs text-muted-foreground mt-1">{t('payments.overdue')} (EGP)</p>
             </div>
           </div>
+        </div>
+
+        {/* Active / Archive Main Tabs */}
+        <div className="space-y-3 animate-fade-in" style={{ animationDelay: '0.15s' }}>
+          <Tabs value={mainTab} onValueChange={(v) => { setMainTab(v as 'active' | 'archive'); setArchiveYear('all'); }}>
+            <TabsList className="bg-muted/50 p-1 rounded-xl h-auto">
+              <TabsTrigger value="active" className="gap-2 rounded-lg px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
+                Active
+                <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">{activePayments.length}</Badge>
+              </TabsTrigger>
+              <TabsTrigger value="archive" className="gap-2 rounded-lg px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
+                Archive
+                <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">{archivedPayments.length}</Badge>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          {mainTab === 'archive' && archiveYears.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setArchiveYear('all')}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${archiveYear === 'all' ? 'bg-primary text-primary-foreground shadow-md' : 'bg-muted text-muted-foreground hover:bg-muted/70'}`}
+              >
+                All Years ({archivedPayments.length})
+              </button>
+              {archiveYears.map(([year, count]) => (
+                <button
+                  key={year}
+                  onClick={() => setArchiveYear(year)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${archiveYear === year ? 'bg-primary text-primary-foreground shadow-md' : 'bg-muted text-muted-foreground hover:bg-muted/70'}`}
+                >
+                  {year} ({count})
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Payment Status Tabs */}
