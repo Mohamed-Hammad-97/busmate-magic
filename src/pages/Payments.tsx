@@ -334,6 +334,42 @@ const Payments = () => {
           </div>
         </div>
 
+        {/* Active / Archive Main Tabs */}
+        <div className="space-y-3 animate-fade-in" style={{ animationDelay: '0.15s' }}>
+          <Tabs value={mainTab} onValueChange={(v) => { setMainTab(v as 'active' | 'archive'); setArchiveYear('all'); }}>
+            <TabsList className="bg-muted/50 p-1 rounded-xl h-auto">
+              <TabsTrigger value="active" className="gap-2 rounded-lg px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
+                Active
+                <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">{activePayments.length}</Badge>
+              </TabsTrigger>
+              <TabsTrigger value="archive" className="gap-2 rounded-lg px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
+                Archive
+                <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">{archivedPayments.length}</Badge>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          {mainTab === 'archive' && archiveYears.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setArchiveYear('all')}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${archiveYear === 'all' ? 'bg-primary text-primary-foreground shadow-md' : 'bg-muted text-muted-foreground hover:bg-muted/70'}`}
+              >
+                All Years ({archivedPayments.length})
+              </button>
+              {archiveYears.map(([year, count]) => (
+                <button
+                  key={year}
+                  onClick={() => setArchiveYear(year)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${archiveYear === year ? 'bg-primary text-primary-foreground shadow-md' : 'bg-muted text-muted-foreground hover:bg-muted/70'}`}
+                >
+                  {year} ({count})
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* Payment Status Tabs */}
         <div className="space-y-4 animate-fade-in" style={{ animationDelay: '0.2s' }}>
           <Tabs value={paymentTab} onValueChange={setPaymentTab}>
