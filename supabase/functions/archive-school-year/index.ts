@@ -118,6 +118,7 @@ Deno.serve(async (req) => {
         message: "School year archived successfully",
         stats: {
           registrations_archived: archivedCount,
+          payments_archived: archivedPaymentsCount,
           routes_deactivated: routesCount,
         },
       }),
