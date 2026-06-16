@@ -381,6 +381,10 @@ const Home = () => {
               src={gallery[0].image_url} 
               alt={gallery[0].alt_text || gallery[0].title || "Hero background"} 
               className={`w-full h-full object-cover ${isRtl ? 'scale-x-[-1]' : ''}`}
+              width={1920}
+              height={1080}
+              fetchPriority="high"
+              decoding="async"
             />
             <div className={`absolute inset-0 ${isRtl 
               ? 'bg-gradient-to-l from-background via-background/80 to-background/40' 
