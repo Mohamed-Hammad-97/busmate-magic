@@ -66,6 +66,9 @@ interface RouteUpdate {
   }[];
 }
 
+const isActiveRegistrationStatus = (status?: string | null) =>
+  ['pending_fees', 'complete'].includes((status || '').trim().toLowerCase());
+
 const AIRoutes: React.FC = () => {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.language === 'ar';
@@ -192,20 +195,41 @@ const AIRoutes: React.FC = () => {
       return data;
     },
     onSuccess: (data) => {
-      setSuggestions(data.suggestions || []);
-      setRouteUpdates(data.routeUpdates || []);
+      const activeSuggestions = (data.suggestions || [])
+        .map((suggestion: RouteSuggestion) => {
+          const students = suggestion.students.filter((student) => isActiveRegistrationStatus(student.status));
+          return {
+            ...suggestion,
+            students,
+            studentCount: students.length,
+            pendingFeesCount: students.filter((student) => student.status === 'pending_fees').length,
+          };
+        })
+        .filter((suggestion: RouteSuggestion) => suggestion.students.length > 0);
+
+      const activeRouteUpdates = (data.routeUpdates || [])
+        .map((update: RouteUpdate) => ({
+          ...update,
+          studentsToAdd: update.studentsToAdd.filter((student) => isActiveRegistrationStatus(student.status)),
+        }))
+        .filter((update: RouteUpdate) => update.studentsToAdd.length > 0);
+
+      setSuggestions(activeSuggestions);
+      setRouteUpdates(activeRouteUpdates);
       setAiInsights(data.aiInsights || '');
       setSelectedSuggestion(null);
-      if (data.suggestions?.length === 0 && data.routeUpdates?.length === 0) {
+      if (activeSuggestions.length === 0 && activeRouteUpdates.length === 0) {
         toast({ title: isRtl ? 'لا يوجد طلاب غير معينين لهذه المدرسة' : 'No unassigned students found for this school and car type' });
       } else {
-        const updateMsg = data.routeUpdates?.length > 0 
-          ? (isRtl ? `، ${data.studentsForExistingRoutes} يمكن إضافتهم لخطوط موجودة` : `, ${data.studentsForExistingRoutes} can be added to existing routes`)
+        const studentsForExistingRoutes = activeRouteUpdates.reduce((sum, update) => sum + update.studentsToAdd.length, 0);
+        const totalStudents = activeSuggestions.reduce((sum, suggestion) => sum + suggestion.students.length, 0) + studentsForExistingRoutes;
+        const updateMsg = activeRouteUpdates.length > 0 
+          ? (isRtl ? `، ${studentsForExistingRoutes} يمكن إضافتهم لخطوط موجودة` : `, ${studentsForExistingRoutes} can be added to existing routes`)
           : '';
         toast({ 
           title: isRtl 
-            ? `تم العثور على ${data.totalStudents} طالب، مجمعين في ${data.suggestions.length} خطوط جديدة${updateMsg}` 
-            : `Found ${data.totalStudents} students, grouped into ${data.suggestions.length} new routes${updateMsg}` 
+            ? `تم العثور على ${totalStudents} طالب، مجمعين في ${activeSuggestions.length} خطوط جديدة${updateMsg}` 
+            : `Found ${totalStudents} students, grouped into ${activeSuggestions.length} new routes${updateMsg}` 
         });
       }
     },

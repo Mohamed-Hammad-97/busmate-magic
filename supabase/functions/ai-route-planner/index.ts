@@ -34,6 +34,12 @@ interface Route {
   assignments: { registration_id: string; pickup_order: number }[];
 }
 
+const ACTIVE_REGISTRATION_STATUSES = ["pending_fees", "complete"];
+
+function isActiveRegistrationStatus(status?: string | null): boolean {
+  return ACTIVE_REGISTRATION_STATUSES.includes((status || "").trim().toLowerCase());
+}
+
 // Haversine formula to calculate distance between two points
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371; // Earth's radius in km
@@ -227,7 +233,7 @@ serve(async (req) => {
     const supabase = supabaseAdmin;
 
     if (action === "suggest-routes") {
-      // Get all registrations for the school (pending_fees and complete, not cancelled)
+      // Get only active registrations for the school. Archived/cancelled students must never appear in AI route results.
       let regQuery = supabase
         .from("registrations")
         .select(`
@@ -249,7 +255,7 @@ serve(async (req) => {
           )
         `)
         .eq("school_id", schoolId)
-        .not("status", "in", "(cancelled,archived)");
+        .in("status", ACTIVE_REGISTRATION_STATUSES);
 
       if (carType !== "both") {
         regQuery = regQuery.eq("car_type", carType);
@@ -265,7 +271,7 @@ serve(async (req) => {
         .select("registration_id");
       
       const assignedIds = new Set((assignments || []).map(a => a.registration_id));
-      let unassigned = (registrations || []).filter(r => !assignedIds.has(r.id));
+      let unassigned = (registrations || []).filter(r => !assignedIds.has(r.id) && isActiveRegistrationStatus(r.status));
 
       // If search area polygon is provided, filter students by geographic location
       if (searchArea && searchArea.polygon && searchArea.polygon.length >= 3) {
@@ -290,7 +296,10 @@ serve(async (req) => {
           route_assignments (
             id,
             registration_id,
-            pickup_order
+            pickup_order,
+            registrations (
+              status
+            )
           )
         `)
         .eq("school_id", schoolId)
@@ -321,7 +330,10 @@ serve(async (req) => {
         }));
 
         for (const route of existingRoutes) {
-          const currentCount = route.route_assignments?.length || 0;
+          const activeAssignments = (route.route_assignments || []).filter((a: any) =>
+            isActiveRegistrationStatus(a.registrations?.status)
+          );
+          const currentCount = activeAssignments.length;
           const availableSeats = route.max_seats - currentCount;
 
           if (availableSeats > 0) {
@@ -331,6 +343,7 @@ serve(async (req) => {
               .select(`
                 registration_id,
                 registrations (
+                  status,
                   parent_accounts (
                     pickup_latitude,
                     pickup_longitude
@@ -342,7 +355,9 @@ serve(async (req) => {
             // Calculate centroid of existing pickup points
             let centroidLat = 0, centroidLng = 0;
             if (existingAssignments && existingAssignments.length > 0) {
-              const locs = existingAssignments.map((a: any) => {
+              const locs = existingAssignments.filter((a: any) =>
+                isActiveRegistrationStatus(a.registrations?.status)
+              ).map((a: any) => {
                 const pa = Array.isArray(a.registrations?.parent_accounts) 
                   ? a.registrations.parent_accounts[0] 
                   : a.registrations?.parent_accounts;
