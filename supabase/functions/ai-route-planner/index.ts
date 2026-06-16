@@ -249,7 +249,7 @@ serve(async (req) => {
           )
         `)
         .eq("school_id", schoolId)
-        .neq("status", "cancelled");
+        .not("status", "in", "(cancelled,archived)");
 
       if (carType !== "both") {
         regQuery = regQuery.eq("car_type", carType);
