@@ -68,27 +68,37 @@ const Payments = () => {
   const { data: allPayments = [], isLoading } = useQuery({
     queryKey: ['payments'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('payments')
-        .select(`
-          *,
-          payment_extra_fees (*),
-          subscriptions (
-            id,
-            registration_id,
-            subscription_type,
-            value,
-            number_of_installments,
-            registrations (
+      const PAGE_SIZE = 1000;
+      let all: any[] = [];
+      let from = 0;
+      while (true) {
+        const { data, error } = await supabase
+          .from('payments')
+          .select(`
+            *,
+            payment_extra_fees (*),
+            subscriptions (
               id,
-              student_name,
-              parent_accounts (parent_name, city)
+              registration_id,
+              subscription_type,
+              value,
+              number_of_installments,
+              registrations (
+                id,
+                student_name,
+                parent_accounts (parent_name, city)
+              )
             )
-          )
-        `)
-        .order('due_date', { ascending: true });
-      if (error) throw error;
-      return data;
+          `)
+          .order('due_date', { ascending: true })
+          .range(from, from + PAGE_SIZE - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        all = all.concat(data);
+        if (data.length < PAGE_SIZE) break;
+        from += PAGE_SIZE;
+      }
+      return all;
     },
   });
 
