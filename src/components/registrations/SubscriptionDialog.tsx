@@ -56,14 +56,43 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
   const [startDate, setStartDate] = useState<Date>(new Date());
 
   useEffect(() => {
-    if (open) {
-      setSubscriptionType('yearly');
-      setValue('');
-      setInsurance('');
-      setInstallments('1');
-      setStartDate(new Date());
-    }
-  }, [open]);
+    if (!open || !registration) return;
+
+    // Defaults
+    setSubscriptionType('yearly');
+    setValue('');
+    setInsurance('');
+    setInstallments('1');
+    setStartDate(new Date());
+
+    // Preload existing subscription + insurance payment (if any)
+    (async () => {
+      const { data: sub } = await supabase
+        .from('subscriptions')
+        .select('id, subscription_type, value, number_of_installments')
+        .eq('registration_id', registration.id)
+        .maybeSingle();
+
+      if (!sub) return;
+
+      setSubscriptionType(sub.subscription_type as Enums<'subscription_type'>);
+      setValue(String(sub.value ?? ''));
+      setInstallments(String(sub.number_of_installments ?? 1));
+
+      const { data: pays } = await supabase
+        .from('payments')
+        .select('amount, installment_number, due_date')
+        .eq('subscription_id', sub.id)
+        .order('installment_number', { ascending: true });
+
+      if (pays && pays.length) {
+        const ins = pays.find((p) => p.installment_number === 0);
+        if (ins) setInsurance(String(ins.amount));
+        const first = pays.find((p) => p.installment_number === 1) || pays[0];
+        if (first?.due_date) setStartDate(new Date(first.due_date));
+      }
+    })();
+  }, [open, registration]);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
