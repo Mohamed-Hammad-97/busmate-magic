@@ -269,6 +269,7 @@ serve(async (req) => {
         grade: data.grade,
         car_type: data.car_type,
         education_department: data.education_department,
+        comments: data.comments ? sanitizeString(data.comments) : null,
         status: 'pending_fees',
       });
 
