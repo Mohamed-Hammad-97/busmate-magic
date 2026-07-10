@@ -171,6 +171,11 @@ const RegisterDailyLine: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
+      <PageSeo
+        title="Daily Line Trip Booking | Seater"
+        description="Book a seat on a scheduled Seater daily line trip. Pay with cash or Instapay and track your ride in real time."
+        path="/register/daily-line"
+      />
       <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 via-background to-amber-500/5" />
       <div className="absolute top-20 right-0 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl" />
       <div className="absolute bottom-0 left-0 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl" />

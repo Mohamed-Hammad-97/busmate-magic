@@ -13,6 +13,11 @@ const RegisterCorporate: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
+      <PageSeo
+        title="Corporate Shuttle Registration | Seater"
+        description="Set up reliable corporate shuttle transportation for your team with fleet management, tracking, and flexible scheduling."
+        path="/register/corporate"
+      />
       {/* Background Decorations */}
       <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-background to-emerald-500/5"></div>
       <div className="absolute top-20 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl"></div>

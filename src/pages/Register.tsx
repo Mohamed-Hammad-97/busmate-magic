@@ -58,6 +58,11 @@ const Register: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
+      <PageSeo
+        title="Register — Choose Your Transportation Service | Seater"
+        description="Sign up with Seater for school bus, corporate shuttle, private transportation, or daily line trip bookings."
+        path="/register"
+      />
       {/* Background Decorations */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-primary/5"></div>
       <div className="absolute top-20 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl"></div>
