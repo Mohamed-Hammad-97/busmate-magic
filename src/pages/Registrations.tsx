@@ -67,6 +67,8 @@ const Registrations: React.FC = () => {
   const [mapOpen, setMapOpen] = useState(false);
   const [selectedRegistration, setSelectedRegistration] = useState<Registration | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [phoneFilter, setPhoneFilter] = useState('');
+  const [nameFilter, setNameFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [schoolFilter, setSchoolFilter] = useState<string>('all');
   const [mainTab, setMainTab] = useState<'active' | 'archive'>('active');
