@@ -317,6 +317,15 @@ const StudentRegistrationForm: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-2">
+                  <Label className="text-sm font-medium">رقم الدفع والتجديد *</Label>
+                  <Input
+                    value={formData.payment_phone}
+                    onChange={(e) => setFormData((f) => ({ ...f, payment_phone: e.target.value }))}
+                    placeholder="01xxxxxxxxx"
+                    className="h-12 bg-muted/50 border-border/50 focus:bg-background transition-colors"
+                  />
+                </div>
+                <div className="space-y-2">
                   <Label className="text-sm font-medium">{t('register.student.fields.occupation')}</Label>
                   <Input
                     value={formData.job}
