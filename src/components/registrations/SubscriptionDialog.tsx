@@ -368,7 +368,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
               Cancel
             </Button>
             <Button type="submit" disabled={saveMutation.isPending}>
-              {saveMutation.isPending ? 'Saving...' : 'Create Subscription'}
+              {saveMutation.isPending ? 'Saving...' : 'Save Subscription'}
             </Button>
           </DialogFooter>
         </form>
