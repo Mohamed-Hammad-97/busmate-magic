@@ -63,27 +63,39 @@ const PaymentReminderDetails = () => {
   const { data: allPayments = [], isLoading } = useQuery({
     queryKey: ['payments-reminders-detail'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('payments')
-        .select(`
-          *,
-          payment_extra_fees (*),
-          subscriptions (
-            id,
-            registration_id,
-            subscription_type,
-            value,
-            number_of_installments,
-            registrations (
+      const pageSize = 1000;
+      let from = 0;
+      const all: any[] = [];
+      // Page through all rows to bypass the 1000-row default cap
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { data, error } = await supabase
+          .from('payments')
+          .select(`
+            *,
+            payment_extra_fees (*),
+            subscriptions (
               id,
-              student_name,
-              parent_accounts (parent_name, father_phone, city)
+              registration_id,
+              subscription_type,
+              value,
+              number_of_installments,
+              registrations (
+                id,
+                student_name,
+                parent_accounts (parent_name, father_phone, city)
+              )
             )
-          )
-        `)
-        .order('due_date', { ascending: true });
-      if (error) throw error;
-      return data;
+          `)
+          .order('due_date', { ascending: true })
+          .range(from, from + pageSize - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        all.push(...data);
+        if (data.length < pageSize) break;
+        from += pageSize;
+      }
+      return all;
     },
   });
 
