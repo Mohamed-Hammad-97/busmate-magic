@@ -108,6 +108,18 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+    if (!data.payment_phone?.trim()) {
+      return new Response(
+        JSON.stringify({ error: "Payment phone is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (!validatePhone(data.payment_phone)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid payment phone format (must be 01xxxxxxxxx)" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
     if (!data.city?.trim()) {
       return new Response(
         JSON.stringify({ error: "City is required" }),
