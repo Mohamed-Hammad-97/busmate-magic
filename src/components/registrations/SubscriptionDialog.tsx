@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Dialog,
   DialogContent,
@@ -47,6 +47,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
 }) => {
   const { toast } = useToast();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   const [subscriptionType, setSubscriptionType] = useState<Enums<'subscription_type'>>('yearly');
   const [value, setValue] = useState<string>('');
@@ -157,6 +158,9 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
     },
     onSuccess: () => {
       toast({ title: 'Subscription created successfully' });
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      queryClient.invalidateQueries({ queryKey: ['registrations'] });
+      queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
       onSuccess();
     },
     onError: (error: any) => {
