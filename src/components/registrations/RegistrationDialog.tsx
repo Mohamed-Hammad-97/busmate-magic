@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -43,6 +44,7 @@ interface ParentFormData {
   father_phone: string;
   mother_phone: string;
   emergency_phone: string;
+  payment_phone: string;
   city: string;
   job: string;
   pickup_latitude: number;
@@ -56,6 +58,7 @@ interface RegistrationFormData {
   car_type: Enums<'car_type'>;
   education_department: Enums<'education_department'>;
   status: Enums<'registration_status'>;
+  comments: string;
 }
 
 const gradeOptions = [
@@ -81,6 +84,7 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
     father_phone: '',
     mother_phone: '',
     emergency_phone: '',
+    payment_phone: '',
     city: '',
     job: '',
     pickup_latitude: 30.0444,
@@ -94,6 +98,7 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
     car_type: 'ac',
     education_department: 'national',
     status: 'pending_fees',
+    comments: '',
   });
 
   // Fetch schools
@@ -133,6 +138,7 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
         father_phone: registration.parent_accounts?.father_phone || '',
         mother_phone: registration.parent_accounts?.mother_phone || '',
         emergency_phone: registration.parent_accounts?.emergency_phone || '',
+        payment_phone: (registration.parent_accounts as any)?.payment_phone || '',
         city: registration.parent_accounts?.city || '',
         job: registration.parent_accounts?.job || '',
         pickup_latitude: registration.parent_accounts?.pickup_latitude || 30.0444,
@@ -145,6 +151,7 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
         car_type: registration.car_type,
         education_department: registration.education_department,
         status: registration.status,
+        comments: (registration as any).comments || '',
       });
     } else {
       resetForm();
@@ -158,6 +165,7 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
       father_phone: '',
       mother_phone: '',
       emergency_phone: '',
+      payment_phone: '',
       city: '',
       job: '',
       pickup_latitude: 30.0444,
@@ -170,6 +178,7 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
       car_type: 'ac',
       education_department: 'national',
       status: 'pending_fees',
+      comments: '',
     });
   };
 
@@ -185,6 +194,7 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
             father_phone: parentData.father_phone,
             mother_phone: parentData.mother_phone || null,
             emergency_phone: parentData.emergency_phone,
+            payment_phone: parentData.payment_phone,
             city: parentData.city,
             job: parentData.job || null,
             pickup_latitude: parentData.pickup_latitude,
@@ -203,9 +213,9 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
             car_type: regData.car_type,
             education_department: regData.education_department,
             status: regData.status,
+            comments: regData.comments || null,
           })
           .eq('id', registration.id);
-        if (regError) throw regError;
         if (regError) throw regError;
       } else {
         let parentId: string;
@@ -225,8 +235,9 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
             .update({
               parent_name: parentData.parent_name,
               national_id: parentData.national_id || '',
-              mother_phone: parentData.mother_phone || null,
+            mother_phone: parentData.mother_phone || null,
               emergency_phone: parentData.emergency_phone,
+              payment_phone: parentData.payment_phone,
               city: parentData.city,
               job: parentData.job || null,
               pickup_latitude: parentData.pickup_latitude,
@@ -244,6 +255,7 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
               father_phone: parentData.father_phone,
               mother_phone: parentData.mother_phone || null,
               emergency_phone: parentData.emergency_phone,
+              payment_phone: parentData.payment_phone,
               city: parentData.city,
               job: parentData.job || null,
               pickup_latitude: parentData.pickup_latitude,
@@ -266,6 +278,7 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
             car_type: regData.car_type,
             education_department: regData.education_department,
             status: regData.status,
+            comments: regData.comments || null,
             created_by: user?.id,
           });
         if (regError) throw regError;
@@ -303,6 +316,10 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
     }
     if (!parentData.emergency_phone.trim()) {
       toast({ title: 'Please enter emergency phone', variant: 'destructive' });
+      return;
+    }
+    if (!parentData.payment_phone.trim()) {
+      toast({ title: 'Please enter payment phone (رقم الدفع والتجديد)', variant: 'destructive' });
       return;
     }
     if (!parentData.city) {
@@ -382,6 +399,14 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
                   <Input
                     value={parentData.emergency_phone}
                     onChange={(e) => setParentData((p) => ({ ...p, emergency_phone: e.target.value }))}
+                    placeholder="01xxxxxxxxx"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Payment Phone * (رقم الدفع والتجديد)</Label>
+                  <Input
+                    value={parentData.payment_phone}
+                    onChange={(e) => setParentData((p) => ({ ...p, payment_phone: e.target.value }))}
                     placeholder="01xxxxxxxxx"
                   />
                 </div>
@@ -525,6 +550,15 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
                     </Select>
                   </div>
                 )}
+                <div className="space-y-2 sm:col-span-2">
+                  <Label>Comments (ملاحظات)</Label>
+                  <Textarea
+                    value={regData.comments}
+                    onChange={(e) => setRegData((r) => ({ ...r, comments: e.target.value }))}
+                    placeholder="Any notes or comments"
+                    rows={3}
+                  />
+                </div>
               </div>
             </TabsContent>
           </Tabs>
