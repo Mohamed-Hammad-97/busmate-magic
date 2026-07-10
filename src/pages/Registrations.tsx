@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Search, Eye, Edit2, ClipboardList, DollarSign, Link2, Map, TrendingUp, CheckCircle, Clock, XCircle, GraduationCap, Users, School, Trash2, UserX, Archive, Download, FileSpreadsheet, FileText } from 'lucide-react';
+import { Plus, Search, Eye, Edit2, ClipboardList, DollarSign, Link2, Map, TrendingUp, CheckCircle, Clock, XCircle, GraduationCap, Users, School, Trash2, UserX, Archive, Download, FileSpreadsheet, FileText, Phone, User } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { exportRegistrationsExcel, exportRegistrationsPDF } from '@/lib/exportRegistrations';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -67,6 +67,8 @@ const Registrations: React.FC = () => {
   const [mapOpen, setMapOpen] = useState(false);
   const [selectedRegistration, setSelectedRegistration] = useState<Registration | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [phoneFilter, setPhoneFilter] = useState('');
+  const [nameFilter, setNameFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [schoolFilter, setSchoolFilter] = useState<string>('all');
   const [mainTab, setMainTab] = useState<'active' | 'archive'>('active');
@@ -154,16 +156,30 @@ const Registrations: React.FC = () => {
       reg.schools?.name?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesSchool = schoolFilter === 'all' || reg.school_id === schoolFilter;
 
+    const phoneNorm = phoneFilter.replace(/\s+/g, '');
+    const matchesPhone = !phoneNorm || [
+      reg.parent_accounts?.father_phone,
+      reg.parent_accounts?.mother_phone,
+      reg.parent_accounts?.emergency_phone,
+      reg.parent_accounts?.payment_phone,
+    ].some((p) => (p || '').replace(/\s+/g, '').includes(phoneNorm));
+
+    const nameNorm = nameFilter.trim().toLowerCase();
+    const matchesName = !nameNorm || [
+      reg.student_name,
+      reg.parent_accounts?.parent_name,
+    ].some((n) => (n || '').toLowerCase().includes(nameNorm));
+
     if (mainTab === 'archive') {
       if (reg.status !== 'archived') return false;
       const y = String(new Date(reg.updated_at || reg.created_at).getFullYear());
       const matchesYear = archiveYear === 'all' || y === archiveYear;
-      return matchesSearch && matchesSchool && matchesYear;
+      return matchesSearch && matchesSchool && matchesYear && matchesPhone && matchesName;
     }
 
     const matchesStatus =
       statusFilter === 'all' ? reg.status !== 'archived' : reg.status === statusFilter;
-    return matchesSearch && matchesStatus && matchesSchool;
+    return matchesSearch && matchesStatus && matchesSchool && matchesPhone && matchesName;
   });
 
   const handleViewDetails = (registration: Registration) => {
@@ -431,13 +447,32 @@ const Registrations: React.FC = () => {
         )}
 
         {/* Search & Filter Bar */}
-        <div className="flex flex-col sm:flex-row gap-3 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-          <div className="relative flex-1">
+        <div className="flex flex-col sm:flex-row gap-3 animate-fade-in flex-wrap" style={{ animationDelay: '0.2s' }}>
+          <div className="relative flex-1 min-w-[200px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search by student, parent, ID, or school..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 h-11 bg-card border-border/50 focus:border-primary/50 rounded-xl transition-all"
+            />
+          </div>
+          <div className="relative w-full sm:w-[200px]">
+            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Filter by phone..."
+              value={phoneFilter}
+              onChange={(e) => setPhoneFilter(e.target.value)}
+              className="pl-10 h-11 bg-card border-border/50 focus:border-primary/50 rounded-xl transition-all"
+              dir="ltr"
+            />
+          </div>
+          <div className="relative w-full sm:w-[200px]">
+            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Filter by name..."
+              value={nameFilter}
+              onChange={(e) => setNameFilter(e.target.value)}
               className="pl-10 h-11 bg-card border-border/50 focus:border-primary/50 rounded-xl transition-all"
             />
           </div>
