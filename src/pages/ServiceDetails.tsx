@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import seaterLogo from '@/assets/seater-logo.jpg';
 import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher';
+import PageSeo from '@/components/seo/PageSeo';
 
 // Import app screen images
 import privateScreen1 from '@/assets/private-screen-1.png';

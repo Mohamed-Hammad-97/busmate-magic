@@ -7,6 +7,7 @@ import serviceSchoolBus from '@/assets/service-school-bus.png';
 import serviceCorporateBus from '@/assets/service-corporate-bus.png';
 import servicePrivateCar from '@/assets/service-private-car.png';
 import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher';
+import PageSeo from '@/components/seo/PageSeo';
 
 const Register: React.FC = () => {
   const { t } = useTranslation();

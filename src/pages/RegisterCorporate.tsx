@@ -5,6 +5,7 @@ import { ArrowLeft, Building2 } from 'lucide-react';
 import CorporateRegistrationForm from '@/components/registration/CorporateRegistrationForm';
 import seaterLogo from '@/assets/seater-logo.jpg';
 import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher';
+import PageSeo from '@/components/seo/PageSeo';
 
 const RegisterCorporate: React.FC = () => {
   const { t } = useTranslation();

@@ -292,8 +292,10 @@ const Home = () => {
         <title>{getSetting("seo_title", "Seater - Smart School & Corporate Transportation")}</title>
         <meta name="description" content={getSetting("seo_description", "Smart, Reliable, and Effortless Transportation for Schools, Businesses, and Individuals.")} />
         <meta name="keywords" content={getSetting("seo_keywords", "school bus, transportation, fleet management, GPS tracking")} />
+        <link rel="canonical" href="https://seater.org/" />
         <meta property="og:title" content={getSetting("seo_title", "Seater - Smart School & Corporate Transportation")} />
         <meta property="og:description" content={getSetting("seo_description", "Smart, Reliable, and Effortless Transportation for Schools, Businesses, and Individuals.")} />
+        <meta property="og:url" content="https://seater.org/" />
         <meta name="twitter:title" content={getSetting("seo_title", "Seater - Smart School & Corporate Transportation")} />
         <meta name="twitter:description" content={getSetting("seo_description", "Smart, Reliable, and Effortless Transportation for Schools, Businesses, and Individuals.")} />
       </Helmet>

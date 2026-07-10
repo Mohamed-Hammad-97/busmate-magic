@@ -12,6 +12,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher';
+import PageSeo from '@/components/seo/PageSeo';
 import seaterLogo from '@/assets/seater-logo.jpg';
 import LineRoutePreviewMap from '@/components/daily-lines/LineRoutePreviewMap';
 

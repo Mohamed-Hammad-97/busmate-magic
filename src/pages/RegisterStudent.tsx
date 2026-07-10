@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import StudentRegistrationForm from '@/components/registration/StudentRegistrationForm';
 import seaterLogo from '@/assets/seater-logo.jpg';
 import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher';
+import PageSeo from '@/components/seo/PageSeo';
 
 const RegisterStudent: React.FC = () => {
   const { t } = useTranslation();

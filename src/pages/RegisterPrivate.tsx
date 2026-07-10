@@ -20,6 +20,7 @@ import LocationPickerMap from '@/components/schools/LocationPickerMap';
 import { GoogleMapsProvider } from '@/components/maps/GoogleMapsProvider';
 import seaterLogo from '@/assets/seater-logo.jpg';
 import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher';
+import PageSeo from '@/components/seo/PageSeo';
 
 interface PrivateFormData {
   full_name: string;
