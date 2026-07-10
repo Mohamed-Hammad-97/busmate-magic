@@ -138,6 +138,7 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
         father_phone: registration.parent_accounts?.father_phone || '',
         mother_phone: registration.parent_accounts?.mother_phone || '',
         emergency_phone: registration.parent_accounts?.emergency_phone || '',
+        payment_phone: (registration.parent_accounts as any)?.payment_phone || '',
         city: registration.parent_accounts?.city || '',
         job: registration.parent_accounts?.job || '',
         pickup_latitude: registration.parent_accounts?.pickup_latitude || 30.0444,
@@ -150,6 +151,7 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
         car_type: registration.car_type,
         education_department: registration.education_department,
         status: registration.status,
+        comments: (registration as any).comments || '',
       });
     } else {
       resetForm();
@@ -163,6 +165,7 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
       father_phone: '',
       mother_phone: '',
       emergency_phone: '',
+      payment_phone: '',
       city: '',
       job: '',
       pickup_latitude: 30.0444,
@@ -175,6 +178,7 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
       car_type: 'ac',
       education_department: 'national',
       status: 'pending_fees',
+      comments: '',
     });
   };
 
