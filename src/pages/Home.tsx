@@ -30,8 +30,7 @@ import {
   Sparkles,
   CheckCircle2,
   GraduationCap,
-  UserRound,
-  Bus
+  UserRound
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import seaterLogo from "@/assets/seater-logo.jpg";
