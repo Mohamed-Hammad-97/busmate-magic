@@ -121,6 +121,20 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
 
       // Create payments for each installment using selected start date
       const payments = [];
+
+      // Insurance as installment_number 0 (appears before installments)
+      const insuranceAmount = parseFloat(insurance) || 0;
+      if (insuranceAmount > 0) {
+        payments.push({
+          subscription_id: subscriptionId,
+          amount: insuranceAmount,
+          installment_number: 0,
+          due_date: startDate.toISOString().split('T')[0],
+          status: 'pending' as Enums<'payment_status'>,
+          notes: 'Insurance',
+        });
+      }
+
       for (let i = 0; i < numInstallments; i++) {
         const dueDate = new Date(startDate);
         if (subscriptionType === 'yearly') {
