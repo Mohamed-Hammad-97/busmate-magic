@@ -24,7 +24,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Search, CreditCard, CheckCircle, Clock, AlertCircle, Check, Eye, Hash, TrendingUp, DollarSign, UserCheck, Trash2 } from 'lucide-react';
+import { Search, CreditCard, CheckCircle, Clock, AlertCircle, Check, Eye, Hash, TrendingUp, DollarSign, UserCheck, Trash2, Archive } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -175,6 +175,22 @@ const Payments = () => {
       toast.success(t('payments.paymentSuccess'));
     },
     onError: (error) => { toast.error(t('payments.paymentError')); console.error(error); },
+  });
+
+  const archiveSubscriptionMutation = useMutation({
+    mutationFn: async (subscriptionId: string) => {
+      const { error } = await supabase
+        .from('payments')
+        .update({ status: 'archived' })
+        .eq('subscription_id', subscriptionId)
+        .in('status', ['pending', 'overdue']);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      toast.success('Moved to archive');
+    },
+    onError: (error) => { toast.error('Failed to archive'); console.error(error); },
   });
 
   const paymentsByRegistration = useMemo(() => {
@@ -517,6 +533,31 @@ const Payments = () => {
                                     }}
                                     variant="icon"
                                   />
+                                  {canEdit && mainTab === 'active' && (
+                                    <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-warning/10 hover:text-warning" title="Archive">
+                                          <Archive className="h-3.5 w-3.5" />
+                                        </Button>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>Archive payments?</AlertDialogTitle>
+                                          <AlertDialogDescription>
+                                            This moves all unpaid installments for {regData.parentName} - {regData.studentName} to the Archive tab and removes them from overdue reminders.
+                                          </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel>{t('common.cancel') || 'Cancel'}</AlertDialogCancel>
+                                          <AlertDialogAction
+                                            onClick={() => archiveSubscriptionMutation.mutate(regData.subscription?.id)}
+                                          >
+                                            Archive
+                                          </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
+                                  )}
                                   {canEdit && (
                                     <AlertDialog>
                                       <AlertDialogTrigger asChild>
