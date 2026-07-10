@@ -238,7 +238,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Add Subscription & Fees</DialogTitle>
+          <DialogTitle>Subscription & Fees</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="p-3 bg-muted rounded-lg space-y-1">
