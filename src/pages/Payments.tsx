@@ -54,6 +54,8 @@ const Payments = () => {
   const { isSuperAdmin, hasDepartment } = useAuth();
   const canEdit = isSuperAdmin || hasDepartment('finance');
   const [searchTerm, setSearchTerm] = useState('');
+  const [phoneFilter, setPhoneFilter] = useState('');
+  const [nameFilter, setNameFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [installmentFilter, setInstallmentFilter] = useState<string>('');
   const [paymentTab, setPaymentTab] = useState<string>('all');
