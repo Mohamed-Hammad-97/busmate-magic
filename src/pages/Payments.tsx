@@ -610,18 +610,21 @@ const Payments = () => {
       </div>
 
       {/* Payment Profile Dialog */}
-      {selectedRegistration && (
-        <PaymentProfileDialog
-          open={!!selectedRegistration}
-          onOpenChange={(open) => !open && setSelectedRegistration(null)}
-          registrationId={selectedRegistration.registrationId}
-          payments={selectedRegistration.payments}
-          subscription={selectedRegistration.subscription}
-          parentName={selectedRegistration.parentName}
-          studentName={selectedRegistration.studentName}
-          canEdit={canEdit}
-        />
-      )}
+      {selectedRegistration && (() => {
+        const liveRegData = paymentsByRegistration[selectedRegistration.registrationId] || selectedRegistration;
+        return (
+          <PaymentProfileDialog
+            open={!!selectedRegistration}
+            onOpenChange={(open) => !open && setSelectedRegistration(null)}
+            registrationId={liveRegData.registrationId}
+            payments={liveRegData.payments}
+            subscription={liveRegData.subscription}
+            parentName={liveRegData.parentName}
+            studentName={liveRegData.studentName}
+            canEdit={canEdit}
+          />
+        );
+      })()}
     </DashboardLayout>
   );
 };
