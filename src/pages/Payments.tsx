@@ -364,18 +364,38 @@ const Payments = () => {
 
         {/* Active / Archive Main Tabs */}
         <div className="space-y-3 animate-fade-in" style={{ animationDelay: '0.15s' }}>
-          <Tabs value={mainTab} onValueChange={(v) => { setMainTab(v as 'active' | 'archive'); setArchiveYear('all'); }}>
-            <TabsList className="bg-muted/50 p-1 rounded-xl h-auto">
-              <TabsTrigger value="active" className="gap-2 rounded-lg px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
-                Active
-                <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">{activePayments.length}</Badge>
-              </TabsTrigger>
-              <TabsTrigger value="archive" className="gap-2 rounded-lg px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
-                Archive
-                <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">{archivedPayments.length}</Badge>
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <Tabs value={mainTab} onValueChange={(v) => { setMainTab(v as 'active' | 'archive'); setArchiveYear('all'); }}>
+              <TabsList className="bg-muted/50 p-1 rounded-xl h-auto">
+                <TabsTrigger value="active" className="gap-2 rounded-lg px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
+                  Active
+                  <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">{activePayments.length}</Badge>
+                </TabsTrigger>
+                <TabsTrigger value="archive" className="gap-2 rounded-lg px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
+                  Archive
+                  <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">{archivedPayments.length}</Badge>
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button className="gap-2 h-10 rounded-xl shadow-sm">
+                  <Download className="h-4 w-4" />
+                  Export
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => exportPaymentsExcel(filteredGrouped, `payments-${mainTab}`)}>
+                  <FileSpreadsheet className="h-4 w-4 mr-2 text-emerald-600" />
+                  Download Excel
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => exportPaymentsPDF(filteredGrouped, `payments-${mainTab}`, `Payments — ${mainTab === 'active' ? 'Active' : 'Archive'}`)}>
+                  <FileText className="h-4 w-4 mr-2 text-red-600" />
+                  Download PDF
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
 
           {mainTab === 'archive' && archiveYears.length > 0 && (
             <div className="flex flex-wrap gap-2">
