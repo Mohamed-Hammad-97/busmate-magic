@@ -533,6 +533,31 @@ const Payments = () => {
                                     }}
                                     variant="icon"
                                   />
+                                  {canEdit && mainTab === 'active' && (
+                                    <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-warning/10 hover:text-warning" title="Archive">
+                                          <Archive className="h-3.5 w-3.5" />
+                                        </Button>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>Archive payments?</AlertDialogTitle>
+                                          <AlertDialogDescription>
+                                            This moves all unpaid installments for {regData.parentName} - {regData.studentName} to the Archive tab and removes them from overdue reminders.
+                                          </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel>{t('common.cancel') || 'Cancel'}</AlertDialogCancel>
+                                          <AlertDialogAction
+                                            onClick={() => archiveSubscriptionMutation.mutate(regData.subscription?.id)}
+                                          >
+                                            Archive
+                                          </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
+                                  )}
                                   {canEdit && (
                                     <AlertDialog>
                                       <AlertDialogTrigger asChild>
