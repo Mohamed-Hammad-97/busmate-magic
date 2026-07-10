@@ -103,7 +103,7 @@ const PaymentReminderDetails = () => {
 
   const filteredPayments = useMemo(() => {
     let filtered = payments.filter((p: any) => {
-      if (p.status === 'paid') return false;
+      if (p.status === 'paid' || p.status === 'archived') return false;
       const dueDate = new Date(p.due_date);
       if (type === 'overdue') return isBefore(dueDate, today);
       if (type === 'due-soon') return isAfter(dueDate, today) && isBefore(dueDate, addDays(today, 7));
