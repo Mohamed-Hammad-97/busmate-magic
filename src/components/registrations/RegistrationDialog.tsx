@@ -403,6 +403,14 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
                   />
                 </div>
                 <div className="space-y-2">
+                  <Label>Payment Phone * (رقم الدفع والتجديد)</Label>
+                  <Input
+                    value={parentData.payment_phone}
+                    onChange={(e) => setParentData((p) => ({ ...p, payment_phone: e.target.value }))}
+                    placeholder="01xxxxxxxxx"
+                  />
+                </div>
+                <div className="space-y-2">
                   <Label>Job</Label>
                   <Input
                     value={parentData.job}
