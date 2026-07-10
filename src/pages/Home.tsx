@@ -491,16 +491,7 @@ const Home = () => {
           </div>
         </div>
 
-        {/* Scroll indicator - bus driving right to left */}
-        <div className="absolute bottom-8 left-0 right-0 overflow-hidden pointer-events-none" aria-hidden="true">
-          <div className="relative h-14">
-            <div className="absolute top-0 animate-[busDriveRTL_7s_linear_infinite]" style={{ willChange: 'transform' }}>
-              <div className="w-14 h-14 rounded-full bg-primary/10 border-2 border-primary/30 flex items-center justify-center shadow-lg backdrop-blur-sm">
-                <Bus className="w-7 h-7 text-primary -scale-x-100" strokeWidth={2.2} />
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* Scroll indicator removed per user request */}
       </section>
 
       {/* Premium About Section */}
