@@ -32,8 +32,10 @@ interface FormData {
   father_phone: string;
   mother_phone: string;
   emergency_phone: string;
+  payment_phone: string;
   city: string;
   job: string;
+  comments: string;
   pickup_latitude: number;
   pickup_longitude: number;
   school_id: string;
@@ -57,8 +59,10 @@ const StudentRegistrationForm: React.FC = () => {
     father_phone: '',
     mother_phone: '',
     emergency_phone: '',
+    payment_phone: '',
     city: '',
     job: '',
+    comments: '',
     pickup_latitude: 30.0444,
     pickup_longitude: 31.2357,
     school_id: '',
@@ -111,8 +115,10 @@ const StudentRegistrationForm: React.FC = () => {
             father_phone: formData.father_phone,
             mother_phone: formData.mother_phone,
             emergency_phone: formData.emergency_phone,
+            payment_phone: formData.payment_phone,
             city: formData.city,
             job: formData.job || undefined,
+            comments: formData.comments || undefined,
             pickup_latitude: formData.pickup_latitude,
             pickup_longitude: formData.pickup_longitude,
             school_id: formData.school_id,
@@ -158,6 +164,10 @@ const StudentRegistrationForm: React.FC = () => {
     }
     if (!formData.emergency_phone.trim()) {
       toast({ title: t('register.student.validation.emergencyPhone'), variant: 'destructive' });
+      return;
+    }
+    if (!formData.payment_phone.trim()) {
+      toast({ title: 'رقم الدفع والتجديد مطلوب', variant: 'destructive' });
       return;
     }
     if (!formData.city) {
@@ -311,6 +321,15 @@ const StudentRegistrationForm: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-2">
+                  <Label className="text-sm font-medium">رقم الدفع والتجديد *</Label>
+                  <Input
+                    value={formData.payment_phone}
+                    onChange={(e) => setFormData((f) => ({ ...f, payment_phone: e.target.value }))}
+                    placeholder="01xxxxxxxxx"
+                    className="h-12 bg-muted/50 border-border/50 focus:bg-background transition-colors"
+                  />
+                </div>
+                <div className="space-y-2">
                   <Label className="text-sm font-medium">{t('register.student.fields.occupation')}</Label>
                   <Input
                     value={formData.job}
@@ -337,6 +356,16 @@ const StudentRegistrationForm: React.FC = () => {
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label className="text-sm font-medium">ملاحظات</Label>
+                  <textarea
+                    value={formData.comments}
+                    onChange={(e) => setFormData((f) => ({ ...f, comments: e.target.value }))}
+                    placeholder="أضف أي ملاحظات أو تعليقات..."
+                    rows={3}
+                    className="w-full rounded-md bg-muted/50 border border-border/50 focus:bg-background transition-colors p-3 text-sm"
+                  />
+                </div>
               </div>
             </div>
 
@@ -360,6 +389,10 @@ const StudentRegistrationForm: React.FC = () => {
                 }
                 if (!formData.emergency_phone.trim()) {
                   toast({ title: t('register.student.validation.emergencyPhone'), variant: 'destructive' });
+                  return;
+                }
+                if (!formData.payment_phone.trim()) {
+                  toast({ title: 'رقم الدفع والتجديد مطلوب', variant: 'destructive' });
                   return;
                 }
                 if (!formData.city) {

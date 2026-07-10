@@ -1528,6 +1528,7 @@ export type Database = {
           mother_phone: string | null
           national_id: string
           parent_name: string
+          payment_phone: string | null
           pickup_latitude: number
           pickup_longitude: number
           updated_at: string
@@ -1545,6 +1546,7 @@ export type Database = {
           mother_phone?: string | null
           national_id: string
           parent_name: string
+          payment_phone?: string | null
           pickup_latitude: number
           pickup_longitude: number
           updated_at?: string
@@ -1562,6 +1564,7 @@ export type Database = {
           mother_phone?: string | null
           national_id?: string
           parent_name?: string
+          payment_phone?: string | null
           pickup_latitude?: number
           pickup_longitude?: number
           updated_at?: string
@@ -1693,6 +1696,7 @@ export type Database = {
       registrations: {
         Row: {
           car_type: Database["public"]["Enums"]["car_type"]
+          comments: string | null
           created_at: string
           created_by: string | null
           education_department: Database["public"]["Enums"]["education_department"]
@@ -1707,6 +1711,7 @@ export type Database = {
         }
         Insert: {
           car_type: Database["public"]["Enums"]["car_type"]
+          comments?: string | null
           created_at?: string
           created_by?: string | null
           education_department: Database["public"]["Enums"]["education_department"]
@@ -1721,6 +1726,7 @@ export type Database = {
         }
         Update: {
           car_type?: Database["public"]["Enums"]["car_type"]
+          comments?: string | null
           created_at?: string
           created_by?: string | null
           education_department?: Database["public"]["Enums"]["education_department"]

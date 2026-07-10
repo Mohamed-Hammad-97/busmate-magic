@@ -13,8 +13,10 @@ interface RegistrationData {
   father_phone: string;
   mother_phone?: string;
   emergency_phone: string;
+  payment_phone: string;
   city: string;
   job?: string;
+  comments?: string;
   pickup_latitude: number;
   pickup_longitude: number;
   school_id: string;
@@ -103,6 +105,18 @@ serve(async (req) => {
     if (data.mother_phone && !validatePhone(data.mother_phone)) {
       return new Response(
         JSON.stringify({ error: "Invalid mother phone format (must be 01xxxxxxxxx)" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (!data.payment_phone?.trim()) {
+      return new Response(
+        JSON.stringify({ error: "Payment phone is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (!validatePhone(data.payment_phone)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid payment phone format (must be 01xxxxxxxxx)" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -223,6 +237,7 @@ serve(async (req) => {
             father_phone: data.father_phone,
             mother_phone: data.mother_phone || null,
             emergency_phone: data.emergency_phone,
+            payment_phone: data.payment_phone,
             city: sanitizeString(data.city),
             job: data.job ? sanitizeString(data.job) : null,
             pickup_latitude: data.pickup_latitude,
@@ -254,6 +269,7 @@ serve(async (req) => {
         grade: data.grade,
         car_type: data.car_type,
         education_department: data.education_department,
+        comments: data.comments ? sanitizeString(data.comments) : null,
         status: 'pending_fees',
       });
 
