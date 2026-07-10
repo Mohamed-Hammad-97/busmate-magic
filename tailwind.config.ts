@@ -122,6 +122,11 @@ export default {
           "0%, 100%": { transform: "translateY(0)" },
           "50%": { transform: "translateY(-10px)" },
         },
+        "bus-cross": {
+          "0%": { transform: "translateX(100vw)" },
+          "100%": { transform: "translateX(-100%)" },
+        },
+
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -132,6 +137,8 @@ export default {
         "slide-in-right": "slide-in-right 0.6s ease-out forwards",
         "scale-in": "scale-in 0.4s ease-out forwards",
         "float": "float 3s ease-in-out infinite",
+        "bus-cross": "bus-cross 8s linear infinite",
+
       },
       fontFamily: {
         sans: ['"Plus Jakarta Sans"', '"IBM Plex Sans Arabic"', 'system-ui', 'sans-serif'],
