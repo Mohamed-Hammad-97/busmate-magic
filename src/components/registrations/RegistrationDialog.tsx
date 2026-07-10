@@ -194,6 +194,7 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
             father_phone: parentData.father_phone,
             mother_phone: parentData.mother_phone || null,
             emergency_phone: parentData.emergency_phone,
+            payment_phone: parentData.payment_phone,
             city: parentData.city,
             job: parentData.job || null,
             pickup_latitude: parentData.pickup_latitude,
@@ -212,9 +213,9 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
             car_type: regData.car_type,
             education_department: regData.education_department,
             status: regData.status,
+            comments: regData.comments || null,
           })
           .eq('id', registration.id);
-        if (regError) throw regError;
         if (regError) throw regError;
       } else {
         let parentId: string;
