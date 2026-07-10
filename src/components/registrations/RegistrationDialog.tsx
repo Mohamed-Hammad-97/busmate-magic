@@ -550,6 +550,15 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
                     </Select>
                   </div>
                 )}
+                <div className="space-y-2 sm:col-span-2">
+                  <Label>Comments (ملاحظات)</Label>
+                  <Textarea
+                    value={regData.comments}
+                    onChange={(e) => setRegData((r) => ({ ...r, comments: e.target.value }))}
+                    placeholder="Any notes or comments"
+                    rows={3}
+                  />
+                </div>
               </div>
             </TabsContent>
           </Tabs>
