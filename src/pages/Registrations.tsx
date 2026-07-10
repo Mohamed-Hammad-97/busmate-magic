@@ -174,12 +174,12 @@ const Registrations: React.FC = () => {
       if (reg.status !== 'archived') return false;
       const y = String(new Date(reg.updated_at || reg.created_at).getFullYear());
       const matchesYear = archiveYear === 'all' || y === archiveYear;
-      return matchesSearch && matchesSchool && matchesYear;
+      return matchesSearch && matchesSchool && matchesYear && matchesPhone && matchesName;
     }
 
     const matchesStatus =
       statusFilter === 'all' ? reg.status !== 'archived' : reg.status === statusFilter;
-    return matchesSearch && matchesStatus && matchesSchool;
+    return matchesSearch && matchesStatus && matchesSchool && matchesPhone && matchesName;
   });
 
   const handleViewDetails = (registration: Registration) => {
