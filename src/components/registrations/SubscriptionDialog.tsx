@@ -202,7 +202,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
       }
     },
     onSuccess: () => {
-      toast({ title: 'Subscription created successfully' });
+      toast({ title: 'Subscription saved successfully' });
       queryClient.invalidateQueries({ queryKey: ['payments'] });
       queryClient.invalidateQueries({ queryKey: ['registrations'] });
       queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
