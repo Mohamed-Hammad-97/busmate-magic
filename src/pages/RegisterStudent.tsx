@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import StudentRegistrationForm from '@/components/registration/StudentRegistrationForm';
 import seaterLogo from '@/assets/seater-logo.jpg';
 import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher';
+import PageSeo from '@/components/seo/PageSeo';
 
 const RegisterStudent: React.FC = () => {
   const { t } = useTranslation();
@@ -13,6 +14,11 @@ const RegisterStudent: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary/10 to-background py-8 px-4">
+      <PageSeo
+        title="Student School Bus Registration | Seater"
+        description="Register your child for safe, GPS-tracked school bus transportation with professional drivers and door-to-door service."
+        path="/register/student"
+      />
       <div className="absolute top-4 right-4">
         <LanguageSwitcher />
       </div>

@@ -20,6 +20,7 @@ import LocationPickerMap from '@/components/schools/LocationPickerMap';
 import { GoogleMapsProvider } from '@/components/maps/GoogleMapsProvider';
 import seaterLogo from '@/assets/seater-logo.jpg';
 import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher';
+import PageSeo from '@/components/seo/PageSeo';
 
 interface PrivateFormData {
   full_name: string;
@@ -160,6 +161,11 @@ Notes: ${formData.notes || 'N/A'}
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
+      <PageSeo
+        title="Private Transportation Registration | Seater"
+        description="Book premium private transportation with flexible routes, professional drivers, and 24/7 support."
+        path="/register/private"
+      />
       {/* Background Decorations */}
       <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-background to-purple-500/5"></div>
       <div className="absolute top-20 right-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"></div>

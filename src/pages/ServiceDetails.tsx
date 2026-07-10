@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import seaterLogo from '@/assets/seater-logo.jpg';
 import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher';
+import PageSeo from '@/components/seo/PageSeo';
 
 // Import app screen images
 import privateScreen1 from '@/assets/private-screen-1.png';
@@ -113,6 +114,10 @@ const ServiceDetails: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <PageSeo
+        title={`${serviceName} | Seater`}
+        description={description}
+      />
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50 shadow-sm">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
