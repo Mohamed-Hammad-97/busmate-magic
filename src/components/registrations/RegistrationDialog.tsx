@@ -318,6 +318,10 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
       toast({ title: 'Please enter emergency phone', variant: 'destructive' });
       return;
     }
+    if (!parentData.payment_phone.trim()) {
+      toast({ title: 'Please enter payment phone (رقم الدفع والتجديد)', variant: 'destructive' });
+      return;
+    }
     if (!parentData.city) {
       toast({ title: 'Please select city', variant: 'destructive' });
       return;
