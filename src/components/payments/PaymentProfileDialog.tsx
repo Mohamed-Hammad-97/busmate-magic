@@ -50,6 +50,7 @@ import { cn } from '@/lib/utils';
 import { InvoiceGenerator } from './InvoiceGenerator';
 import { ReceiptUpload } from './ReceiptUpload';
 import { useAuth } from '@/contexts/AuthContext';
+import SubscriptionDialog from '@/components/registrations/SubscriptionDialog';
 
 interface PaymentProfileDialogProps {
   open: boolean;
@@ -79,6 +80,22 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
   const [editPaidDate, setEditPaidDate] = useState('');
   const [editAmount, setEditAmount] = useState('');
   const [activeTab, setActiveTab] = useState('installments');
+  const [editSubOpen, setEditSubOpen] = useState(false);
+  const [editRegistration, setEditRegistration] = useState<any>(null);
+
+  const openEditSubscription = async () => {
+    const { data, error } = await supabase
+      .from('registrations')
+      .select('*, parent_accounts(*), schools(*)')
+      .eq('id', registrationId)
+      .maybeSingle();
+    if (error || !data) {
+      toast.error('Unable to load registration');
+      return;
+    }
+    setEditRegistration(data);
+    setEditSubOpen(true);
+  };
 
   // Extra fee form state
   const [feePaymentIds, setFeePaymentIds] = useState<string[]>([]);
@@ -294,8 +311,14 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
 
         <ScrollArea className="max-h-[55vh]">
           <div className="px-6 py-5 space-y-4">
-            {/* Invoice Download */}
-            <div className="flex justify-end">
+            {/* Invoice Download + Edit Subscription */}
+            <div className="flex justify-end gap-2">
+              {canEdit && (
+                <Button variant="outline" size="sm" className="gap-2" onClick={openEditSubscription}>
+                  <Edit2 className="h-3.5 w-3.5" />
+                  Edit Subscription
+                </Button>
+              )}
               <InvoiceGenerator
                 data={{
                   parentName,
@@ -569,6 +592,15 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
           </div>
         </ScrollArea>
       </DialogContent>
+      <SubscriptionDialog
+        open={editSubOpen}
+        onOpenChange={setEditSubOpen}
+        registration={editRegistration}
+        onSuccess={() => {
+          setEditSubOpen(false);
+          queryClient.invalidateQueries({ queryKey: ['payments'] });
+        }}
+      />
     </Dialog>
   );
 };
