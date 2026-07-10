@@ -30,7 +30,8 @@ import {
   Sparkles,
   CheckCircle2,
   GraduationCap,
-  UserRound
+  UserRound,
+  Bus
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import seaterLogo from "@/assets/seater-logo.jpg";
@@ -492,9 +493,9 @@ const Home = () => {
         </div>
 
         {/* Scroll indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
-          <div className="w-8 h-12 rounded-full border-2 border-muted-foreground/30 flex items-start justify-center pt-2">
-            <div className="w-1.5 h-3 rounded-full bg-muted-foreground/50 animate-pulse"></div>
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce" aria-hidden="true">
+          <div className="w-14 h-14 rounded-full bg-primary/10 border-2 border-primary/30 flex items-center justify-center shadow-lg backdrop-blur-sm">
+            <Bus className="w-7 h-7 text-primary" strokeWidth={2.2} />
           </div>
         </div>
       </section>
