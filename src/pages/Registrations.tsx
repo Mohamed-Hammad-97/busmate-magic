@@ -1,5 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Search, Eye, Edit2, ClipboardList, DollarSign, Link2, Map, TrendingUp, CheckCircle, Clock, XCircle, GraduationCap, Users, School, Trash2, UserX, Archive } from 'lucide-react';
+import { Plus, Search, Eye, Edit2, ClipboardList, DollarSign, Link2, Map, TrendingUp, CheckCircle, Clock, XCircle, GraduationCap, Users, School, Trash2, UserX, Archive, Download, FileSpreadsheet, FileText } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { exportRegistrationsExcel, exportRegistrationsPDF } from '@/lib/exportRegistrations';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
@@ -370,20 +372,40 @@ const Registrations: React.FC = () => {
         </div>
 
         {/* Active / Archive Tabs */}
-        <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as 'active' | 'archive')} className="animate-fade-in" style={{ animationDelay: '0.15s' }}>
-          <TabsList>
-            <TabsTrigger value="active" className="gap-2">
-              <ClipboardList className="h-4 w-4" />
-              Active
-              <Badge variant="secondary" className="ml-1">{cityFilteredRegistrations.filter((r) => r.status !== 'archived').length}</Badge>
-            </TabsTrigger>
-            <TabsTrigger value="archive" className="gap-2">
-              <Archive className="h-4 w-4" />
-              Archive
-              <Badge variant="secondary" className="ml-1">{archivedRegistrations.length}</Badge>
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <div className="flex items-center justify-between gap-3 flex-wrap animate-fade-in" style={{ animationDelay: '0.15s' }}>
+          <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as 'active' | 'archive')}>
+            <TabsList>
+              <TabsTrigger value="active" className="gap-2">
+                <ClipboardList className="h-4 w-4" />
+                Active
+                <Badge variant="secondary" className="ml-1">{cityFilteredRegistrations.filter((r) => r.status !== 'archived').length}</Badge>
+              </TabsTrigger>
+              <TabsTrigger value="archive" className="gap-2">
+                <Archive className="h-4 w-4" />
+                Archive
+                <Badge variant="secondary" className="ml-1">{archivedRegistrations.length}</Badge>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button className="gap-2 h-10 rounded-xl shadow-sm">
+                <Download className="h-4 w-4" />
+                Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => exportRegistrationsExcel(filteredRegistrations, `registrations-${mainTab}`)}>
+                <FileSpreadsheet className="h-4 w-4 mr-2 text-emerald-600" />
+                Download Excel
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => exportRegistrationsPDF(filteredRegistrations, `registrations-${mainTab}`, `Registrations — ${mainTab === 'active' ? 'Active' : 'Archive'}`)}>
+                <FileText className="h-4 w-4 mr-2 text-red-600" />
+                Download PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
 
         {/* Archive year pills */}
         {mainTab === 'archive' && archiveYears.length > 0 && (
