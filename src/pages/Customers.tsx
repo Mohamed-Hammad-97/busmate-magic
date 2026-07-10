@@ -149,12 +149,23 @@ const Customers = () => {
     else deleteCustomerMutation.mutate(deleteTarget);
   };
 
-  const filteredCustomers = customers.filter((customer) =>
-    customer.parent_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.national_id.includes(searchTerm) ||
-    customer.father_phone.includes(searchTerm) ||
-    customer.city.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredCustomers = customers.filter((customer) => {
+    const matchesSearch =
+      customer.parent_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customer.national_id.includes(searchTerm) ||
+      customer.father_phone.includes(searchTerm) ||
+      customer.city.toLowerCase().includes(searchTerm.toLowerCase());
+    const phoneNorm = phoneFilter.replace(/\s+/g, '');
+    const matchesPhone = !phoneNorm || [
+      (customer as any).father_phone,
+      (customer as any).mother_phone,
+      (customer as any).emergency_phone,
+      (customer as any).payment_phone,
+    ].some((p) => (p || '').replace(/\s+/g, '').includes(phoneNorm));
+    const nameNorm = nameFilter.trim().toLowerCase();
+    const matchesName = !nameNorm || (customer.parent_name || '').toLowerCase().includes(nameNorm);
+    return matchesSearch && matchesPhone && matchesName;
+  });
 
   const handleEdit = (customer: ParentAccount) => {
     setSelectedCustomer(customer);
