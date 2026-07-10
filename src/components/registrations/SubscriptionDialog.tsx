@@ -51,6 +51,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
 
   const [subscriptionType, setSubscriptionType] = useState<Enums<'subscription_type'>>('yearly');
   const [value, setValue] = useState<string>('');
+  const [insurance, setInsurance] = useState<string>('');
   const [installments, setInstallments] = useState<string>('1');
   const [startDate, setStartDate] = useState<Date>(new Date());
 
@@ -58,6 +59,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
     if (open) {
       setSubscriptionType('yearly');
       setValue('');
+      setInsurance('');
       setInstallments('1');
       setStartDate(new Date());
     }
