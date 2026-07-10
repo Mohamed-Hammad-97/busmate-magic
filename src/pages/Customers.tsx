@@ -260,14 +260,35 @@ const Customers = () => {
 
         {/* Search Bar */}
         <div className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder={t('customers.searchPlaceholder')}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 h-11 bg-card border-border/50 focus:border-primary/50 rounded-xl transition-all"
-            />
+          <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
+            <div className="relative flex-1 min-w-[200px] max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder={t('customers.searchPlaceholder')}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 h-11 bg-card border-border/50 focus:border-primary/50 rounded-xl transition-all"
+              />
+            </div>
+            <div className="relative w-full sm:w-[200px]">
+              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Filter by phone..."
+                value={phoneFilter}
+                onChange={(e) => setPhoneFilter(e.target.value)}
+                dir="ltr"
+                className="pl-10 h-11 bg-card border-border/50 focus:border-primary/50 rounded-xl transition-all"
+              />
+            </div>
+            <div className="relative w-full sm:w-[200px]">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Filter by name..."
+                value={nameFilter}
+                onChange={(e) => setNameFilter(e.target.value)}
+                className="pl-10 h-11 bg-card border-border/50 focus:border-primary/50 rounded-xl transition-all"
+              />
+            </div>
           </div>
         </div>
 
