@@ -177,6 +177,22 @@ const Payments = () => {
     onError: (error) => { toast.error(t('payments.paymentError')); console.error(error); },
   });
 
+  const archiveSubscriptionMutation = useMutation({
+    mutationFn: async (subscriptionId: string) => {
+      const { error } = await supabase
+        .from('payments')
+        .update({ status: 'archived' })
+        .eq('subscription_id', subscriptionId)
+        .in('status', ['pending', 'overdue']);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      toast.success('Moved to archive');
+    },
+    onError: (error) => { toast.error('Failed to archive'); console.error(error); },
+  });
+
   const paymentsByRegistration = useMemo(() => {
     const grouped: Record<string, { registrationId: string; payments: any[]; subscription: any; parentName: string; studentName: string; totalAmount: number; paidAmount: number; isFullyPaid: boolean; }> = {};
     payments.forEach((payment: any) => {
