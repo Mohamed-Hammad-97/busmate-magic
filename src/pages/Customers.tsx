@@ -26,6 +26,8 @@ const Customers = () => {
   const { selectedCity } = useCity();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
+  const [phoneFilter, setPhoneFilter] = useState('');
+  const [nameFilter, setNameFilter] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<ParentAccount | null>(null);
