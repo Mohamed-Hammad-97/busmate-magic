@@ -447,13 +447,32 @@ const Registrations: React.FC = () => {
         )}
 
         {/* Search & Filter Bar */}
-        <div className="flex flex-col sm:flex-row gap-3 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-          <div className="relative flex-1">
+        <div className="flex flex-col sm:flex-row gap-3 animate-fade-in flex-wrap" style={{ animationDelay: '0.2s' }}>
+          <div className="relative flex-1 min-w-[200px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search by student, parent, ID, or school..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 h-11 bg-card border-border/50 focus:border-primary/50 rounded-xl transition-all"
+            />
+          </div>
+          <div className="relative w-full sm:w-[200px]">
+            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Filter by phone..."
+              value={phoneFilter}
+              onChange={(e) => setPhoneFilter(e.target.value)}
+              className="pl-10 h-11 bg-card border-border/50 focus:border-primary/50 rounded-xl transition-all"
+              dir="ltr"
+            />
+          </div>
+          <div className="relative w-full sm:w-[200px]">
+            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Filter by name..."
+              value={nameFilter}
+              onChange={(e) => setNameFilter(e.target.value)}
               className="pl-10 h-11 bg-card border-border/50 focus:border-primary/50 rounded-xl transition-all"
             />
           </div>
