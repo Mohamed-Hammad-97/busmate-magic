@@ -51,6 +51,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
 
   const [subscriptionType, setSubscriptionType] = useState<Enums<'subscription_type'>>('yearly');
   const [value, setValue] = useState<string>('');
+  const [insurance, setInsurance] = useState<string>('');
   const [installments, setInstallments] = useState<string>('1');
   const [startDate, setStartDate] = useState<Date>(new Date());
 
@@ -58,6 +59,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
     if (open) {
       setSubscriptionType('yearly');
       setValue('');
+      setInsurance('');
       setInstallments('1');
       setStartDate(new Date());
     }
@@ -119,6 +121,20 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
 
       // Create payments for each installment using selected start date
       const payments = [];
+
+      // Insurance as installment_number 0 (appears before installments)
+      const insuranceAmount = parseFloat(insurance) || 0;
+      if (insuranceAmount > 0) {
+        payments.push({
+          subscription_id: subscriptionId,
+          amount: insuranceAmount,
+          installment_number: 0,
+          due_date: startDate.toISOString().split('T')[0],
+          status: 'pending' as Enums<'payment_status'>,
+          notes: 'Insurance',
+        });
+      }
+
       for (let i = 0; i < numInstallments; i++) {
         const dueDate = new Date(startDate);
         if (subscriptionType === 'yearly') {
@@ -232,6 +248,18 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
           </div>
 
           <div className="space-y-2">
+            <Label>Insurance / التأمين (EGP)</Label>
+            <Input
+              type="number"
+              value={insurance}
+              onChange={(e) => setInsurance(e.target.value)}
+              placeholder="Enter insurance amount (optional)"
+              min="0"
+              step="0.01"
+            />
+          </div>
+
+          <div className="space-y-2">
             <Label>Number of Installments</Label>
             <Select value={installments} onValueChange={setInstallments}>
               <SelectTrigger>
@@ -280,20 +308,29 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
               <p className="text-xs text-muted-foreground">
                 {numInstallments} x {perInstallment.toFixed(2)} EGP = {totalValue.toFixed(2)} EGP
               </p>
-              {numInstallments > 1 && (
-                <div className="text-xs text-muted-foreground space-y-0.5 border-t border-primary/10 pt-2 mt-1">
-                  {Array.from({ length: numInstallments }, (_, i) => {
-                    const d = new Date(startDate);
-                    d.setMonth(d.getMonth() + i);
-                    return (
-                      <div key={i} className="flex justify-between">
-                        <span>Installment {i + 1}</span>
-                        <span>{format(d, "dd MMM yyyy")}</span>
-                      </div>
-                    );
-                  })}
-                </div>
+              {(parseFloat(insurance) || 0) > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  + Insurance: {(parseFloat(insurance) || 0).toFixed(2)} EGP
+                </p>
               )}
+              <div className="text-xs text-muted-foreground space-y-0.5 border-t border-primary/10 pt-2 mt-1">
+                {(parseFloat(insurance) || 0) > 0 && (
+                  <div className="flex justify-between font-medium">
+                    <span>Insurance / التأمين</span>
+                    <span>{format(startDate, "dd MMM yyyy")}</span>
+                  </div>
+                )}
+                {numInstallments > 1 && Array.from({ length: numInstallments }, (_, i) => {
+                  const d = new Date(startDate);
+                  d.setMonth(d.getMonth() + i);
+                  return (
+                    <div key={i} className="flex justify-between">
+                      <span>Installment {i + 1}</span>
+                      <span>{format(d, "dd MMM yyyy")}</span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
 
