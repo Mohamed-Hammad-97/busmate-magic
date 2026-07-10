@@ -166,6 +166,10 @@ const StudentRegistrationForm: React.FC = () => {
       toast({ title: t('register.student.validation.emergencyPhone'), variant: 'destructive' });
       return;
     }
+    if (!formData.payment_phone.trim()) {
+      toast({ title: 'رقم الدفع والتجديد مطلوب', variant: 'destructive' });
+      return;
+    }
     if (!formData.city) {
       toast({ title: t('register.student.validation.city'), variant: 'destructive' });
       return;
