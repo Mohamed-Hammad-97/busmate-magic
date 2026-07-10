@@ -44,6 +44,7 @@ interface ParentFormData {
   father_phone: string;
   mother_phone: string;
   emergency_phone: string;
+  payment_phone: string;
   city: string;
   job: string;
   pickup_latitude: number;
@@ -57,6 +58,7 @@ interface RegistrationFormData {
   car_type: Enums<'car_type'>;
   education_department: Enums<'education_department'>;
   status: Enums<'registration_status'>;
+  comments: string;
 }
 
 const gradeOptions = [
