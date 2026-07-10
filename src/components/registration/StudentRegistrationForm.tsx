@@ -352,6 +352,16 @@ const StudentRegistrationForm: React.FC = () => {
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label className="text-sm font-medium">ملاحظات</Label>
+                  <textarea
+                    value={formData.comments}
+                    onChange={(e) => setFormData((f) => ({ ...f, comments: e.target.value }))}
+                    placeholder="أضف أي ملاحظات أو تعليقات..."
+                    rows={3}
+                    className="w-full rounded-md bg-muted/50 border border-border/50 focus:bg-background transition-colors p-3 text-sm"
+                  />
+                </div>
               </div>
             </div>
 
