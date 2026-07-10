@@ -355,7 +355,13 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
                         const feesTotal = paymentFees.reduce((s: number, f: any) => s + Number(f.amount), 0);
                         return (
                           <TableRow key={payment.id} className="hover:bg-muted/20 transition-colors">
-                            <TableCell className="text-sm font-medium">{payment.installment_number}</TableCell>
+                            <TableCell className="text-sm font-medium">
+                              {payment.installment_number === 0 ? (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-primary/10 text-primary">Insurance</span>
+                              ) : (
+                                payment.installment_number
+                              )}
+                            </TableCell>
                             <TableCell>
                               {editingPaymentId === payment.id ? (
                                 <Input type="number" value={editAmount} onChange={(e) => setEditAmount(e.target.value)} className="w-24 h-8 text-xs" min="0" />
