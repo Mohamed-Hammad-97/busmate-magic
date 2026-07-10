@@ -33,18 +33,18 @@ export const PaymentReminders: React.FC<PaymentRemindersProps> = ({ payments, on
   const today = new Date();
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
 
-  const overduePayments = payments.filter(p =>
-    p.status !== 'paid' && isBefore(new Date(p.due_date), today)
+  const activeOnly = payments.filter(p => p.status !== 'paid' && p.status !== 'archived');
+
+  const overduePayments = activeOnly.filter(p =>
+    isBefore(new Date(p.due_date), today)
   );
 
-  const dueSoonPayments = payments.filter(p =>
-    p.status !== 'paid' &&
+  const dueSoonPayments = activeOnly.filter(p =>
     isAfter(new Date(p.due_date), today) &&
     isBefore(new Date(p.due_date), addDays(today, 7))
   );
 
-  const upcomingPayments = payments.filter(p =>
-    p.status !== 'paid' &&
+  const upcomingPayments = activeOnly.filter(p =>
     isAfter(new Date(p.due_date), addDays(today, 7)) &&
     isBefore(new Date(p.due_date), addDays(today, 30))
   );
