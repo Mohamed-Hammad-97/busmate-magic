@@ -250,28 +250,36 @@ const Payments = () => {
   }, [payments, paymentsByRegistration, paymentTab]);
 
   const filteredPayments = filteredByPaymentStatus.filter((payment: any) => {
-    const parentName = payment.subscriptions?.registrations?.parent_accounts?.parent_name || '';
+    const pa = payment.subscriptions?.registrations?.parent_accounts;
+    const parentName = pa?.parent_name || '';
     const studentName = payment.subscriptions?.registrations?.student_name || '';
     const matchesSearch = parentName.toLowerCase().includes(searchTerm.toLowerCase()) || studentName.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || payment.status === statusFilter;
     const matchesInstallments = !installmentFilter || payment.subscriptions?.number_of_installments === parseInt(installmentFilter);
-    return matchesSearch && matchesStatus && matchesInstallments;
+    const phoneNorm = phoneFilter.replace(/\s+/g, '');
+    const matchesPhone = !phoneNorm || [pa?.father_phone, pa?.mother_phone, pa?.emergency_phone, pa?.payment_phone]
+      .some((p) => (p || '').replace(/\s+/g, '').includes(phoneNorm));
+    const nameNorm = nameFilter.trim().toLowerCase();
+    const matchesName = !nameNorm || [studentName, parentName].some((n) => n.toLowerCase().includes(nameNorm));
+    return matchesSearch && matchesStatus && matchesInstallments && matchesPhone && matchesName;
   });
 
   // Grouped view filtered by search/status
   const filteredGrouped = useMemo(() => {
     const result: typeof paymentsByRegistration = {};
+    const phoneNorm = phoneFilter.replace(/\s+/g, '');
+    const nameNorm = nameFilter.trim().toLowerCase();
     Object.entries(paymentsByRegistration).forEach(([regId, regData]) => {
-      // Filter by payment tab
       if (paymentTab === 'fully_paid' && !regData.isFullyPaid) return;
       if (paymentTab === 'partial' && regData.isFullyPaid) return;
-      // Filter by search
       const matchesSearch = regData.parentName.toLowerCase().includes(searchTerm.toLowerCase()) || regData.studentName.toLowerCase().includes(searchTerm.toLowerCase());
       if (!matchesSearch) return;
+      if (phoneNorm && !regData.phones.some((p) => p.replace(/\s+/g, '').includes(phoneNorm))) return;
+      if (nameNorm && !(regData.parentName.toLowerCase().includes(nameNorm) || regData.studentName.toLowerCase().includes(nameNorm))) return;
       result[regId] = regData;
     });
     return result;
-  }, [paymentsByRegistration, paymentTab, searchTerm]);
+  }, [paymentsByRegistration, paymentTab, searchTerm, phoneFilter, nameFilter]);
 
   const statusLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: React.ReactNode }> = {
     paid: { label: t('payments.paid'), variant: 'default', icon: <CheckCircle className="h-4 w-4" /> },
