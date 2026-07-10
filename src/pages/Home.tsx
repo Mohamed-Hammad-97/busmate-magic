@@ -491,7 +491,12 @@ const Home = () => {
           </div>
         </div>
 
-        {/* Scroll indicator removed per user request */}
+        {/* Scroll indicator */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce" aria-hidden="true">
+          <div className="w-14 h-14 rounded-full bg-primary/10 border-2 border-primary/30 flex items-center justify-center shadow-lg backdrop-blur-sm">
+            <Bus className="w-7 h-7 text-primary" strokeWidth={2.2} />
+          </div>
+        </div>
       </section>
 
       {/* Premium About Section */}

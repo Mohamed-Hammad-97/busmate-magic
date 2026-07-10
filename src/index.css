@@ -428,17 +428,6 @@
     }
   }
 
-  /* Bus driving right to left across the viewport */
-  @keyframes busDriveRTL {
-    0% {
-      transform: translateX(100vw);
-    }
-    100% {
-      transform: translateX(-5rem);
-    }
-  }
-
-
   .animate-pulse-glow {
     animation: pulseGlow 2s ease-in-out infinite;
   }
