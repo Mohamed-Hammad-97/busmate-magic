@@ -50,6 +50,7 @@ import { cn } from '@/lib/utils';
 import { InvoiceGenerator } from './InvoiceGenerator';
 import { ReceiptUpload } from './ReceiptUpload';
 import { useAuth } from '@/contexts/AuthContext';
+import SubscriptionDialog from '@/components/registrations/SubscriptionDialog';
 
 interface PaymentProfileDialogProps {
   open: boolean;
