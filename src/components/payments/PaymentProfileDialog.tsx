@@ -592,6 +592,15 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
           </div>
         </ScrollArea>
       </DialogContent>
+      <SubscriptionDialog
+        open={editSubOpen}
+        onOpenChange={setEditSubOpen}
+        registration={editRegistration}
+        onSuccess={() => {
+          setEditSubOpen(false);
+          queryClient.invalidateQueries({ queryKey: ['payments'] });
+        }}
+      />
     </Dialog>
   );
 };
