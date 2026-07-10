@@ -311,8 +311,14 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
 
         <ScrollArea className="max-h-[55vh]">
           <div className="px-6 py-5 space-y-4">
-            {/* Invoice Download */}
-            <div className="flex justify-end">
+            {/* Invoice Download + Edit Subscription */}
+            <div className="flex justify-end gap-2">
+              {canEdit && (
+                <Button variant="outline" size="sm" className="gap-2" onClick={openEditSubscription}>
+                  <Edit2 className="h-3.5 w-3.5" />
+                  Edit Subscription
+                </Button>
+              )}
               <InvoiceGenerator
                 data={{
                   parentName,
