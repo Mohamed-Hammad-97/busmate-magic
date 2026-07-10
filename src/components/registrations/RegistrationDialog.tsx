@@ -84,6 +84,7 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
     father_phone: '',
     mother_phone: '',
     emergency_phone: '',
+    payment_phone: '',
     city: '',
     job: '',
     pickup_latitude: 30.0444,
@@ -97,6 +98,7 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
     car_type: 'ac',
     education_department: 'national',
     status: 'pending_fees',
+    comments: '',
   });
 
   // Fetch schools
