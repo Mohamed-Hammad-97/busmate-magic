@@ -156,6 +156,20 @@ const Registrations: React.FC = () => {
       reg.schools?.name?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesSchool = schoolFilter === 'all' || reg.school_id === schoolFilter;
 
+    const phoneNorm = phoneFilter.replace(/\s+/g, '');
+    const matchesPhone = !phoneNorm || [
+      reg.parent_accounts?.father_phone,
+      reg.parent_accounts?.mother_phone,
+      reg.parent_accounts?.emergency_phone,
+      reg.parent_accounts?.payment_phone,
+    ].some((p) => (p || '').replace(/\s+/g, '').includes(phoneNorm));
+
+    const nameNorm = nameFilter.trim().toLowerCase();
+    const matchesName = !nameNorm || [
+      reg.student_name,
+      reg.parent_accounts?.parent_name,
+    ].some((n) => (n || '').toLowerCase().includes(nameNorm));
+
     if (mainTab === 'archive') {
       if (reg.status !== 'archived') return false;
       const y = String(new Date(reg.updated_at || reg.created_at).getFullYear());
