@@ -47,6 +47,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
 }) => {
   const { toast } = useToast();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   const [subscriptionType, setSubscriptionType] = useState<Enums<'subscription_type'>>('yearly');
   const [value, setValue] = useState<string>('');
