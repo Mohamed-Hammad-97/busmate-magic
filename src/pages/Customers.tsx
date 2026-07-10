@@ -11,7 +11,7 @@ import {
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus, Search, Users, MapPin, Phone, Edit, Eye, TrendingUp, UserCheck, Building2, ShieldCheck, Loader2, Trash2, UserX } from 'lucide-react';
+import { Plus, Search, Users, MapPin, Phone, Edit, Eye, TrendingUp, UserCheck, Building2, ShieldCheck, Loader2, Trash2, UserX, User } from 'lucide-react';
 import { useCity } from '@/contexts/CityContext';
 import { toast } from 'sonner';
 import type { Tables } from '@/integrations/supabase/types';
