@@ -24,7 +24,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Search, CreditCard, CheckCircle, Clock, AlertCircle, Check, Eye, Hash, TrendingUp, DollarSign, UserCheck, Trash2, Archive, Download, FileSpreadsheet, FileText } from 'lucide-react';
+import { Search, CreditCard, CheckCircle, Clock, AlertCircle, Check, Eye, Hash, TrendingUp, DollarSign, UserCheck, Trash2, Archive, Download, FileSpreadsheet, FileText, Phone, User } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { exportPaymentsExcel, exportPaymentsPDF } from '@/lib/exportPayments';
 import {
@@ -54,6 +54,8 @@ const Payments = () => {
   const { isSuperAdmin, hasDepartment } = useAuth();
   const canEdit = isSuperAdmin || hasDepartment('finance');
   const [searchTerm, setSearchTerm] = useState('');
+  const [phoneFilter, setPhoneFilter] = useState('');
+  const [nameFilter, setNameFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [installmentFilter, setInstallmentFilter] = useState<string>('');
   const [paymentTab, setPaymentTab] = useState<string>('all');
@@ -88,7 +90,7 @@ const Payments = () => {
               registrations (
                 id,
                 student_name,
-                parent_accounts (parent_name, city)
+                parent_accounts (parent_name, city, father_phone, mother_phone, emergency_phone, payment_phone)
               )
             )
           `)
@@ -206,12 +208,23 @@ const Payments = () => {
   });
 
   const paymentsByRegistration = useMemo(() => {
-    const grouped: Record<string, { registrationId: string; payments: any[]; subscription: any; parentName: string; studentName: string; totalAmount: number; paidAmount: number; isFullyPaid: boolean; }> = {};
+    const grouped: Record<string, { registrationId: string; payments: any[]; subscription: any; parentName: string; studentName: string; phones: string[]; totalAmount: number; paidAmount: number; isFullyPaid: boolean; }> = {};
     payments.forEach((payment: any) => {
       const registrationId = payment.subscriptions?.registration_id;
       if (!registrationId) return;
+      const pa = payment.subscriptions?.registrations?.parent_accounts;
       if (!grouped[registrationId]) {
-        grouped[registrationId] = { registrationId, payments: [], subscription: payment.subscriptions, parentName: payment.subscriptions?.registrations?.parent_accounts?.parent_name || '', studentName: payment.subscriptions?.registrations?.student_name || '', totalAmount: payment.subscriptions?.value || 0, paidAmount: 0, isFullyPaid: false };
+        grouped[registrationId] = {
+          registrationId,
+          payments: [],
+          subscription: payment.subscriptions,
+          parentName: pa?.parent_name || '',
+          studentName: payment.subscriptions?.registrations?.student_name || '',
+          phones: [pa?.father_phone, pa?.mother_phone, pa?.emergency_phone, pa?.payment_phone].filter(Boolean) as string[],
+          totalAmount: payment.subscriptions?.value || 0,
+          paidAmount: 0,
+          isFullyPaid: false,
+        };
       }
       grouped[registrationId].payments.push(payment);
       if (payment.status === 'paid') grouped[registrationId].paidAmount += Number(payment.amount);
@@ -237,28 +250,36 @@ const Payments = () => {
   }, [payments, paymentsByRegistration, paymentTab]);
 
   const filteredPayments = filteredByPaymentStatus.filter((payment: any) => {
-    const parentName = payment.subscriptions?.registrations?.parent_accounts?.parent_name || '';
+    const pa = payment.subscriptions?.registrations?.parent_accounts;
+    const parentName = pa?.parent_name || '';
     const studentName = payment.subscriptions?.registrations?.student_name || '';
     const matchesSearch = parentName.toLowerCase().includes(searchTerm.toLowerCase()) || studentName.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || payment.status === statusFilter;
     const matchesInstallments = !installmentFilter || payment.subscriptions?.number_of_installments === parseInt(installmentFilter);
-    return matchesSearch && matchesStatus && matchesInstallments;
+    const phoneNorm = phoneFilter.replace(/\s+/g, '');
+    const matchesPhone = !phoneNorm || [pa?.father_phone, pa?.mother_phone, pa?.emergency_phone, pa?.payment_phone]
+      .some((p) => (p || '').replace(/\s+/g, '').includes(phoneNorm));
+    const nameNorm = nameFilter.trim().toLowerCase();
+    const matchesName = !nameNorm || [studentName, parentName].some((n) => n.toLowerCase().includes(nameNorm));
+    return matchesSearch && matchesStatus && matchesInstallments && matchesPhone && matchesName;
   });
 
   // Grouped view filtered by search/status
   const filteredGrouped = useMemo(() => {
     const result: typeof paymentsByRegistration = {};
+    const phoneNorm = phoneFilter.replace(/\s+/g, '');
+    const nameNorm = nameFilter.trim().toLowerCase();
     Object.entries(paymentsByRegistration).forEach(([regId, regData]) => {
-      // Filter by payment tab
       if (paymentTab === 'fully_paid' && !regData.isFullyPaid) return;
       if (paymentTab === 'partial' && regData.isFullyPaid) return;
-      // Filter by search
       const matchesSearch = regData.parentName.toLowerCase().includes(searchTerm.toLowerCase()) || regData.studentName.toLowerCase().includes(searchTerm.toLowerCase());
       if (!matchesSearch) return;
+      if (phoneNorm && !regData.phones.some((p) => p.replace(/\s+/g, '').includes(phoneNorm))) return;
+      if (nameNorm && !(regData.parentName.toLowerCase().includes(nameNorm) || regData.studentName.toLowerCase().includes(nameNorm))) return;
       result[regId] = regData;
     });
     return result;
-  }, [paymentsByRegistration, paymentTab, searchTerm]);
+  }, [paymentsByRegistration, paymentTab, searchTerm, phoneFilter, nameFilter]);
 
   const statusLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: React.ReactNode }> = {
     paid: { label: t('payments.paid'), variant: 'default', icon: <CheckCircle className="h-4 w-4" /> },
@@ -457,10 +478,18 @@ const Payments = () => {
 
             <TabsContent value={paymentTab} className="mt-4 space-y-4">
               {/* Filters */}
-              <div className="flex flex-col sm:flex-row gap-3">
-                <div className="relative flex-1 max-w-md">
+              <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
+                <div className="relative flex-1 min-w-[200px] max-w-md">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input placeholder={t('common.search') + '...'} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 h-11 bg-card border-border/50 focus:border-primary/50 rounded-xl transition-all" />
+                </div>
+                <div className="relative w-full sm:w-[200px]">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input placeholder="Filter by phone..." value={phoneFilter} onChange={(e) => setPhoneFilter(e.target.value)} dir="ltr" className="pl-10 h-11 bg-card border-border/50 focus:border-primary/50 rounded-xl transition-all" />
+                </div>
+                <div className="relative w-full sm:w-[200px]">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input placeholder="Filter by name..." value={nameFilter} onChange={(e) => setNameFilter(e.target.value)} className="pl-10 h-11 bg-card border-border/50 focus:border-primary/50 rounded-xl transition-all" />
                 </div>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger className="w-[160px] h-11 bg-card border-border/50 rounded-xl">

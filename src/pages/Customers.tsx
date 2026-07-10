@@ -11,7 +11,7 @@ import {
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus, Search, Users, MapPin, Phone, Edit, Eye, TrendingUp, UserCheck, Building2, ShieldCheck, Loader2, Trash2, UserX } from 'lucide-react';
+import { Plus, Search, Users, MapPin, Phone, Edit, Eye, TrendingUp, UserCheck, Building2, ShieldCheck, Loader2, Trash2, UserX, User } from 'lucide-react';
 import { useCity } from '@/contexts/CityContext';
 import { toast } from 'sonner';
 import type { Tables } from '@/integrations/supabase/types';
@@ -26,6 +26,8 @@ const Customers = () => {
   const { selectedCity } = useCity();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
+  const [phoneFilter, setPhoneFilter] = useState('');
+  const [nameFilter, setNameFilter] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<ParentAccount | null>(null);
@@ -147,12 +149,23 @@ const Customers = () => {
     else deleteCustomerMutation.mutate(deleteTarget);
   };
 
-  const filteredCustomers = customers.filter((customer) =>
-    customer.parent_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.national_id.includes(searchTerm) ||
-    customer.father_phone.includes(searchTerm) ||
-    customer.city.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredCustomers = customers.filter((customer) => {
+    const matchesSearch =
+      customer.parent_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customer.national_id.includes(searchTerm) ||
+      customer.father_phone.includes(searchTerm) ||
+      customer.city.toLowerCase().includes(searchTerm.toLowerCase());
+    const phoneNorm = phoneFilter.replace(/\s+/g, '');
+    const matchesPhone = !phoneNorm || [
+      (customer as any).father_phone,
+      (customer as any).mother_phone,
+      (customer as any).emergency_phone,
+      (customer as any).payment_phone,
+    ].some((p) => (p || '').replace(/\s+/g, '').includes(phoneNorm));
+    const nameNorm = nameFilter.trim().toLowerCase();
+    const matchesName = !nameNorm || (customer.parent_name || '').toLowerCase().includes(nameNorm);
+    return matchesSearch && matchesPhone && matchesName;
+  });
 
   const handleEdit = (customer: ParentAccount) => {
     setSelectedCustomer(customer);
@@ -247,14 +260,35 @@ const Customers = () => {
 
         {/* Search Bar */}
         <div className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder={t('customers.searchPlaceholder')}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 h-11 bg-card border-border/50 focus:border-primary/50 rounded-xl transition-all"
-            />
+          <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
+            <div className="relative flex-1 min-w-[200px] max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder={t('customers.searchPlaceholder')}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 h-11 bg-card border-border/50 focus:border-primary/50 rounded-xl transition-all"
+              />
+            </div>
+            <div className="relative w-full sm:w-[200px]">
+              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Filter by phone..."
+                value={phoneFilter}
+                onChange={(e) => setPhoneFilter(e.target.value)}
+                dir="ltr"
+                className="pl-10 h-11 bg-card border-border/50 focus:border-primary/50 rounded-xl transition-all"
+              />
+            </div>
+            <div className="relative w-full sm:w-[200px]">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Filter by name..."
+                value={nameFilter}
+                onChange={(e) => setNameFilter(e.target.value)}
+                className="pl-10 h-11 bg-card border-border/50 focus:border-primary/50 rounded-xl transition-all"
+              />
+            </div>
           </div>
         </div>
 
