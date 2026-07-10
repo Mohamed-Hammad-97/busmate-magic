@@ -13,8 +13,10 @@ interface RegistrationData {
   father_phone: string;
   mother_phone?: string;
   emergency_phone: string;
+  payment_phone: string;
   city: string;
   job?: string;
+  comments?: string;
   pickup_latitude: number;
   pickup_longitude: number;
   school_id: string;
