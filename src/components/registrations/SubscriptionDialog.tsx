@@ -248,6 +248,18 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
           </div>
 
           <div className="space-y-2">
+            <Label>Insurance / التأمين (EGP)</Label>
+            <Input
+              type="number"
+              value={insurance}
+              onChange={(e) => setInsurance(e.target.value)}
+              placeholder="Enter insurance amount (optional)"
+              min="0"
+              step="0.01"
+            />
+          </div>
+
+          <div className="space-y-2">
             <Label>Number of Installments</Label>
             <Select value={installments} onValueChange={setInstallments}>
               <SelectTrigger>
