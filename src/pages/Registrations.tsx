@@ -93,16 +93,28 @@ const Registrations: React.FC = () => {
   const { data: registrations = [], isLoading } = useQuery({
     queryKey: ['registrations'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('registrations')
-        .select(`
-          *,
-          parent_accounts (*),
-          schools (*)
-        `)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data as Registration[];
+      const pageSize = 1000;
+      let from = 0;
+      const all: Registration[] = [];
+      // Paginate past Supabase's 1000-row cap so filters can see every record.
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { data, error } = await supabase
+          .from('registrations')
+          .select(`
+            *,
+            parent_accounts (*),
+            schools (*)
+          `)
+          .order('created_at', { ascending: false })
+          .range(from, from + pageSize - 1);
+        if (error) throw error;
+        const batch = (data || []) as Registration[];
+        all.push(...batch);
+        if (batch.length < pageSize) break;
+        from += pageSize;
+      }
+      return all;
     },
   });
 
