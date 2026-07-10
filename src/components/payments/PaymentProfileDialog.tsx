@@ -349,7 +349,7 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {payments.map((payment: any) => {
+                      {[...payments].sort((a: any, b: any) => a.installment_number - b.installment_number).map((payment: any) => {
                         const sc = statusConfig[payment.status];
                         const paymentFees = extraFees.filter((f: any) => f.payment_id === payment.id);
                         const feesTotal = paymentFees.reduce((s: number, f: any) => s + Number(f.amount), 0);
