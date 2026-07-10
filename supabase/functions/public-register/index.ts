@@ -237,6 +237,7 @@ serve(async (req) => {
             father_phone: data.father_phone,
             mother_phone: data.mother_phone || null,
             emergency_phone: data.emergency_phone,
+            payment_phone: data.payment_phone,
             city: sanitizeString(data.city),
             job: data.job ? sanitizeString(data.job) : null,
             pickup_latitude: data.pickup_latitude,
