@@ -80,6 +80,22 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
   const [editPaidDate, setEditPaidDate] = useState('');
   const [editAmount, setEditAmount] = useState('');
   const [activeTab, setActiveTab] = useState('installments');
+  const [editSubOpen, setEditSubOpen] = useState(false);
+  const [editRegistration, setEditRegistration] = useState<any>(null);
+
+  const openEditSubscription = async () => {
+    const { data, error } = await supabase
+      .from('registrations')
+      .select('*, parent_accounts(*), schools(*)')
+      .eq('id', registrationId)
+      .maybeSingle();
+    if (error || !data) {
+      toast.error('Unable to load registration');
+      return;
+    }
+    setEditRegistration(data);
+    setEditSubOpen(true);
+  };
 
   // Extra fee form state
   const [feePaymentIds, setFeePaymentIds] = useState<string[]>([]);
