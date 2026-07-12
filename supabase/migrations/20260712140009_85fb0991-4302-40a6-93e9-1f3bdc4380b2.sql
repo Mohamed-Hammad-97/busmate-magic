@@ -1,0 +1,1 @@
+GRANT SELECT ON public.cities TO anon, authenticated; GRANT ALL ON public.cities TO service_role;
