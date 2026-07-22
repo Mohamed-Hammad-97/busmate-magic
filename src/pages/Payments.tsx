@@ -232,13 +232,14 @@ const Payments = () => {
       grouped[registrationId].payments.push(payment);
       if (payment.status === 'paid') grouped[registrationId].paidAmount += Number(payment.amount);
     });
-    // Include extra fees in totalAmount
+    // Include insurance (installment_number 0) and extra fees in totalAmount
     Object.values(grouped).forEach((reg) => {
+      const installmentSum = reg.payments.reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0);
       const extraFeesTotal = reg.payments.reduce((sum: number, p: any) => {
         const fees = p.payment_extra_fees || [];
         return sum + fees.reduce((fSum: number, f: any) => fSum + Number(f.amount), 0);
       }, 0);
-      reg.totalAmount = (reg.subscription?.value || 0) + extraFeesTotal;
+      reg.totalAmount = Math.max(installmentSum, reg.subscription?.value || 0) + extraFeesTotal;
       reg.isFullyPaid = reg.paidAmount >= reg.totalAmount;
     });
     return grouped;
