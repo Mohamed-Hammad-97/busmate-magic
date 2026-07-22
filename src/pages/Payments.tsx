@@ -595,7 +595,7 @@ const Payments = () => {
                                     }}
                                     variant="icon"
                                   />
-                                  {canEdit && mainTab === 'active' && (
+                                  {canDestroy && mainTab === 'active' && (
                                     <AlertDialog>
                                       <AlertDialogTrigger asChild>
                                         <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-warning/10 hover:text-warning" title="Archive">
