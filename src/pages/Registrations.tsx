@@ -557,11 +557,13 @@ const Registrations: React.FC = () => {
                 <ClipboardList className="h-8 w-8 text-muted-foreground" />
               </div>
               <p className="text-sm font-medium text-foreground mb-1">No registrations found</p>
-              <p className="text-xs text-muted-foreground mb-4">Create your first registration to get started</p>
-              <Button size="sm" onClick={handleAddNew} className="gap-2">
-                <Plus className="h-4 w-4" />
-                Add Registration
-              </Button>
+              <p className="text-xs text-muted-foreground mb-4">{canManage ? 'Create your first registration to get started' : 'No records to display'}</p>
+              {canManage && (
+                <Button size="sm" onClick={handleAddNew} className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Add Registration
+                </Button>
+              )}
             </div>
           ) : (
             <div className="overflow-x-auto">
