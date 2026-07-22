@@ -422,24 +422,26 @@ const Registrations: React.FC = () => {
               </TabsTrigger>
             </TabsList>
           </Tabs>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button className="gap-2 h-10 rounded-xl shadow-sm">
-                <Download className="h-4 w-4" />
-                Export
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem onClick={() => exportRegistrationsExcel(filteredRegistrations, `registrations-${mainTab}`)}>
-                <FileSpreadsheet className="h-4 w-4 mr-2 text-emerald-600" />
-                Download Excel
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => exportRegistrationsPDF(filteredRegistrations, `registrations-${mainTab}`, `Registrations — ${mainTab === 'active' ? 'Active' : 'Archive'}`)}>
-                <FileText className="h-4 w-4 mr-2 text-red-600" />
-                Download PDF
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {canManage && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button className="gap-2 h-10 rounded-xl shadow-sm">
+                  <Download className="h-4 w-4" />
+                  Export
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => exportRegistrationsExcel(filteredRegistrations, `registrations-${mainTab}`)}>
+                  <FileSpreadsheet className="h-4 w-4 mr-2 text-emerald-600" />
+                  Download Excel
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => exportRegistrationsPDF(filteredRegistrations, `registrations-${mainTab}`, `Registrations — ${mainTab === 'active' ? 'Active' : 'Archive'}`)}>
+                  <FileText className="h-4 w-4 mr-2 text-red-600" />
+                  Download PDF
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
 
         {/* Archive year pills */}
