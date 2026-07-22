@@ -620,7 +620,7 @@ const Payments = () => {
                                       </AlertDialogContent>
                                     </AlertDialog>
                                   )}
-                                  {canEdit && (
+                                  {canDestroy && (
                                     <AlertDialog>
                                       <AlertDialogTrigger asChild>
                                         <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-destructive/10 hover:text-destructive">
