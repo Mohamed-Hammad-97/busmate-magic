@@ -392,6 +392,8 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
                         <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Total</TableHead>
                         <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Due Date</TableHead>
                         <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Paid Date</TableHead>
+                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Paid By</TableHead>
+                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">قيد الدفع</TableHead>
                         <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Status</TableHead>
                         <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground text-right">Actions</TableHead>
                       </TableRow>
@@ -401,6 +403,7 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
                         const sc = statusConfig[payment.status];
                         const paymentFees = extraFees.filter((f: any) => f.payment_id === payment.id);
                         const feesTotal = paymentFees.reduce((s: number, f: any) => s + Number(f.amount), 0);
+                        const isEditing = editingPaymentId === payment.id;
                         return (
                           <TableRow key={payment.id} className="hover:bg-muted/20 transition-colors">
                             <TableCell className="text-sm font-medium">
@@ -411,7 +414,7 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
                               )}
                             </TableCell>
                             <TableCell>
-                              {editingPaymentId === payment.id ? (
+                              {isEditing ? (
                                 <Input type="number" value={editAmount} onChange={(e) => setEditAmount(e.target.value)} className="w-24 h-8 text-xs" min="0" />
                               ) : (
                                 <span className="text-sm font-semibold">{Number(payment.amount).toLocaleString()} EGP</span>
@@ -435,17 +438,29 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
                               <span className="text-sm font-bold">{(Number(payment.amount) + feesTotal).toLocaleString()} EGP</span>
                             </TableCell>
                             <TableCell className="text-sm">
-                              {editingPaymentId === payment.id ? (
+                              {isEditing ? (
                                 <Input type="date" value={editDueDate} onChange={(e) => setEditDueDate(e.target.value)} className="w-36 h-8 text-xs" />
                               ) : (
                                 format(new Date(payment.due_date), 'dd MMM yyyy', { locale: enUS })
                               )}
                             </TableCell>
                             <TableCell className="text-sm">
-                              {editingPaymentId === payment.id ? (
+                              {isEditing ? (
                                 <Input type="date" value={editPaidDate} onChange={(e) => setEditPaidDate(e.target.value)} className="w-36 h-8 text-xs" />
                               ) : (
                                 payment.paid_date ? format(new Date(payment.paid_date), 'dd MMM yyyy', { locale: enUS }) : '—'
+                              )}
+                            </TableCell>
+                            <TableCell className="text-xs text-muted-foreground">
+                              {payment.paid_by_name || '—'}
+                            </TableCell>
+                            <TableCell className="max-w-[180px]">
+                              {isEditing && canManageInstallments ? (
+                                <Textarea value={editNote} onChange={(e) => setEditNote(e.target.value)} className="min-h-[36px] text-xs" placeholder="قيد الدفع..." rows={2} />
+                              ) : payment.payment_note ? (
+                                <span className="text-xs text-foreground line-clamp-2" title={payment.payment_note}>{payment.payment_note}</span>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">—</span>
                               )}
                             </TableCell>
                             <TableCell>
@@ -454,9 +469,8 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
                               </span>
                             </TableCell>
                             <TableCell className="text-right">
-                              {canManageInstallments && (
                               <div className="flex justify-end gap-0.5">
-                                {editingPaymentId === payment.id ? (
+                                {isEditing ? (
                                   <>
                                     <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg hover:bg-success/10 hover:text-success" onClick={() => saveEditing(payment.id)} disabled={updatePaymentMutation.isPending}>
                                       <Save className="h-3.5 w-3.5" />
@@ -467,19 +481,23 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
                                   </>
                                 ) : (
                                   <>
-                                    <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg hover:bg-primary/10 hover:text-primary" onClick={() => startEditing(payment)}>
-                                      <Edit2 className="h-3.5 w-3.5" />
-                                    </Button>
-                                     {payment.status !== 'paid' && (
-                                       <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg hover:bg-success/10 hover:text-success" onClick={() => markPaidMutation.mutate(payment.id)} disabled={markPaidMutation.isPending}>
-                                         <Check className="h-3.5 w-3.5" />
-                                       </Button>
-                                     )}
+                                    {canEdit && (
+                                      <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg hover:bg-primary/10 hover:text-primary" onClick={() => startEditing(payment)} title="Edit">
+                                        <Edit2 className="h-3.5 w-3.5" />
+                                      </Button>
+                                    )}
+                                    {canManageInstallments && payment.status !== 'paid' && (
+                                      <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg hover:bg-success/10 hover:text-success" onClick={() => markPaidMutation.mutate(payment.id)} disabled={markPaidMutation.isPending} title="Mark paid">
+                                        <Check className="h-3.5 w-3.5" />
+                                      </Button>
+                                    )}
+                                    {/* Always allow viewing the receipt when it exists; only finance can upload/change */}
+                                    {(payment.receipt_url || canManageInstallments) && (
                                       <ReceiptUpload paymentId={payment.id} receiptUrl={payment.receipt_url} canEdit={canManageInstallments} />
-                                   </>
-                                 )}
+                                    )}
+                                  </>
+                                )}
                               </div>
-                              )}
                             </TableCell>
                           </TableRow>
                         );
