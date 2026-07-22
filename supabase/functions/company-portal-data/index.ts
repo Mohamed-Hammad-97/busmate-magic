@@ -564,8 +564,10 @@ Deno.serve(async (req) => {
     }
   } catch (error: unknown) {
     console.error("Error in company-portal-data:", error);
-    const errorMessage = error instanceof Error ? error.message : "Internal server error";
-    const status = errorMessage.includes("Unauthorized") || errorMessage.includes("expired") ? 401 : 500;
-    return new Response(JSON.stringify({ error: errorMessage }), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const rawMessage = error instanceof Error ? error.message : "";
+    const isAuthError = rawMessage.includes("Unauthorized") || rawMessage.includes("expired");
+    const status = isAuthError ? 401 : 500;
+    const clientMessage = isAuthError ? "Unauthorized" : "Internal server error";
+    return new Response(JSON.stringify({ error: clientMessage }), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
