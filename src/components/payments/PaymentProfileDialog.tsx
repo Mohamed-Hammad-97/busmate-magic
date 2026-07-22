@@ -76,11 +76,12 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
   canManageInstallments = true,
 }) => {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, employee } = useAuth();
   const [editingPaymentId, setEditingPaymentId] = useState<string | null>(null);
   const [editDueDate, setEditDueDate] = useState('');
   const [editPaidDate, setEditPaidDate] = useState('');
   const [editAmount, setEditAmount] = useState('');
+  const [editNote, setEditNote] = useState('');
   const [activeTab, setActiveTab] = useState('installments');
   const [editSubOpen, setEditSubOpen] = useState(false);
   const [editRegistration, setEditRegistration] = useState<any>(null);
@@ -105,7 +106,9 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
   const [feeAmount, setFeeAmount] = useState('');
   const [feeReason, setFeeReason] = useState('');
 
-  const totalAmount = subscription?.value || 0;
+  // Insurance is stored as installment_number 0 — include it in the total.
+  const installmentsTotal = payments.reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0);
+  const totalAmount = Math.max(installmentsTotal, subscription?.value || 0);
   const paidAmount = payments
     .filter((p: any) => p.status === 'paid')
     .reduce((sum: number, p: any) => sum + Number(p.amount), 0);
@@ -145,7 +148,12 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
     mutationFn: async (paymentId: string) => {
       const { error } = await supabase
         .from('payments')
-        .update({ status: 'paid', paid_date: new Date().toISOString().split('T')[0] })
+        .update({
+          status: 'paid',
+          paid_date: new Date().toISOString().split('T')[0],
+          paid_by: user?.id || null,
+          paid_by_name: employee?.full_name || user?.email || null,
+        } as any)
         .eq('id', paymentId);
       if (error) throw error;
     },
@@ -160,8 +168,8 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
   });
 
   const updatePaymentMutation = useMutation({
-    mutationFn: async ({ paymentId, dueDate, paidDate, amount }: { paymentId: string; dueDate: string; paidDate: string | null; amount: number }) => {
-      const updateData: any = { due_date: dueDate, amount };
+    mutationFn: async ({ paymentId, dueDate, paidDate, amount, note }: { paymentId: string; dueDate: string; paidDate: string | null; amount: number; note: string | null }) => {
+      const updateData: any = { due_date: dueDate, amount, payment_note: note };
       if (paidDate) updateData.paid_date = paidDate;
       const { error } = await supabase.from('payments').update(updateData).eq('id', paymentId);
       if (error) throw error;
@@ -175,6 +183,18 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
       toast.error('Error updating payment');
       console.error(error);
     },
+  });
+
+  const updateNoteMutation = useMutation({
+    mutationFn: async ({ paymentId, note }: { paymentId: string; note: string }) => {
+      const { error } = await supabase.from('payments').update({ payment_note: note } as any).eq('id', paymentId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      toast.success('Note saved');
+    },
+    onError: () => toast.error('Failed to save note'),
   });
 
   const addFeeMutation = useMutation({
@@ -223,6 +243,7 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
     setEditDueDate(payment.due_date);
     setEditPaidDate(payment.paid_date || '');
     setEditAmount(String(payment.amount));
+    setEditNote(payment.payment_note || '');
   };
 
   const cancelEditing = () => {
@@ -230,6 +251,7 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
     setEditDueDate('');
     setEditPaidDate('');
     setEditAmount('');
+    setEditNote('');
   };
 
   const saveEditing = (paymentId: string) => {
@@ -238,6 +260,7 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
       dueDate: editDueDate,
       paidDate: editPaidDate || null,
       amount: parseFloat(editAmount) || 0,
+      note: editNote || null,
     });
   };
 
@@ -369,6 +392,8 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
                         <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Total</TableHead>
                         <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Due Date</TableHead>
                         <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Paid Date</TableHead>
+                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Paid By</TableHead>
+                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">قيد الدفع</TableHead>
                         <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Status</TableHead>
                         <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground text-right">Actions</TableHead>
                       </TableRow>
@@ -378,6 +403,7 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
                         const sc = statusConfig[payment.status];
                         const paymentFees = extraFees.filter((f: any) => f.payment_id === payment.id);
                         const feesTotal = paymentFees.reduce((s: number, f: any) => s + Number(f.amount), 0);
+                        const isEditing = editingPaymentId === payment.id;
                         return (
                           <TableRow key={payment.id} className="hover:bg-muted/20 transition-colors">
                             <TableCell className="text-sm font-medium">
@@ -388,7 +414,7 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
                               )}
                             </TableCell>
                             <TableCell>
-                              {editingPaymentId === payment.id ? (
+                              {isEditing ? (
                                 <Input type="number" value={editAmount} onChange={(e) => setEditAmount(e.target.value)} className="w-24 h-8 text-xs" min="0" />
                               ) : (
                                 <span className="text-sm font-semibold">{Number(payment.amount).toLocaleString()} EGP</span>
@@ -412,17 +438,29 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
                               <span className="text-sm font-bold">{(Number(payment.amount) + feesTotal).toLocaleString()} EGP</span>
                             </TableCell>
                             <TableCell className="text-sm">
-                              {editingPaymentId === payment.id ? (
+                              {isEditing ? (
                                 <Input type="date" value={editDueDate} onChange={(e) => setEditDueDate(e.target.value)} className="w-36 h-8 text-xs" />
                               ) : (
                                 format(new Date(payment.due_date), 'dd MMM yyyy', { locale: enUS })
                               )}
                             </TableCell>
                             <TableCell className="text-sm">
-                              {editingPaymentId === payment.id ? (
+                              {isEditing ? (
                                 <Input type="date" value={editPaidDate} onChange={(e) => setEditPaidDate(e.target.value)} className="w-36 h-8 text-xs" />
                               ) : (
                                 payment.paid_date ? format(new Date(payment.paid_date), 'dd MMM yyyy', { locale: enUS }) : '—'
+                              )}
+                            </TableCell>
+                            <TableCell className="text-xs text-muted-foreground">
+                              {payment.paid_by_name || '—'}
+                            </TableCell>
+                            <TableCell className="max-w-[180px]">
+                              {isEditing && canManageInstallments ? (
+                                <Textarea value={editNote} onChange={(e) => setEditNote(e.target.value)} className="min-h-[36px] text-xs" placeholder="قيد الدفع..." rows={2} />
+                              ) : payment.payment_note ? (
+                                <span className="text-xs text-foreground line-clamp-2" title={payment.payment_note}>{payment.payment_note}</span>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">—</span>
                               )}
                             </TableCell>
                             <TableCell>
@@ -431,9 +469,8 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
                               </span>
                             </TableCell>
                             <TableCell className="text-right">
-                              {canManageInstallments && (
                               <div className="flex justify-end gap-0.5">
-                                {editingPaymentId === payment.id ? (
+                                {isEditing ? (
                                   <>
                                     <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg hover:bg-success/10 hover:text-success" onClick={() => saveEditing(payment.id)} disabled={updatePaymentMutation.isPending}>
                                       <Save className="h-3.5 w-3.5" />
@@ -444,19 +481,23 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
                                   </>
                                 ) : (
                                   <>
-                                    <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg hover:bg-primary/10 hover:text-primary" onClick={() => startEditing(payment)}>
-                                      <Edit2 className="h-3.5 w-3.5" />
-                                    </Button>
-                                     {payment.status !== 'paid' && (
-                                       <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg hover:bg-success/10 hover:text-success" onClick={() => markPaidMutation.mutate(payment.id)} disabled={markPaidMutation.isPending}>
-                                         <Check className="h-3.5 w-3.5" />
-                                       </Button>
-                                     )}
+                                    {canEdit && (
+                                      <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg hover:bg-primary/10 hover:text-primary" onClick={() => startEditing(payment)} title="Edit">
+                                        <Edit2 className="h-3.5 w-3.5" />
+                                      </Button>
+                                    )}
+                                    {canManageInstallments && payment.status !== 'paid' && (
+                                      <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg hover:bg-success/10 hover:text-success" onClick={() => markPaidMutation.mutate(payment.id)} disabled={markPaidMutation.isPending} title="Mark paid">
+                                        <Check className="h-3.5 w-3.5" />
+                                      </Button>
+                                    )}
+                                    {/* Always allow viewing the receipt when it exists; only finance can upload/change */}
+                                    {(payment.receipt_url || canManageInstallments) && (
                                       <ReceiptUpload paymentId={payment.id} receiptUrl={payment.receipt_url} canEdit={canManageInstallments} />
-                                   </>
-                                 )}
+                                    )}
+                                  </>
+                                )}
                               </div>
-                              )}
                             </TableCell>
                           </TableRow>
                         );

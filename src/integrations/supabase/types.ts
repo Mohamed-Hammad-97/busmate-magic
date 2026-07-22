@@ -1621,7 +1621,10 @@ export type Database = {
           id: string
           installment_number: number
           notes: string | null
+          paid_by: string | null
+          paid_by_name: string | null
           paid_date: string | null
+          payment_note: string | null
           receipt_url: string | null
           status: Database["public"]["Enums"]["payment_status"]
           subscription_id: string
@@ -1634,7 +1637,10 @@ export type Database = {
           id?: string
           installment_number: number
           notes?: string | null
+          paid_by?: string | null
+          paid_by_name?: string | null
           paid_date?: string | null
+          payment_note?: string | null
           receipt_url?: string | null
           status?: Database["public"]["Enums"]["payment_status"]
           subscription_id: string
@@ -1647,7 +1653,10 @@ export type Database = {
           id?: string
           installment_number?: number
           notes?: string | null
+          paid_by?: string | null
+          paid_by_name?: string | null
           paid_date?: string | null
+          payment_note?: string | null
           receipt_url?: string | null
           status?: Database["public"]["Enums"]["payment_status"]
           subscription_id?: string

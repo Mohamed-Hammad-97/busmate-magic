@@ -24,7 +24,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Search, CreditCard, CheckCircle, Clock, AlertCircle, Check, Eye, Hash, TrendingUp, DollarSign, UserCheck, Trash2, Archive, Download, FileSpreadsheet, FileText, Phone, User } from 'lucide-react';
+import { Search, CreditCard, CheckCircle, Clock, AlertCircle, Check, Eye, Hash, TrendingUp, DollarSign, UserCheck, Trash2, Archive, Download, FileSpreadsheet, FileText, Phone, User, CalendarDays, X } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { exportPaymentsExcel, exportPaymentsPDF } from '@/lib/exportPayments';
 import {
@@ -63,6 +63,7 @@ const Payments = () => {
   const [paymentTab, setPaymentTab] = useState<string>('all');
   const [mainTab, setMainTab] = useState<'active' | 'archive'>('active');
   const [archiveYear, setArchiveYear] = useState<string>('all');
+  const [changesDate, setChangesDate] = useState<string>('');
   const [selectedRegistration, setSelectedRegistration] = useState<{
     registrationId: string;
     payments: any[];
@@ -231,13 +232,14 @@ const Payments = () => {
       grouped[registrationId].payments.push(payment);
       if (payment.status === 'paid') grouped[registrationId].paidAmount += Number(payment.amount);
     });
-    // Include extra fees in totalAmount
+    // Include insurance (installment_number 0) and extra fees in totalAmount
     Object.values(grouped).forEach((reg) => {
+      const installmentSum = reg.payments.reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0);
       const extraFeesTotal = reg.payments.reduce((sum: number, p: any) => {
         const fees = p.payment_extra_fees || [];
         return sum + fees.reduce((fSum: number, f: any) => fSum + Number(f.amount), 0);
       }, 0);
-      reg.totalAmount = (reg.subscription?.value || 0) + extraFeesTotal;
+      reg.totalAmount = Math.max(installmentSum, reg.subscription?.value || 0) + extraFeesTotal;
       reg.isFullyPaid = reg.paidAmount >= reg.totalAmount;
     });
     return grouped;
@@ -284,6 +286,11 @@ const Payments = () => {
   });
 
   // Grouped view filtered by search/status
+  const sameDay = useCallback((iso: string | null | undefined, day: string) => {
+    if (!iso || !day) return false;
+    return String(iso).slice(0, 10) === day;
+  }, []);
+
   const filteredGrouped = useMemo(() => {
     const result: typeof paymentsByRegistration = {};
     const phoneNorm = phoneFilter.replace(/\s+/g, '');
@@ -298,10 +305,33 @@ const Payments = () => {
       if (nameNorm && !(regData.parentName.toLowerCase().includes(nameNorm) || regData.studentName.toLowerCase().includes(nameNorm))) return;
       if (statusFilter !== 'all' && !regData.payments.some((payment: any) => paymentMatchesStatus(payment, statusFilter))) return;
       if (!Number.isNaN(installmentCount) && Number(regData.subscription?.number_of_installments) !== installmentCount) return;
+      if (changesDate && !regData.payments.some((p: any) => sameDay(p.paid_date, changesDate) || sameDay(p.updated_at, changesDate))) return;
       result[regId] = regData;
     });
     return result;
-  }, [paymentsByRegistration, paymentTab, searchTerm, phoneFilter, nameFilter, statusFilter, installmentFilter, paymentMatchesStatus]);
+  }, [paymentsByRegistration, paymentTab, searchTerm, phoneFilter, nameFilter, statusFilter, installmentFilter, paymentMatchesStatus, changesDate, sameDay]);
+
+  // Summary of installments changed / marked paid on selected date
+  const changesSummary = useMemo(() => {
+    if (!changesDate) return null;
+    const paidOn: any[] = [];
+    const editedOn: any[] = [];
+    Object.values(paymentsByRegistration).forEach((reg) => {
+      reg.payments.forEach((p: any) => {
+        const isPaidToday = sameDay(p.paid_date, changesDate) && p.status === 'paid';
+        const isEditedToday = sameDay(p.updated_at, changesDate);
+        if (isPaidToday) paidOn.push({ ...p, parentName: reg.parentName, studentName: reg.studentName });
+        else if (isEditedToday) editedOn.push({ ...p, parentName: reg.parentName, studentName: reg.studentName });
+      });
+    });
+    const totalPaidAmount = paidOn.reduce((s, p) => s + Number(p.amount || 0), 0);
+    const staffMap: Record<string, number> = {};
+    paidOn.forEach((p) => {
+      const name = p.paid_by_name || 'Unknown';
+      staffMap[name] = (staffMap[name] || 0) + 1;
+    });
+    return { paidOn, editedOn, totalPaidAmount, staffMap };
+  }, [changesDate, paymentsByRegistration, sameDay]);
 
   const statusLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: React.ReactNode }> = {
     paid: { label: t('payments.paid'), variant: 'default', icon: <CheckCircle className="h-4 w-4" /> },
@@ -528,7 +558,47 @@ const Payments = () => {
                   <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input type="number" placeholder={t('payments.installments') + '...'} value={installmentFilter} onChange={(e) => setInstallmentFilter(e.target.value)} className="pl-10 h-11 bg-card border-border/50 rounded-xl" min="1" max="10" />
                 </div>
+                {canDestroy && (
+                  <div className="relative w-full sm:w-[200px]">
+                    <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input type="date" value={changesDate} onChange={(e) => setChangesDate(e.target.value)} className="pl-10 pr-9 h-11 bg-card border-border/50 rounded-xl" title="Show installments marked paid / edited on this date" />
+                    {changesDate && (
+                      <button type="button" onClick={() => setChangesDate('')} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-muted" aria-label="Clear date filter">
+                        <X className="h-3.5 w-3.5 text-muted-foreground" />
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
+
+              {/* Date-filter summary */}
+              {canDestroy && changesDate && changesSummary && (
+                <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 space-y-3">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-2">
+                      <CalendarDays className="h-4 w-4 text-primary" />
+                      <span className="text-sm font-semibold text-foreground">
+                        Changes on {format(new Date(changesDate), 'dd MMM yyyy', { locale: dateLocale })}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-4 text-xs">
+                      <span className="text-muted-foreground">Marked paid: <span className="font-semibold text-success">{changesSummary.paidOn.length}</span></span>
+                      <span className="text-muted-foreground">Edited: <span className="font-semibold text-primary">{changesSummary.editedOn.length}</span></span>
+                      <span className="text-muted-foreground">Total collected: <span className="font-semibold text-success">{changesSummary.totalPaidAmount.toLocaleString()} EGP</span></span>
+                    </div>
+                  </div>
+                  {Object.keys(changesSummary.staffMap).length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {Object.entries(changesSummary.staffMap).map(([name, count]) => (
+                        <Badge key={name} variant="secondary" className="gap-1">
+                          <UserCheck className="h-3 w-3" />
+                          {name} · {count}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Premium Table - One row per user */}
               <div className="rounded-2xl border border-border/50 bg-card overflow-hidden shadow-sm">
