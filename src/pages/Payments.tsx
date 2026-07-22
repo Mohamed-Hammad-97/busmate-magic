@@ -53,6 +53,7 @@ const Payments = () => {
   const { selectedCity } = useCity();
   const { isSuperAdmin, hasDepartment } = useAuth();
   const canEdit = isSuperAdmin || hasDepartment('finance') || hasDepartment('customer_support');
+  const canDestroy = isSuperAdmin || hasDepartment('finance');
   const [searchTerm, setSearchTerm] = useState('');
   const [phoneFilter, setPhoneFilter] = useState('');
   const [nameFilter, setNameFilter] = useState('');
@@ -594,7 +595,7 @@ const Payments = () => {
                                     }}
                                     variant="icon"
                                   />
-                                  {canEdit && mainTab === 'active' && (
+                                  {canDestroy && mainTab === 'active' && (
                                     <AlertDialog>
                                       <AlertDialogTrigger asChild>
                                         <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-warning/10 hover:text-warning" title="Archive">
@@ -619,7 +620,7 @@ const Payments = () => {
                                       </AlertDialogContent>
                                     </AlertDialog>
                                   )}
-                                  {canEdit && (
+                                  {canDestroy && (
                                     <AlertDialog>
                                       <AlertDialogTrigger asChild>
                                         <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-destructive/10 hover:text-destructive">
