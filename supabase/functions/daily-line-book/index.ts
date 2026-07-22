@@ -105,7 +105,8 @@ Deno.serve(async (req) => {
         });
       delete (globalThis as unknown as { __pendingReceipt?: unknown }).__pendingReceipt;
       if (upErr) {
-        return new Response(JSON.stringify({ error: `Receipt upload failed: ${upErr.message}` }), {
+        console.error("Receipt upload failed:", upErr);
+        return new Response(JSON.stringify({ error: "Receipt upload failed" }), {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -195,7 +196,8 @@ Deno.serve(async (req) => {
       .single();
 
     if (insErr) {
-      return new Response(JSON.stringify({ error: insErr.message }), {
+      console.error("Booking insert failed:", insErr);
+      return new Response(JSON.stringify({ error: "Failed to create booking" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -221,7 +223,8 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    return new Response(JSON.stringify({ error: (e as Error).message }), {
+    console.error("Error in daily-line-book:", e);
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

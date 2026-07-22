@@ -96,9 +96,8 @@ Deno.serve(async (req) => {
     );
   } catch (error: unknown) {
     console.error("Error in company-employee-register:", error);
-    const errorMessage = error instanceof Error ? error.message : "حدث خطأ";
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: "حدث خطأ" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
