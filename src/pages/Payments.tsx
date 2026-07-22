@@ -286,6 +286,11 @@ const Payments = () => {
   });
 
   // Grouped view filtered by search/status
+  const sameDay = useCallback((iso: string | null | undefined, day: string) => {
+    if (!iso || !day) return false;
+    return String(iso).slice(0, 10) === day;
+  }, []);
+
   const filteredGrouped = useMemo(() => {
     const result: typeof paymentsByRegistration = {};
     const phoneNorm = phoneFilter.replace(/\s+/g, '');
@@ -300,10 +305,33 @@ const Payments = () => {
       if (nameNorm && !(regData.parentName.toLowerCase().includes(nameNorm) || regData.studentName.toLowerCase().includes(nameNorm))) return;
       if (statusFilter !== 'all' && !regData.payments.some((payment: any) => paymentMatchesStatus(payment, statusFilter))) return;
       if (!Number.isNaN(installmentCount) && Number(regData.subscription?.number_of_installments) !== installmentCount) return;
+      if (changesDate && !regData.payments.some((p: any) => sameDay(p.paid_date, changesDate) || sameDay(p.updated_at, changesDate))) return;
       result[regId] = regData;
     });
     return result;
-  }, [paymentsByRegistration, paymentTab, searchTerm, phoneFilter, nameFilter, statusFilter, installmentFilter, paymentMatchesStatus]);
+  }, [paymentsByRegistration, paymentTab, searchTerm, phoneFilter, nameFilter, statusFilter, installmentFilter, paymentMatchesStatus, changesDate, sameDay]);
+
+  // Summary of installments changed / marked paid on selected date
+  const changesSummary = useMemo(() => {
+    if (!changesDate) return null;
+    const paidOn: any[] = [];
+    const editedOn: any[] = [];
+    Object.values(paymentsByRegistration).forEach((reg) => {
+      reg.payments.forEach((p: any) => {
+        const isPaidToday = sameDay(p.paid_date, changesDate) && p.status === 'paid';
+        const isEditedToday = sameDay(p.updated_at, changesDate);
+        if (isPaidToday) paidOn.push({ ...p, parentName: reg.parentName, studentName: reg.studentName });
+        else if (isEditedToday) editedOn.push({ ...p, parentName: reg.parentName, studentName: reg.studentName });
+      });
+    });
+    const totalPaidAmount = paidOn.reduce((s, p) => s + Number(p.amount || 0), 0);
+    const staffMap: Record<string, number> = {};
+    paidOn.forEach((p) => {
+      const name = p.paid_by_name || 'Unknown';
+      staffMap[name] = (staffMap[name] || 0) + 1;
+    });
+    return { paidOn, editedOn, totalPaidAmount, staffMap };
+  }, [changesDate, paymentsByRegistration, sameDay]);
 
   const statusLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: React.ReactNode }> = {
     paid: { label: t('payments.paid'), variant: 'default', icon: <CheckCircle className="h-4 w-4" /> },
