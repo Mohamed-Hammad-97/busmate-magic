@@ -148,7 +148,12 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
     mutationFn: async (paymentId: string) => {
       const { error } = await supabase
         .from('payments')
-        .update({ status: 'paid', paid_date: new Date().toISOString().split('T')[0] })
+        .update({
+          status: 'paid',
+          paid_date: new Date().toISOString().split('T')[0],
+          paid_by: user?.id || null,
+          paid_by_name: employee?.full_name || user?.email || null,
+        } as any)
         .eq('id', paymentId);
       if (error) throw error;
     },
@@ -163,8 +168,8 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
   });
 
   const updatePaymentMutation = useMutation({
-    mutationFn: async ({ paymentId, dueDate, paidDate, amount }: { paymentId: string; dueDate: string; paidDate: string | null; amount: number }) => {
-      const updateData: any = { due_date: dueDate, amount };
+    mutationFn: async ({ paymentId, dueDate, paidDate, amount, note }: { paymentId: string; dueDate: string; paidDate: string | null; amount: number; note: string | null }) => {
+      const updateData: any = { due_date: dueDate, amount, payment_note: note };
       if (paidDate) updateData.paid_date = paidDate;
       const { error } = await supabase.from('payments').update(updateData).eq('id', paymentId);
       if (error) throw error;
@@ -178,6 +183,18 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
       toast.error('Error updating payment');
       console.error(error);
     },
+  });
+
+  const updateNoteMutation = useMutation({
+    mutationFn: async ({ paymentId, note }: { paymentId: string; note: string }) => {
+      const { error } = await supabase.from('payments').update({ payment_note: note } as any).eq('id', paymentId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      toast.success('Note saved');
+    },
+    onError: () => toast.error('Failed to save note'),
   });
 
   const addFeeMutation = useMutation({
@@ -226,6 +243,7 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
     setEditDueDate(payment.due_date);
     setEditPaidDate(payment.paid_date || '');
     setEditAmount(String(payment.amount));
+    setEditNote(payment.payment_note || '');
   };
 
   const cancelEditing = () => {
@@ -233,6 +251,7 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
     setEditDueDate('');
     setEditPaidDate('');
     setEditAmount('');
+    setEditNote('');
   };
 
   const saveEditing = (paymentId: string) => {
@@ -241,6 +260,7 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
       dueDate: editDueDate,
       paidDate: editPaidDate || null,
       amount: parseFloat(editAmount) || 0,
+      note: editNote || null,
     });
   };
 
