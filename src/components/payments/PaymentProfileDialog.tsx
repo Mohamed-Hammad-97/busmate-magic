@@ -61,6 +61,7 @@ interface PaymentProfileDialogProps {
   parentName: string;
   studentName: string;
   canEdit?: boolean;
+  canManageInstallments?: boolean;
 }
 
 export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
@@ -72,6 +73,7 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
   parentName,
   studentName,
   canEdit = true,
+  canManageInstallments = true,
 }) => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
