@@ -63,6 +63,7 @@ const Payments = () => {
   const [paymentTab, setPaymentTab] = useState<string>('all');
   const [mainTab, setMainTab] = useState<'active' | 'archive'>('active');
   const [archiveYear, setArchiveYear] = useState<string>('all');
+  const [changesDate, setChangesDate] = useState<string>('');
   const [selectedRegistration, setSelectedRegistration] = useState<{
     registrationId: string;
     payments: any[];
