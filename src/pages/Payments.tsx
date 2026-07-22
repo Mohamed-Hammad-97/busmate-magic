@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
@@ -251,7 +251,7 @@ const Payments = () => {
     return payments.filter((payment: any) => registrationIds.includes(payment.subscriptions?.registration_id));
   }, [payments, paymentsByRegistration, paymentTab]);
 
-  const getEffectivePaymentStatus = (payment: any) => {
+  const getEffectivePaymentStatus = useCallback((payment: any) => {
     if (payment.status === 'paid' || payment.status === 'archived') return payment.status;
     const dueDate = payment.due_date ? new Date(payment.due_date) : null;
     const today = new Date();
@@ -261,12 +261,12 @@ const Payments = () => {
       if (dueDate < today) return 'overdue';
     }
     return payment.status || 'pending';
-  };
+  }, []);
 
-  const paymentMatchesStatus = (payment: any, filter: string) => {
+  const paymentMatchesStatus = useCallback((payment: any, filter: string) => {
     if (filter === 'all') return true;
     return getEffectivePaymentStatus(payment) === filter;
-  };
+  }, [getEffectivePaymentStatus]);
 
   const filteredPayments = filteredByPaymentStatus.filter((payment: any) => {
     const pa = payment.subscriptions?.registrations?.parent_accounts;
@@ -301,7 +301,7 @@ const Payments = () => {
       result[regId] = regData;
     });
     return result;
-  }, [paymentsByRegistration, paymentTab, searchTerm, phoneFilter, nameFilter, statusFilter, installmentFilter]);
+  }, [paymentsByRegistration, paymentTab, searchTerm, phoneFilter, nameFilter, statusFilter, installmentFilter, paymentMatchesStatus]);
 
   const statusLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: React.ReactNode }> = {
     paid: { label: t('payments.paid'), variant: 'default', icon: <CheckCircle className="h-4 w-4" /> },
