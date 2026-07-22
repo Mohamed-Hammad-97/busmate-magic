@@ -305,7 +305,7 @@ const Payments = () => {
       if (nameNorm && !(regData.parentName.toLowerCase().includes(nameNorm) || regData.studentName.toLowerCase().includes(nameNorm))) return;
       if (statusFilter !== 'all' && !regData.payments.some((payment: any) => paymentMatchesStatus(payment, statusFilter))) return;
       if (!Number.isNaN(installmentCount) && Number(regData.subscription?.number_of_installments) !== installmentCount) return;
-      if (changesDate && !regData.payments.some((p: any) => sameDay(p.paid_date, changesDate) || sameDay(p.updated_at, changesDate))) return;
+      if (changesDate && !regData.payments.some((p: any) => p.status === 'paid' && sameDay(p.paid_date, changesDate))) return;
       result[regId] = regData;
     });
     return result;
@@ -315,13 +315,11 @@ const Payments = () => {
   const changesSummary = useMemo(() => {
     if (!changesDate) return null;
     const paidOn: any[] = [];
-    const editedOn: any[] = [];
     Object.values(paymentsByRegistration).forEach((reg) => {
       reg.payments.forEach((p: any) => {
-        const isPaidToday = sameDay(p.paid_date, changesDate) && p.status === 'paid';
-        const isEditedToday = sameDay(p.updated_at, changesDate);
-        if (isPaidToday) paidOn.push({ ...p, parentName: reg.parentName, studentName: reg.studentName });
-        else if (isEditedToday) editedOn.push({ ...p, parentName: reg.parentName, studentName: reg.studentName });
+        if (p.status === 'paid' && sameDay(p.paid_date, changesDate)) {
+          paidOn.push({ ...p, parentName: reg.parentName, studentName: reg.studentName });
+        }
       });
     });
     const totalPaidAmount = paidOn.reduce((s, p) => s + Number(p.amount || 0), 0);
@@ -330,7 +328,7 @@ const Payments = () => {
       const name = p.paid_by_name || 'Unknown';
       staffMap[name] = (staffMap[name] || 0) + 1;
     });
-    return { paidOn, editedOn, totalPaidAmount, staffMap };
+    return { paidOn, totalPaidAmount, staffMap };
   }, [changesDate, paymentsByRegistration, sameDay]);
 
   const statusLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: React.ReactNode }> = {
@@ -561,7 +559,7 @@ const Payments = () => {
                 {canDestroy && (
                   <div className="relative w-full sm:w-[200px]">
                     <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input type="date" value={changesDate} onChange={(e) => setChangesDate(e.target.value)} className="pl-10 pr-9 h-11 bg-card border-border/50 rounded-xl" title="Show installments marked paid / edited on this date" />
+                    <Input type="date" value={changesDate} onChange={(e) => setChangesDate(e.target.value)} className="pl-10 pr-9 h-11 bg-card border-border/50 rounded-xl" title="Show installments marked paid on this date" />
                     {changesDate && (
                       <button type="button" onClick={() => setChangesDate('')} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-muted" aria-label="Clear date filter">
                         <X className="h-3.5 w-3.5 text-muted-foreground" />
@@ -583,7 +581,6 @@ const Payments = () => {
                     </div>
                     <div className="flex items-center gap-4 text-xs">
                       <span className="text-muted-foreground">Marked paid: <span className="font-semibold text-success">{changesSummary.paidOn.length}</span></span>
-                      <span className="text-muted-foreground">Edited: <span className="font-semibold text-primary">{changesSummary.editedOn.length}</span></span>
                       <span className="text-muted-foreground">Total collected: <span className="font-semibold text-success">{changesSummary.totalPaidAmount.toLocaleString()} EGP</span></span>
                     </div>
                   </div>

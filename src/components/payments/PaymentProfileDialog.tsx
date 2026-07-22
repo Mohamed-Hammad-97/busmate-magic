@@ -399,7 +399,19 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {[...payments].sort((a: any, b: any) => a.installment_number - b.installment_number).map((payment: any) => {
+                      {(() => {
+                        // Dedupe by installment_number — keep most recently updated to avoid legacy duplicates
+                        const byNum = new Map<number, any>();
+                        payments.forEach((p: any) => {
+                          const key = Number(p.installment_number);
+                          const existing = byNum.get(key);
+                          if (!existing) { byNum.set(key, p); return; }
+                          const t1 = new Date(p.updated_at || p.created_at || 0).getTime();
+                          const t2 = new Date(existing.updated_at || existing.created_at || 0).getTime();
+                          if (t1 >= t2) byNum.set(key, p);
+                        });
+                        return Array.from(byNum.values()).sort((a: any, b: any) => a.installment_number - b.installment_number);
+                      })().map((payment: any) => {
                         const sc = statusConfig[payment.status];
                         const paymentFees = extraFees.filter((f: any) => f.payment_id === payment.id);
                         const feesTotal = paymentFees.reduce((s: number, f: any) => s + Number(f.amount), 0);
