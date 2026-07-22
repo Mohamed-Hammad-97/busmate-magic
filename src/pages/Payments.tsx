@@ -558,7 +558,47 @@ const Payments = () => {
                   <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input type="number" placeholder={t('payments.installments') + '...'} value={installmentFilter} onChange={(e) => setInstallmentFilter(e.target.value)} className="pl-10 h-11 bg-card border-border/50 rounded-xl" min="1" max="10" />
                 </div>
+                {canDestroy && (
+                  <div className="relative w-full sm:w-[200px]">
+                    <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input type="date" value={changesDate} onChange={(e) => setChangesDate(e.target.value)} className="pl-10 pr-9 h-11 bg-card border-border/50 rounded-xl" title="Show installments marked paid / edited on this date" />
+                    {changesDate && (
+                      <button type="button" onClick={() => setChangesDate('')} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-muted" aria-label="Clear date filter">
+                        <X className="h-3.5 w-3.5 text-muted-foreground" />
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
+
+              {/* Date-filter summary */}
+              {canDestroy && changesDate && changesSummary && (
+                <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 space-y-3">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-2">
+                      <CalendarDays className="h-4 w-4 text-primary" />
+                      <span className="text-sm font-semibold text-foreground">
+                        Changes on {format(new Date(changesDate), 'dd MMM yyyy', { locale: dateLocale })}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-4 text-xs">
+                      <span className="text-muted-foreground">Marked paid: <span className="font-semibold text-success">{changesSummary.paidOn.length}</span></span>
+                      <span className="text-muted-foreground">Edited: <span className="font-semibold text-primary">{changesSummary.editedOn.length}</span></span>
+                      <span className="text-muted-foreground">Total collected: <span className="font-semibold text-success">{changesSummary.totalPaidAmount.toLocaleString()} EGP</span></span>
+                    </div>
+                  </div>
+                  {Object.keys(changesSummary.staffMap).length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {Object.entries(changesSummary.staffMap).map(([name, count]) => (
+                        <Badge key={name} variant="secondary" className="gap-1">
+                          <UserCheck className="h-3 w-3" />
+                          {name} · {count}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Premium Table - One row per user */}
               <div className="rounded-2xl border border-border/50 bg-card overflow-hidden shadow-sm">
