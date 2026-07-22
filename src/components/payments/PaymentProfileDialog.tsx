@@ -431,7 +431,7 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
                               </span>
                             </TableCell>
                             <TableCell className="text-right">
-                              {canEdit && (
+                              {canEdit && canManageInstallments && (
                               <div className="flex justify-end gap-0.5">
                                 {editingPaymentId === payment.id ? (
                                   <>
