@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
@@ -54,6 +54,7 @@ const Payments = () => {
   const { isSuperAdmin, hasDepartment } = useAuth();
   const canEdit = isSuperAdmin || hasDepartment('finance') || hasDepartment('customer_support');
   const canDestroy = isSuperAdmin || hasDepartment('finance');
+  const canManageInstallments = isSuperAdmin || hasDepartment('finance');
   const [searchTerm, setSearchTerm] = useState('');
   const [phoneFilter, setPhoneFilter] = useState('');
   const [nameFilter, setNameFilter] = useState('');
@@ -250,12 +251,29 @@ const Payments = () => {
     return payments.filter((payment: any) => registrationIds.includes(payment.subscriptions?.registration_id));
   }, [payments, paymentsByRegistration, paymentTab]);
 
+  const getEffectivePaymentStatus = useCallback((payment: any) => {
+    if (payment.status === 'paid' || payment.status === 'archived') return payment.status;
+    const dueDate = payment.due_date ? new Date(payment.due_date) : null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (dueDate) {
+      dueDate.setHours(0, 0, 0, 0);
+      if (dueDate < today) return 'overdue';
+    }
+    return payment.status || 'pending';
+  }, []);
+
+  const paymentMatchesStatus = useCallback((payment: any, filter: string) => {
+    if (filter === 'all') return true;
+    return getEffectivePaymentStatus(payment) === filter;
+  }, [getEffectivePaymentStatus]);
+
   const filteredPayments = filteredByPaymentStatus.filter((payment: any) => {
     const pa = payment.subscriptions?.registrations?.parent_accounts;
     const parentName = pa?.parent_name || '';
     const studentName = payment.subscriptions?.registrations?.student_name || '';
     const matchesSearch = parentName.toLowerCase().includes(searchTerm.toLowerCase()) || studentName.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || payment.status === statusFilter;
+    const matchesStatus = paymentMatchesStatus(payment, statusFilter);
     const matchesInstallments = !installmentFilter || payment.subscriptions?.number_of_installments === parseInt(installmentFilter);
     const phoneNorm = phoneFilter.replace(/\s+/g, '');
     const matchesPhone = !phoneNorm || [pa?.father_phone, pa?.mother_phone, pa?.emergency_phone, pa?.payment_phone]
@@ -270,6 +288,7 @@ const Payments = () => {
     const result: typeof paymentsByRegistration = {};
     const phoneNorm = phoneFilter.replace(/\s+/g, '');
     const nameNorm = nameFilter.trim().toLowerCase();
+    const installmentCount = Number.parseInt(installmentFilter, 10);
     Object.entries(paymentsByRegistration).forEach(([regId, regData]) => {
       if (paymentTab === 'fully_paid' && !regData.isFullyPaid) return;
       if (paymentTab === 'partial' && regData.isFullyPaid) return;
@@ -277,10 +296,12 @@ const Payments = () => {
       if (!matchesSearch) return;
       if (phoneNorm && !regData.phones.some((p) => p.replace(/\s+/g, '').includes(phoneNorm))) return;
       if (nameNorm && !(regData.parentName.toLowerCase().includes(nameNorm) || regData.studentName.toLowerCase().includes(nameNorm))) return;
+      if (statusFilter !== 'all' && !regData.payments.some((payment: any) => paymentMatchesStatus(payment, statusFilter))) return;
+      if (!Number.isNaN(installmentCount) && Number(regData.subscription?.number_of_installments) !== installmentCount) return;
       result[regId] = regData;
     });
     return result;
-  }, [paymentsByRegistration, paymentTab, searchTerm, phoneFilter, nameFilter]);
+  }, [paymentsByRegistration, paymentTab, searchTerm, phoneFilter, nameFilter, statusFilter, installmentFilter, paymentMatchesStatus]);
 
   const statusLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: React.ReactNode }> = {
     paid: { label: t('payments.paid'), variant: 'default', icon: <CheckCircle className="h-4 w-4" /> },
@@ -674,7 +695,7 @@ const Payments = () => {
             parentName={liveRegData.parentName}
             studentName={liveRegData.studentName}
             canEdit={canEdit}
-            canManageInstallments={isSuperAdmin || hasDepartment('finance')}
+            canManageInstallments={canManageInstallments}
           />
         );
       })()}
