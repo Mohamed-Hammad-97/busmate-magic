@@ -310,7 +310,7 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
         </div>
 
         <ScrollArea className="flex-1 min-h-0">
-          <div className="px-6 py-5 space-y-4">
+          <div className="px-6 py-5 pb-16 space-y-4">
             {/* Invoice Download + Edit Subscription */}
             <div className="flex justify-end gap-2">
               {canEdit && (
