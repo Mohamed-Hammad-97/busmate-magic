@@ -323,7 +323,7 @@ const Payments = () => {
 
   return (
     <DashboardLayout>
-      <div className="space-y-8">
+      <div className="space-y-8 pb-32">
         <PageHero
           icon={CreditCard}
           title={t('payments.title')}

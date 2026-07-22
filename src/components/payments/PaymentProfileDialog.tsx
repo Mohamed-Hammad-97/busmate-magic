@@ -243,7 +243,7 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] p-0 overflow-hidden rounded-2xl border-border/50">
+      <DialogContent className="max-w-3xl max-h-[90vh] p-0 overflow-hidden rounded-2xl border-border/50 flex flex-col">
         {/* Premium Header Card */}
         <div className="relative bg-gradient-to-r from-primary/10 via-primary/5 to-accent/10 border-b border-border/50 px-6 pt-6 pb-5">
           <div className="absolute top-0 right-0 w-40 h-40 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/3 blur-2xl" />
@@ -309,8 +309,8 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
           </div>
         </div>
 
-        <ScrollArea className="max-h-[55vh]">
-          <div className="px-6 py-5 space-y-4">
+        <ScrollArea className="flex-1 min-h-0">
+          <div className="px-6 py-5 pb-16 space-y-4">
             {/* Invoice Download + Edit Subscription */}
             <div className="flex justify-end gap-2">
               {canEdit && (
