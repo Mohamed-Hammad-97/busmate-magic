@@ -315,7 +315,7 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
           <div className="px-6 py-5 space-y-4">
             {/* Invoice Download + Edit Subscription */}
             <div className="flex justify-end gap-2">
-              {canEdit && (
+              {canManageInstallments && (
                 <Button variant="outline" size="sm" className="gap-2" onClick={openEditSubscription}>
                   <Edit2 className="h-3.5 w-3.5" />
                   Edit Subscription
@@ -340,7 +340,7 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
                   <Calendar className="h-3.5 w-3.5 mr-1.5" />
                   Installments
                 </TabsTrigger>
-                {canEdit && (
+                {canManageInstallments && (
                   <TabsTrigger value="extra-fees" className="rounded-lg px-4 py-2 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                     <Receipt className="h-3.5 w-3.5 mr-1.5" />
                     Extra Fees
@@ -431,7 +431,7 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
                               </span>
                             </TableCell>
                             <TableCell className="text-right">
-                              {canEdit && canManageInstallments && (
+                              {canManageInstallments && (
                               <div className="flex justify-end gap-0.5">
                                 {editingPaymentId === payment.id ? (
                                   <>
@@ -452,7 +452,7 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
                                          <Check className="h-3.5 w-3.5" />
                                        </Button>
                                      )}
-                                     <ReceiptUpload paymentId={payment.id} receiptUrl={payment.receipt_url} canEdit={canEdit} />
+                                      <ReceiptUpload paymentId={payment.id} receiptUrl={payment.receipt_url} canEdit={canManageInstallments} />
                                    </>
                                  )}
                               </div>
@@ -578,9 +578,11 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
                                 {format(new Date(fee.created_at), 'dd MMM yyyy', { locale: enUS })}
                               </TableCell>
                               <TableCell className="text-right">
-                                <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg hover:bg-destructive/10 hover:text-destructive" onClick={() => deleteFeeMutation.mutate(fee.id)}>
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                </Button>
+                                {canManageInstallments && (
+                                  <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg hover:bg-destructive/10 hover:text-destructive" onClick={() => deleteFeeMutation.mutate(fee.id)}>
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                )}
                               </TableCell>
                             </TableRow>
                           );
