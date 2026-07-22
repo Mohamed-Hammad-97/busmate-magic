@@ -76,11 +76,12 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
   canManageInstallments = true,
 }) => {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, employee } = useAuth();
   const [editingPaymentId, setEditingPaymentId] = useState<string | null>(null);
   const [editDueDate, setEditDueDate] = useState('');
   const [editPaidDate, setEditPaidDate] = useState('');
   const [editAmount, setEditAmount] = useState('');
+  const [editNote, setEditNote] = useState('');
   const [activeTab, setActiveTab] = useState('installments');
   const [editSubOpen, setEditSubOpen] = useState(false);
   const [editRegistration, setEditRegistration] = useState<any>(null);
@@ -105,7 +106,9 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
   const [feeAmount, setFeeAmount] = useState('');
   const [feeReason, setFeeReason] = useState('');
 
-  const totalAmount = subscription?.value || 0;
+  // Insurance is stored as installment_number 0 — include it in the total.
+  const installmentsTotal = payments.reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0);
+  const totalAmount = Math.max(installmentsTotal, subscription?.value || 0);
   const paidAmount = payments
     .filter((p: any) => p.status === 'paid')
     .reduce((sum: number, p: any) => sum + Number(p.amount), 0);
