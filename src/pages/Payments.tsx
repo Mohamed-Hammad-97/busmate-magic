@@ -674,6 +674,7 @@ const Payments = () => {
             parentName={liveRegData.parentName}
             studentName={liveRegData.studentName}
             canEdit={canEdit}
+            canManageInstallments={isSuperAdmin || hasDepartment('finance')}
           />
         );
       })()}
