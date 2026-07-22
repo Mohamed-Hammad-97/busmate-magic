@@ -310,19 +310,23 @@ const Registrations: React.FC = () => {
                 <Map className="h-4 w-4" />
                 Map View
               </Button>
-              <Button variant="secondary" size="sm" onClick={copyFormLink} className="gap-2 bg-white/15 hover:bg-white/25 text-primary-foreground border-0 backdrop-blur-sm">
-                <Link2 className="h-4 w-4" />
-                {t('registrations.copyFormLink')}
-              </Button>
-              <ShareButton
-                url={formLink}
-                title={isRtl ? 'رابط تسجيل الطلاب' : 'Student Registration Link'}
-                text={isRtl ? 'سجل طفلك في خدمة النقل المدرسي' : 'Register your child for school bus service'}
-              />
-              <Button size="sm" className="gap-2 bg-white/15 hover:bg-white/25 text-primary-foreground border-0 backdrop-blur-sm" onClick={handleAddNew}>
-                <Plus className="h-4 w-4" />
-                {t('registrations.newRegistration')}
-              </Button>
+              {canManage && (
+                <>
+                  <Button variant="secondary" size="sm" onClick={copyFormLink} className="gap-2 bg-white/15 hover:bg-white/25 text-primary-foreground border-0 backdrop-blur-sm">
+                    <Link2 className="h-4 w-4" />
+                    {t('registrations.copyFormLink')}
+                  </Button>
+                  <ShareButton
+                    url={formLink}
+                    title={isRtl ? 'رابط تسجيل الطلاب' : 'Student Registration Link'}
+                    text={isRtl ? 'سجل طفلك في خدمة النقل المدرسي' : 'Register your child for school bus service'}
+                  />
+                  <Button size="sm" className="gap-2 bg-white/15 hover:bg-white/25 text-primary-foreground border-0 backdrop-blur-sm" onClick={handleAddNew}>
+                    <Plus className="h-4 w-4" />
+                    {t('registrations.newRegistration')}
+                  </Button>
+                </>
+              )}
             </div>
           }
         />
