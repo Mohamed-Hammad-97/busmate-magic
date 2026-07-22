@@ -49,6 +49,7 @@ import RegistrationsMap from '@/components/registrations/RegistrationsMap';
 import { ShareButton } from '@/components/shared/ShareButton';
 import { GoogleMapsProvider } from '@/components/maps/GoogleMapsProvider';
 import { useCity } from '@/contexts/CityContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { PageHero } from '@/components/layout/PageHero';
 import type { Tables, Enums } from '@/integrations/supabase/types';
 
@@ -60,6 +61,8 @@ type Registration = Tables<'registrations'> & {
 const Registrations: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { selectedCity } = useCity();
+  const { isSuperAdmin, hasDepartment } = useAuth();
+  const canManage = isSuperAdmin || hasDepartment('customer_support');
   const isRtl = i18n.language === 'ar';
   const [dialogOpen, setDialogOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -307,19 +310,23 @@ const Registrations: React.FC = () => {
                 <Map className="h-4 w-4" />
                 Map View
               </Button>
-              <Button variant="secondary" size="sm" onClick={copyFormLink} className="gap-2 bg-white/15 hover:bg-white/25 text-primary-foreground border-0 backdrop-blur-sm">
-                <Link2 className="h-4 w-4" />
-                {t('registrations.copyFormLink')}
-              </Button>
-              <ShareButton
-                url={formLink}
-                title={isRtl ? 'رابط تسجيل الطلاب' : 'Student Registration Link'}
-                text={isRtl ? 'سجل طفلك في خدمة النقل المدرسي' : 'Register your child for school bus service'}
-              />
-              <Button size="sm" className="gap-2 bg-white/15 hover:bg-white/25 text-primary-foreground border-0 backdrop-blur-sm" onClick={handleAddNew}>
-                <Plus className="h-4 w-4" />
-                {t('registrations.newRegistration')}
-              </Button>
+              {canManage && (
+                <>
+                  <Button variant="secondary" size="sm" onClick={copyFormLink} className="gap-2 bg-white/15 hover:bg-white/25 text-primary-foreground border-0 backdrop-blur-sm">
+                    <Link2 className="h-4 w-4" />
+                    {t('registrations.copyFormLink')}
+                  </Button>
+                  <ShareButton
+                    url={formLink}
+                    title={isRtl ? 'رابط تسجيل الطلاب' : 'Student Registration Link'}
+                    text={isRtl ? 'سجل طفلك في خدمة النقل المدرسي' : 'Register your child for school bus service'}
+                  />
+                  <Button size="sm" className="gap-2 bg-white/15 hover:bg-white/25 text-primary-foreground border-0 backdrop-blur-sm" onClick={handleAddNew}>
+                    <Plus className="h-4 w-4" />
+                    {t('registrations.newRegistration')}
+                  </Button>
+                </>
+              )}
             </div>
           }
         />
@@ -415,24 +422,26 @@ const Registrations: React.FC = () => {
               </TabsTrigger>
             </TabsList>
           </Tabs>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button className="gap-2 h-10 rounded-xl shadow-sm">
-                <Download className="h-4 w-4" />
-                Export
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem onClick={() => exportRegistrationsExcel(filteredRegistrations, `registrations-${mainTab}`)}>
-                <FileSpreadsheet className="h-4 w-4 mr-2 text-emerald-600" />
-                Download Excel
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => exportRegistrationsPDF(filteredRegistrations, `registrations-${mainTab}`, `Registrations — ${mainTab === 'active' ? 'Active' : 'Archive'}`)}>
-                <FileText className="h-4 w-4 mr-2 text-red-600" />
-                Download PDF
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {canManage && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button className="gap-2 h-10 rounded-xl shadow-sm">
+                  <Download className="h-4 w-4" />
+                  Export
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => exportRegistrationsExcel(filteredRegistrations, `registrations-${mainTab}`)}>
+                  <FileSpreadsheet className="h-4 w-4 mr-2 text-emerald-600" />
+                  Download Excel
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => exportRegistrationsPDF(filteredRegistrations, `registrations-${mainTab}`, `Registrations — ${mainTab === 'active' ? 'Active' : 'Archive'}`)}>
+                  <FileText className="h-4 w-4 mr-2 text-red-600" />
+                  Download PDF
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
 
         {/* Archive year pills */}
@@ -548,11 +557,13 @@ const Registrations: React.FC = () => {
                 <ClipboardList className="h-8 w-8 text-muted-foreground" />
               </div>
               <p className="text-sm font-medium text-foreground mb-1">No registrations found</p>
-              <p className="text-xs text-muted-foreground mb-4">Create your first registration to get started</p>
-              <Button size="sm" onClick={handleAddNew} className="gap-2">
-                <Plus className="h-4 w-4" />
-                Add Registration
-              </Button>
+              <p className="text-xs text-muted-foreground mb-4">{canManage ? 'Create your first registration to get started' : 'No records to display'}</p>
+              {canManage && (
+                <Button size="sm" onClick={handleAddNew} className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Add Registration
+                </Button>
+              )}
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -613,22 +624,26 @@ const Registrations: React.FC = () => {
                             <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary" onClick={() => handleViewDetails(reg)}>
                               <Eye className="h-3.5 w-3.5" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary" onClick={() => handleEdit(reg)}>
-                              <Edit2 className="h-3.5 w-3.5" />
-                            </Button>
-                            {reg.status === 'pending_fees' && (
-                              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-success/10 hover:text-success" onClick={() => handleAddFees(reg)}>
-                                <DollarSign className="h-3.5 w-3.5" />
-                              </Button>
+                            {canManage && (
+                              <>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary" onClick={() => handleEdit(reg)}>
+                                  <Edit2 className="h-3.5 w-3.5" />
+                                </Button>
+                                {reg.status === 'pending_fees' && (
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-success/10 hover:text-success" onClick={() => handleAddFees(reg)}>
+                                    <DollarSign className="h-3.5 w-3.5" />
+                                  </Button>
+                                )}
+                                {reg.status !== 'cancelled' && (
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-warning/10 hover:text-warning" onClick={() => { setDeleteTarget(reg); setDeleteMode('deactivate'); }} title="Deactivate">
+                                    <UserX className="h-3.5 w-3.5" />
+                                  </Button>
+                                )}
+                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-destructive/10 hover:text-destructive" onClick={() => { setDeleteTarget(reg); setDeleteMode('delete'); }} title="Delete permanently">
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </>
                             )}
-                            {reg.status !== 'cancelled' && (
-                              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-warning/10 hover:text-warning" onClick={() => { setDeleteTarget(reg); setDeleteMode('deactivate'); }} title="Deactivate">
-                                <UserX className="h-3.5 w-3.5" />
-                              </Button>
-                            )}
-                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-destructive/10 hover:text-destructive" onClick={() => { setDeleteTarget(reg); setDeleteMode('delete'); }} title="Delete permanently">
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>

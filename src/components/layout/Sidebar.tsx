@@ -69,7 +69,7 @@ const navEntries: NavEntry[] = [
   { label: "Dashboard", href: "/dashboard", icon: Home },
   { label: "Homepage", href: "/homepage-admin", icon: Globe, adminOnly: true },
   { label: "Schools", href: "/schools", icon: School, department: "operations" },
-  { label: "Registrations", href: "/registrations", icon: ClipboardList, department: "customer_support" },
+  { label: "Registrations", href: "/registrations", icon: ClipboardList, multiDepartment: ["customer_support", "operations"] },
   { label: "Customers", href: "/customers", icon: Users, department: "customer_support" },
   { label: "Routes", href: "/routes", icon: MapPin },
   { label: "Live Tracking", href: "/live-tracking", icon: Navigation },
