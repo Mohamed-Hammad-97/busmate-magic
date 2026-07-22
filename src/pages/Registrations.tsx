@@ -49,6 +49,7 @@ import RegistrationsMap from '@/components/registrations/RegistrationsMap';
 import { ShareButton } from '@/components/shared/ShareButton';
 import { GoogleMapsProvider } from '@/components/maps/GoogleMapsProvider';
 import { useCity } from '@/contexts/CityContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { PageHero } from '@/components/layout/PageHero';
 import type { Tables, Enums } from '@/integrations/supabase/types';
 
@@ -60,6 +61,8 @@ type Registration = Tables<'registrations'> & {
 const Registrations: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { selectedCity } = useCity();
+  const { isSuperAdmin, hasDepartment } = useAuth();
+  const canManage = isSuperAdmin || hasDepartment('customer_support');
   const isRtl = i18n.language === 'ar';
   const [dialogOpen, setDialogOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
