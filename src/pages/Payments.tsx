@@ -53,6 +53,7 @@ const Payments = () => {
   const { selectedCity } = useCity();
   const { isSuperAdmin, hasDepartment } = useAuth();
   const canEdit = isSuperAdmin || hasDepartment('finance') || hasDepartment('customer_support');
+  const canDestroy = isSuperAdmin || hasDepartment('finance');
   const [searchTerm, setSearchTerm] = useState('');
   const [phoneFilter, setPhoneFilter] = useState('');
   const [nameFilter, setNameFilter] = useState('');
