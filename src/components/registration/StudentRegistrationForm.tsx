@@ -432,11 +432,28 @@ const StudentRegistrationForm: React.FC = () => {
               <span>{t('register.common.longitude')}: <span className="font-medium text-foreground">{formData.pickup_longitude.toFixed(6)}</span></span>
             </div>
 
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">وصف موقع الاستلام (Pickup Address) *</Label>
+              <textarea
+                value={formData.pickup_address}
+                onChange={(e) => setFormData((f) => ({ ...f, pickup_address: e.target.value }))}
+                placeholder="اكتب وصف تفصيلي لموقع الاستلام (اسم الشارع، المنطقة، أقرب علامة مميزة...)"
+                rows={3}
+                className="w-full rounded-md bg-muted/50 border border-border/50 focus:bg-background transition-colors p-3 text-sm"
+              />
+            </div>
+
             <div className="flex justify-between pt-4">
               <Button type="button" variant="outline" onClick={() => setStep(1)} size="lg" className="px-8">
                 {t('register.common.previous')}
               </Button>
-              <Button type="button" onClick={() => setStep(3)} size="lg" className="px-8">
+              <Button type="button" onClick={() => {
+                if (!formData.pickup_address.trim()) {
+                  toast({ title: 'وصف موقع الاستلام مطلوب', variant: 'destructive' });
+                  return;
+                }
+                setStep(3);
+              }} size="lg" className="px-8">
                 {t('register.common.next')}
               </Button>
             </div>
