@@ -305,13 +305,34 @@ const Payments = () => {
       if (!matchesSearch) return;
       if (phoneNorm && !regData.phones.some((p) => p.replace(/\s+/g, '').includes(phoneNorm))) return;
       if (nameNorm && !(regData.parentName.toLowerCase().includes(nameNorm) || regData.studentName.toLowerCase().includes(nameNorm))) return;
-      if (statusFilter !== 'all' && !regData.payments.some((payment: any) => paymentMatchesStatus(payment, statusFilter))) return;
-      if (!Number.isNaN(installmentCount) && Number(regData.subscription?.number_of_installments) !== installmentCount) return;
+      if (subscriptionTypeFilter !== 'all' && regData.subscription?.subscription_type !== subscriptionTypeFilter) return;
+      // Insurance filter — installment_number 0 is the insurance row
+      if (insuranceFilter !== 'all') {
+        const insuranceRow = regData.payments.find((p: any) => Number(p.installment_number) === 0);
+        if (insuranceFilter === 'none' && insuranceRow) return;
+        if (insuranceFilter === 'paid' && (!insuranceRow || insuranceRow.status !== 'paid')) return;
+        if (insuranceFilter === 'pending' && (!insuranceRow || getEffectivePaymentStatus(insuranceRow) === 'paid')) return;
+      }
+      if (statusFilter !== 'all') {
+        // Status filter now looks at installments matching that status,
+        // and honours the "installment number" input by matching that specific installment_number.
+        const matchingInstallments = regData.payments.filter((payment: any) => {
+          if (!paymentMatchesStatus(payment, statusFilter)) return false;
+          if (!Number.isNaN(installmentCount)) {
+            return Number(payment.installment_number) === installmentCount;
+          }
+          return true;
+        });
+        if (matchingInstallments.length === 0) return;
+      } else if (!Number.isNaN(installmentCount)) {
+        // No status filter → keep original behaviour of filtering by total installment count on the subscription
+        if (Number(regData.subscription?.number_of_installments) !== installmentCount) return;
+      }
       if (changesDate && !regData.payments.some((p: any) => p.status === 'paid' && sameDay(p.paid_date, changesDate))) return;
       result[regId] = regData;
     });
     return result;
-  }, [paymentsByRegistration, paymentTab, searchTerm, phoneFilter, nameFilter, statusFilter, installmentFilter, paymentMatchesStatus, changesDate, sameDay]);
+  }, [paymentsByRegistration, paymentTab, searchTerm, phoneFilter, nameFilter, statusFilter, installmentFilter, insuranceFilter, subscriptionTypeFilter, paymentMatchesStatus, getEffectivePaymentStatus, changesDate, sameDay]);
 
   // Summary of installments changed / marked paid on selected date
   const changesSummary = useMemo(() => {
