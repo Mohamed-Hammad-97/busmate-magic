@@ -19,6 +19,7 @@ interface RegistrationData {
   comments?: string;
   pickup_latitude: number;
   pickup_longitude: number;
+  pickup_address: string;
   school_id: string;
   grade: string;
   car_type: 'ac' | 'non_ac';
@@ -138,6 +139,12 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+    if (!data.pickup_address?.trim()) {
+      return new Response(
+        JSON.stringify({ error: "Pickup address is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
     if (!['ac', 'non_ac'].includes(data.car_type)) {
       return new Response(
         JSON.stringify({ error: "Invalid car type" }),
@@ -242,6 +249,7 @@ serve(async (req) => {
             job: data.job ? sanitizeString(data.job) : null,
             pickup_latitude: data.pickup_latitude,
             pickup_longitude: data.pickup_longitude,
+            pickup_address: sanitizeString(data.pickup_address),
           })
           .select()
           .single();
