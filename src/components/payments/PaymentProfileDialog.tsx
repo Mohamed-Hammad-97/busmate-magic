@@ -483,6 +483,10 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-0.5">
+                                {/* Receipt preview/upload is always visible so anyone with access can view the uploaded receipt */}
+                                {(payment.receipt_url || canManageInstallments) && (
+                                  <ReceiptUpload paymentId={payment.id} receiptUrl={payment.receipt_url} canEdit={canManageInstallments} />
+                                )}
                                 {isEditing ? (
                                   <>
                                     <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg hover:bg-success/10 hover:text-success" onClick={() => saveEditing(payment.id)} disabled={updatePaymentMutation.isPending}>
@@ -504,14 +508,11 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
                                         <Check className="h-3.5 w-3.5" />
                                       </Button>
                                     )}
-                                    {/* Always allow viewing the receipt when it exists; only finance can upload/change */}
-                                    {(payment.receipt_url || canManageInstallments) && (
-                                      <ReceiptUpload paymentId={payment.id} receiptUrl={payment.receipt_url} canEdit={canManageInstallments} />
-                                    )}
                                   </>
                                 )}
                               </div>
                             </TableCell>
+
                           </TableRow>
                         );
                       })}
