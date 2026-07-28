@@ -1529,6 +1529,7 @@ export type Database = {
           national_id: string
           parent_name: string
           payment_phone: string | null
+          pickup_address: string | null
           pickup_latitude: number
           pickup_longitude: number
           updated_at: string
@@ -1547,6 +1548,7 @@ export type Database = {
           national_id: string
           parent_name: string
           payment_phone?: string | null
+          pickup_address?: string | null
           pickup_latitude: number
           pickup_longitude: number
           updated_at?: string
@@ -1565,6 +1567,7 @@ export type Database = {
           national_id?: string
           parent_name?: string
           payment_phone?: string | null
+          pickup_address?: string | null
           pickup_latitude?: number
           pickup_longitude?: number
           updated_at?: string

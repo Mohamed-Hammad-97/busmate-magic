@@ -38,6 +38,7 @@ interface FormData {
   comments: string;
   pickup_latitude: number;
   pickup_longitude: number;
+  pickup_address: string;
   school_id: string;
   grade: string;
   car_type: Enums<'car_type'>;
@@ -65,6 +66,7 @@ const StudentRegistrationForm: React.FC = () => {
     comments: '',
     pickup_latitude: 30.0444,
     pickup_longitude: 31.2357,
+    pickup_address: '',
     school_id: '',
     grade: '',
     car_type: 'ac',
@@ -121,6 +123,7 @@ const StudentRegistrationForm: React.FC = () => {
             comments: formData.comments || undefined,
             pickup_latitude: formData.pickup_latitude,
             pickup_longitude: formData.pickup_longitude,
+            pickup_address: formData.pickup_address,
             school_id: formData.school_id,
             grade: formData.grade,
             car_type: formData.car_type,
@@ -180,6 +183,10 @@ const StudentRegistrationForm: React.FC = () => {
     }
     if (!formData.grade) {
       toast({ title: t('register.student.validation.grade'), variant: 'destructive' });
+      return;
+    }
+    if (!formData.pickup_address.trim()) {
+      toast({ title: 'وصف موقع الاستلام مطلوب', variant: 'destructive' });
       return;
     }
 
@@ -429,11 +436,28 @@ const StudentRegistrationForm: React.FC = () => {
               <span>{t('register.common.longitude')}: <span className="font-medium text-foreground">{formData.pickup_longitude.toFixed(6)}</span></span>
             </div>
 
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">وصف موقع الاستلام (Pickup Address) *</Label>
+              <textarea
+                value={formData.pickup_address}
+                onChange={(e) => setFormData((f) => ({ ...f, pickup_address: e.target.value }))}
+                placeholder="اكتب وصف تفصيلي لموقع الاستلام (اسم الشارع، المنطقة، أقرب علامة مميزة...)"
+                rows={3}
+                className="w-full rounded-md bg-muted/50 border border-border/50 focus:bg-background transition-colors p-3 text-sm"
+              />
+            </div>
+
             <div className="flex justify-between pt-4">
               <Button type="button" variant="outline" onClick={() => setStep(1)} size="lg" className="px-8">
                 {t('register.common.previous')}
               </Button>
-              <Button type="button" onClick={() => setStep(3)} size="lg" className="px-8">
+              <Button type="button" onClick={() => {
+                if (!formData.pickup_address.trim()) {
+                  toast({ title: 'وصف موقع الاستلام مطلوب', variant: 'destructive' });
+                  return;
+                }
+                setStep(3);
+              }} size="lg" className="px-8">
                 {t('register.common.next')}
               </Button>
             </div>

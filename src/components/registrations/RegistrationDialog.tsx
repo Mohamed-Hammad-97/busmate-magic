@@ -49,6 +49,7 @@ interface ParentFormData {
   job: string;
   pickup_latitude: number;
   pickup_longitude: number;
+  pickup_address: string;
 }
 
 interface RegistrationFormData {
@@ -89,6 +90,7 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
     job: '',
     pickup_latitude: 30.0444,
     pickup_longitude: 31.2357,
+    pickup_address: '',
   });
 
   const [regData, setRegData] = useState<RegistrationFormData>({
@@ -143,6 +145,7 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
         job: registration.parent_accounts?.job || '',
         pickup_latitude: registration.parent_accounts?.pickup_latitude || 30.0444,
         pickup_longitude: registration.parent_accounts?.pickup_longitude || 31.2357,
+        pickup_address: (registration.parent_accounts as any)?.pickup_address || '',
       });
       setRegData({
         student_name: registration.student_name || '',
@@ -170,6 +173,7 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
       job: '',
       pickup_latitude: 30.0444,
       pickup_longitude: 31.2357,
+      pickup_address: '',
     });
     setRegData({
       student_name: '',
@@ -199,6 +203,7 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
             job: parentData.job || null,
             pickup_latitude: parentData.pickup_latitude,
             pickup_longitude: parentData.pickup_longitude,
+            pickup_address: parentData.pickup_address,
           })
           .eq('id', registration.parent_id);
         if (parentError) throw parentError;
@@ -242,6 +247,7 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
               job: parentData.job || null,
               pickup_latitude: parentData.pickup_latitude,
               pickup_longitude: parentData.pickup_longitude,
+              pickup_address: parentData.pickup_address,
             })
             .eq('id', parentId);
           if (updateError) throw updateError;
@@ -260,6 +266,7 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
               job: parentData.job || null,
               pickup_latitude: parentData.pickup_latitude,
               pickup_longitude: parentData.pickup_longitude,
+              pickup_address: parentData.pickup_address,
             })
             .select()
             .single();
@@ -332,6 +339,10 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
     }
     if (!regData.grade) {
       toast({ title: 'Please select grade', variant: 'destructive' });
+      return;
+    }
+    if (!parentData.pickup_address.trim()) {
+      toast({ title: 'Please enter pickup address (وصف موقع الاستلام)', variant: 'destructive' });
       return;
     }
 
@@ -458,6 +469,15 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
                   <span>Lat: {parentData.pickup_latitude.toFixed(6)}</span>
                   <span>Lng: {parentData.pickup_longitude.toFixed(6)}</span>
                 </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Pickup Address * (وصف موقع الاستلام)</Label>
+                <Textarea
+                  value={parentData.pickup_address}
+                  onChange={(e) => setParentData((p) => ({ ...p, pickup_address: e.target.value }))}
+                  placeholder="اكتب وصف تفصيلي لموقع الاستلام (اسم الشارع، المنطقة، أقرب علامة مميزة...)"
+                  rows={3}
+                />
               </div>
             </TabsContent>
 
