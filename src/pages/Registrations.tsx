@@ -271,12 +271,26 @@ const Registrations: React.FC = () => {
     else deleteMutation.mutate(deleteTarget);
   };
 
-  const totalCount = cityFilteredRegistrations.length;
-  const completeCount = cityFilteredRegistrations.filter((r) => r.status === 'complete').length;
-  const pendingCount = cityFilteredRegistrations.filter((r) => r.status === 'pending_fees').length;
-  const cancelledCount = cityFilteredRegistrations.filter((r) => r.status === 'cancelled').length;
-  const uniqueSchools = new Set(cityFilteredRegistrations.map((r) => r.school_id)).size;
+  const activeRegs = cityFilteredRegistrations.filter((r) => r.status !== 'archived');
+  const archivedRegs = cityFilteredRegistrations.filter((r) => r.status === 'archived');
+  const totalCount = activeRegs.length;
+  const completeCount = activeRegs.filter((r) => r.status === 'complete').length;
+  const pendingCount = activeRegs.filter((r) => r.status === 'pending_fees').length;
+  const cancelledCount = activeRegs.filter((r) => r.status === 'cancelled').length;
+  const uniqueSchools = new Set(activeRegs.map((r) => r.school_id)).size;
   const completionRate = totalCount > 0 ? Math.round((completeCount / totalCount) * 100) : 0;
+
+  // Archive breakdown (for small sub-labels under each active stat)
+  const archiveTotal = archivedRegs.length;
+  const archiveComplete = archivedRegs.filter((r) => r.status === 'complete').length;
+  const archivePending = archivedRegs.filter((r) => r.status === 'pending_fees').length;
+  const archiveCancelled = archivedRegs.filter((r) => r.status === 'cancelled').length;
+  const archiveSchools = new Set(archivedRegs.map((r) => r.school_id)).size;
+  const grandTotal = totalCount + archiveTotal;
+  const grandComplete = completeCount + archiveComplete;
+  const grandPending = pendingCount + archivePending;
+  const grandCancelled = cancelledCount + archiveCancelled;
+  const grandSchools = new Set(cityFilteredRegistrations.map((r) => r.school_id)).size;
 
   const getStatusConfig = (status: Enums<'registration_status'>) => {
     switch (status) {
