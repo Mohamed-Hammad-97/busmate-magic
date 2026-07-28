@@ -101,8 +101,8 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
       const totalValue = parseFloat(value);
       const numInstallments = parseInt(installments);
       const installmentAmount = totalValue / numInstallments;
+      const insuranceAmount = parseFloat(insurance) || 0;
 
-      // Check if subscription already exists
       const { data: existingSub } = await supabase
         .from('subscriptions')
         .select('id')
@@ -110,9 +110,10 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
         .maybeSingle();
 
       let subscriptionId: string;
+      // Preserve receipts / paid state keyed by installment_number
+      const existingByNum: Record<number, any> = {};
 
       if (existingSub) {
-        // Update existing subscription
         const { error: updateError } = await supabase
           .from('subscriptions')
           .update({
@@ -123,7 +124,20 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
           .eq('id', existingSub.id);
         if (updateError) throw updateError;
 
-        // Delete old payments
+        const { data: existingPays } = await supabase
+          .from('payments')
+          .select('*')
+          .eq('subscription_id', existingSub.id);
+
+        (existingPays || []).forEach((p: any) => {
+          const key = Number(p.installment_number);
+          const prev = existingByNum[key];
+          if (!prev) { existingByNum[key] = p; return; }
+          const t1 = new Date(p.updated_at || p.created_at || 0).getTime();
+          const t2 = new Date(prev.updated_at || prev.created_at || 0).getTime();
+          if (t1 >= t2) existingByNum[key] = p;
+        });
+
         const { error: delError } = await supabase
           .from('payments')
           .delete()
@@ -132,7 +146,6 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
 
         subscriptionId = existingSub.id;
       } else {
-        // Create new subscription
         const { data: subscription, error: subError } = await supabase
           .from('subscriptions')
           .insert({
@@ -148,57 +161,48 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
         subscriptionId = subscription.id;
       }
 
-      // Create payments for each installment using selected start date
-      const payments = [];
-
-      // Insurance as installment_number 0 (appears before installments)
-      const insuranceAmount = parseFloat(insurance) || 0;
-      if (insuranceAmount > 0) {
-        payments.push({
+      const buildRow = (installment_number: number, amount: number, due_date: string, notes?: string) => {
+        const prev = existingByNum[installment_number];
+        return {
           subscription_id: subscriptionId,
-          amount: insuranceAmount,
-          installment_number: 0,
-          due_date: startDate.toISOString().split('T')[0],
-          status: 'pending' as Enums<'payment_status'>,
-          notes: 'Insurance',
-        });
-      }
+          amount,
+          installment_number,
+          due_date,
+          notes: notes ?? prev?.notes ?? null,
+          status: (prev?.status ?? 'pending') as Enums<'payment_status'>,
+          paid_date: prev?.paid_date ?? null,
+          receipt_url: prev?.receipt_url ?? null,
+          payment_note: prev?.payment_note ?? null,
+          paid_by: prev?.paid_by ?? null,
+          paid_by_name: prev?.paid_by_name ?? null,
+        };
+      };
 
+      const payments: any[] = [];
+      if (insuranceAmount > 0) {
+        payments.push(buildRow(0, insuranceAmount, startDate.toISOString().split('T')[0], 'Insurance'));
+      }
       for (let i = 0; i < numInstallments; i++) {
         const dueDate = new Date(startDate);
-        if (subscriptionType === 'yearly') {
-          dueDate.setMonth(dueDate.getMonth() + i);
-        } else {
-          dueDate.setMonth(dueDate.getMonth() + i);
-        }
-        
-        payments.push({
-          subscription_id: subscriptionId,
-          amount: installmentAmount,
-          installment_number: i + 1,
-          due_date: dueDate.toISOString().split('T')[0],
-          status: 'pending' as Enums<'payment_status'>,
-        });
+        dueDate.setMonth(dueDate.getMonth() + i);
+        payments.push(buildRow(i + 1, installmentAmount, dueDate.toISOString().split('T')[0]));
       }
 
       const { error: payError } = await supabase.from('payments').insert(payments);
       if (payError) throw payError;
 
-      // Update registration status to complete
       const { error: regError } = await supabase
         .from('registrations')
         .update({ status: 'complete' })
         .eq('id', registration.id);
       if (regError) throw regError;
 
-      // Activate parent account for login (creates auth user if not exists)
       try {
         await supabase.functions.invoke('activate-parent-account', {
           body: { parent_id: registration.parent_id },
         });
       } catch (activateErr) {
         console.error('Failed to activate parent account:', activateErr);
-        // Non-blocking: subscription still created successfully
       }
     },
     onSuccess: () => {

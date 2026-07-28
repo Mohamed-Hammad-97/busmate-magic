@@ -60,6 +60,8 @@ const Payments = () => {
   const [nameFilter, setNameFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [installmentFilter, setInstallmentFilter] = useState<string>('');
+  const [insuranceFilter, setInsuranceFilter] = useState<string>('all');
+  const [subscriptionTypeFilter, setSubscriptionTypeFilter] = useState<string>('all');
   const [paymentTab, setPaymentTab] = useState<string>('all');
   const [mainTab, setMainTab] = useState<'active' | 'archive'>('active');
   const [archiveYear, setArchiveYear] = useState<string>('all');
@@ -303,13 +305,34 @@ const Payments = () => {
       if (!matchesSearch) return;
       if (phoneNorm && !regData.phones.some((p) => p.replace(/\s+/g, '').includes(phoneNorm))) return;
       if (nameNorm && !(regData.parentName.toLowerCase().includes(nameNorm) || regData.studentName.toLowerCase().includes(nameNorm))) return;
-      if (statusFilter !== 'all' && !regData.payments.some((payment: any) => paymentMatchesStatus(payment, statusFilter))) return;
-      if (!Number.isNaN(installmentCount) && Number(regData.subscription?.number_of_installments) !== installmentCount) return;
+      if (subscriptionTypeFilter !== 'all' && regData.subscription?.subscription_type !== subscriptionTypeFilter) return;
+      // Insurance filter — installment_number 0 is the insurance row
+      if (insuranceFilter !== 'all') {
+        const insuranceRow = regData.payments.find((p: any) => Number(p.installment_number) === 0);
+        if (insuranceFilter === 'none' && insuranceRow) return;
+        if (insuranceFilter === 'paid' && (!insuranceRow || insuranceRow.status !== 'paid')) return;
+        if (insuranceFilter === 'pending' && (!insuranceRow || getEffectivePaymentStatus(insuranceRow) === 'paid')) return;
+      }
+      if (statusFilter !== 'all') {
+        // Status filter now looks at installments matching that status,
+        // and honours the "installment number" input by matching that specific installment_number.
+        const matchingInstallments = regData.payments.filter((payment: any) => {
+          if (!paymentMatchesStatus(payment, statusFilter)) return false;
+          if (!Number.isNaN(installmentCount)) {
+            return Number(payment.installment_number) === installmentCount;
+          }
+          return true;
+        });
+        if (matchingInstallments.length === 0) return;
+      } else if (!Number.isNaN(installmentCount)) {
+        // No status filter → keep original behaviour of filtering by total installment count on the subscription
+        if (Number(regData.subscription?.number_of_installments) !== installmentCount) return;
+      }
       if (changesDate && !regData.payments.some((p: any) => p.status === 'paid' && sameDay(p.paid_date, changesDate))) return;
       result[regId] = regData;
     });
     return result;
-  }, [paymentsByRegistration, paymentTab, searchTerm, phoneFilter, nameFilter, statusFilter, installmentFilter, paymentMatchesStatus, changesDate, sameDay]);
+  }, [paymentsByRegistration, paymentTab, searchTerm, phoneFilter, nameFilter, statusFilter, installmentFilter, insuranceFilter, subscriptionTypeFilter, paymentMatchesStatus, getEffectivePaymentStatus, changesDate, sameDay]);
 
   // Summary of installments changed / marked paid on selected date
   const changesSummary = useMemo(() => {
@@ -552,10 +575,40 @@ const Payments = () => {
                     <SelectItem value="overdue">{t('payments.overdue')}</SelectItem>
                   </SelectContent>
                 </Select>
-                <div className="relative w-[160px]">
+                <Select value={subscriptionTypeFilter} onValueChange={setSubscriptionTypeFilter}>
+                  <SelectTrigger className="w-[160px] h-11 bg-card border-border/50 rounded-xl">
+                    <SelectValue placeholder={t('payments.subscriptionType')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All types</SelectItem>
+                    <SelectItem value="monthly">{t('payments.monthly')}</SelectItem>
+                    <SelectItem value="yearly">{t('payments.yearly')}</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={insuranceFilter} onValueChange={setInsuranceFilter}>
+                  <SelectTrigger className="w-[170px] h-11 bg-card border-border/50 rounded-xl">
+                    <SelectValue placeholder="Insurance" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Insurance: All</SelectItem>
+                    <SelectItem value="paid">Insurance paid</SelectItem>
+                    <SelectItem value="pending">Insurance pending</SelectItem>
+                    <SelectItem value="none">No insurance</SelectItem>
+                  </SelectContent>
+                </Select>
+                <div className="relative w-[180px]">
                   <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input type="number" placeholder={t('payments.installments') + '...'} value={installmentFilter} onChange={(e) => setInstallmentFilter(e.target.value)} className="pl-10 h-11 bg-card border-border/50 rounded-xl" min="1" max="10" />
+                  <Input
+                    type="number"
+                    placeholder={statusFilter === 'all' ? '# of installments' : `# with ${statusFilter}`}
+                    value={installmentFilter}
+                    onChange={(e) => setInstallmentFilter(e.target.value)}
+                    className="pl-10 h-11 bg-card border-border/50 rounded-xl"
+                    min="1"
+                    max="10"
+                  />
                 </div>
+
                 {canDestroy && (
                   <div className="relative w-full sm:w-[200px]">
                     <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

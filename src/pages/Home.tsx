@@ -663,6 +663,41 @@ const Home = () => {
         </section>
       )}
 
+      {/* Gallery Section */}
+      {gallery && gallery.length > 0 && (
+        <section id="gallery" className="py-24 px-4 relative">
+          <div className="container mx-auto">
+            <div className="text-center space-y-4 mb-16">
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold">{t('homepage.gallery.title', 'Gallery')}</h2>
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                {t('homepage.gallery.subtitle', 'Moments from our fleet and journeys')}
+              </p>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {gallery.map((img) => (
+                <div
+                  key={img.id}
+                  className="group relative aspect-square overflow-hidden rounded-2xl border border-border/50 bg-muted/30 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
+                >
+                  <img
+                    src={img.image_url}
+                    alt={img.alt_text || img.title || 'Gallery image'}
+                    loading="lazy"
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  />
+                  {img.title && (
+                    <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                      <p className="text-white text-sm font-medium">{img.title}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+
       {/* Premium Contact Section */}
       <section id="contact" className="py-24 px-4 relative">
         <div className="container mx-auto">
