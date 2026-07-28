@@ -179,6 +179,12 @@ const RegistrationDetails: React.FC<RegistrationDetailsProps> = ({
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
                   <MapPin className="h-3.5 w-3.5" /> Pickup Location
                 </h3>
+                {parent?.pickup_address && (
+                  <div className="rounded-xl border border-border/50 bg-muted/30 p-3 mb-3">
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Pickup Address (وصف موقع الاستلام)</p>
+                    <p className="text-sm font-medium text-foreground whitespace-pre-wrap">{parent.pickup_address}</p>
+                  </div>
+                )}
                 <div className="rounded-xl overflow-hidden border border-border/50">
                   <iframe
                     width="100%"
