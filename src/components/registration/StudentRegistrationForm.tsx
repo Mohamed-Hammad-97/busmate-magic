@@ -38,6 +38,7 @@ interface FormData {
   comments: string;
   pickup_latitude: number;
   pickup_longitude: number;
+  pickup_address: string;
   school_id: string;
   grade: string;
   car_type: Enums<'car_type'>;
@@ -65,6 +66,7 @@ const StudentRegistrationForm: React.FC = () => {
     comments: '',
     pickup_latitude: 30.0444,
     pickup_longitude: 31.2357,
+    pickup_address: '',
     school_id: '',
     grade: '',
     car_type: 'ac',
@@ -121,6 +123,7 @@ const StudentRegistrationForm: React.FC = () => {
             comments: formData.comments || undefined,
             pickup_latitude: formData.pickup_latitude,
             pickup_longitude: formData.pickup_longitude,
+            pickup_address: formData.pickup_address,
             school_id: formData.school_id,
             grade: formData.grade,
             car_type: formData.car_type,
