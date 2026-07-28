@@ -203,6 +203,7 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
             job: parentData.job || null,
             pickup_latitude: parentData.pickup_latitude,
             pickup_longitude: parentData.pickup_longitude,
+            pickup_address: parentData.pickup_address,
           })
           .eq('id', registration.parent_id);
         if (parentError) throw parentError;
@@ -246,6 +247,7 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
               job: parentData.job || null,
               pickup_latitude: parentData.pickup_latitude,
               pickup_longitude: parentData.pickup_longitude,
+              pickup_address: parentData.pickup_address,
             })
             .eq('id', parentId);
           if (updateError) throw updateError;
@@ -264,6 +266,7 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
               job: parentData.job || null,
               pickup_latitude: parentData.pickup_latitude,
               pickup_longitude: parentData.pickup_longitude,
+              pickup_address: parentData.pickup_address,
             })
             .select()
             .single();
