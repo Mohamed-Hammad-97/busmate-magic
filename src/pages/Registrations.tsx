@@ -271,12 +271,26 @@ const Registrations: React.FC = () => {
     else deleteMutation.mutate(deleteTarget);
   };
 
-  const totalCount = cityFilteredRegistrations.length;
-  const completeCount = cityFilteredRegistrations.filter((r) => r.status === 'complete').length;
-  const pendingCount = cityFilteredRegistrations.filter((r) => r.status === 'pending_fees').length;
-  const cancelledCount = cityFilteredRegistrations.filter((r) => r.status === 'cancelled').length;
-  const uniqueSchools = new Set(cityFilteredRegistrations.map((r) => r.school_id)).size;
+  const activeRegs = cityFilteredRegistrations.filter((r) => r.status !== 'archived');
+  const archivedRegs = cityFilteredRegistrations.filter((r) => r.status === 'archived');
+  const totalCount = activeRegs.length;
+  const completeCount = activeRegs.filter((r) => r.status === 'complete').length;
+  const pendingCount = activeRegs.filter((r) => r.status === 'pending_fees').length;
+  const cancelledCount = activeRegs.filter((r) => r.status === 'cancelled').length;
+  const uniqueSchools = new Set(activeRegs.map((r) => r.school_id)).size;
   const completionRate = totalCount > 0 ? Math.round((completeCount / totalCount) * 100) : 0;
+
+  // Archive breakdown (for small sub-labels under each active stat)
+  const archiveTotal = archivedRegs.length;
+  const archiveComplete = archivedRegs.filter((r) => r.status === 'complete').length;
+  const archivePending = archivedRegs.filter((r) => r.status === 'pending_fees').length;
+  const archiveCancelled = archivedRegs.filter((r) => r.status === 'cancelled').length;
+  const archiveSchools = new Set(archivedRegs.map((r) => r.school_id)).size;
+  const grandTotal = totalCount + archiveTotal;
+  const grandComplete = completeCount + archiveComplete;
+  const grandPending = pendingCount + archivePending;
+  const grandCancelled = cancelledCount + archiveCancelled;
+  const grandSchools = new Set(cityFilteredRegistrations.map((r) => r.school_id)).size;
 
   const getStatusConfig = (status: Enums<'registration_status'>) => {
     switch (status) {
@@ -345,6 +359,10 @@ const Registrations: React.FC = () => {
               </div>
               <p className="text-3xl font-bold tracking-tight text-foreground">{totalCount}</p>
               <p className="text-xs text-muted-foreground mt-1">Total Registrations</p>
+              <div className="mt-2 pt-2 border-t border-border/40 flex items-center justify-between text-[10px] text-muted-foreground">
+                <span>Archive: <span className="font-semibold text-foreground/70">{archiveTotal}</span></span>
+                <span>Total: <span className="font-semibold text-foreground/70">{grandTotal}</span></span>
+              </div>
             </div>
           </div>
 
@@ -360,6 +378,10 @@ const Registrations: React.FC = () => {
               </div>
               <p className="text-3xl font-bold tracking-tight text-foreground">{completeCount}</p>
               <p className="text-xs text-muted-foreground mt-1">Complete</p>
+              <div className="mt-2 pt-2 border-t border-border/40 flex items-center justify-between text-[10px] text-muted-foreground">
+                <span>Archive: <span className="font-semibold text-foreground/70">{archiveComplete}</span></span>
+                <span>Total: <span className="font-semibold text-foreground/70">{grandComplete}</span></span>
+              </div>
             </div>
           </div>
 
@@ -374,6 +396,10 @@ const Registrations: React.FC = () => {
               </div>
               <p className="text-3xl font-bold tracking-tight text-foreground">{pendingCount}</p>
               <p className="text-xs text-muted-foreground mt-1">Pending Fees</p>
+              <div className="mt-2 pt-2 border-t border-border/40 flex items-center justify-between text-[10px] text-muted-foreground">
+                <span>Archive: <span className="font-semibold text-foreground/70">{archivePending}</span></span>
+                <span>Total: <span className="font-semibold text-foreground/70">{grandPending}</span></span>
+              </div>
             </div>
           </div>
 
@@ -388,6 +414,10 @@ const Registrations: React.FC = () => {
               </div>
               <p className="text-3xl font-bold tracking-tight text-foreground">{cancelledCount}</p>
               <p className="text-xs text-muted-foreground mt-1">Cancelled</p>
+              <div className="mt-2 pt-2 border-t border-border/40 flex items-center justify-between text-[10px] text-muted-foreground">
+                <span>Archive: <span className="font-semibold text-foreground/70">{archiveCancelled}</span></span>
+                <span>Total: <span className="font-semibold text-foreground/70">{grandCancelled}</span></span>
+              </div>
             </div>
           </div>
 
@@ -402,6 +432,10 @@ const Registrations: React.FC = () => {
               </div>
               <p className="text-3xl font-bold tracking-tight text-foreground">{uniqueSchools}</p>
               <p className="text-xs text-muted-foreground mt-1">Active Schools</p>
+              <div className="mt-2 pt-2 border-t border-border/40 flex items-center justify-between text-[10px] text-muted-foreground">
+                <span>Archive: <span className="font-semibold text-foreground/70">{archiveSchools}</span></span>
+                <span>Total: <span className="font-semibold text-foreground/70">{grandSchools}</span></span>
+              </div>
             </div>
           </div>
         </div>
