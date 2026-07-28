@@ -341,6 +341,10 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
       toast({ title: 'Please select grade', variant: 'destructive' });
       return;
     }
+    if (!parentData.pickup_address.trim()) {
+      toast({ title: 'Please enter pickup address (وصف موقع الاستلام)', variant: 'destructive' });
+      return;
+    }
 
     saveMutation.mutate();
   };
@@ -465,6 +469,15 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
                   <span>Lat: {parentData.pickup_latitude.toFixed(6)}</span>
                   <span>Lng: {parentData.pickup_longitude.toFixed(6)}</span>
                 </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Pickup Address * (وصف موقع الاستلام)</Label>
+                <Textarea
+                  value={parentData.pickup_address}
+                  onChange={(e) => setParentData((p) => ({ ...p, pickup_address: e.target.value }))}
+                  placeholder="اكتب وصف تفصيلي لموقع الاستلام (اسم الشارع، المنطقة، أقرب علامة مميزة...)"
+                  rows={3}
+                />
               </div>
             </TabsContent>
 
