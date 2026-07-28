@@ -60,6 +60,8 @@ const Payments = () => {
   const [nameFilter, setNameFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [installmentFilter, setInstallmentFilter] = useState<string>('');
+  const [insuranceFilter, setInsuranceFilter] = useState<string>('all');
+  const [subscriptionTypeFilter, setSubscriptionTypeFilter] = useState<string>('all');
   const [paymentTab, setPaymentTab] = useState<string>('all');
   const [mainTab, setMainTab] = useState<'active' | 'archive'>('active');
   const [archiveYear, setArchiveYear] = useState<string>('all');
