@@ -185,6 +185,10 @@ const StudentRegistrationForm: React.FC = () => {
       toast({ title: t('register.student.validation.grade'), variant: 'destructive' });
       return;
     }
+    if (!formData.pickup_address.trim()) {
+      toast({ title: 'وصف موقع الاستلام مطلوب', variant: 'destructive' });
+      return;
+    }
 
     submitMutation.mutate();
   };
