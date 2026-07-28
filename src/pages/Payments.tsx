@@ -575,10 +575,40 @@ const Payments = () => {
                     <SelectItem value="overdue">{t('payments.overdue')}</SelectItem>
                   </SelectContent>
                 </Select>
-                <div className="relative w-[160px]">
+                <Select value={subscriptionTypeFilter} onValueChange={setSubscriptionTypeFilter}>
+                  <SelectTrigger className="w-[160px] h-11 bg-card border-border/50 rounded-xl">
+                    <SelectValue placeholder={t('payments.subscriptionType')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All types</SelectItem>
+                    <SelectItem value="monthly">{t('payments.monthly')}</SelectItem>
+                    <SelectItem value="yearly">{t('payments.yearly')}</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={insuranceFilter} onValueChange={setInsuranceFilter}>
+                  <SelectTrigger className="w-[170px] h-11 bg-card border-border/50 rounded-xl">
+                    <SelectValue placeholder="Insurance" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Insurance: All</SelectItem>
+                    <SelectItem value="paid">Insurance paid</SelectItem>
+                    <SelectItem value="pending">Insurance pending</SelectItem>
+                    <SelectItem value="none">No insurance</SelectItem>
+                  </SelectContent>
+                </Select>
+                <div className="relative w-[180px]">
                   <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input type="number" placeholder={t('payments.installments') + '...'} value={installmentFilter} onChange={(e) => setInstallmentFilter(e.target.value)} className="pl-10 h-11 bg-card border-border/50 rounded-xl" min="1" max="10" />
+                  <Input
+                    type="number"
+                    placeholder={statusFilter === 'all' ? '# of installments' : `# with ${statusFilter}`}
+                    value={installmentFilter}
+                    onChange={(e) => setInstallmentFilter(e.target.value)}
+                    className="pl-10 h-11 bg-card border-border/50 rounded-xl"
+                    min="1"
+                    max="10"
+                  />
                 </div>
+
                 {canDestroy && (
                   <div className="relative w-full sm:w-[200px]">
                     <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
