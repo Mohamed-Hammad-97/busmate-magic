@@ -600,7 +600,14 @@ const Registrations: React.FC = () => {
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">{reg.parent_accounts?.parent_name || '-'}</TableCell>
                         <TableCell>
-                          <span className="text-sm text-muted-foreground">{reg.schools?.name || '-'}</span>
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-sm text-muted-foreground">{reg.schools?.name || '-'}</span>
+                            {reg.parent_accounts?.pickup_address && (
+                              <span className="text-xs text-muted-foreground/70 line-clamp-2 max-w-[220px]" title={reg.parent_accounts.pickup_address}>
+                                📍 {reg.parent_accounts.pickup_address}
+                              </span>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>
                           <span className="text-xs font-medium bg-muted/50 text-foreground px-2 py-1 rounded-md">{reg.grade}</span>
