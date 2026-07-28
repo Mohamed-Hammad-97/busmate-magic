@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Search, Eye, Edit2, ClipboardList, DollarSign, Link2, Map, TrendingUp, CheckCircle, Clock, XCircle, GraduationCap, Users, School, Trash2, UserX, Archive, Download, FileSpreadsheet, FileText, Phone, User } from 'lucide-react';
+import { Plus, Search, Eye, Edit2, ClipboardList, DollarSign, Link2, Map, TrendingUp, CheckCircle, Clock, XCircle, GraduationCap, Users, School, Trash2, UserX, Archive, Download, FileSpreadsheet, FileText, Phone, User, MapPin } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { exportRegistrationsExcel, exportRegistrationsPDF } from '@/lib/exportRegistrations';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -573,6 +573,7 @@ const Registrations: React.FC = () => {
                     <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Student</TableHead>
                     <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Parent</TableHead>
                     <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">School</TableHead>
+                    <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Pickup Address</TableHead>
                     <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Grade</TableHead>
                     <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Type</TableHead>
                     <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</TableHead>
@@ -600,14 +601,17 @@ const Registrations: React.FC = () => {
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">{reg.parent_accounts?.parent_name || '-'}</TableCell>
                         <TableCell>
-                          <div className="flex flex-col gap-0.5">
-                            <span className="text-sm text-muted-foreground">{reg.schools?.name || '-'}</span>
-                            {reg.parent_accounts?.pickup_address && (
-                              <span className="text-xs text-muted-foreground/70 line-clamp-2 max-w-[220px]" title={reg.parent_accounts.pickup_address}>
-                                📍 {reg.parent_accounts.pickup_address}
-                              </span>
-                            )}
-                          </div>
+                          <span className="text-sm text-muted-foreground">{reg.schools?.name || '-'}</span>
+                        </TableCell>
+                        <TableCell>
+                          {reg.parent_accounts?.pickup_address ? (
+                            <span className="text-xs text-muted-foreground line-clamp-2 max-w-[220px] inline-flex items-start gap-1" title={reg.parent_accounts.pickup_address}>
+                              <MapPin className="h-3 w-3 mt-0.5 shrink-0 text-primary" />
+                              {reg.parent_accounts.pickup_address}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground/50">—</span>
+                          )}
                         </TableCell>
                         <TableCell>
                           <span className="text-xs font-medium bg-muted/50 text-foreground px-2 py-1 rounded-md">{reg.grade}</span>
