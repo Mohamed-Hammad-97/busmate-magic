@@ -648,7 +648,8 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
               </TabsContent>
             </Tabs>
           </div>
-        </ScrollArea>
+        </div>
+
       </DialogContent>
       <SubscriptionDialog
         open={editSubOpen}
