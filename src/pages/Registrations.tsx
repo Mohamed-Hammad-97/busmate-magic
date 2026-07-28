@@ -359,6 +359,10 @@ const Registrations: React.FC = () => {
               </div>
               <p className="text-3xl font-bold tracking-tight text-foreground">{totalCount}</p>
               <p className="text-xs text-muted-foreground mt-1">Total Registrations</p>
+              <div className="mt-2 pt-2 border-t border-border/40 flex items-center justify-between text-[10px] text-muted-foreground">
+                <span>Archive: <span className="font-semibold text-foreground/70">{archiveTotal}</span></span>
+                <span>Total: <span className="font-semibold text-foreground/70">{grandTotal}</span></span>
+              </div>
             </div>
           </div>
 
@@ -374,6 +378,10 @@ const Registrations: React.FC = () => {
               </div>
               <p className="text-3xl font-bold tracking-tight text-foreground">{completeCount}</p>
               <p className="text-xs text-muted-foreground mt-1">Complete</p>
+              <div className="mt-2 pt-2 border-t border-border/40 flex items-center justify-between text-[10px] text-muted-foreground">
+                <span>Archive: <span className="font-semibold text-foreground/70">{archiveComplete}</span></span>
+                <span>Total: <span className="font-semibold text-foreground/70">{grandComplete}</span></span>
+              </div>
             </div>
           </div>
 
@@ -388,6 +396,10 @@ const Registrations: React.FC = () => {
               </div>
               <p className="text-3xl font-bold tracking-tight text-foreground">{pendingCount}</p>
               <p className="text-xs text-muted-foreground mt-1">Pending Fees</p>
+              <div className="mt-2 pt-2 border-t border-border/40 flex items-center justify-between text-[10px] text-muted-foreground">
+                <span>Archive: <span className="font-semibold text-foreground/70">{archivePending}</span></span>
+                <span>Total: <span className="font-semibold text-foreground/70">{grandPending}</span></span>
+              </div>
             </div>
           </div>
 
@@ -402,6 +414,10 @@ const Registrations: React.FC = () => {
               </div>
               <p className="text-3xl font-bold tracking-tight text-foreground">{cancelledCount}</p>
               <p className="text-xs text-muted-foreground mt-1">Cancelled</p>
+              <div className="mt-2 pt-2 border-t border-border/40 flex items-center justify-between text-[10px] text-muted-foreground">
+                <span>Archive: <span className="font-semibold text-foreground/70">{archiveCancelled}</span></span>
+                <span>Total: <span className="font-semibold text-foreground/70">{grandCancelled}</span></span>
+              </div>
             </div>
           </div>
 
@@ -416,6 +432,10 @@ const Registrations: React.FC = () => {
               </div>
               <p className="text-3xl font-bold tracking-tight text-foreground">{uniqueSchools}</p>
               <p className="text-xs text-muted-foreground mt-1">Active Schools</p>
+              <div className="mt-2 pt-2 border-t border-border/40 flex items-center justify-between text-[10px] text-muted-foreground">
+                <span>Archive: <span className="font-semibold text-foreground/70">{archiveSchools}</span></span>
+                <span>Total: <span className="font-semibold text-foreground/70">{grandSchools}</span></span>
+              </div>
             </div>
           </div>
         </div>
