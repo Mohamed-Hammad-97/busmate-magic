@@ -49,6 +49,7 @@ interface ParentFormData {
   job: string;
   pickup_latitude: number;
   pickup_longitude: number;
+  pickup_address: string;
 }
 
 interface RegistrationFormData {
@@ -89,6 +90,7 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
     job: '',
     pickup_latitude: 30.0444,
     pickup_longitude: 31.2357,
+    pickup_address: '',
   });
 
   const [regData, setRegData] = useState<RegistrationFormData>({
@@ -143,6 +145,7 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
         job: registration.parent_accounts?.job || '',
         pickup_latitude: registration.parent_accounts?.pickup_latitude || 30.0444,
         pickup_longitude: registration.parent_accounts?.pickup_longitude || 31.2357,
+        pickup_address: (registration.parent_accounts as any)?.pickup_address || '',
       });
       setRegData({
         student_name: registration.student_name || '',
@@ -170,6 +173,7 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
       job: '',
       pickup_latitude: 30.0444,
       pickup_longitude: 31.2357,
+      pickup_address: '',
     });
     setRegData({
       student_name: '',
