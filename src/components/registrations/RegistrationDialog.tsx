@@ -463,6 +463,7 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
                     onLocationChange={(lat, lng) =>
                       setParentData((p) => ({ ...p, pickup_latitude: lat, pickup_longitude: lng }))
                     }
+                    helperText="انقر على الخريطة أو اسحب العلامة لتحديد موقع البيت"
                   />
                 </GoogleMapsProvider>
                 <div className="flex gap-4 text-sm text-muted-foreground">

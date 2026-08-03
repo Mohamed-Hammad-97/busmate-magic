@@ -275,6 +275,7 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({ isOpen, onClose, custom
                   initialLat={formData.pickup_latitude}
                   initialLng={formData.pickup_longitude}
                   onLocationChange={handleLocationChange}
+                  helperText="انقر على الخريطة أو اسحب العلامة لتحديد موقع البيت"
                 />
               </GoogleMapsProvider>
             </TabsContent>
