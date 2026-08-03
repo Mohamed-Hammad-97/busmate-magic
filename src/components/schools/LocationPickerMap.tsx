@@ -11,6 +11,7 @@ export interface LocationPickerMapProps {
   initialLat?: number;
   initialLng?: number;
   onLocationChange: (lat: number, lng: number) => void;
+  helperText?: string;
 }
 
 const containerStyle = {
