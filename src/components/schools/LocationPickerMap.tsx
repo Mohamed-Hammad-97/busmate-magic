@@ -23,6 +23,7 @@ const LocationPickerMap: React.FC<LocationPickerMapProps> = ({
   initialLat = 30.0444,
   initialLng = 31.2357,
   onLocationChange,
+  helperText = 'انقر على الخريطة أو اسحب العلامة لتحديد موقع المدرسة',
 }) => {
   const { isLoaded } = useGoogleMaps();
   const [map, setMap] = useState<google.maps.Map | null>(null);
