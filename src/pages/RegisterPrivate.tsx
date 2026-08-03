@@ -394,6 +394,7 @@ Notes: ${formData.notes || 'N/A'}
                     onLocationChange={(lat, lng) =>
                       setFormData((f) => ({ ...f, pickup_latitude: lat, pickup_longitude: lng }))
                     }
+                    helperText="انقر على الخريطة أو اسحب العلامة لتحديد موقع البيت"
                   />
                 </GoogleMapsProvider>
 
