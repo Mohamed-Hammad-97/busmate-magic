@@ -146,7 +146,7 @@ const LocationPickerMap: React.FC<LocationPickerMapProps> = ({
   return (
     <div className="space-y-2">
       <p className="text-sm text-muted-foreground">
-        انقر على الخريطة أو اسحب العلامة لتحديد موقع المدرسة
+        {helperText}
       </p>
       
       <Autocomplete
