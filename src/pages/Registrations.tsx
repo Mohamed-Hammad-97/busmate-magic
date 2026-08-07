@@ -46,6 +46,7 @@ import RegistrationDialog from '@/components/registrations/RegistrationDialog';
 import RegistrationDetails from '@/components/registrations/RegistrationDetails';
 import SubscriptionDialog from '@/components/registrations/SubscriptionDialog';
 import RegistrationsMap from '@/components/registrations/RegistrationsMap';
+import OtherRegistrations from '@/components/registrations/OtherRegistrations';
 import { ShareButton } from '@/components/shared/ShareButton';
 import { GoogleMapsProvider } from '@/components/maps/GoogleMapsProvider';
 import { useCity } from '@/contexts/CityContext';
