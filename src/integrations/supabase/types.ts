@@ -1485,6 +1485,104 @@ export type Database = {
           },
         ]
       }
+      other_registrations: {
+        Row: {
+          car_type: Database["public"]["Enums"]["car_type"]
+          city: string
+          comments: string | null
+          converted_registration_id: string | null
+          created_at: string
+          education_department: Database["public"]["Enums"]["education_department"]
+          emergency_phone: string
+          father_phone: string
+          grade: string
+          id: string
+          job: string | null
+          mother_phone: string | null
+          national_id: string | null
+          parent_name: string
+          payment_phone: string | null
+          pickup_address: string
+          pickup_latitude: number
+          pickup_longitude: number
+          processed_at: string | null
+          processed_by: string | null
+          school_address: string | null
+          school_latitude: number | null
+          school_longitude: number | null
+          school_name: string
+          status: string
+          student_name: string
+          updated_at: string
+        }
+        Insert: {
+          car_type?: Database["public"]["Enums"]["car_type"]
+          city: string
+          comments?: string | null
+          converted_registration_id?: string | null
+          created_at?: string
+          education_department?: Database["public"]["Enums"]["education_department"]
+          emergency_phone: string
+          father_phone: string
+          grade: string
+          id?: string
+          job?: string | null
+          mother_phone?: string | null
+          national_id?: string | null
+          parent_name: string
+          payment_phone?: string | null
+          pickup_address: string
+          pickup_latitude: number
+          pickup_longitude: number
+          processed_at?: string | null
+          processed_by?: string | null
+          school_address?: string | null
+          school_latitude?: number | null
+          school_longitude?: number | null
+          school_name: string
+          status?: string
+          student_name: string
+          updated_at?: string
+        }
+        Update: {
+          car_type?: Database["public"]["Enums"]["car_type"]
+          city?: string
+          comments?: string | null
+          converted_registration_id?: string | null
+          created_at?: string
+          education_department?: Database["public"]["Enums"]["education_department"]
+          emergency_phone?: string
+          father_phone?: string
+          grade?: string
+          id?: string
+          job?: string | null
+          mother_phone?: string | null
+          national_id?: string | null
+          parent_name?: string
+          payment_phone?: string | null
+          pickup_address?: string
+          pickup_latitude?: number
+          pickup_longitude?: number
+          processed_at?: string | null
+          processed_by?: string | null
+          school_address?: string | null
+          school_latitude?: number | null
+          school_longitude?: number | null
+          school_name?: string
+          status?: string
+          student_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "other_registrations_converted_registration_id_fkey"
+            columns: ["converted_registration_id"]
+            isOneToOne: false
+            referencedRelation: "registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       otp_codes: {
         Row: {
           attempts: number

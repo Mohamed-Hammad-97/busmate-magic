@@ -40,6 +40,10 @@ interface FormData {
   pickup_longitude: number;
   pickup_address: string;
   school_id: string;
+  other_school_name: string;
+  other_school_address: string;
+  other_school_latitude: number;
+  other_school_longitude: number;
   grade: string;
   car_type: Enums<'car_type'>;
   education_department: Enums<'education_department'>;
@@ -68,6 +72,10 @@ const StudentRegistrationForm: React.FC = () => {
     pickup_longitude: 31.2357,
     pickup_address: '',
     school_id: '',
+    other_school_name: '',
+    other_school_address: '',
+    other_school_latitude: 30.0444,
+    other_school_longitude: 31.2357,
     grade: '',
     car_type: 'ac',
     education_department: 'national',
@@ -125,6 +133,11 @@ const StudentRegistrationForm: React.FC = () => {
             pickup_longitude: formData.pickup_longitude,
             pickup_address: formData.pickup_address,
             school_id: formData.school_id,
+            is_other_school: formData.school_id === 'other',
+            other_school_name: formData.school_id === 'other' ? formData.other_school_name : undefined,
+            other_school_address: formData.school_id === 'other' ? formData.other_school_address : undefined,
+            other_school_latitude: formData.school_id === 'other' ? formData.other_school_latitude : undefined,
+            other_school_longitude: formData.school_id === 'other' ? formData.other_school_longitude : undefined,
             grade: formData.grade,
             car_type: formData.car_type,
             education_department: formData.education_department,
@@ -181,6 +194,10 @@ const StudentRegistrationForm: React.FC = () => {
       toast({ title: t('register.student.validation.school'), variant: 'destructive' });
       return;
     }
+    if (formData.school_id === 'other' && !formData.other_school_name.trim()) {
+      toast({ title: 'اسم المدرسة مطلوب', variant: 'destructive' });
+      return;
+    }
     if (!formData.grade) {
       toast({ title: t('register.student.validation.grade'), variant: 'destructive' });
       return;
@@ -198,6 +215,8 @@ const StudentRegistrationForm: React.FC = () => {
       ...prev,
       student_name: '',
       school_id: '',
+      other_school_name: '',
+      other_school_address: '',
       grade: '',
       car_type: 'ac',
       education_department: 'national',
@@ -488,9 +507,55 @@ const StudentRegistrationForm: React.FC = () => {
                         {school.name}
                       </SelectItem>
                     ))}
+                    <SelectItem value="other">أخرى - مدرستي غير موجودة (Other)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+
+              {formData.school_id === 'other' && (
+                <div className="sm:col-span-2 space-y-4 rounded-xl border border-border/50 bg-muted/30 p-4">
+                  <p className="text-sm text-muted-foreground">
+                    اكتب اسم مدرستك وموقعها وسنقوم بمراجعة طلبك وإضافته.
+                  </p>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">اسم المدرسة (School Name) *</Label>
+                    <Input
+                      value={formData.other_school_name}
+                      onChange={(e) => setFormData((f) => ({ ...f, other_school_name: e.target.value }))}
+                      placeholder="اكتب اسم المدرسة"
+                      className="h-12 bg-background border-border/50"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">عنوان المدرسة (School Address)</Label>
+                    <textarea
+                      value={formData.other_school_address}
+                      onChange={(e) => setFormData((f) => ({ ...f, other_school_address: e.target.value }))}
+                      placeholder="اكتب عنوان المدرسة (الشارع، المنطقة، أقرب علامة مميزة...)"
+                      rows={2}
+                      className="w-full rounded-md bg-background border border-border/50 p-3 text-sm"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">موقع المدرسة على الخريطة (School Location)</Label>
+                    <GoogleMapsProvider>
+                      <LocationPickerMap
+                        initialLat={formData.other_school_latitude}
+                        initialLng={formData.other_school_longitude}
+                        onLocationChange={(lat, lng) =>
+                          setFormData((f) => ({ ...f, other_school_latitude: lat, other_school_longitude: lng }))
+                        }
+                        helperText="انقر على الخريطة أو اسحب العلامة لتحديد موقع المدرسة"
+                      />
+                    </GoogleMapsProvider>
+                    <div className="flex gap-4 justify-center text-xs text-muted-foreground bg-muted/50 rounded-lg p-2">
+                      <span>{t('register.common.latitude')}: <span className="font-medium text-foreground">{formData.other_school_latitude.toFixed(6)}</span></span>
+                      <span>{t('register.common.longitude')}: <span className="font-medium text-foreground">{formData.other_school_longitude.toFixed(6)}</span></span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-2">
                 <Label className="text-sm font-medium">{t('register.student.fields.grade')} *</Label>
                 <Select

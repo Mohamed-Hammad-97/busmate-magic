@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Search, Eye, Edit2, ClipboardList, DollarSign, Link2, Map, TrendingUp, CheckCircle, Clock, XCircle, GraduationCap, Users, School, Trash2, UserX, Archive, Download, FileSpreadsheet, FileText, Phone, User, MapPin } from 'lucide-react';
+import { Plus, Search, Eye, Edit2, ClipboardList, DollarSign, Link2, Map, TrendingUp, CheckCircle, Clock, XCircle, GraduationCap, Users, School, Trash2, UserX, Archive, Download, FileSpreadsheet, FileText, Phone, User, MapPin, HelpCircle } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { exportRegistrationsExcel, exportRegistrationsPDF } from '@/lib/exportRegistrations';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -46,6 +46,7 @@ import RegistrationDialog from '@/components/registrations/RegistrationDialog';
 import RegistrationDetails from '@/components/registrations/RegistrationDetails';
 import SubscriptionDialog from '@/components/registrations/SubscriptionDialog';
 import RegistrationsMap from '@/components/registrations/RegistrationsMap';
+import OtherRegistrations from '@/components/registrations/OtherRegistrations';
 import { ShareButton } from '@/components/shared/ShareButton';
 import { GoogleMapsProvider } from '@/components/maps/GoogleMapsProvider';
 import { useCity } from '@/contexts/CityContext';
@@ -74,7 +75,7 @@ const Registrations: React.FC = () => {
   const [nameFilter, setNameFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [schoolFilter, setSchoolFilter] = useState<string>('all');
-  const [mainTab, setMainTab] = useState<'active' | 'archive'>('active');
+  const [mainTab, setMainTab] = useState<'active' | 'archive' | 'other'>('active');
   const [archiveYear, setArchiveYear] = useState<string>('all');
   const [deleteTarget, setDeleteTarget] = useState<Registration | null>(null);
   const [deleteMode, setDeleteMode] = useState<'deactivate' | 'delete'>('deactivate');
@@ -440,9 +441,9 @@ const Registrations: React.FC = () => {
           </div>
         </div>
 
-        {/* Active / Archive Tabs */}
+        {/* Active / Archive / Other Tabs */}
         <div className="flex items-center justify-between gap-3 flex-wrap animate-fade-in" style={{ animationDelay: '0.15s' }}>
-          <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as 'active' | 'archive')}>
+          <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as 'active' | 'archive' | 'other')}>
             <TabsList>
               <TabsTrigger value="active" className="gap-2">
                 <ClipboardList className="h-4 w-4" />
@@ -454,9 +455,13 @@ const Registrations: React.FC = () => {
                 Archive
                 <Badge variant="secondary" className="ml-1">{archivedRegistrations.length}</Badge>
               </TabsTrigger>
+              <TabsTrigger value="other" className="gap-2">
+                <HelpCircle className="h-4 w-4" />
+                Other Registrations
+              </TabsTrigger>
             </TabsList>
           </Tabs>
-          {canManage && (
+          {canManage && mainTab !== 'other' && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button className="gap-2 h-10 rounded-xl shadow-sm">
@@ -501,6 +506,14 @@ const Registrations: React.FC = () => {
           </div>
         )}
 
+        {mainTab === 'other' ? (
+          <OtherRegistrations
+            canManage={canManage}
+            canDelete={isSuperAdmin}
+            cityNames={selectedCity === 'all' ? [] : (cityMapping[selectedCity] || [])}
+          />
+        ) : (
+        <>
         {/* Search & Filter Bar */}
         <div className="flex flex-col sm:flex-row gap-3 animate-fade-in flex-wrap" style={{ animationDelay: '0.2s' }}>
           <div className="relative flex-1 min-w-[200px]">
@@ -699,6 +712,9 @@ const Registrations: React.FC = () => {
             </div>
           )}
         </div>
+        </>
+        )}
+
 
         {/* Dialogs */}
         <RegistrationDialog
