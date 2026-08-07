@@ -703,6 +703,9 @@ const Registrations: React.FC = () => {
             </div>
           )}
         </div>
+        </>
+        )}
+
 
         {/* Dialogs */}
         <RegistrationDialog
