@@ -133,7 +133,15 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-    if (!data.school_id?.trim()) {
+    const isOtherSchool = data.is_other_school === true || data.school_id === 'other';
+    if (isOtherSchool) {
+      if (!data.other_school_name?.trim()) {
+        return new Response(
+          JSON.stringify({ error: "School name is required" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    } else if (!data.school_id?.trim()) {
       return new Response(
         JSON.stringify({ error: "School is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
