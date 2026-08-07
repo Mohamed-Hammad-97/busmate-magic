@@ -194,6 +194,10 @@ const StudentRegistrationForm: React.FC = () => {
       toast({ title: t('register.student.validation.school'), variant: 'destructive' });
       return;
     }
+    if (formData.school_id === 'other' && !formData.other_school_name.trim()) {
+      toast({ title: 'اسم المدرسة مطلوب', variant: 'destructive' });
+      return;
+    }
     if (!formData.grade) {
       toast({ title: t('register.student.validation.grade'), variant: 'destructive' });
       return;
@@ -211,6 +215,8 @@ const StudentRegistrationForm: React.FC = () => {
       ...prev,
       student_name: '',
       school_id: '',
+      other_school_name: '',
+      other_school_address: '',
       grade: '',
       car_type: 'ac',
       education_department: 'national',
