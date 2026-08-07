@@ -505,6 +505,14 @@ const Registrations: React.FC = () => {
           </div>
         )}
 
+        {mainTab === 'other' ? (
+          <OtherRegistrations
+            canManage={canManage}
+            canDelete={isSuperAdmin}
+            cityNames={selectedCity === 'all' ? [] : (cityMapping[selectedCity] || [])}
+          />
+        ) : (
+        <>
         {/* Search & Filter Bar */}
         <div className="flex flex-col sm:flex-row gap-3 animate-fade-in flex-wrap" style={{ animationDelay: '0.2s' }}>
           <div className="relative flex-1 min-w-[200px]">
