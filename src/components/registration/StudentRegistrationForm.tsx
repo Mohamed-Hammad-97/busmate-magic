@@ -40,6 +40,10 @@ interface FormData {
   pickup_longitude: number;
   pickup_address: string;
   school_id: string;
+  other_school_name: string;
+  other_school_address: string;
+  other_school_latitude: number;
+  other_school_longitude: number;
   grade: string;
   car_type: Enums<'car_type'>;
   education_department: Enums<'education_department'>;
