@@ -440,9 +440,9 @@ const Registrations: React.FC = () => {
           </div>
         </div>
 
-        {/* Active / Archive Tabs */}
+        {/* Active / Archive / Other Tabs */}
         <div className="flex items-center justify-between gap-3 flex-wrap animate-fade-in" style={{ animationDelay: '0.15s' }}>
-          <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as 'active' | 'archive')}>
+          <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as 'active' | 'archive' | 'other')}>
             <TabsList>
               <TabsTrigger value="active" className="gap-2">
                 <ClipboardList className="h-4 w-4" />
@@ -454,9 +454,13 @@ const Registrations: React.FC = () => {
                 Archive
                 <Badge variant="secondary" className="ml-1">{archivedRegistrations.length}</Badge>
               </TabsTrigger>
+              <TabsTrigger value="other" className="gap-2">
+                <HelpCircle className="h-4 w-4" />
+                Other Registrations
+              </TabsTrigger>
             </TabsList>
           </Tabs>
-          {canManage && (
+          {canManage && mainTab !== 'other' && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button className="gap-2 h-10 rounded-xl shadow-sm">
