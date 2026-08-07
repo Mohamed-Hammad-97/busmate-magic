@@ -33,6 +33,21 @@ interface RegistrationData {
 }
 
 // Validation helpers
+// Normalizes: strips spaces/dashes/parens, converts Arabic-Indic digits,
+// and maps +20 / 0020 / 20 prefixes to the local 01xxxxxxxxx format.
+function normalizePhone(raw?: string): string {
+  if (!raw) return "";
+  let p = raw
+    .replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+    .replace(/[\u06F0-\u06F9]/g, (d) => String(d.charCodeAt(0) - 0x06F0))
+    .replace(/[^\d+]/g, "");
+  p = p.replace(/^\+/, "");
+  if (p.startsWith("0020")) p = p.slice(4);
+  else if (p.startsWith("20") && p.length > 11) p = p.slice(2);
+  if (p.startsWith("1") && p.length === 10) p = "0" + p;
+  return p;
+}
+
 function validatePhone(phone: string): boolean {
   // Egyptian phone format: starts with 01, 11 digits total
   return /^01[0-9]{9}$/.test(phone);
