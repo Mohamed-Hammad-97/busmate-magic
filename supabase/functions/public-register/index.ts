@@ -24,6 +24,12 @@ interface RegistrationData {
   grade: string;
   car_type: 'ac' | 'non_ac';
   education_department: 'national' | 'ig' | 'american';
+  // "Other school" flow (school not listed)
+  is_other_school?: boolean;
+  other_school_name?: string;
+  other_school_address?: string;
+  other_school_latitude?: number;
+  other_school_longitude?: number;
 }
 
 // Validation helpers
