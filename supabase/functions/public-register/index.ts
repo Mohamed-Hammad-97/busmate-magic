@@ -78,6 +78,11 @@ serve(async (req) => {
 
   try {
     const data: RegistrationData = await req.json();
+    // Normalize all phone inputs before validation
+    data.father_phone = normalizePhone(data.father_phone);
+    data.mother_phone = data.mother_phone ? normalizePhone(data.mother_phone) : data.mother_phone;
+    data.emergency_phone = normalizePhone(data.emergency_phone);
+    data.payment_phone = normalizePhone(data.payment_phone);
     console.log("Received registration request for:", data.student_name);
 
     // Validate required fields
