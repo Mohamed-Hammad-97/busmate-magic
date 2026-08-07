@@ -177,6 +177,48 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // "Other school" submissions go to a separate review queue
+    if (isOtherSchool) {
+      const { error: otherError } = await supabase
+        .from('other_registrations')
+        .insert({
+          student_name: sanitizeString(data.student_name),
+          parent_name: sanitizeString(data.parent_name),
+          national_id: data.national_id?.trim() || null,
+          father_phone: data.father_phone,
+          mother_phone: data.mother_phone || null,
+          emergency_phone: data.emergency_phone,
+          payment_phone: data.payment_phone,
+          job: data.job ? sanitizeString(data.job) : null,
+          city: sanitizeString(data.city),
+          comments: data.comments ? sanitizeString(data.comments) : null,
+          pickup_latitude: data.pickup_latitude,
+          pickup_longitude: data.pickup_longitude,
+          pickup_address: sanitizeString(data.pickup_address),
+          school_name: sanitizeString(data.other_school_name!),
+          school_address: data.other_school_address ? sanitizeString(data.other_school_address) : null,
+          school_latitude: data.other_school_latitude ?? null,
+          school_longitude: data.other_school_longitude ?? null,
+          grade: data.grade,
+          car_type: data.car_type,
+          education_department: data.education_department,
+          status: 'pending',
+        });
+
+      if (otherError) {
+        console.error("Error creating other registration:", otherError);
+        return new Response(
+          JSON.stringify({ error: "Failed to submit registration. Please try again." }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, message: "Registration submitted successfully", other: true }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Verify school exists and is active
     const { data: school, error: schoolError } = await supabase
       .from('schools')
