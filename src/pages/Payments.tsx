@@ -691,6 +691,8 @@ const Payments = () => {
                         <TableRow className="bg-muted/30 hover:bg-muted/30">
                           <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('payments.parentName')}</TableHead>
                           <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('payments.studentName')}</TableHead>
+                          <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">School</TableHead>
+                          <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">رقم الدفع والتجديد</TableHead>
                           <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('payments.subscriptionType')}</TableHead>
                           <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Total</TableHead>
                           <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('payments.paid')}</TableHead>
