@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Search, CreditCard, CheckCircle, Clock, AlertCircle, Check, Eye, Hash, TrendingUp, DollarSign, UserCheck, Trash2, Archive, Download, FileSpreadsheet, FileText, Phone, User, CalendarDays, X } from 'lucide-react';
@@ -66,6 +67,7 @@ const Payments = () => {
   const [mainTab, setMainTab] = useState<'active' | 'archive'>('active');
   const [archiveYear, setArchiveYear] = useState<string>('all');
   const [changesDate, setChangesDate] = useState<string>('');
+  const [changesDialogOpen, setChangesDialogOpen] = useState(false);
   const [selectedRegistration, setSelectedRegistration] = useState<{
     registrationId: string;
     payments: any[];
@@ -95,6 +97,7 @@ const Payments = () => {
               registrations (
                 id,
                 student_name,
+                schools (name),
                 parent_accounts (parent_name, city, father_phone, mother_phone, emergency_phone, payment_phone)
               )
             )
@@ -213,7 +216,7 @@ const Payments = () => {
   });
 
   const paymentsByRegistration = useMemo(() => {
-    const grouped: Record<string, { registrationId: string; payments: any[]; subscription: any; parentName: string; studentName: string; phones: string[]; totalAmount: number; paidAmount: number; isFullyPaid: boolean; }> = {};
+    const grouped: Record<string, { registrationId: string; payments: any[]; subscription: any; parentName: string; studentName: string; schoolName: string; paymentPhone: string; phones: string[]; totalAmount: number; paidAmount: number; isFullyPaid: boolean; }> = {};
     payments.forEach((payment: any) => {
       const registrationId = payment.subscriptions?.registration_id;
       if (!registrationId) return;
@@ -225,6 +228,8 @@ const Payments = () => {
           subscription: payment.subscriptions,
           parentName: pa?.parent_name || '',
           studentName: payment.subscriptions?.registrations?.student_name || '',
+          schoolName: payment.subscriptions?.registrations?.schools?.name || '',
+          paymentPhone: pa?.payment_phone || '',
           phones: [pa?.father_phone, pa?.mother_phone, pa?.emergency_phone, pa?.payment_phone].filter(Boolean) as string[],
           totalAmount: payment.subscriptions?.value || 0,
           paidAmount: 0,
@@ -341,7 +346,7 @@ const Payments = () => {
     Object.values(paymentsByRegistration).forEach((reg) => {
       reg.payments.forEach((p: any) => {
         if (p.status === 'paid' && sameDay(p.paid_date, changesDate)) {
-          paidOn.push({ ...p, parentName: reg.parentName, studentName: reg.studentName });
+          paidOn.push({ ...p, parentName: reg.parentName, studentName: reg.studentName, schoolName: reg.schoolName, paymentPhone: reg.paymentPhone, registrationId: reg.registrationId });
         }
       });
     });
@@ -624,13 +629,20 @@ const Payments = () => {
 
               {/* Date-filter summary */}
               {canDestroy && changesDate && changesSummary && (
-                <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 space-y-3">
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setChangesDialogOpen(true)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setChangesDialogOpen(true); }}
+                  className="rounded-2xl border border-primary/20 bg-primary/5 p-4 space-y-3 cursor-pointer hover:bg-primary/10 transition-colors"
+                >
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <div className="flex items-center gap-2">
                       <CalendarDays className="h-4 w-4 text-primary" />
                       <span className="text-sm font-semibold text-foreground">
                         Changes on {format(new Date(changesDate), 'dd MMM yyyy', { locale: dateLocale })}
                       </span>
+                      <Badge variant="outline" className="text-[10px]">Click for details</Badge>
                     </div>
                     <div className="flex items-center gap-4 text-xs">
                       <span className="text-muted-foreground">Marked paid: <span className="font-semibold text-success">{changesSummary.paidOn.length}</span></span>
@@ -680,6 +692,8 @@ const Payments = () => {
                         <TableRow className="bg-muted/30 hover:bg-muted/30">
                           <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('payments.parentName')}</TableHead>
                           <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('payments.studentName')}</TableHead>
+                          <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">School</TableHead>
+                          <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">رقم الدفع والتجديد</TableHead>
                           <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('payments.subscriptionType')}</TableHead>
                           <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Total</TableHead>
                           <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('payments.paid')}</TableHead>
@@ -703,6 +717,8 @@ const Payments = () => {
                                 </div>
                               </TableCell>
                               <TableCell className="text-sm text-muted-foreground">{regData.studentName || '-'}</TableCell>
+                              <TableCell className="text-sm text-muted-foreground">{regData.schoolName || '-'}</TableCell>
+                              <TableCell className="text-sm text-muted-foreground" dir="ltr">{regData.paymentPhone || '-'}</TableCell>
                               <TableCell>
                                 <span className="text-xs font-medium bg-primary/10 text-primary px-2.5 py-1 rounded-full">
                                   {subscriptionTypeLabels[regData.subscription?.subscription_type] || '-'}
@@ -801,6 +817,61 @@ const Payments = () => {
           </Tabs>
         </div>
       </div>
+
+      {/* Changes details dialog */}
+      <Dialog open={changesDialogOpen} onOpenChange={setChangesDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {changesDate ? `Changes on ${format(new Date(changesDate), 'dd MMM yyyy', { locale: dateLocale })}` : 'Changes'}
+            </DialogTitle>
+          </DialogHeader>
+          {changesSummary && changesSummary.paidOn.length > 0 ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-4 text-xs">
+                <span className="text-muted-foreground">Records: <span className="font-semibold text-foreground">{changesSummary.paidOn.length}</span></span>
+                <span className="text-muted-foreground">Total collected: <span className="font-semibold text-success">{changesSummary.totalPaidAmount.toLocaleString()} EGP</span></span>
+              </div>
+              <div className="rounded-xl border border-border/50 overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/30 hover:bg-muted/30">
+                      <TableHead className="text-xs">{t('payments.studentName')}</TableHead>
+                      <TableHead className="text-xs">{t('payments.parentName')}</TableHead>
+                      <TableHead className="text-xs">School</TableHead>
+                      <TableHead className="text-xs">رقم الدفع والتجديد</TableHead>
+                      <TableHead className="text-xs">Installment</TableHead>
+                      <TableHead className="text-xs">Amount</TableHead>
+                      <TableHead className="text-xs">Due date</TableHead>
+                      <TableHead className="text-xs">Changed by</TableHead>
+                      <TableHead className="text-xs">Note</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {changesSummary.paidOn.map((p: any) => (
+                      <TableRow key={p.id}>
+                        <TableCell className="text-sm font-medium">{p.studentName || '-'}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{p.parentName || '-'}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{p.schoolName || '-'}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground" dir="ltr">{p.paymentPhone || '-'}</TableCell>
+                        <TableCell className="text-sm">
+                          {Number(p.installment_number) === 0 ? 'التأمين (Insurance)' : `القسط ${p.installment_number}`}
+                        </TableCell>
+                        <TableCell className="text-sm font-semibold text-success">{Number(p.amount).toLocaleString()} EGP</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{p.due_date ? format(new Date(p.due_date), 'dd MMM yyyy', { locale: dateLocale }) : '-'}</TableCell>
+                        <TableCell className="text-sm">{p.paid_by_name || '-'}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{p.payment_note || '-'}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground py-8 text-center">No changes on this date.</p>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Payment Profile Dialog */}
       {selectedRegistration && (() => {
