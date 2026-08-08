@@ -344,7 +344,7 @@ const Payments = () => {
     Object.values(paymentsByRegistration).forEach((reg) => {
       reg.payments.forEach((p: any) => {
         if (p.status === 'paid' && sameDay(p.paid_date, changesDate)) {
-          paidOn.push({ ...p, parentName: reg.parentName, studentName: reg.studentName });
+          paidOn.push({ ...p, parentName: reg.parentName, studentName: reg.studentName, schoolName: reg.schoolName, paymentPhone: reg.paymentPhone, registrationId: reg.registrationId });
         }
       });
     });
