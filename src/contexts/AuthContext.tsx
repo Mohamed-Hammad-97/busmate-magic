@@ -13,6 +13,8 @@ interface Employee {
   departments: Department[];
   is_active: boolean;
   city: string | null;
+  cities?: string[] | null;
+
 }
 
 interface AuthContextType {

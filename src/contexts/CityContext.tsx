@@ -8,6 +8,7 @@ interface CityContextType {
   setSelectedCity: (city: City) => void;
   cityLabels: Record<City, { en: string; ar: string }>;
   effectiveCity: City;
+  allowedCities: City[]; // empty = all cities allowed
 }
 
 const CityContext = createContext<CityContextType | undefined>(undefined);
@@ -31,43 +32,47 @@ const employeeCityToFilterCity: Record<string, City> = {
 export const CityProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { employee, isSuperAdmin } = useAuth();
 
-  // Determine if employee is city-locked
-  const employeeCity = employee?.city
-    ? employeeCityToFilterCity[employee.city.toLowerCase()] || null
-    : null;
-  const isCityLocked = !isSuperAdmin && !!employeeCity;
+  // Cities the employee is assigned to (supports multiple)
+  const rawCities: string[] = employee
+    ? ((employee.cities && employee.cities.length ? employee.cities : (employee.city ? [employee.city] : [])) as string[])
+    : [];
+  const assignedCities = rawCities
+    .map((c) => employeeCityToFilterCity[c.toLowerCase()] || null)
+    .filter((c): c is City => !!c);
+
+  const isCityLocked = !isSuperAdmin && assignedCities.length > 0;
+  const allowedCities = isCityLocked ? assignedCities : [];
 
   const [selectedCity, setSelectedCity] = useState<City>(() => {
-    if (isCityLocked && employeeCity) return employeeCity;
     const stored = localStorage.getItem('selectedCity');
     return (stored as City) || 'all';
   });
 
-  // When employee data loads & they're city-locked, force their city
+  // Keep selection within the employee's allowed cities
   useEffect(() => {
-    if (isCityLocked && employeeCity) {
-      setSelectedCity(employeeCity);
+    if (isCityLocked && !assignedCities.includes(selectedCity)) {
+      setSelectedCity(assignedCities[0]);
     }
-  }, [isCityLocked, employeeCity]);
+  }, [isCityLocked, assignedCities.join(','), selectedCity]);
 
   useEffect(() => {
     localStorage.setItem('selectedCity', selectedCity);
   }, [selectedCity]);
 
-  // effectiveCity: for city-locked employees, always their city
-  const effectiveCity = isCityLocked && employeeCity ? employeeCity : selectedCity;
+  const effectiveCity = isCityLocked && !assignedCities.includes(selectedCity) ? assignedCities[0] : selectedCity;
 
   const handleSetCity = (city: City) => {
-    if (isCityLocked) return; // Prevent changing if locked
+    if (isCityLocked && !assignedCities.includes(city)) return; // can only pick allowed cities
     setSelectedCity(city);
   };
 
   return (
-    <CityContext.Provider value={{ selectedCity: effectiveCity, setSelectedCity: handleSetCity, cityLabels, effectiveCity }}>
+    <CityContext.Provider value={{ selectedCity: effectiveCity, setSelectedCity: handleSetCity, cityLabels, effectiveCity, allowedCities }}>
       {children}
     </CityContext.Provider>
   );
 };
+
 
 export const useCity = () => {
   const context = useContext(CityContext);
