@@ -61,6 +61,13 @@ const departmentLabels: Record<Department, { en: string; ar: string }> = {
   reports: { en: 'Reports', ar: 'التقارير' },
 };
 
+const cityLabels: Record<string, { en: string; ar: string }> = {
+  cairo: { en: 'Cairo', ar: 'القاهرة' },
+  giza: { en: 'Giza', ar: 'الجيزة' },
+  alexandria: { en: 'Alexandria', ar: 'الإسكندرية' },
+};
+
+
 const Settings = () => {
   const { t, i18n } = useTranslation();
   const { isSuperAdmin } = useAuth();
@@ -228,7 +235,7 @@ const Settings = () => {
       is_active: true,
       user_id: '',
       password: '',
-      city: '',
+      cities: [],
     });
     setSelectedEmployee(null);
   };
@@ -243,7 +250,7 @@ const Settings = () => {
       is_active: employee.is_active,
       user_id: employee.user_id,
       password: '',
-      city: (employee as any).city || '',
+      cities: ((employee as any).cities?.length ? (employee as any).cities : ((employee as any).city ? [(employee as any).city] : [])) as string[],
     });
     setIsEmployeeDialogOpen(true);
   };
@@ -423,7 +430,11 @@ const Settings = () => {
                           <TableCell className="font-medium">{employee.full_name}</TableCell>
                           <TableCell>{employee.email}</TableCell>
                           <TableCell dir="ltr" className={isRtl ? 'text-right' : ''}>{employee.phone || '-'}</TableCell>
-                          <TableCell className="text-sm text-muted-foreground">{(employee as any).city || 'All'}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {(((employee as any).cities?.length ? (employee as any).cities : ((employee as any).city ? [(employee as any).city] : [])) as string[])
+                              .map((c) => cityLabels[c] ? cityLabels[c][isRtl ? 'ar' : 'en'] : c).join('، ') || 'All'}
+                          </TableCell>
+
                           <TableCell>
                             <div className="flex flex-wrap gap-1">
                               {employee.departments.map((dept) => (
@@ -579,35 +590,44 @@ const Settings = () => {
                   onChange={(e) => setEmployeeForm({ ...employeeForm, phone: e.target.value })}
                 />
               </div>
-              {!selectedEmployee && (
-                <div className="space-y-2">
-                  <Label htmlFor="emp_password">{isRtl ? 'كلمة المرور' : 'Password'} *</Label>
-                  <Input
-                    id="emp_password"
-                    type="password"
-                    value={employeeForm.password}
-                    onChange={(e) => setEmployeeForm({ ...employeeForm, password: e.target.value })}
-                    placeholder={isRtl ? '6 أحرف على الأقل' : 'At least 6 characters'}
-                    required
-                  />
-                </div>
-              )}
               <div className="space-y-2">
-                <Label htmlFor="emp_city">{t('common.city')}</Label>
-                <Select value={employeeForm.city} onValueChange={(val) => setEmployeeForm({ ...employeeForm, city: val })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={isRtl ? 'اختر المدينة' : 'Select city'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="cairo">{isRtl ? 'القاهرة' : 'Cairo'}</SelectItem>
-                    <SelectItem value="giza">{isRtl ? 'الجيزة' : 'Giza'}</SelectItem>
-                    <SelectItem value="alexandria">{isRtl ? 'الإسكندرية' : 'Alexandria'}</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="emp_password">
+                  {selectedEmployee
+                    ? (isRtl ? 'كلمة مرور جديدة (اختياري)' : 'New password (optional)')
+                    : `${isRtl ? 'كلمة المرور' : 'Password'} *`}
+                </Label>
+                <Input
+                  id="emp_password"
+                  type="password"
+                  value={employeeForm.password}
+                  onChange={(e) => setEmployeeForm({ ...employeeForm, password: e.target.value })}
+                  placeholder={selectedEmployee
+                    ? (isRtl ? 'اتركها فارغة للإبقاء على كلمة المرور الحالية' : 'Leave blank to keep current password')
+                    : (isRtl ? '6 أحرف على الأقل' : 'At least 6 characters')}
+                  required={!selectedEmployee}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{t('common.city')}</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {Object.keys(cityLabels).map((city) => (
+                    <div key={city} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`city_${city}`}
+                        checked={employeeForm.cities.includes(city)}
+                        onCheckedChange={() => toggleCity(city)}
+                      />
+                      <label htmlFor={`city_${city}`} className="text-sm cursor-pointer">
+                        {cityLabels[city][isRtl ? 'ar' : 'en']}
+                      </label>
+                    </div>
+                  ))}
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  {isRtl ? 'اترك فارغاً للوصول لكل المدن' : 'Leave empty for access to all cities'}
+                  {isRtl ? 'اترك الكل فارغاً للوصول لكل المدن' : 'Leave all unchecked for access to all cities'}
                 </p>
               </div>
+
               <div className="space-y-2">
                 <Label>{t('settings.departments')}</Label>
                 <div className="grid grid-cols-2 gap-2">
