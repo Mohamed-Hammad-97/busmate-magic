@@ -264,6 +264,16 @@ const Settings = () => {
     }));
   };
 
+  const toggleCity = (city: string) => {
+    setEmployeeForm(prev => ({
+      ...prev,
+      cities: prev.cities.includes(city)
+        ? prev.cities.filter(c => c !== city)
+        : [...prev.cities, city],
+    }));
+  };
+
+
   const filteredEmployees = employees.filter(emp =>
     emp.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     emp.email.toLowerCase().includes(searchTerm.toLowerCase())
