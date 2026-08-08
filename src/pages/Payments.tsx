@@ -817,6 +817,61 @@ const Payments = () => {
         </div>
       </div>
 
+      {/* Changes details dialog */}
+      <Dialog open={changesDialogOpen} onOpenChange={setChangesDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {changesDate ? `Changes on ${format(new Date(changesDate), 'dd MMM yyyy', { locale: dateLocale })}` : 'Changes'}
+            </DialogTitle>
+          </DialogHeader>
+          {changesSummary && changesSummary.paidOn.length > 0 ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-4 text-xs">
+                <span className="text-muted-foreground">Records: <span className="font-semibold text-foreground">{changesSummary.paidOn.length}</span></span>
+                <span className="text-muted-foreground">Total collected: <span className="font-semibold text-success">{changesSummary.totalPaidAmount.toLocaleString()} EGP</span></span>
+              </div>
+              <div className="rounded-xl border border-border/50 overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/30 hover:bg-muted/30">
+                      <TableHead className="text-xs">{t('payments.studentName')}</TableHead>
+                      <TableHead className="text-xs">{t('payments.parentName')}</TableHead>
+                      <TableHead className="text-xs">School</TableHead>
+                      <TableHead className="text-xs">رقم الدفع والتجديد</TableHead>
+                      <TableHead className="text-xs">Installment</TableHead>
+                      <TableHead className="text-xs">Amount</TableHead>
+                      <TableHead className="text-xs">Due date</TableHead>
+                      <TableHead className="text-xs">Changed by</TableHead>
+                      <TableHead className="text-xs">Note</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {changesSummary.paidOn.map((p: any) => (
+                      <TableRow key={p.id}>
+                        <TableCell className="text-sm font-medium">{p.studentName || '-'}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{p.parentName || '-'}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{p.schoolName || '-'}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground" dir="ltr">{p.paymentPhone || '-'}</TableCell>
+                        <TableCell className="text-sm">
+                          {Number(p.installment_number) === 0 ? 'التأمين (Insurance)' : `القسط ${p.installment_number}`}
+                        </TableCell>
+                        <TableCell className="text-sm font-semibold text-success">{Number(p.amount).toLocaleString()} EGP</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{p.due_date ? format(new Date(p.due_date), 'dd MMM yyyy', { locale: dateLocale }) : '-'}</TableCell>
+                        <TableCell className="text-sm">{p.paid_by_name || '-'}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{p.payment_note || '-'}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground py-8 text-center">No changes on this date.</p>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Payment Profile Dialog */}
       {selectedRegistration && (() => {
         const liveRegData = paymentsByRegistration[selectedRegistration.registrationId] || selectedRegistration;
