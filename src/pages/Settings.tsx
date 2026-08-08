@@ -79,8 +79,9 @@ const Settings = () => {
     is_active: true,
     user_id: '',
     password: '',
-    city: '',
+    cities: [] as string[],
   });
+
 
   const archiveYearMutation = useMutation({
     mutationFn: async () => {
