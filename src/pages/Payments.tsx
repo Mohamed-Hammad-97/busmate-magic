@@ -628,13 +628,20 @@ const Payments = () => {
 
               {/* Date-filter summary */}
               {canDestroy && changesDate && changesSummary && (
-                <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 space-y-3">
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setChangesDialogOpen(true)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setChangesDialogOpen(true); }}
+                  className="rounded-2xl border border-primary/20 bg-primary/5 p-4 space-y-3 cursor-pointer hover:bg-primary/10 transition-colors"
+                >
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <div className="flex items-center gap-2">
                       <CalendarDays className="h-4 w-4 text-primary" />
                       <span className="text-sm font-semibold text-foreground">
                         Changes on {format(new Date(changesDate), 'dd MMM yyyy', { locale: dateLocale })}
                       </span>
+                      <Badge variant="outline" className="text-[10px]">Click for details</Badge>
                     </div>
                     <div className="flex items-center gap-4 text-xs">
                       <span className="text-muted-foreground">Marked paid: <span className="font-semibold text-success">{changesSummary.paidOn.length}</span></span>
