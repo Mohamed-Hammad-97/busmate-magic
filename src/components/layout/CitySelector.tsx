@@ -12,10 +12,13 @@ import { useCity } from '@/contexts/CityContext';
 
 export const CitySelector: React.FC = () => {
   const { i18n } = useTranslation();
-  const { selectedCity, setSelectedCity, cityLabels } = useCity();
+  const { selectedCity, setSelectedCity, cityLabels, allowedCities } = useCity();
   const isRtl = i18n.language === 'ar';
 
-  const cities = ['all', 'cairo', 'giza', 'alexandria'] as const;
+  const cities = (allowedCities.length > 0
+    ? allowedCities
+    : (['all', 'cairo', 'giza', 'alexandria'] as const)) as readonly ('all' | 'cairo' | 'giza' | 'alexandria')[];
+
 
   return (
     <div className="flex items-center gap-2">

@@ -61,7 +61,7 @@ Deno.serve(async (req) => {
       )
     }
 
-    const { email, full_name, phone, departments, password, city } = await req.json()
+    const { email, full_name, phone, departments, password, city, cities } = await req.json()
 
     if (!email || !full_name || !password) {
       return new Response(
@@ -101,7 +101,9 @@ Deno.serve(async (req) => {
         phone: phone || null,
         departments: departments || [],
         is_active: true,
-        city: city || null,
+        city: (Array.isArray(cities) && cities.length ? cities[0] : city) || null,
+        cities: Array.isArray(cities) ? cities : (city ? [city] : []),
+
       })
 
     if (employeeError) {

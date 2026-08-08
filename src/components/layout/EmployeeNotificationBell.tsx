@@ -30,7 +30,10 @@ export function EmployeeNotificationBell() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
-  const employeeCityGroup = employee?.city ? normalizeCityGroup(employee.city) : null;
+  const employeeCityGroups = (
+    (employee?.cities && employee.cities.length ? employee.cities : (employee?.city ? [employee.city] : [])) as string[]
+  ).map(normalizeCityGroup).filter(Boolean);
+
 
   const { data: notifications = [] } = useQuery({
     queryKey: ["employee-notifications"],
@@ -50,9 +53,10 @@ export function EmployeeNotificationBell() {
   // Filter by city client-side
   const filteredNotifications = notifications.filter((n: any) => {
     if (isSuperAdmin) return true;
-    if (!employeeCityGroup) return true;
-    return normalizeCityGroup(n.city) === employeeCityGroup;
+    if (!employeeCityGroups.length) return true;
+    return employeeCityGroups.includes(normalizeCityGroup(n.city));
   });
+
 
   const unreadCount = filteredNotifications.filter(
     (n: any) => !n.read_by?.includes(user?.id)

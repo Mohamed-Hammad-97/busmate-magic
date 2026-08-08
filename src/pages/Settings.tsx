@@ -61,6 +61,13 @@ const departmentLabels: Record<Department, { en: string; ar: string }> = {
   reports: { en: 'Reports', ar: 'التقارير' },
 };
 
+const cityLabels: Record<string, { en: string; ar: string }> = {
+  cairo: { en: 'Cairo', ar: 'القاهرة' },
+  giza: { en: 'Giza', ar: 'الجيزة' },
+  alexandria: { en: 'Alexandria', ar: 'الإسكندرية' },
+};
+
+
 const Settings = () => {
   const { t, i18n } = useTranslation();
   const { isSuperAdmin } = useAuth();
@@ -79,8 +86,9 @@ const Settings = () => {
     is_active: true,
     user_id: '',
     password: '',
-    city: '',
+    cities: [] as string[],
   });
+
 
   const archiveYearMutation = useMutation({
     mutationFn: async () => {
@@ -155,10 +163,25 @@ const Settings = () => {
             phone: employeeForm.phone,
             departments: employeeForm.departments,
             is_active: employeeForm.is_active,
-            city: employeeForm.city || null,
-          })
+            city: employeeForm.cities[0] || null,
+            cities: employeeForm.cities,
+          } as any)
           .eq('id', selectedEmployee.id);
         if (error) throw error;
+
+        // Optional password reset
+        if (employeeForm.password) {
+          if (employeeForm.password.length < 6) {
+            throw new Error(i18n.language === 'ar' ? 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' : 'Password must be at least 6 characters');
+          }
+          const { data: sessionData } = await supabase.auth.getSession();
+          const response = await supabase.functions.invoke('update-employee-password', {
+            body: { user_id: selectedEmployee.user_id, password: employeeForm.password },
+            headers: { Authorization: `Bearer ${sessionData.session?.access_token}` },
+          });
+          if (response.error) throw new Error(response.error.message);
+          if (response.data?.error) throw new Error(response.data.error);
+        }
       } else {
         // Create new employee via edge function
         if (!employeeForm.password || employeeForm.password.length < 6) {
@@ -173,7 +196,8 @@ const Settings = () => {
             phone: employeeForm.phone,
             departments: employeeForm.departments,
             password: employeeForm.password,
-            city: employeeForm.city || null,
+            city: employeeForm.cities[0] || null,
+            cities: employeeForm.cities,
           },
           headers: {
             Authorization: `Bearer ${sessionData.session?.access_token}`,
@@ -189,6 +213,7 @@ const Settings = () => {
         }
       }
     },
+
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['employees'] });
       toast.success(selectedEmployee ? t('common.save') : t('settings.addEmployee'));
@@ -210,7 +235,7 @@ const Settings = () => {
       is_active: true,
       user_id: '',
       password: '',
-      city: '',
+      cities: [],
     });
     setSelectedEmployee(null);
   };
@@ -225,7 +250,7 @@ const Settings = () => {
       is_active: employee.is_active,
       user_id: employee.user_id,
       password: '',
-      city: (employee as any).city || '',
+      cities: ((employee as any).cities?.length ? (employee as any).cities : ((employee as any).city ? [(employee as any).city] : [])) as string[],
     });
     setIsEmployeeDialogOpen(true);
   };
@@ -238,6 +263,16 @@ const Settings = () => {
         : [...prev.departments, dept],
     }));
   };
+
+  const toggleCity = (city: string) => {
+    setEmployeeForm(prev => ({
+      ...prev,
+      cities: prev.cities.includes(city)
+        ? prev.cities.filter(c => c !== city)
+        : [...prev.cities, city],
+    }));
+  };
+
 
   const filteredEmployees = employees.filter(emp =>
     emp.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -405,7 +440,11 @@ const Settings = () => {
                           <TableCell className="font-medium">{employee.full_name}</TableCell>
                           <TableCell>{employee.email}</TableCell>
                           <TableCell dir="ltr" className={isRtl ? 'text-right' : ''}>{employee.phone || '-'}</TableCell>
-                          <TableCell className="text-sm text-muted-foreground">{(employee as any).city || 'All'}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {(((employee as any).cities?.length ? (employee as any).cities : ((employee as any).city ? [(employee as any).city] : [])) as string[])
+                              .map((c) => cityLabels[c] ? cityLabels[c][isRtl ? 'ar' : 'en'] : c).join('، ') || 'All'}
+                          </TableCell>
+
                           <TableCell>
                             <div className="flex flex-wrap gap-1">
                               {employee.departments.map((dept) => (
@@ -561,35 +600,44 @@ const Settings = () => {
                   onChange={(e) => setEmployeeForm({ ...employeeForm, phone: e.target.value })}
                 />
               </div>
-              {!selectedEmployee && (
-                <div className="space-y-2">
-                  <Label htmlFor="emp_password">{isRtl ? 'كلمة المرور' : 'Password'} *</Label>
-                  <Input
-                    id="emp_password"
-                    type="password"
-                    value={employeeForm.password}
-                    onChange={(e) => setEmployeeForm({ ...employeeForm, password: e.target.value })}
-                    placeholder={isRtl ? '6 أحرف على الأقل' : 'At least 6 characters'}
-                    required
-                  />
-                </div>
-              )}
               <div className="space-y-2">
-                <Label htmlFor="emp_city">{t('common.city')}</Label>
-                <Select value={employeeForm.city} onValueChange={(val) => setEmployeeForm({ ...employeeForm, city: val })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={isRtl ? 'اختر المدينة' : 'Select city'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="cairo">{isRtl ? 'القاهرة' : 'Cairo'}</SelectItem>
-                    <SelectItem value="giza">{isRtl ? 'الجيزة' : 'Giza'}</SelectItem>
-                    <SelectItem value="alexandria">{isRtl ? 'الإسكندرية' : 'Alexandria'}</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="emp_password">
+                  {selectedEmployee
+                    ? (isRtl ? 'كلمة مرور جديدة (اختياري)' : 'New password (optional)')
+                    : `${isRtl ? 'كلمة المرور' : 'Password'} *`}
+                </Label>
+                <Input
+                  id="emp_password"
+                  type="password"
+                  value={employeeForm.password}
+                  onChange={(e) => setEmployeeForm({ ...employeeForm, password: e.target.value })}
+                  placeholder={selectedEmployee
+                    ? (isRtl ? 'اتركها فارغة للإبقاء على كلمة المرور الحالية' : 'Leave blank to keep current password')
+                    : (isRtl ? '6 أحرف على الأقل' : 'At least 6 characters')}
+                  required={!selectedEmployee}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{t('common.city')}</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {Object.keys(cityLabels).map((city) => (
+                    <div key={city} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`city_${city}`}
+                        checked={employeeForm.cities.includes(city)}
+                        onCheckedChange={() => toggleCity(city)}
+                      />
+                      <label htmlFor={`city_${city}`} className="text-sm cursor-pointer">
+                        {cityLabels[city][isRtl ? 'ar' : 'en']}
+                      </label>
+                    </div>
+                  ))}
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  {isRtl ? 'اترك فارغاً للوصول لكل المدن' : 'Leave empty for access to all cities'}
+                  {isRtl ? 'اترك الكل فارغاً للوصول لكل المدن' : 'Leave all unchecked for access to all cities'}
                 </p>
               </div>
+
               <div className="space-y-2">
                 <Label>{t('settings.departments')}</Label>
                 <div className="grid grid-cols-2 gap-2">
