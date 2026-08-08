@@ -1,0 +1,2 @@
+ALTER TABLE public.employees ADD COLUMN IF NOT EXISTS cities text[] NOT NULL DEFAULT '{}';
+UPDATE public.employees SET cities = ARRAY[city] WHERE city IS NOT NULL AND city <> '' AND cardinality(cities) = 0;

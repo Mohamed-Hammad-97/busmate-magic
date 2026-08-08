@@ -1237,6 +1237,7 @@ export type Database = {
       }
       employees: {
         Row: {
+          cities: string[]
           city: string | null
           created_at: string
           departments: Database["public"]["Enums"]["department"][]
@@ -1249,6 +1250,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          cities?: string[]
           city?: string | null
           created_at?: string
           departments?: Database["public"]["Enums"]["department"][]
@@ -1261,6 +1263,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          cities?: string[]
           city?: string | null
           created_at?: string
           departments?: Database["public"]["Enums"]["department"][]
