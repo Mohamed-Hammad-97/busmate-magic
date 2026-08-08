@@ -156,10 +156,25 @@ const Settings = () => {
             phone: employeeForm.phone,
             departments: employeeForm.departments,
             is_active: employeeForm.is_active,
-            city: employeeForm.city || null,
-          })
+            city: employeeForm.cities[0] || null,
+            cities: employeeForm.cities,
+          } as any)
           .eq('id', selectedEmployee.id);
         if (error) throw error;
+
+        // Optional password reset
+        if (employeeForm.password) {
+          if (employeeForm.password.length < 6) {
+            throw new Error(i18n.language === 'ar' ? 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' : 'Password must be at least 6 characters');
+          }
+          const { data: sessionData } = await supabase.auth.getSession();
+          const response = await supabase.functions.invoke('update-employee-password', {
+            body: { user_id: selectedEmployee.user_id, password: employeeForm.password },
+            headers: { Authorization: `Bearer ${sessionData.session?.access_token}` },
+          });
+          if (response.error) throw new Error(response.error.message);
+          if (response.data?.error) throw new Error(response.data.error);
+        }
       } else {
         // Create new employee via edge function
         if (!employeeForm.password || employeeForm.password.length < 6) {
@@ -174,7 +189,8 @@ const Settings = () => {
             phone: employeeForm.phone,
             departments: employeeForm.departments,
             password: employeeForm.password,
-            city: employeeForm.city || null,
+            city: employeeForm.cities[0] || null,
+            cities: employeeForm.cities,
           },
           headers: {
             Authorization: `Bearer ${sessionData.session?.access_token}`,
@@ -190,6 +206,7 @@ const Settings = () => {
         }
       }
     },
+
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['employees'] });
       toast.success(selectedEmployee ? t('common.save') : t('settings.addEmployee'));
