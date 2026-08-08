@@ -716,6 +716,8 @@ const Payments = () => {
                                 </div>
                               </TableCell>
                               <TableCell className="text-sm text-muted-foreground">{regData.studentName || '-'}</TableCell>
+                              <TableCell className="text-sm text-muted-foreground">{regData.schoolName || '-'}</TableCell>
+                              <TableCell className="text-sm text-muted-foreground" dir="ltr">{regData.paymentPhone || '-'}</TableCell>
                               <TableCell>
                                 <span className="text-xs font-medium bg-primary/10 text-primary px-2.5 py-1 rounded-full">
                                   {subscriptionTypeLabels[regData.subscription?.subscription_type] || '-'}
