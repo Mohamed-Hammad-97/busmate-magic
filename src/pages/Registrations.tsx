@@ -791,10 +791,6 @@ const Registrations: React.FC = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Deactivate/Delete Confirmation */}
-        <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
         {/* Restore Cancelled (Super Admin only) */}
         <AlertDialog open={!!restoreTarget} onOpenChange={(open) => !open && setRestoreTarget(null)}>
           <AlertDialogContent>
