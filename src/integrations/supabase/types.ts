@@ -2231,6 +2231,7 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string
+          finance_seen_at: string | null
           id: string
           number_of_installments: number
           registration_id: string
@@ -2241,6 +2242,7 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by: string
+          finance_seen_at?: string | null
           id?: string
           number_of_installments?: number
           registration_id: string
@@ -2251,6 +2253,7 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string
+          finance_seen_at?: string | null
           id?: string
           number_of_installments?: number
           registration_id?: string
