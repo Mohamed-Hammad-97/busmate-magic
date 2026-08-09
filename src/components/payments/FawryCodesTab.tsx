@@ -67,7 +67,7 @@ export const FawryCodesTab: React.FC = () => {
             )
           )
         `)
-        .in('status', ['pending', 'overdue'])
+        .eq('status', 'overdue')
         .eq('fawry_cleared', false)
         .order('due_date', { ascending: true });
       if (error) throw error;
