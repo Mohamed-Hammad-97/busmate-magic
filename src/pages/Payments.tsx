@@ -499,6 +499,7 @@ const Payments = () => {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            )}
           </div>
 
           {mainTab === 'archive' && archiveYears.length > 0 && (
