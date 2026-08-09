@@ -219,6 +219,23 @@ const Payments = () => {
     onError: (error) => { toast.error('Failed to archive'); console.error(error); },
   });
 
+  const unarchiveSubscriptionMutation = useMutation({
+    mutationFn: async (subscriptionId: string) => {
+      const { error } = await supabase
+        .from('payments')
+        .update({ status: 'pending' })
+        .eq('subscription_id', subscriptionId)
+        .eq('status', 'archived');
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      toast.success('Restored from archive');
+    },
+    onError: (error) => { toast.error('Failed to restore'); console.error(error); },
+  });
+
+
   const paymentsByRegistration = useMemo(() => {
     const grouped: Record<string, { registrationId: string; payments: any[]; subscription: any; parentName: string; studentName: string; schoolName: string; paymentPhone: string; phones: string[]; totalAmount: number; paidAmount: number; isFullyPaid: boolean; isNew: boolean; createdAt: string | null; }> = {};
     payments.forEach((payment: any) => {
