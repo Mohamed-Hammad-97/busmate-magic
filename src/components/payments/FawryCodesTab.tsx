@@ -26,7 +26,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Search, Phone, User, CheckCircle2, Hash } from 'lucide-react';
-import { format, isBefore } from 'date-fns';
+import { format, isBefore, parseISO, startOfDay } from 'date-fns';
 import { toast } from 'sonner';
 
 const cityMapping: Record<string, string[]> = {
@@ -80,7 +80,7 @@ export const FawryCodesTab: React.FC = () => {
         return registration &&
           registration.status !== 'archived' &&
           p.due_date &&
-          isBefore(new Date(p.due_date), today);
+          isBefore(parseISO(p.due_date), startOfDay(today));
       });
     },
   });
