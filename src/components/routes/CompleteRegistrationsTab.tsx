@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Search, Check, X, Loader2 } from 'lucide-react';
+import { useCity } from '@/contexts/CityContext';
 
 interface Props {
   routes: any[];
@@ -26,6 +27,7 @@ const CompleteRegistrationsTab: React.FC<Props> = ({ routes, canEdit }) => {
   const { i18n } = useTranslation();
   const isRtl = i18n.language === 'ar';
   const queryClient = useQueryClient();
+  const { selectedCity } = useCity();
   const [search, setSearch] = useState('');
   const [inputs, setInputs] = useState<Record<string, string>>({});
 
