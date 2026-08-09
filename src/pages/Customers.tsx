@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Plus, Search, Users, MapPin, Phone, Edit, Eye, TrendingUp, UserCheck, Building2, ShieldCheck, Loader2, Trash2, UserX, User } from 'lucide-react';
 import { useCity } from '@/contexts/CityContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import type { Tables } from '@/integrations/supabase/types';
 import CustomerDialog from '@/components/customers/CustomerDialog';
@@ -22,6 +23,7 @@ import { PageHero } from '@/components/layout/PageHero';
 type ParentAccount = Tables<'parent_accounts'>;
 
 const Customers = () => {
+  const { isSuperAdmin } = useAuth();
   const { t } = useTranslation();
   const { selectedCity } = useCity();
   const queryClient = useQueryClient();
