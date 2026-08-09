@@ -220,7 +220,7 @@ const Payments = () => {
   });
 
   const paymentsByRegistration = useMemo(() => {
-    const grouped: Record<string, { registrationId: string; payments: any[]; subscription: any; parentName: string; studentName: string; schoolName: string; paymentPhone: string; phones: string[]; totalAmount: number; paidAmount: number; isFullyPaid: boolean; }> = {};
+    const grouped: Record<string, { registrationId: string; payments: any[]; subscription: any; parentName: string; studentName: string; schoolName: string; paymentPhone: string; phones: string[]; totalAmount: number; paidAmount: number; isFullyPaid: boolean; isNew: boolean; createdAt: string | null; }> = {};
     payments.forEach((payment: any) => {
       const registrationId = payment.subscriptions?.registration_id;
       if (!registrationId) return;
@@ -238,6 +238,8 @@ const Payments = () => {
           totalAmount: payment.subscriptions?.value || 0,
           paidAmount: 0,
           isFullyPaid: false,
+          isNew: !payment.subscriptions?.finance_seen_at,
+          createdAt: payment.subscriptions?.created_at || null,
         };
       }
       grouped[registrationId].payments.push(payment);
