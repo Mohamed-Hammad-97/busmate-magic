@@ -25,7 +25,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Search, CreditCard, CheckCircle, Clock, AlertCircle, Check, Eye, Hash, TrendingUp, DollarSign, UserCheck, Trash2, Archive, Download, FileSpreadsheet, FileText, Phone, User, CalendarDays, X } from 'lucide-react';
+import { Search, CreditCard, CheckCircle, Clock, AlertCircle, Check, Eye, Hash, TrendingUp, DollarSign, UserCheck, Trash2, Archive, Download, FileSpreadsheet, FileText, Phone, User, CalendarDays, X, RotateCcw } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { exportPaymentsExcel, exportPaymentsPDF } from '@/lib/exportPayments';
 import {
@@ -218,6 +218,23 @@ const Payments = () => {
     },
     onError: (error) => { toast.error('Failed to archive'); console.error(error); },
   });
+
+  const unarchiveSubscriptionMutation = useMutation({
+    mutationFn: async (subscriptionId: string) => {
+      const { error } = await supabase
+        .from('payments')
+        .update({ status: 'pending' })
+        .eq('subscription_id', subscriptionId)
+        .eq('status', 'archived');
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      toast.success('Restored from archive');
+    },
+    onError: (error) => { toast.error('Failed to restore'); console.error(error); },
+  });
+
 
   const paymentsByRegistration = useMemo(() => {
     const grouped: Record<string, { registrationId: string; payments: any[]; subscription: any; parentName: string; studentName: string; schoolName: string; paymentPhone: string; phones: string[]; totalAmount: number; paidAmount: number; isFullyPaid: boolean; isNew: boolean; createdAt: string | null; }> = {};
@@ -796,6 +813,29 @@ const Payments = () => {
                                     }}
                                     variant="icon"
                                   />
+                                  {isSuperAdmin && mainTab === 'archive' && (
+                                    <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-success/10 hover:text-success" title="Restore from archive">
+                                          <RotateCcw className="h-3.5 w-3.5" />
+                                        </Button>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>Restore payments from archive?</AlertDialogTitle>
+                                          <AlertDialogDescription>
+                                            This moves archived installments for {regData.parentName} - {regData.studentName} back to the active tab as pending.
+                                          </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel>{t('common.cancel') || 'Cancel'}</AlertDialogCancel>
+                                          <AlertDialogAction onClick={() => unarchiveSubscriptionMutation.mutate(regData.subscription?.id)}>
+                                            Restore
+                                          </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
+                                  )}
                                   {canDestroy && mainTab === 'active' && (
                                     <AlertDialog>
                                       <AlertDialogTrigger asChild>

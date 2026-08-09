@@ -243,9 +243,27 @@ const Registrations: React.FC = () => {
 
   const restoreMutation = useMutation({
     mutationFn: async (reg: Registration) => {
+      const wasArchived = reg.status === 'archived';
+      let nextStatus: 'pending_fees' | 'complete' = 'pending_fees';
+
+      if (wasArchived) {
+        const { data: subs } = await supabase
+          .from('subscriptions')
+          .select('id')
+          .eq('registration_id', reg.id);
+        if (subs && subs.length > 0) {
+          nextStatus = 'complete';
+          await supabase
+            .from('payments')
+            .update({ status: 'pending' })
+            .in('subscription_id', subs.map((s) => s.id))
+            .eq('status', 'archived');
+        }
+      }
+
       const { error: regError } = await supabase
         .from('registrations')
-        .update({ status: 'pending_fees' })
+        .update({ status: nextStatus })
         .eq('id', reg.id);
       if (regError) throw regError;
       const { error: parentError } = await supabase
@@ -257,6 +275,7 @@ const Registrations: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['registrations'] });
       queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
       toast({ title: 'Registration restored', description: 'The registration is back in the registrations flow and the parent account is active again.' });
       setRestoreTarget(null);
     },
@@ -723,7 +742,7 @@ const Registrations: React.FC = () => {
                                     <UserX className="h-3.5 w-3.5" />
                                   </Button>
                                 )}
-                                {reg.status === 'cancelled' && isSuperAdmin && (
+                                {(reg.status === 'cancelled' || reg.status === 'archived') && isSuperAdmin && (
                                   <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-success/10 hover:text-success" onClick={() => setRestoreTarget(reg)} title="Restore registration">
                                     <RotateCcw className="h-3.5 w-3.5" />
                                   </Button>

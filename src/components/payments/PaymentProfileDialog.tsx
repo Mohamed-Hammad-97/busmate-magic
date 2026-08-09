@@ -45,6 +45,7 @@ import {
   Plus,
   Receipt,
   Trash2,
+  Undo2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { InvoiceGenerator } from './InvoiceGenerator';
@@ -167,6 +168,33 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
     },
     onError: (error) => {
       toast.error('Error recording payment');
+      console.error(error);
+    },
+  });
+
+  const markUnpaidMutation = useMutation({
+    mutationFn: async (paymentId: string) => {
+      const { error } = await supabase
+        .from('payments')
+        .update({
+          status: 'pending',
+          paid_date: null,
+          paid_by: null,
+          paid_by_name: null,
+          fawry_cleared: false,
+          fawry_cleared_at: null,
+          fawry_cleared_by: null,
+        } as any)
+        .eq('id', paymentId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      queryClient.invalidateQueries({ queryKey: ['fawry-codes'] });
+      toast.success('Installment set back to pending');
+    },
+    onError: (error) => {
+      toast.error('Error updating installment');
       console.error(error);
     },
   });
@@ -510,6 +538,11 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
                                     {canManageInstallments && payment.status !== 'paid' && (
                                       <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg hover:bg-success/10 hover:text-success" onClick={() => markPaidMutation.mutate(payment.id)} disabled={markPaidMutation.isPending} title="Mark paid">
                                         <Check className="h-3.5 w-3.5" />
+                                      </Button>
+                                    )}
+                                    {canManageInstallments && payment.status === 'paid' && (
+                                      <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg hover:bg-warning/10 hover:text-warning" onClick={() => markUnpaidMutation.mutate(payment.id)} disabled={markUnpaidMutation.isPending} title="Undo payment (set to pending)">
+                                        <Undo2 className="h-3.5 w-3.5" />
                                       </Button>
                                     )}
                                   </>
