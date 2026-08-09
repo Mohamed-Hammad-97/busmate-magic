@@ -813,6 +813,29 @@ const Payments = () => {
                                     }}
                                     variant="icon"
                                   />
+                                  {isSuperAdmin && mainTab === 'archive' && (
+                                    <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-success/10 hover:text-success" title="Restore from archive">
+                                          <RotateCcw className="h-3.5 w-3.5" />
+                                        </Button>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>Restore payments from archive?</AlertDialogTitle>
+                                          <AlertDialogDescription>
+                                            This moves archived installments for {regData.parentName} - {regData.studentName} back to the active tab as pending.
+                                          </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel>{t('common.cancel') || 'Cancel'}</AlertDialogCancel>
+                                          <AlertDialogAction onClick={() => unarchiveSubscriptionMutation.mutate(regData.subscription?.id)}>
+                                            Restore
+                                          </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
+                                  )}
                                   {canDestroy && mainTab === 'active' && (
                                     <AlertDialog>
                                       <AlertDialogTrigger asChild>
