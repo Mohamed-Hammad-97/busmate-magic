@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Search, Check, X, Loader2 } from 'lucide-react';
+import { useCity } from '@/contexts/CityContext';
 
 interface Props {
   routes: any[];
@@ -26,6 +27,7 @@ const CompleteRegistrationsTab: React.FC<Props> = ({ routes, canEdit }) => {
   const { i18n } = useTranslation();
   const isRtl = i18n.language === 'ar';
   const queryClient = useQueryClient();
+  const { selectedCity } = useCity();
   const [search, setSearch] = useState('');
   const [inputs, setInputs] = useState<Record<string, string>>({});
 
@@ -39,8 +41,8 @@ const CompleteRegistrationsTab: React.FC<Props> = ({ routes, canEdit }) => {
           student_name,
           grade,
           school_id,
-          schools ( name ),
-          parent_accounts ( parent_name, father_phone, pickup_address )
+          schools ( name, city ),
+          parent_accounts ( parent_name, father_phone, pickup_address, city )
         `)
         .eq('status', 'complete')
         .order('created_at', { ascending: false });
@@ -128,10 +130,25 @@ const CompleteRegistrationsTab: React.FC<Props> = ({ routes, canEdit }) => {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const cityFiltered = useMemo(() => {
+    if (selectedCity === 'all') return registrations;
+    const cityMapping: Record<string, string[]> = {
+      cairo: ['cairo', 'القاهرة', 'قاهرة'],
+      giza: ['giza', 'الجيزة', 'جيزة'],
+      alexandria: ['alexandria', 'الإسكندرية', 'اسكندرية', 'إسكندرية'],
+    };
+    const cityNames = cityMapping[selectedCity] || [];
+    return registrations.filter((r: any) => {
+      const pa = Array.isArray(r.parent_accounts) ? r.parent_accounts[0] : r.parent_accounts;
+      const haystack = `${r.schools?.city || ''} ${pa?.city || ''}`.toLowerCase();
+      return cityNames.some((name) => haystack.includes(name.toLowerCase()));
+    });
+  }, [registrations, selectedCity]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return registrations;
-    return registrations.filter((r: any) => {
+    if (!q) return cityFiltered;
+    return cityFiltered.filter((r: any) => {
       const pa = Array.isArray(r.parent_accounts) ? r.parent_accounts[0] : r.parent_accounts;
       return (
         (r.student_name || '').toLowerCase().includes(q) ||
@@ -140,7 +157,7 @@ const CompleteRegistrationsTab: React.FC<Props> = ({ routes, canEdit }) => {
         (pa?.father_phone || '').includes(q)
       );
     });
-  }, [registrations, search]);
+  }, [cityFiltered, search]);
 
   return (
     <Card>
