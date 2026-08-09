@@ -407,11 +407,27 @@ const Payments = () => {
     };
   }, [paymentsByRegistration]);
 
+  const markSubscriptionSeen = useCallback(async (subscriptionId?: string) => {
+    if (!subscriptionId || !canManageInstallments) return;
+    const { error } = await supabase
+      .from('subscriptions')
+      .update({ finance_seen_at: new Date().toISOString() })
+      .eq('id', subscriptionId)
+      .is('finance_seen_at', null);
+    if (!error) queryClient.invalidateQueries({ queryKey: ['payments'] });
+  }, [canManageInstallments, queryClient]);
+
+  const openRegistration = useCallback((regData: any) => {
+    setSelectedRegistration(regData);
+    if (regData?.isNew) markSubscriptionSeen(regData.subscription?.id);
+  }, [markSubscriptionSeen]);
+
   const openPaymentProfile = (payment: any) => {
     const registrationId = payment.subscriptions?.registration_id;
     const regData = paymentsByRegistration[registrationId];
-    if (regData) setSelectedRegistration(regData);
+    if (regData) openRegistration(regData);
   };
+
 
   return (
     <DashboardLayout>
