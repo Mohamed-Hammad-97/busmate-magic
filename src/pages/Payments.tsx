@@ -65,7 +65,7 @@ const Payments = () => {
   const [insuranceFilter, setInsuranceFilter] = useState<string>('all');
   const [subscriptionTypeFilter, setSubscriptionTypeFilter] = useState<string>('all');
   const [paymentTab, setPaymentTab] = useState<string>('all');
-  const [mainTab, setMainTab] = useState<'active' | 'archive'>('active');
+  const [mainTab, setMainTab] = useState<'active' | 'archive' | 'fawry'>('active');
   const [archiveYear, setArchiveYear] = useState<string>('all');
   const [changesDate, setChangesDate] = useState<string>('');
   const [changesDialogOpen, setChangesDialogOpen] = useState(false);
