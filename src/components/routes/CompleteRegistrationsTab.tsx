@@ -39,8 +39,8 @@ const CompleteRegistrationsTab: React.FC<Props> = ({ routes, canEdit }) => {
           student_name,
           grade,
           school_id,
-          schools ( name ),
-          parent_accounts ( parent_name, father_phone, pickup_address )
+          schools ( name, city ),
+          parent_accounts ( parent_name, father_phone, pickup_address, city )
         `)
         .eq('status', 'complete')
         .order('created_at', { ascending: false });
