@@ -795,7 +795,33 @@ const Registrations: React.FC = () => {
         <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>
+        {/* Restore Cancelled (Super Admin only) */}
+        <AlertDialog open={!!restoreTarget} onOpenChange={(open) => !open && setRestoreTarget(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Restore Registration?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {`This will move "${restoreTarget?.student_name}" back into the registrations flow (Pending Fees) and reactivate the parent account so customer service can continue the process.`}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => restoreTarget && restoreMutation.mutate(restoreTarget)}
+                disabled={restoreMutation.isPending}
+              >
+                Restore
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Deactivate/Delete Confirmation */}
+        <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
               <AlertDialogTitle>
+
                 {deleteMode === 'deactivate' ? 'Deactivate Account?' : 'Delete Registration Permanently?'}
               </AlertDialogTitle>
               <AlertDialogDescription>
