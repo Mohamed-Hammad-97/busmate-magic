@@ -339,7 +339,11 @@ const Payments = () => {
         // No status filter → keep original behaviour of filtering by total installment count on the subscription
         if (Number(regData.subscription?.number_of_installments) !== installmentCount) return;
       }
-      if (changesDate && !regData.payments.some((p: any) => p.status === 'paid' && sameDay(p.paid_date, changesDate))) return;
+      if (changesDate) {
+        const paidThatDay = regData.payments.some((p: any) => p.status === 'paid' && sameDay(p.paid_date, changesDate));
+        const createdThatDay = sameDay(regData.createdAt, changesDate);
+        if (!paidThatDay && !createdThatDay) return;
+      }
       result[regId] = regData;
     });
     return result;
@@ -349,20 +353,25 @@ const Payments = () => {
   const changesSummary = useMemo(() => {
     if (!changesDate) return null;
     const paidOn: any[] = [];
+    const newRecords: any[] = [];
     Object.values(paymentsByRegistration).forEach((reg) => {
       reg.payments.forEach((p: any) => {
         if (p.status === 'paid' && sameDay(p.paid_date, changesDate)) {
           paidOn.push({ ...p, parentName: reg.parentName, studentName: reg.studentName, schoolName: reg.schoolName, paymentPhone: reg.paymentPhone, registrationId: reg.registrationId });
         }
       });
+      if (sameDay(reg.createdAt, changesDate)) {
+        newRecords.push(reg);
+      }
     });
     const totalPaidAmount = paidOn.reduce((s, p) => s + Number(p.amount || 0), 0);
+    const newTotalAmount = newRecords.reduce((s, r) => s + Number(r.totalAmount || 0), 0);
     const staffMap: Record<string, number> = {};
     paidOn.forEach((p) => {
       const name = p.paid_by_name || 'Unknown';
       staffMap[name] = (staffMap[name] || 0) + 1;
     });
-    return { paidOn, totalPaidAmount, staffMap };
+    return { paidOn, totalPaidAmount, staffMap, newRecords, newTotalAmount };
   }, [changesDate, paymentsByRegistration, sameDay]);
 
   const statusLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: React.ReactNode }> = {
