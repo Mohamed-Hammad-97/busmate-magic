@@ -877,8 +877,10 @@ const Payments = () => {
               {changesDate ? `Changes on ${format(new Date(changesDate), 'dd MMM yyyy', { locale: dateLocale })}` : 'Changes'}
             </DialogTitle>
           </DialogHeader>
-          {changesSummary && changesSummary.paidOn.length > 0 ? (
-            <div className="space-y-3">
+          {changesSummary && (changesSummary.paidOn.length > 0 || changesSummary.newRecords.length > 0) ? (
+            <div className="space-y-6">
+              {changesSummary.paidOn.length > 0 && (
+              <div className="space-y-3">
               <div className="flex items-center gap-4 text-xs">
                 <span className="text-muted-foreground">Records: <span className="font-semibold text-foreground">{changesSummary.paidOn.length}</span></span>
                 <span className="text-muted-foreground">Total collected: <span className="font-semibold text-success">{changesSummary.totalPaidAmount.toLocaleString()} EGP</span></span>
@@ -917,6 +919,46 @@ const Payments = () => {
                   </TableBody>
                 </Table>
               </div>
+              </div>
+              )}
+
+              {changesSummary.newRecords.length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-4 text-xs">
+                    <Badge className="bg-primary text-primary-foreground text-[10px] uppercase">New</Badge>
+                    <span className="text-muted-foreground">New records created: <span className="font-semibold text-foreground">{changesSummary.newRecords.length}</span></span>
+                    <span className="text-muted-foreground">Total value: <span className="font-semibold text-primary">{changesSummary.newTotalAmount.toLocaleString()} EGP</span></span>
+                  </div>
+                  <div className="rounded-xl border border-border/50 overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-muted/30 hover:bg-muted/30">
+                          <TableHead className="text-xs">{t('payments.studentName')}</TableHead>
+                          <TableHead className="text-xs">{t('payments.parentName')}</TableHead>
+                          <TableHead className="text-xs">School</TableHead>
+                          <TableHead className="text-xs">رقم الدفع والتجديد</TableHead>
+                          <TableHead className="text-xs">{t('payments.subscriptionType')}</TableHead>
+                          <TableHead className="text-xs">Installments</TableHead>
+                          <TableHead className="text-xs">Total</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {changesSummary.newRecords.map((r: any) => (
+                          <TableRow key={r.registrationId}>
+                            <TableCell className="text-sm font-medium">{r.studentName || '-'}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground">{r.parentName || '-'}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground">{r.schoolName || '-'}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground" dir="ltr">{r.paymentPhone || '-'}</TableCell>
+                            <TableCell className="text-sm">{subscriptionTypeLabels[r.subscription?.subscription_type] || '-'}</TableCell>
+                            <TableCell className="text-sm">{r.subscription?.number_of_installments ?? '-'}</TableCell>
+                            <TableCell className="text-sm font-semibold text-primary">{Number(r.totalAmount).toLocaleString()} EGP</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <p className="text-sm text-muted-foreground py-8 text-center">No changes on this date.</p>
