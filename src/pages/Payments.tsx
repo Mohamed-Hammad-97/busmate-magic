@@ -744,15 +744,21 @@ const Payments = () => {
                           const remaining = regData.totalAmount - regData.paidAmount;
                           const progress = regData.totalAmount > 0 ? Math.min((regData.paidAmount / regData.totalAmount) * 100, 100) : 0;
                           return (
-                            <TableRow key={regData.registrationId} className="group hover:bg-muted/20 transition-colors duration-150 cursor-pointer" onClick={() => setSelectedRegistration(regData)}>
+                            <TableRow key={regData.registrationId} className={`group hover:bg-muted/20 transition-colors duration-150 cursor-pointer ${regData.isNew ? 'bg-primary/5' : ''}`} onClick={() => openRegistration(regData)}>
                               <TableCell>
                                 <div className="flex items-center gap-3">
                                   <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
                                     {(regData.parentName || '?')[0].toUpperCase()}
                                   </div>
                                   <span className="font-medium text-sm text-foreground">{regData.parentName || '-'}</span>
+                                  {regData.isNew && (
+                                    <Badge className="h-5 px-2 text-[10px] font-bold uppercase tracking-wide bg-primary text-primary-foreground shadow-sm animate-pulse">
+                                      New
+                                    </Badge>
+                                  )}
                                 </div>
                               </TableCell>
+
                               <TableCell className="text-sm text-muted-foreground">{regData.studentName || '-'}</TableCell>
                               <TableCell className="text-sm text-muted-foreground">{regData.schoolName || '-'}</TableCell>
                               <TableCell className="text-sm text-muted-foreground" dir="ltr">{regData.paymentPhone || '-'}</TableCell>
