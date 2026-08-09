@@ -21,6 +21,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Bus, MapPin, CalendarDays, Sparkles, ClipboardList, Plus, Trash2,
   Pencil, Loader2, CheckCircle2, XCircle, Eye, CreditCard,
@@ -65,6 +66,7 @@ export default function DailyLinesAdmin() {
 
 /* ============================ LINES + STATIONS ============================ */
 function LinesTab({ isRtl }: { isRtl: boolean }) {
+  const { isSuperAdmin } = useAuth();
   const qc = useQueryClient();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
@@ -146,7 +148,7 @@ function LinesTab({ isRtl }: { isRtl: boolean }) {
                       <Button size="sm" variant="outline" onClick={() => setStationsLineId(l.id)}><MapPin className="h-3 w-3 mr-1" />{isRtl ? "محطات" : "Stations"}</Button>
                       <Button size="sm" variant="outline" onClick={() => setPreviewLineId(l.id)}><Eye className="h-3 w-3 mr-1" />{isRtl ? "معاينة" : "Preview"}</Button>
                       <Button size="sm" variant="ghost" onClick={() => { setEditing(l); setOpen(true); }}><Pencil className="h-3 w-3" /></Button>
-                      <Button size="sm" variant="ghost" onClick={() => { if (confirm(isRtl ? "حذف؟" : "Delete?")) remove.mutate(l.id); }}><Trash2 className="h-3 w-3 text-destructive" /></Button>
+                      {isSuperAdmin && (<Button size="sm" variant="ghost" onClick={() => { if (confirm(isRtl ? "حذف؟" : "Delete?")) remove.mutate(l.id); }}><Trash2 className="h-3 w-3 text-destructive" /></Button>)}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -214,6 +216,7 @@ function LineDialog({ editing, cities, onSubmit, saving, isRtl }: any) {
 
 /* ============================ TRIPS ============================ */
 function TripsTab({ isRtl }: { isRtl: boolean }) {
+  const { isSuperAdmin } = useAuth();
   const qc = useQueryClient();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
@@ -293,7 +296,7 @@ function TripsTab({ isRtl }: { isRtl: boolean }) {
                   <TableCell><Badge variant="outline" className="text-xs">{t.status}</Badge></TableCell>
                   <TableCell className="text-end space-x-1">
                     <Button size="sm" variant="ghost" onClick={() => { setEditing(t); setOpen(true); }}><Pencil className="h-3 w-3" /></Button>
-                    <Button size="sm" variant="ghost" onClick={() => { if (confirm(isRtl ? "حذف؟" : "Delete?")) remove.mutate(t.id); }}><Trash2 className="h-3 w-3 text-destructive" /></Button>
+                    {isSuperAdmin && (<Button size="sm" variant="ghost" onClick={() => { if (confirm(isRtl ? "حذف؟" : "Delete?")) remove.mutate(t.id); }}><Trash2 className="h-3 w-3 text-destructive" /></Button>)}
                   </TableCell>
                 </TableRow>
               ))}
@@ -504,6 +507,7 @@ const Row = ({ k, v }: any) => <div className="flex justify-between gap-3 py-1 b
 
 /* ============================ PROMOCODES ============================ */
 function PromocodesTab({ isRtl }: { isRtl: boolean }) {
+  const { isSuperAdmin } = useAuth();
   const qc = useQueryClient();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
@@ -559,7 +563,7 @@ function PromocodesTab({ isRtl }: { isRtl: boolean }) {
                   <TableCell>{c.is_active ? <CheckCircle2 className="h-4 w-4 text-green-600" /> : <XCircle className="h-4 w-4 text-muted-foreground" />}</TableCell>
                   <TableCell className="text-end space-x-1">
                     <Button size="sm" variant="ghost" onClick={() => { setEditing(c); setOpen(true); }}><Pencil className="h-3 w-3" /></Button>
-                    <Button size="sm" variant="ghost" onClick={() => { if (confirm(isRtl ? "حذف؟" : "Delete?")) remove.mutate(c.id); }}><Trash2 className="h-3 w-3 text-destructive" /></Button>
+                    {isSuperAdmin && (<Button size="sm" variant="ghost" onClick={() => { if (confirm(isRtl ? "حذف؟" : "Delete?")) remove.mutate(c.id); }}><Trash2 className="h-3 w-3 text-destructive" /></Button>)}
                   </TableCell>
                 </TableRow>
               ))}
