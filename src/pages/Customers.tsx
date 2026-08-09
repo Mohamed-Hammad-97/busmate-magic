@@ -395,9 +395,11 @@ const Customers = () => {
                           <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-warning/10 hover:text-warning" onClick={() => { setDeleteTarget(customer); setDeleteMode('deactivate'); }} title="Deactivate">
                             <UserX className="h-3.5 w-3.5" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-destructive/10 hover:text-destructive" onClick={() => { setDeleteTarget(customer); setDeleteMode('delete'); }} title="Delete permanently">
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
+                          {isSuperAdmin && (
+                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-destructive/10 hover:text-destructive" onClick={() => { setDeleteTarget(customer); setDeleteMode('delete'); }} title="Delete permanently">
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>

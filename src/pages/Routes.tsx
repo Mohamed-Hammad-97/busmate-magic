@@ -600,7 +600,7 @@ const Routes = () => {
                                   <ExternalLink className="h-4 w-4" />
                                 </a>
                               )}
-                              {canEdit && (
+                              {isSuperAdmin && (
                                 <Button
                                   variant="ghost"
                                   size="sm"
