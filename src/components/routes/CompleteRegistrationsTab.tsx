@@ -128,10 +128,25 @@ const CompleteRegistrationsTab: React.FC<Props> = ({ routes, canEdit }) => {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const cityFiltered = useMemo(() => {
+    if (selectedCity === 'all') return registrations;
+    const cityMapping: Record<string, string[]> = {
+      cairo: ['cairo', 'القاهرة', 'قاهرة'],
+      giza: ['giza', 'الجيزة', 'جيزة'],
+      alexandria: ['alexandria', 'الإسكندرية', 'اسكندرية', 'إسكندرية'],
+    };
+    const cityNames = cityMapping[selectedCity] || [];
+    return registrations.filter((r: any) => {
+      const pa = Array.isArray(r.parent_accounts) ? r.parent_accounts[0] : r.parent_accounts;
+      const haystack = `${r.schools?.city || ''} ${pa?.city || ''}`.toLowerCase();
+      return cityNames.some((name) => haystack.includes(name.toLowerCase()));
+    });
+  }, [registrations, selectedCity]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return registrations;
-    return registrations.filter((r: any) => {
+    if (!q) return cityFiltered;
+    return cityFiltered.filter((r: any) => {
       const pa = Array.isArray(r.parent_accounts) ? r.parent_accounts[0] : r.parent_accounts;
       return (
         (r.student_name || '').toLowerCase().includes(q) ||
@@ -140,7 +155,7 @@ const CompleteRegistrationsTab: React.FC<Props> = ({ routes, canEdit }) => {
         (pa?.father_phone || '').includes(q)
       );
     });
-  }, [registrations, search]);
+  }, [cityFiltered, search]);
 
   return (
     <Card>
