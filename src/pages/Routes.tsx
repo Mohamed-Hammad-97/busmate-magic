@@ -49,6 +49,7 @@ import { useCity } from '@/contexts/CityContext';
 import RouteMap from '@/components/routes/RouteMap';
 import { GoogleMapsProvider } from '@/components/maps/GoogleMapsProvider';
 import type { Tables } from '@/integrations/supabase/types';
+import CompleteRegistrationsTab from '@/components/routes/CompleteRegistrationsTab';
 
 type RouteType = Tables<'routes'>;
 
@@ -62,13 +63,14 @@ const Routes = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedRoute, setSelectedRoute] = useState<RouteType | null>(null);
-  const [activeTab, setActiveTab] = useState<'table' | 'map'>('table');
+  const [activeTab, setActiveTab] = useState<'table' | 'map' | 'complete'>('table');
   const [mapSelectedRoute, setMapSelectedRoute] = useState<any>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [routeToDelete, setRouteToDelete] = useState<RouteType | null>(null);
 
   const [formData, setFormData] = useState({
     name: '',
+    route_number: '' as string,
     school_id: '',
     driver_id: '',
     supervisor_id: '',
@@ -88,11 +90,16 @@ const Routes = () => {
           drivers (full_name),
           supervisors (full_name)
         `)
-        .order('created_at', { ascending: false });
+        .order('route_number', { ascending: true });
       if (error) throw error;
       return data;
     },
   });
+
+  const nextRouteNumber = useMemo(() => {
+    const max = routes.reduce((m: number, r: any) => Math.max(m, r.route_number || 0), 0);
+    return max + 1;
+  }, [routes]);
 
   const { data: allSchools = [] } = useQuery({
     queryKey: ['schools-active'],
@@ -228,6 +235,7 @@ const Routes = () => {
           .from('routes')
           .update({
             name: formData.name,
+            route_number: formData.route_number ? Number(formData.route_number) : null,
             school_id: formData.school_id,
             driver_id: formData.driver_id || null,
             supervisor_id: formData.supervisor_id || null,
@@ -242,6 +250,7 @@ const Routes = () => {
           .from('routes')
           .insert({
             name: formData.name,
+            route_number: formData.route_number ? Number(formData.route_number) : nextRouteNumber,
             school_id: formData.school_id,
             driver_id: formData.driver_id || null,
             supervisor_id: formData.supervisor_id || null,
@@ -310,6 +319,7 @@ const Routes = () => {
   const resetForm = () => {
     setFormData({
       name: '',
+      route_number: '',
       school_id: '',
       driver_id: '',
       supervisor_id: '',
@@ -324,6 +334,7 @@ const Routes = () => {
     setSelectedRoute(route);
     setFormData({
       name: route.name,
+      route_number: (route as any).route_number ? String((route as any).route_number) : '',
       school_id: route.school_id,
       driver_id: route.driver_id || '',
       supervisor_id: route.supervisor_id || '',
@@ -336,6 +347,7 @@ const Routes = () => {
 
   const handleAddNew = () => {
     resetForm();
+    setFormData((prev) => ({ ...prev, route_number: String(nextRouteNumber) }));
     setIsDialogOpen(true);
   };
 
@@ -350,6 +362,7 @@ const Routes = () => {
 
   const filteredRoutes = cityFilteredRoutes.filter((route: any) =>
     route.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    String(route.route_number ?? '').includes(searchTerm.trim()) ||
     route.schools?.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -475,6 +488,9 @@ const Routes = () => {
                 <Map className="h-4 w-4 mr-2" />
                 {isRtl ? 'خريطة' : 'Map'}
               </TabsTrigger>
+              <TabsTrigger value="complete">
+                {isRtl ? 'التسجيلات المكتملة' : 'Complete Registrations'}
+              </TabsTrigger>
             </TabsList>
 
             {/* Search */}
@@ -495,6 +511,9 @@ const Routes = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className={isRtl ? 'text-right' : 'text-left'}>
+                        {isRtl ? 'رقم الخط' : 'Route No.'}
+                      </TableHead>
                       <TableHead className={isRtl ? 'text-right' : 'text-left'}>
                         {isRtl ? 'اسم الخط' : 'Route Name'}
                       </TableHead>
@@ -527,19 +546,22 @@ const Routes = () => {
                   <TableBody>
                     {isLoading ? (
                       <TableRow>
-                        <TableCell colSpan={9} className="text-center py-8">
+                        <TableCell colSpan={10} className="text-center py-8">
                           {isRtl ? 'جاري التحميل...' : 'Loading...'}
                         </TableCell>
                       </TableRow>
                     ) : filteredRoutes.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={9} className="text-center py-8">
+                        <TableCell colSpan={10} className="text-center py-8">
                           {isRtl ? 'لا توجد خطوط' : 'No routes found'}
                         </TableCell>
                       </TableRow>
                     ) : (
                       filteredRoutes.map((route: any) => (
                         <TableRow key={route.id}>
+                          <TableCell>
+                            <Badge variant="outline" className="font-semibold">#{route.route_number ?? '-'}</Badge>
+                          </TableCell>
                           <TableCell className="font-medium">{route.name}</TableCell>
                           <TableCell>{route.schools?.name}</TableCell>
                           <TableCell>{route.drivers?.full_name || '-'}</TableCell>
@@ -622,6 +644,9 @@ const Routes = () => {
               </CardContent>
             </Card>
           </TabsContent>
+          <TabsContent value="complete" className="mt-4">
+            <CompleteRegistrationsTab routes={routes} canEdit={canEdit} />
+          </TabsContent>
         </Tabs>
 
         {/* Add/Edit Dialog */}
@@ -642,6 +667,18 @@ const Routes = () => {
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="route_number">{isRtl ? 'رقم الخط *' : 'Route Number *'}</Label>
+                <Input
+                  id="route_number"
+                  type="number"
+                  min={1}
+                  value={formData.route_number}
+                  onChange={(e) => setFormData({ ...formData, route_number: e.target.value })}
                   required
                 />
               </div>
