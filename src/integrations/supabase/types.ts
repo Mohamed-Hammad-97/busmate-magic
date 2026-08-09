@@ -1722,6 +1722,11 @@ export type Database = {
           amount: number
           created_at: string
           due_date: string
+          fawry_cleared: boolean
+          fawry_cleared_at: string | null
+          fawry_cleared_by: string | null
+          fawry_note: string | null
+          fawry_reference_code: string | null
           id: string
           installment_number: number
           notes: string | null
@@ -1738,6 +1743,11 @@ export type Database = {
           amount: number
           created_at?: string
           due_date: string
+          fawry_cleared?: boolean
+          fawry_cleared_at?: string | null
+          fawry_cleared_by?: string | null
+          fawry_note?: string | null
+          fawry_reference_code?: string | null
           id?: string
           installment_number: number
           notes?: string | null
@@ -1754,6 +1764,11 @@ export type Database = {
           amount?: number
           created_at?: string
           due_date?: string
+          fawry_cleared?: boolean
+          fawry_cleared_at?: string | null
+          fawry_cleared_by?: string | null
+          fawry_note?: string | null
+          fawry_reference_code?: string | null
           id?: string
           installment_number?: number
           notes?: string | null

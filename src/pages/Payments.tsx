@@ -43,6 +43,7 @@ import { format } from 'date-fns';
 import { ar, enUS } from 'date-fns/locale';
 import { PaymentProfileDialog } from '@/components/payments/PaymentProfileDialog';
 import { PaymentReminders } from '@/components/payments/PaymentReminders';
+import { FawryCodesTab } from '@/components/payments/FawryCodesTab';
 import { InvoiceGenerator } from '@/components/payments/InvoiceGenerator';
 import { useCity } from '@/contexts/CityContext';
 import { PageHero } from '@/components/layout/PageHero';
@@ -65,7 +66,7 @@ const Payments = () => {
   const [insuranceFilter, setInsuranceFilter] = useState<string>('all');
   const [subscriptionTypeFilter, setSubscriptionTypeFilter] = useState<string>('all');
   const [paymentTab, setPaymentTab] = useState<string>('all');
-  const [mainTab, setMainTab] = useState<'active' | 'archive'>('active');
+  const [mainTab, setMainTab] = useState<'active' | 'archive' | 'fawry'>('active');
   const [archiveYear, setArchiveYear] = useState<string>('all');
   const [changesDate, setChangesDate] = useState<string>('');
   const [changesDialogOpen, setChangesDialogOpen] = useState(false);
@@ -465,7 +466,7 @@ const Payments = () => {
         {/* Active / Archive Main Tabs */}
         <div className="space-y-3 animate-fade-in" style={{ animationDelay: '0.15s' }}>
           <div className="flex items-center justify-between gap-3 flex-wrap">
-            <Tabs value={mainTab} onValueChange={(v) => { setMainTab(v as 'active' | 'archive'); setArchiveYear('all'); }}>
+            <Tabs value={mainTab} onValueChange={(v) => { setMainTab(v as 'active' | 'archive' | 'fawry'); setArchiveYear('all'); }}>
               <TabsList className="bg-muted/50 p-1 rounded-xl h-auto">
                 <TabsTrigger value="active" className="gap-2 rounded-lg px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
                   Active
@@ -475,8 +476,12 @@ const Payments = () => {
                   Archive
                   <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">{archivedPayments.length}</Badge>
                 </TabsTrigger>
+                <TabsTrigger value="fawry" className="gap-2 rounded-lg px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
+                  اكواد فورى
+                </TabsTrigger>
               </TabsList>
             </Tabs>
+            {mainTab !== 'fawry' && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button className="gap-2 h-10 rounded-xl shadow-sm">
@@ -495,6 +500,7 @@ const Payments = () => {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            )}
           </div>
 
           {mainTab === 'archive' && archiveYears.length > 0 && (
@@ -519,6 +525,7 @@ const Payments = () => {
         </div>
 
         {/* Payment Status Tabs */}
+        {mainTab !== 'fawry' && (
         <div className="space-y-4 animate-fade-in" style={{ animationDelay: '0.2s' }}>
           <Tabs value={paymentTab} onValueChange={setPaymentTab}>
             <TabsList className="bg-muted/50 p-1 rounded-xl h-auto">
@@ -817,6 +824,13 @@ const Payments = () => {
             </TabsContent>
           </Tabs>
         </div>
+        )}
+
+        {mainTab === 'fawry' && (
+          <div className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
+            <FawryCodesTab />
+          </div>
+        )}
       </div>
 
       {/* Changes details dialog */}
