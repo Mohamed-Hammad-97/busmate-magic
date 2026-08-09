@@ -153,12 +153,16 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
           paid_date: new Date().toISOString().split('T')[0],
           paid_by: user?.id || null,
           paid_by_name: employee?.full_name || user?.email || null,
+          fawry_cleared: true,
+          fawry_cleared_at: new Date().toISOString(),
+          fawry_cleared_by: employee?.id || null,
         } as any)
         .eq('id', paymentId);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
+      queryClient.invalidateQueries({ queryKey: ['fawry-codes'] });
       toast.success('Payment recorded successfully');
     },
     onError: (error) => {
