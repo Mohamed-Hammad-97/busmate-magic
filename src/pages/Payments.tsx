@@ -524,6 +524,7 @@ const Payments = () => {
         </div>
 
         {/* Payment Status Tabs */}
+        {mainTab !== 'fawry' && (
         <div className="space-y-4 animate-fade-in" style={{ animationDelay: '0.2s' }}>
           <Tabs value={paymentTab} onValueChange={setPaymentTab}>
             <TabsList className="bg-muted/50 p-1 rounded-xl h-auto">
