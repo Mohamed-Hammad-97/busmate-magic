@@ -822,6 +822,13 @@ const Payments = () => {
             </TabsContent>
           </Tabs>
         </div>
+        )}
+
+        {mainTab === 'fawry' && (
+          <div className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
+            <FawryCodesTab />
+          </div>
+        )}
       </div>
 
       {/* Changes details dialog */}
