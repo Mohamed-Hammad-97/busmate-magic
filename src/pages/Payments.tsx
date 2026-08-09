@@ -684,6 +684,7 @@ const Payments = () => {
                     <div className="flex items-center gap-4 text-xs">
                       <span className="text-muted-foreground">Marked paid: <span className="font-semibold text-success">{changesSummary.paidOn.length}</span></span>
                       <span className="text-muted-foreground">Total collected: <span className="font-semibold text-success">{changesSummary.totalPaidAmount.toLocaleString()} EGP</span></span>
+                      <span className="text-muted-foreground">New records: <span className="font-semibold text-primary">{changesSummary.newRecords.length}</span></span>
                     </div>
                   </div>
                   {Object.keys(changesSummary.staffMap).length > 0 && (
