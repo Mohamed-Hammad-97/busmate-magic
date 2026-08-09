@@ -240,6 +240,31 @@ const Registrations: React.FC = () => {
     },
   });
 
+  const restoreMutation = useMutation({
+    mutationFn: async (reg: Registration) => {
+      const { error: regError } = await supabase
+        .from('registrations')
+        .update({ status: 'pending_fees' })
+        .eq('id', reg.id);
+      if (regError) throw regError;
+      const { error: parentError } = await supabase
+        .from('parent_accounts')
+        .update({ is_active: true })
+        .eq('id', reg.parent_id);
+      if (parentError) throw parentError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['registrations'] });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      toast({ title: 'Registration restored', description: 'The registration is back in the registrations flow and the parent account is active again.' });
+      setRestoreTarget(null);
+    },
+    onError: (error) => {
+      toast({ title: 'Error', description: 'Failed to restore registration', variant: 'destructive' });
+      console.error(error);
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: async (reg: Registration) => {
       // Delete payments -> subscriptions -> route_assignments -> registration
