@@ -41,19 +41,19 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (!account.companies?.is_active) {
-      return new Response(
-        JSON.stringify({ error: "Company account is inactive" }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Verify password
+    // Verify password first, so responses do not reveal account existence/state
     const isValid = await verifyPassword(password, account.password_hash);
     if (!isValid) {
       return new Response(
         JSON.stringify({ error: "Invalid email or password" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!account.companies?.is_active) {
+      return new Response(
+        JSON.stringify({ error: "Company account is inactive" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
