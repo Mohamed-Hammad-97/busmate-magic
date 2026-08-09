@@ -43,6 +43,7 @@ import { format } from 'date-fns';
 import { ar, enUS } from 'date-fns/locale';
 import { PaymentProfileDialog } from '@/components/payments/PaymentProfileDialog';
 import { PaymentReminders } from '@/components/payments/PaymentReminders';
+import { FawryCodesTab } from '@/components/payments/FawryCodesTab';
 import { InvoiceGenerator } from '@/components/payments/InvoiceGenerator';
 import { useCity } from '@/contexts/CityContext';
 import { PageHero } from '@/components/layout/PageHero';
