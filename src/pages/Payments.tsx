@@ -96,6 +96,8 @@ const Payments = () => {
               subscription_type,
               value,
               number_of_installments,
+              created_at,
+              finance_seen_at,
               registrations (
                 id,
                 student_name,
@@ -218,7 +220,7 @@ const Payments = () => {
   });
 
   const paymentsByRegistration = useMemo(() => {
-    const grouped: Record<string, { registrationId: string; payments: any[]; subscription: any; parentName: string; studentName: string; schoolName: string; paymentPhone: string; phones: string[]; totalAmount: number; paidAmount: number; isFullyPaid: boolean; }> = {};
+    const grouped: Record<string, { registrationId: string; payments: any[]; subscription: any; parentName: string; studentName: string; schoolName: string; paymentPhone: string; phones: string[]; totalAmount: number; paidAmount: number; isFullyPaid: boolean; isNew: boolean; createdAt: string | null; }> = {};
     payments.forEach((payment: any) => {
       const registrationId = payment.subscriptions?.registration_id;
       if (!registrationId) return;
@@ -236,6 +238,8 @@ const Payments = () => {
           totalAmount: payment.subscriptions?.value || 0,
           paidAmount: 0,
           isFullyPaid: false,
+          isNew: !payment.subscriptions?.finance_seen_at,
+          createdAt: payment.subscriptions?.created_at || null,
         };
       }
       grouped[registrationId].payments.push(payment);
@@ -335,7 +339,11 @@ const Payments = () => {
         // No status filter → keep original behaviour of filtering by total installment count on the subscription
         if (Number(regData.subscription?.number_of_installments) !== installmentCount) return;
       }
-      if (changesDate && !regData.payments.some((p: any) => p.status === 'paid' && sameDay(p.paid_date, changesDate))) return;
+      if (changesDate) {
+        const paidThatDay = regData.payments.some((p: any) => p.status === 'paid' && sameDay(p.paid_date, changesDate));
+        const createdThatDay = sameDay(regData.createdAt, changesDate);
+        if (!paidThatDay && !createdThatDay) return;
+      }
       result[regId] = regData;
     });
     return result;
@@ -345,20 +353,25 @@ const Payments = () => {
   const changesSummary = useMemo(() => {
     if (!changesDate) return null;
     const paidOn: any[] = [];
+    const newRecords: any[] = [];
     Object.values(paymentsByRegistration).forEach((reg) => {
       reg.payments.forEach((p: any) => {
         if (p.status === 'paid' && sameDay(p.paid_date, changesDate)) {
           paidOn.push({ ...p, parentName: reg.parentName, studentName: reg.studentName, schoolName: reg.schoolName, paymentPhone: reg.paymentPhone, registrationId: reg.registrationId });
         }
       });
+      if (sameDay(reg.createdAt, changesDate)) {
+        newRecords.push(reg);
+      }
     });
     const totalPaidAmount = paidOn.reduce((s, p) => s + Number(p.amount || 0), 0);
+    const newTotalAmount = newRecords.reduce((s, r) => s + Number(r.totalAmount || 0), 0);
     const staffMap: Record<string, number> = {};
     paidOn.forEach((p) => {
       const name = p.paid_by_name || 'Unknown';
       staffMap[name] = (staffMap[name] || 0) + 1;
     });
-    return { paidOn, totalPaidAmount, staffMap };
+    return { paidOn, totalPaidAmount, staffMap, newRecords, newTotalAmount };
   }, [changesDate, paymentsByRegistration, sameDay]);
 
   const statusLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: React.ReactNode }> = {
@@ -394,11 +407,27 @@ const Payments = () => {
     };
   }, [paymentsByRegistration]);
 
+  const markSubscriptionSeen = useCallback(async (subscriptionId?: string) => {
+    if (!subscriptionId || !canManageInstallments) return;
+    const { error } = await supabase
+      .from('subscriptions')
+      .update({ finance_seen_at: new Date().toISOString() })
+      .eq('id', subscriptionId)
+      .is('finance_seen_at', null);
+    if (!error) queryClient.invalidateQueries({ queryKey: ['payments'] });
+  }, [canManageInstallments, queryClient]);
+
+  const openRegistration = useCallback((regData: any) => {
+    setSelectedRegistration(regData);
+    if (regData?.isNew) markSubscriptionSeen(regData.subscription?.id);
+  }, [markSubscriptionSeen]);
+
   const openPaymentProfile = (payment: any) => {
     const registrationId = payment.subscriptions?.registration_id;
     const regData = paymentsByRegistration[registrationId];
-    if (regData) setSelectedRegistration(regData);
+    if (regData) openRegistration(regData);
   };
+
 
   return (
     <DashboardLayout>
@@ -655,6 +684,7 @@ const Payments = () => {
                     <div className="flex items-center gap-4 text-xs">
                       <span className="text-muted-foreground">Marked paid: <span className="font-semibold text-success">{changesSummary.paidOn.length}</span></span>
                       <span className="text-muted-foreground">Total collected: <span className="font-semibold text-success">{changesSummary.totalPaidAmount.toLocaleString()} EGP</span></span>
+                      <span className="text-muted-foreground">New records: <span className="font-semibold text-primary">{changesSummary.newRecords.length}</span></span>
                     </div>
                   </div>
                   {Object.keys(changesSummary.staffMap).length > 0 && (
@@ -715,15 +745,21 @@ const Payments = () => {
                           const remaining = regData.totalAmount - regData.paidAmount;
                           const progress = regData.totalAmount > 0 ? Math.min((regData.paidAmount / regData.totalAmount) * 100, 100) : 0;
                           return (
-                            <TableRow key={regData.registrationId} className="group hover:bg-muted/20 transition-colors duration-150 cursor-pointer" onClick={() => setSelectedRegistration(regData)}>
+                            <TableRow key={regData.registrationId} className={`group hover:bg-muted/20 transition-colors duration-150 cursor-pointer ${regData.isNew ? 'bg-primary/5' : ''}`} onClick={() => openRegistration(regData)}>
                               <TableCell>
                                 <div className="flex items-center gap-3">
                                   <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
                                     {(regData.parentName || '?')[0].toUpperCase()}
                                   </div>
                                   <span className="font-medium text-sm text-foreground">{regData.parentName || '-'}</span>
+                                  {regData.isNew && (
+                                    <Badge className="h-5 px-2 text-[10px] font-bold uppercase tracking-wide bg-primary text-primary-foreground shadow-sm animate-pulse">
+                                      New
+                                    </Badge>
+                                  )}
                                 </div>
                               </TableCell>
+
                               <TableCell className="text-sm text-muted-foreground">{regData.studentName || '-'}</TableCell>
                               <TableCell className="text-sm text-muted-foreground">{regData.schoolName || '-'}</TableCell>
                               <TableCell className="text-sm text-muted-foreground" dir="ltr">{regData.paymentPhone || '-'}</TableCell>
@@ -745,7 +781,7 @@ const Payments = () => {
                               </TableCell>
                               <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                                 <div className="flex justify-end gap-0.5">
-                                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary" onClick={() => setSelectedRegistration(regData)}>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary" onClick={() => openRegistration(regData)}>
                                     <Eye className="h-3.5 w-3.5" />
                                   </Button>
                                   <InvoiceGenerator
@@ -841,8 +877,10 @@ const Payments = () => {
               {changesDate ? `Changes on ${format(new Date(changesDate), 'dd MMM yyyy', { locale: dateLocale })}` : 'Changes'}
             </DialogTitle>
           </DialogHeader>
-          {changesSummary && changesSummary.paidOn.length > 0 ? (
-            <div className="space-y-3">
+          {changesSummary && (changesSummary.paidOn.length > 0 || changesSummary.newRecords.length > 0) ? (
+            <div className="space-y-6">
+              {changesSummary.paidOn.length > 0 && (
+              <div className="space-y-3">
               <div className="flex items-center gap-4 text-xs">
                 <span className="text-muted-foreground">Records: <span className="font-semibold text-foreground">{changesSummary.paidOn.length}</span></span>
                 <span className="text-muted-foreground">Total collected: <span className="font-semibold text-success">{changesSummary.totalPaidAmount.toLocaleString()} EGP</span></span>
@@ -881,6 +919,46 @@ const Payments = () => {
                   </TableBody>
                 </Table>
               </div>
+              </div>
+              )}
+
+              {changesSummary.newRecords.length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-4 text-xs">
+                    <Badge className="bg-primary text-primary-foreground text-[10px] uppercase">New</Badge>
+                    <span className="text-muted-foreground">New records created: <span className="font-semibold text-foreground">{changesSummary.newRecords.length}</span></span>
+                    <span className="text-muted-foreground">Total value: <span className="font-semibold text-primary">{changesSummary.newTotalAmount.toLocaleString()} EGP</span></span>
+                  </div>
+                  <div className="rounded-xl border border-border/50 overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-muted/30 hover:bg-muted/30">
+                          <TableHead className="text-xs">{t('payments.studentName')}</TableHead>
+                          <TableHead className="text-xs">{t('payments.parentName')}</TableHead>
+                          <TableHead className="text-xs">School</TableHead>
+                          <TableHead className="text-xs">رقم الدفع والتجديد</TableHead>
+                          <TableHead className="text-xs">{t('payments.subscriptionType')}</TableHead>
+                          <TableHead className="text-xs">Installments</TableHead>
+                          <TableHead className="text-xs">Total</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {changesSummary.newRecords.map((r: any) => (
+                          <TableRow key={r.registrationId}>
+                            <TableCell className="text-sm font-medium">{r.studentName || '-'}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground">{r.parentName || '-'}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground">{r.schoolName || '-'}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground" dir="ltr">{r.paymentPhone || '-'}</TableCell>
+                            <TableCell className="text-sm">{subscriptionTypeLabels[r.subscription?.subscription_type] || '-'}</TableCell>
+                            <TableCell className="text-sm">{r.subscription?.number_of_installments ?? '-'}</TableCell>
+                            <TableCell className="text-sm font-semibold text-primary">{Number(r.totalAmount).toLocaleString()} EGP</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <p className="text-sm text-muted-foreground py-8 text-center">No changes on this date.</p>
