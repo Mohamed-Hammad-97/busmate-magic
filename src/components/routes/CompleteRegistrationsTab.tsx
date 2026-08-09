@@ -155,110 +155,114 @@ const CompleteRegistrationsTab: React.FC<Props> = ({ routes, canEdit }) => {
           />
         </div>
 
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className={isRtl ? 'text-right' : 'text-left'}>{isRtl ? 'الطالب' : 'Student'}</TableHead>
-              <TableHead className={isRtl ? 'text-right' : 'text-left'}>{isRtl ? 'ولي الأمر' : 'Parent'}</TableHead>
-              <TableHead className={isRtl ? 'text-right' : 'text-left'}>{isRtl ? 'المدرسة' : 'School'}</TableHead>
-              <TableHead className={isRtl ? 'text-right' : 'text-left'}>{isRtl ? 'عنوان الاستلام' : 'Pickup Address'}</TableHead>
-              <TableHead className={isRtl ? 'text-right' : 'text-left'}>{isRtl ? 'الخط الحالي' : 'Current Route'}</TableHead>
-              <TableHead className={isRtl ? 'text-right' : 'text-left'}>{isRtl ? 'رقم الخط' : 'Route Number'}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
+        <div className="max-h-[calc(100vh-16rem)] min-w-0 overflow-auto rounded-md border border-border/60">
+          <Table className="min-w-[1100px]">
+            <TableHeader className="sticky top-0 z-10 bg-background">
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8">
-                  <Loader2 className="h-5 w-5 animate-spin mx-auto" />
-                </TableCell>
+                <TableHead className={isRtl ? 'text-right' : 'text-left'}>{isRtl ? 'الطالب' : 'Student'}</TableHead>
+                <TableHead className={isRtl ? 'text-right' : 'text-left'}>{isRtl ? 'ولي الأمر' : 'Parent'}</TableHead>
+                <TableHead className={isRtl ? 'text-right' : 'text-left'}>{isRtl ? 'المدرسة' : 'School'}</TableHead>
+                <TableHead className={isRtl ? 'text-right' : 'text-left'}>{isRtl ? 'عنوان الاستلام' : 'Pickup Address'}</TableHead>
+                <TableHead className={isRtl ? 'text-right' : 'text-left'}>{isRtl ? 'الخط الحالي' : 'Current Route'}</TableHead>
+                <TableHead className={isRtl ? 'text-right' : 'text-left'}>{isRtl ? 'رقم الخط' : 'Route Number'}</TableHead>
               </TableRow>
-            ) : filtered.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                  {isRtl ? 'لا توجد تسجيلات مكتملة' : 'No complete registrations'}
-                </TableCell>
-              </TableRow>
-            ) : (
-              filtered.map((reg: any) => {
-                const pa = Array.isArray(reg.parent_accounts) ? reg.parent_accounts[0] : reg.parent_accounts;
-                const assignment = assignmentByReg[reg.id];
-                const currentRoute = assignment ? routeById[assignment.route_id] : null;
-                return (
-                  <TableRow key={reg.id}>
-                    <TableCell className="font-medium">{reg.student_name}</TableCell>
-                    <TableCell className="text-sm">
-                      <div>{pa?.parent_name}</div>
-                      <div className="text-xs text-muted-foreground">{pa?.father_phone}</div>
-                    </TableCell>
-                    <TableCell className="text-sm">{reg.schools?.name}</TableCell>
-                    <TableCell className="text-sm max-w-[220px] truncate">{pa?.pickup_address || '-'}</TableCell>
-                    <TableCell>
-                      {currentRoute ? (
-                        <div className="flex items-center gap-2">
-                          <Badge variant="default">
-                            #{currentRoute.route_number ?? '-'} · {currentRoute.name}
-                          </Badge>
-                          {canEdit && (
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8">
+                    <Loader2 className="h-5 w-5 animate-spin mx-auto" />
+                  </TableCell>
+                </TableRow>
+              ) : filtered.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    {isRtl ? 'لا توجد تسجيلات مكتملة' : 'No complete registrations'}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filtered.map((reg: any) => {
+                  const pa = Array.isArray(reg.parent_accounts) ? reg.parent_accounts[0] : reg.parent_accounts;
+                  const assignment = assignmentByReg[reg.id];
+                  const currentRoute = assignment ? routeById[assignment.route_id] : null;
+                  return (
+                    <TableRow key={reg.id}>
+                      <TableCell className="font-medium">{reg.student_name}</TableCell>
+                      <TableCell className="text-sm">
+                        <div>{pa?.parent_name}</div>
+                        <div className="text-xs text-muted-foreground">{pa?.father_phone}</div>
+                      </TableCell>
+                      <TableCell className="text-sm">{reg.schools?.name}</TableCell>
+                      <TableCell className="max-w-[420px] whitespace-normal break-words text-sm align-top">
+                        {pa?.pickup_address || '-'}
+                      </TableCell>
+                      <TableCell>
+                        {currentRoute ? (
+                          <div className="flex items-center gap-2">
+                            <Badge variant="default">
+                              #{currentRoute.route_number ?? '-'} · {currentRoute.name}
+                            </Badge>
+                            {canEdit && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-destructive"
+                                onClick={() => unassignMutation.mutate(assignment.id)}
+                                disabled={unassignMutation.isPending}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        ) : (
+                          <Badge variant="secondary">{isRtl ? 'غير معين' : 'Unassigned'}</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {canEdit ? (
+                          <div className="flex items-center gap-1">
+                            <Input
+                              type="number"
+                              min={1}
+                              className="h-9 w-24"
+                              placeholder={isRtl ? 'رقم' : 'No.'}
+                              value={inputs[reg.id] ?? ''}
+                              onChange={(e) => setInputs((p) => ({ ...p, [reg.id]: e.target.value }))}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && inputs[reg.id]) {
+                                  assignMutation.mutate({
+                                    registrationId: reg.id,
+                                    routeNumber: Number(inputs[reg.id]),
+                                  });
+                                }
+                              }}
+                            />
                             <Button
-                              variant="ghost"
                               size="icon"
-                              className="h-7 w-7 text-destructive"
-                              onClick={() => unassignMutation.mutate(assignment.id)}
-                              disabled={unassignMutation.isPending}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      ) : (
-                        <Badge variant="secondary">{isRtl ? 'غير معين' : 'Unassigned'}</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {canEdit ? (
-                        <div className="flex items-center gap-1">
-                          <Input
-                            type="number"
-                            min={1}
-                            className="h-9 w-24"
-                            placeholder={isRtl ? 'رقم' : 'No.'}
-                            value={inputs[reg.id] ?? ''}
-                            onChange={(e) => setInputs((p) => ({ ...p, [reg.id]: e.target.value }))}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' && inputs[reg.id]) {
+                              variant="ghost"
+                              className="h-9 w-9 text-primary"
+                              disabled={!inputs[reg.id] || assignMutation.isPending}
+                              onClick={() =>
                                 assignMutation.mutate({
                                   registrationId: reg.id,
                                   routeNumber: Number(inputs[reg.id]),
-                                });
+                                })
                               }
-                            }}
-                          />
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-9 w-9 text-primary"
-                            disabled={!inputs[reg.id] || assignMutation.isPending}
-                            onClick={() =>
-                              assignMutation.mutate({
-                                registrationId: reg.id,
-                                routeNumber: Number(inputs[reg.id]),
-                              })
-                            }
-                          >
-                            <Check className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground text-sm">-</span>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
+                            >
+                              <Check className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">-</span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </CardContent>
     </Card>
   );
