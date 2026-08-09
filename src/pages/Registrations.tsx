@@ -741,7 +741,7 @@ const Registrations: React.FC = () => {
                                     <UserX className="h-3.5 w-3.5" />
                                   </Button>
                                 )}
-                                {reg.status === 'cancelled' && isSuperAdmin && (
+                                {(reg.status === 'cancelled' || reg.status === 'archived') && isSuperAdmin && (
                                   <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-success/10 hover:text-success" onClick={() => setRestoreTarget(reg)} title="Restore registration">
                                     <RotateCcw className="h-3.5 w-3.5" />
                                   </Button>
