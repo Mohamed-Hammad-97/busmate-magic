@@ -78,6 +78,7 @@ const Registrations: React.FC = () => {
   const [mainTab, setMainTab] = useState<'active' | 'archive' | 'other'>('active');
   const [archiveYear, setArchiveYear] = useState<string>('all');
   const [deleteTarget, setDeleteTarget] = useState<Registration | null>(null);
+  const [restoreTarget, setRestoreTarget] = useState<Registration | null>(null);
   const [deleteMode, setDeleteMode] = useState<'deactivate' | 'delete'>('deactivate');
   const { toast } = useToast();
   const queryClient = useQueryClient();
