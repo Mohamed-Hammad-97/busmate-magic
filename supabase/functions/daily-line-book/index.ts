@@ -146,7 +146,7 @@ Deno.serve(async (req) => {
       const { data: promo } = await admin
         .from("daily_line_promocodes")
         .select("id, promo_type, value, max_uses, used_count, expires_at, is_active")
-        .ilike("code", promocode.trim())
+        .eq("code", String(promocode).trim().toUpperCase())
         .maybeSingle();
       if (promo && promo.is_active &&
           (!promo.expires_at || promo.expires_at >= new Date().toISOString().slice(0, 10)) &&

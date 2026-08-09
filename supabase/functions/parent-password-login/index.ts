@@ -37,8 +37,8 @@ serve(async (req) => {
 
     if (parentError || !parent || !parent.user_id || !parent.has_password) {
       return new Response(
-        JSON.stringify({ error: "حساب غير موجود أو لم يتم تعيين كلمة مرور" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "رقم الهاتف أو كلمة المرور غير صحيحة" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -54,8 +54,8 @@ serve(async (req) => {
     const { data: userData } = await supabase.auth.admin.getUserById(parent.user_id);
     if (!userData?.user?.email) {
       return new Response(
-        JSON.stringify({ error: "فشل في العثور على حساب المستخدم" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "رقم الهاتف أو كلمة المرور غير صحيحة" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -73,7 +73,7 @@ serve(async (req) => {
     if (signInError || !signInData.session) {
       console.error("Password login failed:", signInError);
       return new Response(
-        JSON.stringify({ error: "كلمة المرور غير صحيحة" }),
+        JSON.stringify({ error: "رقم الهاتف أو كلمة المرور غير صحيحة" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

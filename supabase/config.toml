@@ -9,9 +9,6 @@ verify_jwt = false
 [functions.auth-refresh]
 verify_jwt = false
 
-[functions.auth-signup]
-verify_jwt = false
-
 [functions.create-driver-account]
 verify_jwt = false
 
