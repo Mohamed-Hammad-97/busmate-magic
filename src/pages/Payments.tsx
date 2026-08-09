@@ -475,8 +475,12 @@ const Payments = () => {
                   Archive
                   <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">{archivedPayments.length}</Badge>
                 </TabsTrigger>
+                <TabsTrigger value="fawry" className="gap-2 rounded-lg px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
+                  اكواد فورى
+                </TabsTrigger>
               </TabsList>
             </Tabs>
+            {mainTab !== 'fawry' && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button className="gap-2 h-10 rounded-xl shadow-sm">
