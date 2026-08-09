@@ -780,7 +780,7 @@ const Payments = () => {
                               </TableCell>
                               <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                                 <div className="flex justify-end gap-0.5">
-                                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary" onClick={() => setSelectedRegistration(regData)}>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary" onClick={() => openRegistration(regData)}>
                                     <Eye className="h-3.5 w-3.5" />
                                   </Button>
                                   <InvoiceGenerator
