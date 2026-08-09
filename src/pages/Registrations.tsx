@@ -243,9 +243,27 @@ const Registrations: React.FC = () => {
 
   const restoreMutation = useMutation({
     mutationFn: async (reg: Registration) => {
+      const wasArchived = reg.status === 'archived';
+      let nextStatus: 'pending_fees' | 'complete' = 'pending_fees';
+
+      if (wasArchived) {
+        const { data: subs } = await supabase
+          .from('subscriptions')
+          .select('id')
+          .eq('registration_id', reg.id);
+        if (subs && subs.length > 0) {
+          nextStatus = 'complete';
+          await supabase
+            .from('payments')
+            .update({ status: 'pending' })
+            .in('subscription_id', subs.map((s) => s.id))
+            .eq('status', 'archived');
+        }
+      }
+
       const { error: regError } = await supabase
         .from('registrations')
-        .update({ status: 'pending_fees' })
+        .update({ status: nextStatus })
         .eq('id', reg.id);
       if (regError) throw regError;
       const { error: parentError } = await supabase
