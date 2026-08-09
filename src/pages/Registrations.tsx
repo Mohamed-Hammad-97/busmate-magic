@@ -275,6 +275,7 @@ const Registrations: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['registrations'] });
       queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
       toast({ title: 'Registration restored', description: 'The registration is back in the registrations flow and the parent account is active again.' });
       setRestoreTarget(null);
     },
