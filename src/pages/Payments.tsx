@@ -25,7 +25,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Search, CreditCard, CheckCircle, Clock, AlertCircle, Check, Eye, Hash, TrendingUp, DollarSign, UserCheck, Trash2, Archive, Download, FileSpreadsheet, FileText, Phone, User, CalendarDays, X } from 'lucide-react';
+import { Search, CreditCard, CheckCircle, Clock, AlertCircle, Check, Eye, Hash, TrendingUp, DollarSign, UserCheck, Trash2, Archive, Download, FileSpreadsheet, FileText, Phone, User, CalendarDays, X, RotateCcw } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { exportPaymentsExcel, exportPaymentsPDF } from '@/lib/exportPayments';
 import {
