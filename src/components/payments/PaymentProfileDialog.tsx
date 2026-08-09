@@ -45,6 +45,7 @@ import {
   Plus,
   Receipt,
   Trash2,
+  Undo2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { InvoiceGenerator } from './InvoiceGenerator';
