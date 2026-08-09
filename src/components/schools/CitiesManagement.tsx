@@ -13,6 +13,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface City {
   id: string;
@@ -21,6 +22,7 @@ interface City {
 }
 
 const CitiesManagement: React.FC = () => {
+  const { isSuperAdmin } = useAuth();
   const [open, setOpen] = useState(false);
   const [newCity, setNewCity] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -157,6 +159,7 @@ const CitiesManagement: React.FC = () => {
                         >
                           <Edit2 className="h-4 w-4" />
                         </Button>
+                        {isSuperAdmin && (
                         <Button
                           size="sm"
                           variant="ghost"
@@ -165,6 +168,7 @@ const CitiesManagement: React.FC = () => {
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
+                        )}
                       </div>
                     </>
                   )}

@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Plus, Search, Users, MapPin, Phone, Edit, Eye, TrendingUp, UserCheck, Building2, ShieldCheck, Loader2, Trash2, UserX, User } from 'lucide-react';
 import { useCity } from '@/contexts/CityContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import type { Tables } from '@/integrations/supabase/types';
 import CustomerDialog from '@/components/customers/CustomerDialog';
@@ -22,6 +23,7 @@ import { PageHero } from '@/components/layout/PageHero';
 type ParentAccount = Tables<'parent_accounts'>;
 
 const Customers = () => {
+  const { isSuperAdmin } = useAuth();
   const { t } = useTranslation();
   const { selectedCity } = useCity();
   const queryClient = useQueryClient();
@@ -395,9 +397,11 @@ const Customers = () => {
                           <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-warning/10 hover:text-warning" onClick={() => { setDeleteTarget(customer); setDeleteMode('deactivate'); }} title="Deactivate">
                             <UserX className="h-3.5 w-3.5" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-destructive/10 hover:text-destructive" onClick={() => { setDeleteTarget(customer); setDeleteMode('delete'); }} title="Delete permanently">
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
+                          {isSuperAdmin && (
+                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-destructive/10 hover:text-destructive" onClick={() => { setDeleteTarget(customer); setDeleteMode('delete'); }} title="Delete permanently">
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>

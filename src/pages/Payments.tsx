@@ -55,6 +55,7 @@ const Payments = () => {
   const { isSuperAdmin, hasDepartment } = useAuth();
   const canEdit = isSuperAdmin || hasDepartment('finance') || hasDepartment('customer_support');
   const canDestroy = isSuperAdmin || hasDepartment('finance');
+  const canDelete = isSuperAdmin;
   const canManageInstallments = isSuperAdmin || hasDepartment('finance');
   const [searchTerm, setSearchTerm] = useState('');
   const [phoneFilter, setPhoneFilter] = useState('');
@@ -777,7 +778,7 @@ const Payments = () => {
                                       </AlertDialogContent>
                                     </AlertDialog>
                                   )}
-                                  {canDestroy && (
+                                  {canDelete && (
                                     <AlertDialog>
                                       <AlertDialogTrigger asChild>
                                         <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-destructive/10 hover:text-destructive">

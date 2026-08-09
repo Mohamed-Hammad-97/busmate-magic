@@ -76,7 +76,7 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
   canManageInstallments = true,
 }) => {
   const queryClient = useQueryClient();
-  const { user, employee } = useAuth();
+  const { user, employee, isSuperAdmin } = useAuth();
   const [editingPaymentId, setEditingPaymentId] = useState<string | null>(null);
   const [editDueDate, setEditDueDate] = useState('');
   const [editPaidDate, setEditPaidDate] = useState('');
@@ -633,7 +633,7 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
                                 {format(new Date(fee.created_at), 'dd MMM yyyy', { locale: enUS })}
                               </TableCell>
                               <TableCell className="text-right">
-                                {canManageInstallments && (
+                                {isSuperAdmin && (
                                   <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg hover:bg-destructive/10 hover:text-destructive" onClick={() => deleteFeeMutation.mutate(fee.id)}>
                                     <Trash2 className="h-3.5 w-3.5" />
                                   </Button>

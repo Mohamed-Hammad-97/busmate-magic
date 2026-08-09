@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 import { ImageUploadInput } from "@/components/shared/ImageUploadInput";
 import { 
   Save, 
@@ -90,6 +91,7 @@ interface ContactSubmission {
 }
 
 const HomepageAdmin = () => {
+  const { isSuperAdmin } = useAuth();
   const queryClient = useQueryClient();
   const [settingsForm, setSettingsForm] = useState<Record<string, string>>({});
   const [partnerDialogOpen, setPartnerDialogOpen] = useState(false);
@@ -887,9 +889,9 @@ const HomepageAdmin = () => {
                       <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => { setEditingPartner(partner); setPartnerDialogOpen(true); }}>
                         <Edit className="h-3.5 w-3.5" />
                       </Button>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive hover:text-destructive" onClick={() => deletePartnerMutation.mutate(partner.id)}>
+                      {isSuperAdmin && (<Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive hover:text-destructive" onClick={() => deletePartnerMutation.mutate(partner.id)}>
                         <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                      </Button>)}
                     </div>
                   </CardContent>
                 </Card>
@@ -956,9 +958,9 @@ const HomepageAdmin = () => {
                         <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => { setEditingGallery(image); setGalleryDialogOpen(true); }}>
                           <Edit className="h-3.5 w-3.5" />
                         </Button>
-                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={() => deleteGalleryMutation.mutate(image.id)}>
+                        {isSuperAdmin && (<Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={() => deleteGalleryMutation.mutate(image.id)}>
                           <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
+                        </Button>)}
                       </div>
                     </div>
                   </CardContent>
