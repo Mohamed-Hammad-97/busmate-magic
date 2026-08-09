@@ -96,6 +96,8 @@ const Payments = () => {
               subscription_type,
               value,
               number_of_installments,
+              created_at,
+              finance_seen_at,
               registrations (
                 id,
                 student_name,
