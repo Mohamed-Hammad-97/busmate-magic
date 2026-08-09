@@ -375,11 +375,11 @@ const Payments = () => {
   const stats = useMemo(() => {
     const extraFeesForPayments = (p: any) => (p.payment_extra_fees || []).reduce((s: number, f: any) => s + Number(f.amount), 0);
     const total = payments.reduce((sum: number, p: any) => sum + Number(p.amount) + extraFeesForPayments(p), 0);
-    const paid = payments.filter((p: any) => p.status === 'paid').reduce((sum: number, p: any) => sum + Number(p.amount), 0);
-    const pending = payments.filter((p: any) => p.status === 'pending').reduce((sum: number, p: any) => sum + Number(p.amount) + extraFeesForPayments(p), 0);
-    const overdue = payments.filter((p: any) => p.status === 'overdue').reduce((sum: number, p: any) => sum + Number(p.amount) + extraFeesForPayments(p), 0);
+    const paid = payments.filter((p: any) => getEffectivePaymentStatus(p) === 'paid').reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+    const pending = payments.filter((p: any) => getEffectivePaymentStatus(p) === 'pending').reduce((sum: number, p: any) => sum + Number(p.amount) + extraFeesForPayments(p), 0);
+    const overdue = payments.filter((p: any) => getEffectivePaymentStatus(p) === 'overdue').reduce((sum: number, p: any) => sum + Number(p.amount) + extraFeesForPayments(p), 0);
     return { total, paid, pending, overdue };
-  }, [payments]);
+  }, [payments, getEffectivePaymentStatus]);
 
   const tabStats = useMemo(() => {
     const registrations = Object.values(paymentsByRegistration);

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, Bell, Clock, ChevronRight, ChevronDown, ExternalLink } from 'lucide-react';
-import { differenceInDays, isAfter, isBefore, addDays } from 'date-fns';
+import { addDays, differenceInDays, isAfter, isBefore, parseISO, startOfDay } from 'date-fns';
 
 interface Payment {
   id: string;
@@ -34,9 +34,10 @@ export const PaymentReminders: React.FC<PaymentRemindersProps> = ({ payments, on
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
 
   const activeOnly = payments.filter(p => p.status !== 'paid' && p.status !== 'archived');
+  const todayStart = startOfDay(today);
 
   const overduePayments = activeOnly.filter(p =>
-    isBefore(new Date(p.due_date), today)
+    p.due_date && isBefore(parseISO(p.due_date), todayStart)
   );
 
   const dueSoonPayments = activeOnly.filter(p =>

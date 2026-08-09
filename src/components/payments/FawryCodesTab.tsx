@@ -26,7 +26,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Search, Phone, User, CheckCircle2, Hash } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, isBefore, parseISO, startOfDay } from 'date-fns';
 import { toast } from 'sonner';
 
 const cityMapping: Record<string, string[]> = {
@@ -67,13 +67,21 @@ export const FawryCodesTab: React.FC = () => {
             )
           )
         `)
-        .eq('status', 'overdue')
+        // Fawry follows the overdue reminder card: a payment is overdue when
+        // its due date has passed, even if its stored status is still pending.
+        .in('status', ['pending', 'overdue'])
         .eq('fawry_cleared', false)
         .order('due_date', { ascending: true });
       if (error) throw error;
-      return (data || []).filter(
-        (p: any) => p.subscriptions?.registrations && p.subscriptions.registrations.status !== 'archived'
-      );
+
+      const today = new Date();
+      return (data || []).filter((p: any) => {
+        const registration = p.subscriptions?.registrations;
+        return registration &&
+          registration.status !== 'archived' &&
+          p.due_date &&
+          isBefore(parseISO(p.due_date), startOfDay(today));
+      });
     },
   });
 
