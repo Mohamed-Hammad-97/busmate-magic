@@ -171,6 +171,33 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
     },
   });
 
+  const markUnpaidMutation = useMutation({
+    mutationFn: async (paymentId: string) => {
+      const { error } = await supabase
+        .from('payments')
+        .update({
+          status: 'pending',
+          paid_date: null,
+          paid_by: null,
+          paid_by_name: null,
+          fawry_cleared: false,
+          fawry_cleared_at: null,
+          fawry_cleared_by: null,
+        } as any)
+        .eq('id', paymentId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      queryClient.invalidateQueries({ queryKey: ['fawry-codes'] });
+      toast.success('Installment set back to pending');
+    },
+    onError: (error) => {
+      toast.error('Error updating installment');
+      console.error(error);
+    },
+  });
+
   const updatePaymentMutation = useMutation({
     mutationFn: async ({ paymentId, dueDate, paidDate, amount, note }: { paymentId: string; dueDate: string; paidDate: string | null; amount: number; note: string | null }) => {
       const updateData: any = { due_date: dueDate, amount, payment_note: note };
