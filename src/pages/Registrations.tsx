@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Search, Eye, Edit2, ClipboardList, DollarSign, Link2, Map, TrendingUp, CheckCircle, Clock, XCircle, GraduationCap, Users, School, Trash2, UserX, Archive, Download, FileSpreadsheet, FileText, Phone, User, MapPin, HelpCircle } from 'lucide-react';
+import { Plus, Search, Eye, Edit2, ClipboardList, DollarSign, Link2, Map, TrendingUp, CheckCircle, Clock, XCircle, GraduationCap, Users, School, Trash2, UserX, Archive, Download, FileSpreadsheet, FileText, Phone, User, MapPin, HelpCircle, RotateCcw } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { exportRegistrationsExcel, exportRegistrationsPDF } from '@/lib/exportRegistrations';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -78,6 +78,7 @@ const Registrations: React.FC = () => {
   const [mainTab, setMainTab] = useState<'active' | 'archive' | 'other'>('active');
   const [archiveYear, setArchiveYear] = useState<string>('all');
   const [deleteTarget, setDeleteTarget] = useState<Registration | null>(null);
+  const [restoreTarget, setRestoreTarget] = useState<Registration | null>(null);
   const [deleteMode, setDeleteMode] = useState<'deactivate' | 'delete'>('deactivate');
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -236,6 +237,31 @@ const Registrations: React.FC = () => {
     },
     onError: (error) => {
       toast({ title: 'Error', description: 'Failed to deactivate account', variant: 'destructive' });
+      console.error(error);
+    },
+  });
+
+  const restoreMutation = useMutation({
+    mutationFn: async (reg: Registration) => {
+      const { error: regError } = await supabase
+        .from('registrations')
+        .update({ status: 'pending_fees' })
+        .eq('id', reg.id);
+      if (regError) throw regError;
+      const { error: parentError } = await supabase
+        .from('parent_accounts')
+        .update({ is_active: true })
+        .eq('id', reg.parent_id);
+      if (parentError) throw parentError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['registrations'] });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      toast({ title: 'Registration restored', description: 'The registration is back in the registrations flow and the parent account is active again.' });
+      setRestoreTarget(null);
+    },
+    onError: (error) => {
+      toast({ title: 'Error', description: 'Failed to restore registration', variant: 'destructive' });
       console.error(error);
     },
   });
@@ -697,6 +723,11 @@ const Registrations: React.FC = () => {
                                     <UserX className="h-3.5 w-3.5" />
                                   </Button>
                                 )}
+                                {reg.status === 'cancelled' && isSuperAdmin && (
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-success/10 hover:text-success" onClick={() => setRestoreTarget(reg)} title="Restore registration">
+                                    <RotateCcw className="h-3.5 w-3.5" />
+                                  </Button>
+                                )}
                                 <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-destructive/10 hover:text-destructive" onClick={() => { setDeleteTarget(reg); setDeleteMode('delete'); }} title="Delete permanently">
                                   <Trash2 className="h-3.5 w-3.5" />
                                 </Button>
@@ -760,11 +791,33 @@ const Registrations: React.FC = () => {
           </DialogContent>
         </Dialog>
 
+        {/* Restore Cancelled (Super Admin only) */}
+        <AlertDialog open={!!restoreTarget} onOpenChange={(open) => !open && setRestoreTarget(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Restore Registration?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {`This will move "${restoreTarget?.student_name}" back into the registrations flow (Pending Fees) and reactivate the parent account so customer service can continue the process.`}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => restoreTarget && restoreMutation.mutate(restoreTarget)}
+                disabled={restoreMutation.isPending}
+              >
+                Restore
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
         {/* Deactivate/Delete Confirmation */}
         <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>
+
                 {deleteMode === 'deactivate' ? 'Deactivate Account?' : 'Delete Registration Permanently?'}
               </AlertDialogTitle>
               <AlertDialogDescription>
