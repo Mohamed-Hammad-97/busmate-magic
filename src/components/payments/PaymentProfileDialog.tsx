@@ -539,6 +539,11 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
                                         <Check className="h-3.5 w-3.5" />
                                       </Button>
                                     )}
+                                    {canManageInstallments && payment.status === 'paid' && (
+                                      <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg hover:bg-warning/10 hover:text-warning" onClick={() => markUnpaidMutation.mutate(payment.id)} disabled={markUnpaidMutation.isPending} title="Undo payment (set to pending)">
+                                        <Undo2 className="h-3.5 w-3.5" />
+                                      </Button>
+                                    )}
                                   </>
                                 )}
                               </div>
