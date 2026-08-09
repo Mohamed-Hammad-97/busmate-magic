@@ -1919,6 +1919,7 @@ export type Database = {
           name: string
           route_data: Json | null
           route_duration_minutes: number | null
+          route_number: number | null
           school_id: string
           supervisor_id: string | null
           updated_at: string
@@ -1933,6 +1934,7 @@ export type Database = {
           name: string
           route_data?: Json | null
           route_duration_minutes?: number | null
+          route_number?: number | null
           school_id: string
           supervisor_id?: string | null
           updated_at?: string
@@ -1947,6 +1949,7 @@ export type Database = {
           name?: string
           route_data?: Json | null
           route_duration_minutes?: number | null
+          route_number?: number | null
           school_id?: string
           supervisor_id?: string | null
           updated_at?: string
