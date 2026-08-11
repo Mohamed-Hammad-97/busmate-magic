@@ -706,7 +706,7 @@ const Registrations: React.FC = () => {
                           )}
                         </TableCell>
                         <TableCell>
-                          <span className="text-xs font-medium bg-muted/50 text-foreground px-2 py-1 rounded-md">{reg.grade}</span>
+                          <span className="text-xs font-medium bg-muted/50 text-foreground px-2 py-1 rounded-md whitespace-nowrap">{formatGrade(reg.grade)}</span>
                         </TableCell>
                         <TableCell>
                           <span className={`text-xs font-medium px-2 py-1 rounded-md ${reg.car_type === 'ac' ? 'bg-info/10 text-info' : 'bg-muted/50 text-muted-foreground'}`}>
