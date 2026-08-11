@@ -50,6 +50,7 @@ import RouteMap from '@/components/routes/RouteMap';
 import { GoogleMapsProvider } from '@/components/maps/GoogleMapsProvider';
 import type { Tables } from '@/integrations/supabase/types';
 import CompleteRegistrationsTab from '@/components/routes/CompleteRegistrationsTab';
+import RouteStudentsDialog from '@/components/routes/RouteStudentsDialog';
 
 type RouteType = Tables<'routes'>;
 
@@ -67,6 +68,8 @@ const Routes = () => {
   const [mapSelectedRoute, setMapSelectedRoute] = useState<any>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [routeToDelete, setRouteToDelete] = useState<RouteType | null>(null);
+  const [studentsRoute, setStudentsRoute] = useState<any | null>(null);
+
 
   const [formData, setFormData] = useState({
     name: '',
@@ -558,11 +561,15 @@ const Routes = () => {
                       </TableRow>
                     ) : (
                       filteredRoutes.map((route: any) => (
-                        <TableRow key={route.id}>
+                        <TableRow
+                          key={route.id}
+                          className="cursor-pointer"
+                          onClick={() => setStudentsRoute(route)}
+                        >
                           <TableCell>
                             <Badge variant="outline" className="font-semibold">#{route.route_number ?? '-'}</Badge>
                           </TableCell>
-                          <TableCell className="font-medium">{route.name}</TableCell>
+                          <TableCell className="font-medium text-primary hover:underline">{route.name}</TableCell>
                           <TableCell>{route.schools?.name}</TableCell>
                           <TableCell>{route.drivers?.full_name || '-'}</TableCell>
                           <TableCell>{route.supervisors?.full_name || '-'}</TableCell>
@@ -579,7 +586,7 @@ const Routes = () => {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                               {canEdit && (
                                 <Button
                                   variant="ghost"
@@ -648,6 +655,14 @@ const Routes = () => {
             <CompleteRegistrationsTab routes={routes} canEdit={canEdit} />
           </TabsContent>
         </Tabs>
+
+        <RouteStudentsDialog
+          route={studentsRoute}
+          open={!!studentsRoute}
+          onOpenChange={(o) => !o && setStudentsRoute(null)}
+        />
+
+
 
         {/* Add/Edit Dialog */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
