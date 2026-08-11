@@ -74,25 +74,17 @@ const OtherRegistrations: React.FC<Props> = ({ canManage, canDelete, cityNames }
   const pendingCount = cityFiltered.filter((r) => r.status === 'pending').length;
 
   const convertMutation = useMutation({
-    mutationFn: async (rec: OtherRegistration) => {
-      // 1. Find or create the school
-      let schoolId: string | null = null;
-      const { data: existingSchool } = await supabase
-        .from('schools')
-        .select('id')
-        .ilike('name', rec.school_name.trim())
-        .maybeSingle();
-
-      if (existingSchool) {
-        schoolId = existingSchool.id;
-      } else {
+    mutationFn: async ({ rec, selection }: { rec: OtherRegistration; selection: ConvertSelection }) => {
+      // 1. Resolve the school chosen by the employee
+      let schoolId: string | null = selection.schoolId ?? null;
+      if (!schoolId && selection.newSchool) {
         const { data: newSchool, error: schoolError } = await supabase
           .from('schools')
           .insert({
-            name: rec.school_name.trim(),
-            city: rec.city,
-            latitude: rec.school_latitude ?? rec.pickup_latitude,
-            longitude: rec.school_longitude ?? rec.pickup_longitude,
+            name: selection.newSchool.name,
+            city: selection.newSchool.city,
+            latitude: selection.newSchool.latitude,
+            longitude: selection.newSchool.longitude,
             is_active: true,
           })
           .select('id')
@@ -100,6 +92,8 @@ const OtherRegistrations: React.FC<Props> = ({ canManage, canDelete, cityNames }
         if (schoolError) throw schoolError;
         schoolId = newSchool.id;
       }
+      if (!schoolId) throw new Error('No school selected');
+
 
       // 2. Find or create the parent account
       let parentId: string | null = null;
