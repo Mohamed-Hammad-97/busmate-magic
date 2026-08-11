@@ -204,7 +204,12 @@ const CompleteRegistrationsTab: React.FC<Props> = ({ routes, canEdit }) => {
                   const currentRoute = assignment ? routeById[assignment.route_id] : null;
                   return (
                     <TableRow key={reg.id}>
-                      <TableCell className="font-medium">{reg.student_name}</TableCell>
+                      <TableCell className="font-medium">
+                        <div>{reg.student_name}</div>
+                        {reg.grade && (
+                          <div className="text-xs text-muted-foreground">{formatGrade(reg.grade)}</div>
+                        )}
+                      </TableCell>
                       <TableCell className="text-sm">
                         <div>{pa?.parent_name}</div>
                         <div className="text-xs text-muted-foreground">{pa?.father_phone}</div>
