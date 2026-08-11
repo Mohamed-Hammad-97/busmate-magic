@@ -50,6 +50,7 @@ import RouteMap from '@/components/routes/RouteMap';
 import { GoogleMapsProvider } from '@/components/maps/GoogleMapsProvider';
 import type { Tables } from '@/integrations/supabase/types';
 import CompleteRegistrationsTab from '@/components/routes/CompleteRegistrationsTab';
+import RouteStudentsDialog from '@/components/routes/RouteStudentsDialog';
 
 type RouteType = Tables<'routes'>;
 
