@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
+import { formatGrade } from '@/lib/utils';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   Table,
