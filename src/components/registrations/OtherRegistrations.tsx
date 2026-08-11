@@ -153,6 +153,10 @@ const OtherRegistrations: React.FC<Props> = ({ canManage, canDelete, cityNames }
           converted_registration_id: newReg.id,
           processed_by: userData?.user?.id ?? null,
           processed_at: new Date().toISOString(),
+          school_name: selection.schoolName || rec.school_name,
+          school_address: null,
+          school_latitude: null,
+          school_longitude: null,
         })
         .eq('id', rec.id);
       if (updateError) throw updateError;
