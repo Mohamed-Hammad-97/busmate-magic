@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { HelpCircle, Eye, ArrowRightCircle, Search, MapPin, Trash2, CheckCircle } from 'lucide-react';
 import type { Tables } from '@/integrations/supabase/types';
+import ConvertToRegistrationDialog, { type ConvertSelection } from '@/components/registrations/ConvertToRegistrationDialog';
 
 type OtherRegistration = Tables<'other_registrations'>;
 
@@ -74,25 +75,17 @@ const OtherRegistrations: React.FC<Props> = ({ canManage, canDelete, cityNames }
   const pendingCount = cityFiltered.filter((r) => r.status === 'pending').length;
 
   const convertMutation = useMutation({
-    mutationFn: async (rec: OtherRegistration) => {
-      // 1. Find or create the school
-      let schoolId: string | null = null;
-      const { data: existingSchool } = await supabase
-        .from('schools')
-        .select('id')
-        .ilike('name', rec.school_name.trim())
-        .maybeSingle();
-
-      if (existingSchool) {
-        schoolId = existingSchool.id;
-      } else {
+    mutationFn: async ({ rec, selection }: { rec: OtherRegistration; selection: ConvertSelection }) => {
+      // 1. Resolve the school chosen by the employee
+      let schoolId: string | null = selection.schoolId ?? null;
+      if (!schoolId && selection.newSchool) {
         const { data: newSchool, error: schoolError } = await supabase
           .from('schools')
           .insert({
-            name: rec.school_name.trim(),
-            city: rec.city,
-            latitude: rec.school_latitude ?? rec.pickup_latitude,
-            longitude: rec.school_longitude ?? rec.pickup_longitude,
+            name: selection.newSchool.name,
+            city: selection.newSchool.city,
+            latitude: selection.newSchool.latitude,
+            longitude: selection.newSchool.longitude,
             is_active: true,
           })
           .select('id')
@@ -100,6 +93,8 @@ const OtherRegistrations: React.FC<Props> = ({ canManage, canDelete, cityNames }
         if (schoolError) throw schoolError;
         schoolId = newSchool.id;
       }
+      if (!schoolId) throw new Error('No school selected');
+
 
       // 2. Find or create the parent account
       let parentId: string | null = null;
@@ -159,6 +154,10 @@ const OtherRegistrations: React.FC<Props> = ({ canManage, canDelete, cityNames }
           converted_registration_id: newReg.id,
           processed_by: userData?.user?.id ?? null,
           processed_at: new Date().toISOString(),
+          school_name: selection.schoolName || rec.school_name,
+          school_address: null,
+          school_latitude: null,
+          school_longitude: null,
         })
         .eq('id', rec.id);
       if (updateError) throw updateError;
@@ -352,27 +351,14 @@ const OtherRegistrations: React.FC<Props> = ({ canManage, canDelete, cityNames }
         </DialogContent>
       </Dialog>
 
-      {/* Convert confirmation */}
-      <AlertDialog open={!!convertTarget} onOpenChange={(open) => !open && setConvertTarget(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Move to main registrations?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will create the school "{convertTarget?.school_name}" (if it doesn't exist), create or reuse the
-              parent account, and add a registration for "{convertTarget?.student_name}" with status Pending Fees.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={convertMutation.isPending}
-              onClick={() => convertTarget && convertMutation.mutate(convertTarget)}
-            >
-              {convertMutation.isPending ? 'Moving...' : 'Move to registrations'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Convert: choose school first */}
+      <ConvertToRegistrationDialog
+        open={!!convertTarget}
+        onOpenChange={(open) => !open && setConvertTarget(null)}
+        record={convertTarget}
+        isSubmitting={convertMutation.isPending}
+        onConfirm={(selection) => convertTarget && convertMutation.mutate({ rec: convertTarget, selection })}
+      />
 
       {/* Delete confirmation */}
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
