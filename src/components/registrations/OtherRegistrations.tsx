@@ -350,27 +350,14 @@ const OtherRegistrations: React.FC<Props> = ({ canManage, canDelete, cityNames }
         </DialogContent>
       </Dialog>
 
-      {/* Convert confirmation */}
-      <AlertDialog open={!!convertTarget} onOpenChange={(open) => !open && setConvertTarget(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Move to main registrations?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will create the school "{convertTarget?.school_name}" (if it doesn't exist), create or reuse the
-              parent account, and add a registration for "{convertTarget?.student_name}" with status Pending Fees.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={convertMutation.isPending}
-              onClick={() => convertTarget && convertMutation.mutate(convertTarget)}
-            >
-              {convertMutation.isPending ? 'Moving...' : 'Move to registrations'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Convert: choose school first */}
+      <ConvertToRegistrationDialog
+        open={!!convertTarget}
+        onOpenChange={(open) => !open && setConvertTarget(null)}
+        record={convertTarget}
+        isSubmitting={convertMutation.isPending}
+        onConfirm={(selection) => convertTarget && convertMutation.mutate({ rec: convertTarget, selection })}
+      />
 
       {/* Delete confirmation */}
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
