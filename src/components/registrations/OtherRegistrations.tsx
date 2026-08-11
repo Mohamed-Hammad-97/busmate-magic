@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { HelpCircle, Eye, ArrowRightCircle, Search, MapPin, Trash2, CheckCircle } from 'lucide-react';
 import type { Tables } from '@/integrations/supabase/types';
+import ConvertToRegistrationDialog, { type ConvertSelection } from '@/components/registrations/ConvertToRegistrationDialog';
 
 type OtherRegistration = Tables<'other_registrations'>;
 
