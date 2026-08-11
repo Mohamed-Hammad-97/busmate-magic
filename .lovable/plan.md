@@ -1,56 +1,22 @@
-# AI Routes — Expanded Flows
+# Show education stage beside grade
 
-Restructure the AI Routes page into **three tabs** and add editing everywhere a suggested/created route appears.
+Grades are stored as `KG1`, `KG2`, `Grade 1` … `Grade 12`. Add the Arabic stage name next to the grade number wherever a record's grade is displayed.
 
-## Tabs
+## Mapping
 
-```text
-[ Draw Area ]   [ Auto Areas ]   [ Unassigned ]
-```
+- Grade 1–6 → ابتدائى
+- Grade 7–9 → اعدادى
+- Grade 10–12 → ثانوى
+- KG1 / KG2 → no stage label (shown as-is)
 
-### 1. Draw Area (current flow, kept as-is)
-Employee draws a polygon and generates suggestions inside it. Existing behavior preserved.
+## Where it appears
 
-### 2. Auto Areas (new)
-- Employee picks City + School + Car Type + Max Seats.
-- Backend clusters unassigned pickups (k-means-style grouping already in `ai-route-planner`) with **no polygon**, and returns candidate **areas** — each area = one suggested line + a bounding polygon derived from its students.
-- UI shows each suggested area on the map (colored polygon + numbered pickups) with an **Approve** / **Reject** control.
-- Approving creates the route; rejecting drops it from the list.
+- Registrations tab: the grade chip on each record card becomes e.g. `Grade 5 · ابتدائى`.
+- Complete Registrations window (Routes tab): grade column shows the same combined label.
 
-### 3. Unassigned (new)
-- Employee picks City + School.
-- Lists all active registrations for that school that are NOT in any `route_assignments`.
-- Shows them as cards + on a map with the school pin.
-- For each registration (or multi-select), employee picks an **existing route** (of the same school, with available seats) from a dropdown and clicks **Add to route** → creates a `route_assignments` row with next `pickup_order`.
+Display only — stored data stays unchanged, so filters, exports and route logic keep working.
 
-## Editing suggested lines (before creating)
-On every suggestion card (Draw Area + Auto Areas):
-- Each student row gets a small **remove (x)** button → removes them locally from that suggestion.
-- An **"Add student"** button opens a picker of currently-unassigned registrations for the school (excluding students already in other suggestions in this batch) → adds them to this suggestion.
-- Distance/pickup_order recomputed client-side (simple nearest-neighbor from school).
-- "Create Route" then uses the edited list.
+## Technical notes
 
-## Editing already-created lines (after creating)
-Add a compact **"Manage line"** dialog reachable from the Unassigned tab's route dropdown (and from `Routes` page later — out of scope now):
-- Lists current assignments with remove buttons (delete from `route_assignments`).
-- Add-student picker (same unassigned-students query).
-Reuses the same component used in Unassigned tab.
-
-## Technical details
-
-**Frontend**
-- `src/pages/AIRoutes.tsx`: wrap existing content in `<Tabs>` with three panels. Extract current flow into `DrawAreaTab`, add `AutoAreasTab` and `UnassignedTab` components under `src/components/routes/`.
-- New shared hook `useUnassignedRegistrations(schoolId)` returning active registrations not in `route_assignments` (query with `.not('id','in', <ids>)` or a left join via view — simplest: fetch registrations for school then filter out ids present in `route_assignments`).
-- New `SuggestionEditor` component wrapping current suggestion card with add/remove controls.
-- New `ManageRouteAssignmentsDialog` for post-creation edits (remove + add rows in `route_assignments`, next pickup_order = max+1).
-
-**Backend / edge function** (`supabase/functions/ai-route-planner/index.ts`)
-- New action `suggest-areas`: same clustering as `suggest-routes` but returns each cluster's convex-hull polygon alongside students. If clustering already exists without polygon input, reuse it and just append the polygon (compute from student lat/lng — Andrew's monotone chain).
-- Existing `create-suggested-route` already accepts an arbitrary student list — reused unchanged for edited suggestions.
-
-**Database**
-- No schema changes required. `route_assignments` already supports insert/delete with existing RLS for employees/super admins.
-
-## Out of scope
-- Modifying the `Routes` page itself (management dialog is reachable only from the new tab for now).
-- Persisting rejected auto-area suggestions.
+- Add a small helper `getGradeStage(grade)` / `formatGrade(grade)` in `src/lib/utils.ts` that parses the numeric part of the grade string and returns the stage.
+- Use it in `src/pages/Registrations.tsx` (grade badge) and `src/components/routes/CompleteRegistrationsTab.tsx` (grade cell).
