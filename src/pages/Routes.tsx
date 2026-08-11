@@ -561,11 +561,15 @@ const Routes = () => {
                       </TableRow>
                     ) : (
                       filteredRoutes.map((route: any) => (
-                        <TableRow key={route.id}>
+                        <TableRow
+                          key={route.id}
+                          className="cursor-pointer"
+                          onClick={() => setStudentsRoute(route)}
+                        >
                           <TableCell>
                             <Badge variant="outline" className="font-semibold">#{route.route_number ?? '-'}</Badge>
                           </TableCell>
-                          <TableCell className="font-medium">{route.name}</TableCell>
+                          <TableCell className="font-medium text-primary hover:underline">{route.name}</TableCell>
                           <TableCell>{route.schools?.name}</TableCell>
                           <TableCell>{route.drivers?.full_name || '-'}</TableCell>
                           <TableCell>{route.supervisors?.full_name || '-'}</TableCell>
