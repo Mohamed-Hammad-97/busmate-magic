@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Plus, Search, Eye, Edit2, ClipboardList, DollarSign, Link2, Map, TrendingUp, CheckCircle, Clock, XCircle, GraduationCap, Users, School, Trash2, UserX, Archive, Download, FileSpreadsheet, FileText, Phone, User, MapPin, HelpCircle, RotateCcw } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { exportRegistrationsExcel, exportRegistrationsPDF } from '@/lib/exportRegistrations';
+import { formatGrade } from '@/lib/utils';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
@@ -706,7 +707,7 @@ const Registrations: React.FC = () => {
                           )}
                         </TableCell>
                         <TableCell>
-                          <span className="text-xs font-medium bg-muted/50 text-foreground px-2 py-1 rounded-md">{reg.grade}</span>
+                          <span className="text-xs font-medium bg-muted/50 text-foreground px-2 py-1 rounded-md whitespace-nowrap">{formatGrade(reg.grade)}</span>
                         </TableCell>
                         <TableCell>
                           <span className={`text-xs font-medium px-2 py-1 rounded-md ${reg.car_type === 'ac' ? 'bg-info/10 text-info' : 'bg-muted/50 text-muted-foreground'}`}>

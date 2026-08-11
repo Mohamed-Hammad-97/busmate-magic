@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
+import { formatGrade } from '@/lib/utils';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   Table,
@@ -204,7 +205,12 @@ const CompleteRegistrationsTab: React.FC<Props> = ({ routes, canEdit }) => {
                   const currentRoute = assignment ? routeById[assignment.route_id] : null;
                   return (
                     <TableRow key={reg.id}>
-                      <TableCell className="font-medium">{reg.student_name}</TableCell>
+                      <TableCell className="font-medium">
+                        <div>{reg.student_name}</div>
+                        {reg.grade && (
+                          <div className="text-xs text-muted-foreground">{formatGrade(reg.grade)}</div>
+                        )}
+                      </TableCell>
                       <TableCell className="text-sm">
                         <div>{pa?.parent_name}</div>
                         <div className="text-xs text-muted-foreground">{pa?.father_phone}</div>
