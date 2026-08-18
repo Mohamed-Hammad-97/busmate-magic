@@ -120,14 +120,18 @@ const Payments = () => {
   });
 
   const cityPayments = useMemo(() => {
-    if (selectedCity === 'all') return allPayments;
+    // Cancelled registrations must not surface their payment plans anywhere
+    const notCancelled = allPayments.filter(
+      (p: any) => p.subscriptions?.registrations?.status !== 'cancelled'
+    );
+    if (selectedCity === 'all') return notCancelled;
     const cityMapping: Record<string, string[]> = {
       cairo: ['cairo', 'القاهرة', 'قاهرة'],
       giza: ['giza', 'الجيزة', 'جيزة'],
       alexandria: ['alexandria', 'الإسكندرية', 'اسكندرية', 'إسكندرية'],
     };
     const cityNames = cityMapping[selectedCity] || [];
-    return allPayments.filter((p: any) => {
+    return notCancelled.filter((p: any) => {
       const city = p.subscriptions?.registrations?.parent_accounts?.city;
       return cityNames.some((name) => city?.toLowerCase().includes(name.toLowerCase()));
     });
