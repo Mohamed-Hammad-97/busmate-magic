@@ -83,6 +83,7 @@ const PaymentReminderDetails = () => {
               registrations (
                 id,
                 student_name,
+                status,
                 parent_accounts (parent_name, father_phone, city)
               )
             )
