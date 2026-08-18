@@ -46,6 +46,7 @@ export const FawryCodesTab: React.FC = () => {
   const [search, setSearch] = useState('');
   const [phoneFilter, setPhoneFilter] = useState('');
   const [nameFilter, setNameFilter] = useState('');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'insurance' | 'installments'>('all');
   const [drafts, setDrafts] = useState<Record<string, { code: string; note: string }>>({});
 
   const { data: rows = [], isLoading } = useQuery({
