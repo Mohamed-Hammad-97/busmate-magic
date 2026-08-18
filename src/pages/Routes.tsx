@@ -548,16 +548,62 @@ const Routes = () => {
             </TabsList>
 
             {/* Search */}
-            <div className="relative max-w-sm">
-              <Search className={`absolute ${isRtl ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground`} />
-              <Input
-                placeholder={isRtl ? 'بحث بالاسم أو المدرسة...' : 'Search by name or school...'}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className={isRtl ? 'pr-10' : 'pl-10'}
-              />
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="relative max-w-sm">
+                <Search className={`absolute ${isRtl ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground`} />
+                <Input
+                  placeholder={isRtl ? 'بحث بالاسم أو المدرسة...' : 'Search by name or school...'}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className={isRtl ? 'pr-10' : 'pl-10'}
+                />
+              </div>
+              <div className="relative max-w-sm">
+                <Search className={`absolute ${isRtl ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground`} />
+                <Input
+                  placeholder={isRtl ? 'بحث عن طالب أو رقم هاتف في كل الخطوط...' : 'Search student or phone in all routes...'}
+                  value={studentSearch}
+                  onChange={(e) => setStudentSearch(e.target.value)}
+                  className={isRtl ? 'pr-10' : 'pl-10'}
+                />
+              </div>
             </div>
           </div>
+
+          {studentSearch.trim() && (
+            <Card className="mt-4">
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className={isRtl ? 'text-right' : 'text-left'}>{isRtl ? 'الطالب' : 'Student'}</TableHead>
+                      <TableHead className={isRtl ? 'text-right' : 'text-left'}>{isRtl ? 'الهاتف' : 'Phone'}</TableHead>
+                      <TableHead className={isRtl ? 'text-right' : 'text-left'}>{isRtl ? 'الخط' : 'Route'}</TableHead>
+                      <TableHead className={isRtl ? 'text-right' : 'text-left'}>{isRtl ? 'المدرسة' : 'School'}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {studentMatches.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
+                          {isRtl ? 'لا توجد نتائج' : 'No matches'}
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      studentMatches.map((m: any) => (
+                        <TableRow key={m.key} className="cursor-pointer" onClick={() => setStudentsRoute(m.route)}>
+                          <TableCell className="font-medium">{m.student_name}</TableCell>
+                          <TableCell dir="ltr">{m.phone || '-'}</TableCell>
+                          <TableCell>#{m.route.route_number ?? '-'} {m.route.name}</TableCell>
+                          <TableCell>{m.route.schools?.name || '-'}</TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
 
           <TabsContent value="table" className="mt-4">
             <Card>
