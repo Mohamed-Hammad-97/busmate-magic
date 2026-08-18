@@ -80,6 +80,7 @@ export const FawryCodesTab: React.FC = () => {
         const registration = p.subscriptions?.registrations;
         return registration &&
           registration.status !== 'archived' &&
+          registration.status !== 'cancelled' &&
           p.due_date &&
           isBefore(parseISO(p.due_date), startOfDay(today));
       });
