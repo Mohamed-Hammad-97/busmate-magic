@@ -143,6 +143,7 @@ const RouteStudentsDialog: React.FC<RouteStudentsDialogProps> = ({ route, open, 
                 <TableHead className={isRtl ? 'text-right' : 'text-left'}>#</TableHead>
                 <TableHead className={isRtl ? 'text-right' : 'text-left'}>{isRtl ? 'اسم الطالب' : 'Student Name'}</TableHead>
                 <TableHead className={isRtl ? 'text-right' : 'text-left'}>{isRtl ? 'رقم الأم' : 'Mother Phone'}</TableHead>
+                <TableHead className={isRtl ? 'text-right' : 'text-left'}>{isRtl ? 'رقم الدفع والتجديد' : 'Payment Phone'}</TableHead>
                 <TableHead className={isRtl ? 'text-right' : 'text-left'}>{isRtl ? 'عنوان الموقع' : 'Location Address'}</TableHead>
                 <TableHead className={isRtl ? 'text-right' : 'text-left'}>{isRtl ? 'الخريطة' : 'Map'}</TableHead>
               </TableRow>
@@ -150,13 +151,13 @@ const RouteStudentsDialog: React.FC<RouteStudentsDialogProps> = ({ route, open, 
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8">
+                  <TableCell colSpan={6} className="text-center py-8">
                     {isRtl ? 'جاري التحميل...' : 'Loading...'}
                   </TableCell>
                 </TableRow>
               ) : rows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8">
+                  <TableCell colSpan={6} className="text-center py-8">
                     {isRtl ? 'لا يوجد طلاب على هذا الخط' : 'No students on this route'}
                   </TableCell>
                 </TableRow>
@@ -166,6 +167,7 @@ const RouteStudentsDialog: React.FC<RouteStudentsDialogProps> = ({ route, open, 
                     <TableCell>{i + 1}</TableCell>
                     <TableCell className="font-medium whitespace-nowrap">{r.student_name}</TableCell>
                     <TableCell dir="ltr" className="whitespace-nowrap">{r.mother_phone || '-'}</TableCell>
+                    <TableCell dir="ltr" className="whitespace-nowrap">{r.payment_phone || '-'}</TableCell>
                     <TableCell className="max-w-md whitespace-pre-wrap break-words">{r.address || '-'}</TableCell>
                     <TableCell>
                       {r.maps ? (
