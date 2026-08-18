@@ -122,9 +122,14 @@ export const FawryCodesTab: React.FC = () => {
         const phones = `${parent?.payment_phone || ''}${parent?.father_phone || ''}`.replace(/\D/g, '');
         if (!phones.includes(ph)) return false;
       }
+      if (typeFilter !== 'all') {
+        const isInsurance = Number(p.installment_number) === 0;
+        if (typeFilter === 'insurance' && !isInsurance) return false;
+        if (typeFilter === 'installments' && isInsurance) return false;
+      }
       return true;
     });
-  }, [rows, selectedCity, search, nameFilter, phoneFilter]);
+  }, [rows, selectedCity, search, nameFilter, phoneFilter, typeFilter]);
 
   const totalDue = filtered.reduce((sum, p: any) => sum + Number(p.amount || 0), 0);
 
