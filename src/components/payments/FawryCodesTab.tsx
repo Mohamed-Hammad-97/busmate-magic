@@ -48,6 +48,7 @@ export const FawryCodesTab: React.FC = () => {
   const [phoneFilter, setPhoneFilter] = useState('');
   const [nameFilter, setNameFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'insurance' | 'installments'>('all');
+  const [installmentNumber, setInstallmentNumber] = useState<string>('all');
   const [drafts, setDrafts] = useState<Record<string, { code: string; note: string }>>({});
 
   const { data: rows = [], isLoading } = useQuery({
@@ -128,9 +129,25 @@ export const FawryCodesTab: React.FC = () => {
         if (typeFilter === 'insurance' && !isInsurance) return false;
         if (typeFilter === 'installments' && isInsurance) return false;
       }
+      if (typeFilter === 'installments' && installmentNumber !== 'all') {
+        if (Number(p.installment_number) !== Number(installmentNumber)) return false;
+      }
       return true;
     });
-  }, [rows, selectedCity, search, nameFilter, phoneFilter, typeFilter]);
+  }, [rows, selectedCity, search, nameFilter, phoneFilter, typeFilter, installmentNumber]);
+
+  const installmentOptions = useMemo(() => {
+    const set = new Set<number>();
+    (rows as any[]).forEach((p) => {
+      const n = Number(p.installment_number);
+      if (n > 0) set.add(n);
+    });
+    return Array.from(set).sort((a, b) => a - b);
+  }, [rows]);
+
+  useEffect(() => {
+    if (typeFilter !== 'installments') setInstallmentNumber('all');
+  }, [typeFilter]);
 
   const totalDue = filtered.reduce((sum, p: any) => sum + Number(p.amount || 0), 0);
 
@@ -189,6 +206,21 @@ export const FawryCodesTab: React.FC = () => {
             <SelectItem value="all">الكل (القسط والتأمين)</SelectItem>
             <SelectItem value="installments">الأقساط</SelectItem>
             <SelectItem value="insurance">التأمين</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select
+          value={installmentNumber}
+          onValueChange={setInstallmentNumber}
+          disabled={typeFilter !== 'installments'}
+        >
+          <SelectTrigger className="w-full sm:w-[170px] h-11 bg-card border-border/50 rounded-xl">
+            <SelectValue placeholder="رقم القسط" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">كل الأقساط</SelectItem>
+            {installmentOptions.map((n) => (
+              <SelectItem key={n} value={String(n)}>القسط {n}</SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
