@@ -370,6 +370,56 @@ const Routes = () => {
     route.schools?.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Student lookup across all routes (by student name or any phone)
+  const { data: allAssignments = [] } = useQuery({
+    queryKey: ['route-assignments-all'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('route_assignments')
+        .select(`
+          route_id,
+          registrations (
+            id,
+            student_name,
+            grade,
+            parent_accounts (parent_name, father_phone, mother_phone, payment_phone)
+          )
+        `);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const studentMatches = useMemo(() => {
+    const q = studentSearch.trim();
+    if (!q) return [] as any[];
+    const digits = q.replace(/\D/g, '');
+    const lower = q.toLowerCase();
+    const routeById: Record<string, any> = {};
+    cityFilteredRoutes.forEach((r: any) => { routeById[r.id] = r; });
+    return (allAssignments as any[])
+      .map((a: any) => {
+        const reg = a.registrations;
+        const parent = reg?.parent_accounts || {};
+        const route = routeById[a.route_id];
+        if (!reg || !route) return null;
+        const nameHit = `${reg.student_name || ''} ${parent.parent_name || ''}`.toLowerCase().includes(lower);
+        const phones = [parent.father_phone, parent.mother_phone, parent.payment_phone].filter(Boolean) as string[];
+        const phoneHit = digits.length >= 3 && phones.some((p) => p.replace(/\D/g, '').includes(digits));
+        if (!nameHit && !phoneHit) return null;
+        return {
+          key: `${a.route_id}-${reg.id}`,
+          student_name: reg.student_name,
+          grade: reg.grade,
+          parent_name: parent.parent_name || '',
+          phone: parent.mother_phone || parent.payment_phone || parent.father_phone || '',
+          route,
+        };
+      })
+      .filter(Boolean)
+      .slice(0, 50);
+  }, [studentSearch, allAssignments, cityFilteredRoutes]);
+
   const carTypeLabels: Record<string, string> = {
     ac: isRtl ? 'مكيف' : 'AC',
     non_ac: isRtl ? 'غير مكيف' : 'Non-AC',
