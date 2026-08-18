@@ -6,6 +6,7 @@ import { useCity } from '@/contexts/CityContext';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -46,6 +47,7 @@ export const FawryCodesTab: React.FC = () => {
   const [search, setSearch] = useState('');
   const [phoneFilter, setPhoneFilter] = useState('');
   const [nameFilter, setNameFilter] = useState('');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'insurance' | 'installments'>('all');
   const [drafts, setDrafts] = useState<Record<string, { code: string; note: string }>>({});
 
   const { data: rows = [], isLoading } = useQuery({
@@ -79,6 +81,7 @@ export const FawryCodesTab: React.FC = () => {
         const registration = p.subscriptions?.registrations;
         return registration &&
           registration.status !== 'archived' &&
+          registration.status !== 'cancelled' &&
           p.due_date &&
           isBefore(parseISO(p.due_date), startOfDay(today));
       });
@@ -120,9 +123,14 @@ export const FawryCodesTab: React.FC = () => {
         const phones = `${parent?.payment_phone || ''}${parent?.father_phone || ''}`.replace(/\D/g, '');
         if (!phones.includes(ph)) return false;
       }
+      if (typeFilter !== 'all') {
+        const isInsurance = Number(p.installment_number) === 0;
+        if (typeFilter === 'insurance' && !isInsurance) return false;
+        if (typeFilter === 'installments' && isInsurance) return false;
+      }
       return true;
     });
-  }, [rows, selectedCity, search, nameFilter, phoneFilter]);
+  }, [rows, selectedCity, search, nameFilter, phoneFilter, typeFilter]);
 
   const totalDue = filtered.reduce((sum, p: any) => sum + Number(p.amount || 0), 0);
 
@@ -173,6 +181,16 @@ export const FawryCodesTab: React.FC = () => {
           <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Filter by name..." value={nameFilter} onChange={(e) => setNameFilter(e.target.value)} className="pl-10 h-11 bg-card border-border/50 rounded-xl" />
         </div>
+        <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as typeof typeFilter)}>
+          <SelectTrigger className="w-full sm:w-[190px] h-11 bg-card border-border/50 rounded-xl">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">الكل (القسط والتأمين)</SelectItem>
+            <SelectItem value="installments">الأقساط</SelectItem>
+            <SelectItem value="insurance">التأمين</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="rounded-2xl border border-warning/20 bg-warning/5 p-4 flex items-center justify-between">

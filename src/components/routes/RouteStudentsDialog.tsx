@@ -50,6 +50,7 @@ const RouteStudentsDialog: React.FC<RouteStudentsDialogProps> = ({ route, open, 
               parent_name,
               mother_phone,
               father_phone,
+              payment_phone,
               pickup_address,
               pickup_latitude,
               pickup_longitude
@@ -68,6 +69,7 @@ const RouteStudentsDialog: React.FC<RouteStudentsDialogProps> = ({ route, open, 
             parent_name: p.parent_name || '',
             mother_phone: p.mother_phone || '',
             father_phone: p.father_phone || '',
+            payment_phone: p.payment_phone || '',
             address: p.pickup_address || '',
             maps:
               p.pickup_latitude && p.pickup_longitude
@@ -81,14 +83,14 @@ const RouteStudentsDialog: React.FC<RouteStudentsDialogProps> = ({ route, open, 
 
   const fileBase = `route-${route?.route_number ?? ''}-${(route?.name || 'students').replace(/\s+/g, '-')}-${format(new Date(), 'yyyy-MM-dd')}`;
 
-  const HEADERS = ['#', 'Student Name', 'Grade', 'Parent Name', 'Mother Phone', 'Father Phone', 'Location Address', 'Map Link'];
+  const HEADERS = ['#', 'Student Name', 'Grade', 'Parent Name', 'Mother Phone', 'Payment Phone', 'Father Phone', 'Location Address', 'Map Link'];
 
   const toArray = () =>
-    rows.map((r, i) => [i + 1, r.student_name, r.grade, r.parent_name, r.mother_phone, r.father_phone, r.address, r.maps]);
+    rows.map((r, i) => [i + 1, r.student_name, r.grade, r.parent_name, r.mother_phone, r.payment_phone, r.father_phone, r.address, r.maps]);
 
   const exportExcel = () => {
     const ws = XLSX.utils.aoa_to_sheet([HEADERS, ...toArray()]);
-    ws['!cols'] = [{ wch: 5 }, { wch: 24 }, { wch: 10 }, { wch: 22 }, { wch: 16 }, { wch: 16 }, { wch: 50 }, { wch: 40 }];
+    ws['!cols'] = [{ wch: 5 }, { wch: 24 }, { wch: 10 }, { wch: 22 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 50 }, { wch: 40 }];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Students');
     XLSX.writeFile(wb, `${fileBase}.xlsx`);
@@ -105,7 +107,7 @@ const RouteStudentsDialog: React.FC<RouteStudentsDialogProps> = ({ route, open, 
       body: toArray().map((r) => r.map((c) => String(c ?? ''))),
       startY: 26,
       styles: { fontSize: 8, cellWidth: 'wrap' },
-      columnStyles: { 6: { cellWidth: 70 }, 7: { cellWidth: 55 } },
+      columnStyles: { 7: { cellWidth: 65 }, 8: { cellWidth: 50 } },
     });
     doc.save(`${fileBase}.pdf`);
   };
@@ -141,6 +143,7 @@ const RouteStudentsDialog: React.FC<RouteStudentsDialogProps> = ({ route, open, 
                 <TableHead className={isRtl ? 'text-right' : 'text-left'}>#</TableHead>
                 <TableHead className={isRtl ? 'text-right' : 'text-left'}>{isRtl ? 'اسم الطالب' : 'Student Name'}</TableHead>
                 <TableHead className={isRtl ? 'text-right' : 'text-left'}>{isRtl ? 'رقم الأم' : 'Mother Phone'}</TableHead>
+                <TableHead className={isRtl ? 'text-right' : 'text-left'}>{isRtl ? 'رقم الدفع والتجديد' : 'Payment Phone'}</TableHead>
                 <TableHead className={isRtl ? 'text-right' : 'text-left'}>{isRtl ? 'عنوان الموقع' : 'Location Address'}</TableHead>
                 <TableHead className={isRtl ? 'text-right' : 'text-left'}>{isRtl ? 'الخريطة' : 'Map'}</TableHead>
               </TableRow>
@@ -148,13 +151,13 @@ const RouteStudentsDialog: React.FC<RouteStudentsDialogProps> = ({ route, open, 
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8">
+                  <TableCell colSpan={6} className="text-center py-8">
                     {isRtl ? 'جاري التحميل...' : 'Loading...'}
                   </TableCell>
                 </TableRow>
               ) : rows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8">
+                  <TableCell colSpan={6} className="text-center py-8">
                     {isRtl ? 'لا يوجد طلاب على هذا الخط' : 'No students on this route'}
                   </TableCell>
                 </TableRow>
@@ -164,6 +167,7 @@ const RouteStudentsDialog: React.FC<RouteStudentsDialogProps> = ({ route, open, 
                     <TableCell>{i + 1}</TableCell>
                     <TableCell className="font-medium whitespace-nowrap">{r.student_name}</TableCell>
                     <TableCell dir="ltr" className="whitespace-nowrap">{r.mother_phone || '-'}</TableCell>
+                    <TableCell dir="ltr" className="whitespace-nowrap">{r.payment_phone || '-'}</TableCell>
                     <TableCell className="max-w-md whitespace-pre-wrap break-words">{r.address || '-'}</TableCell>
                     <TableCell>
                       {r.maps ? (

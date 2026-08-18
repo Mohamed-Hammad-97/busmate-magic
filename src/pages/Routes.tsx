@@ -62,6 +62,7 @@ const Routes = () => {
   const canEdit = isSuperAdmin || hasDepartment('operations');
   const { selectedCity } = useCity();
   const [searchTerm, setSearchTerm] = useState('');
+  const [studentSearch, setStudentSearch] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedRoute, setSelectedRoute] = useState<RouteType | null>(null);
   const [activeTab, setActiveTab] = useState<'table' | 'map' | 'complete'>('table');
@@ -369,6 +370,56 @@ const Routes = () => {
     route.schools?.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Student lookup across all routes (by student name or any phone)
+  const { data: allAssignments = [] } = useQuery({
+    queryKey: ['route-assignments-all'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('route_assignments')
+        .select(`
+          route_id,
+          registrations (
+            id,
+            student_name,
+            grade,
+            parent_accounts (parent_name, father_phone, mother_phone, payment_phone)
+          )
+        `);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const studentMatches = useMemo(() => {
+    const q = studentSearch.trim();
+    if (!q) return [] as any[];
+    const digits = q.replace(/\D/g, '');
+    const lower = q.toLowerCase();
+    const routeById: Record<string, any> = {};
+    cityFilteredRoutes.forEach((r: any) => { routeById[r.id] = r; });
+    return (allAssignments as any[])
+      .map((a: any) => {
+        const reg = a.registrations;
+        const parent = reg?.parent_accounts || {};
+        const route = routeById[a.route_id];
+        if (!reg || !route) return null;
+        const nameHit = `${reg.student_name || ''} ${parent.parent_name || ''}`.toLowerCase().includes(lower);
+        const phones = [parent.father_phone, parent.mother_phone, parent.payment_phone].filter(Boolean) as string[];
+        const phoneHit = digits.length >= 3 && phones.some((p) => p.replace(/\D/g, '').includes(digits));
+        if (!nameHit && !phoneHit) return null;
+        return {
+          key: `${a.route_id}-${reg.id}`,
+          student_name: reg.student_name,
+          grade: reg.grade,
+          parent_name: parent.parent_name || '',
+          phone: parent.mother_phone || parent.payment_phone || parent.father_phone || '',
+          route,
+        };
+      })
+      .filter(Boolean)
+      .slice(0, 50);
+  }, [studentSearch, allAssignments, cityFilteredRoutes]);
+
   const carTypeLabels: Record<string, string> = {
     ac: isRtl ? 'مكيف' : 'AC',
     non_ac: isRtl ? 'غير مكيف' : 'Non-AC',
@@ -497,16 +548,62 @@ const Routes = () => {
             </TabsList>
 
             {/* Search */}
-            <div className="relative max-w-sm">
-              <Search className={`absolute ${isRtl ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground`} />
-              <Input
-                placeholder={isRtl ? 'بحث بالاسم أو المدرسة...' : 'Search by name or school...'}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className={isRtl ? 'pr-10' : 'pl-10'}
-              />
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="relative max-w-sm">
+                <Search className={`absolute ${isRtl ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground`} />
+                <Input
+                  placeholder={isRtl ? 'بحث بالاسم أو المدرسة...' : 'Search by name or school...'}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className={isRtl ? 'pr-10' : 'pl-10'}
+                />
+              </div>
+              <div className="relative max-w-sm">
+                <Search className={`absolute ${isRtl ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground`} />
+                <Input
+                  placeholder={isRtl ? 'بحث عن طالب أو رقم هاتف في كل الخطوط...' : 'Search student or phone in all routes...'}
+                  value={studentSearch}
+                  onChange={(e) => setStudentSearch(e.target.value)}
+                  className={isRtl ? 'pr-10' : 'pl-10'}
+                />
+              </div>
             </div>
           </div>
+
+          {studentSearch.trim() && (
+            <Card className="mt-4">
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className={isRtl ? 'text-right' : 'text-left'}>{isRtl ? 'الطالب' : 'Student'}</TableHead>
+                      <TableHead className={isRtl ? 'text-right' : 'text-left'}>{isRtl ? 'الهاتف' : 'Phone'}</TableHead>
+                      <TableHead className={isRtl ? 'text-right' : 'text-left'}>{isRtl ? 'الخط' : 'Route'}</TableHead>
+                      <TableHead className={isRtl ? 'text-right' : 'text-left'}>{isRtl ? 'المدرسة' : 'School'}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {studentMatches.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
+                          {isRtl ? 'لا توجد نتائج' : 'No matches'}
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      studentMatches.map((m: any) => (
+                        <TableRow key={m.key} className="cursor-pointer" onClick={() => setStudentsRoute(m.route)}>
+                          <TableCell className="font-medium">{m.student_name}</TableCell>
+                          <TableCell dir="ltr">{m.phone || '-'}</TableCell>
+                          <TableCell>#{m.route.route_number ?? '-'} {m.route.name}</TableCell>
+                          <TableCell>{m.route.schools?.name || '-'}</TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
 
           <TabsContent value="table" className="mt-4">
             <Card>
