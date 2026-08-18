@@ -180,6 +180,16 @@ export const FawryCodesTab: React.FC = () => {
           <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Filter by name..." value={nameFilter} onChange={(e) => setNameFilter(e.target.value)} className="pl-10 h-11 bg-card border-border/50 rounded-xl" />
         </div>
+        <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as typeof typeFilter)}>
+          <SelectTrigger className="w-full sm:w-[190px] h-11 bg-card border-border/50 rounded-xl">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">الكل (القسط والتأمين)</SelectItem>
+            <SelectItem value="installments">الأقساط</SelectItem>
+            <SelectItem value="insurance">التأمين</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="rounded-2xl border border-warning/20 bg-warning/5 p-4 flex items-center justify-between">
