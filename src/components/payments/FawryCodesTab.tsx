@@ -208,6 +208,21 @@ export const FawryCodesTab: React.FC = () => {
             <SelectItem value="insurance">التأمين</SelectItem>
           </SelectContent>
         </Select>
+        <Select
+          value={installmentNumber}
+          onValueChange={setInstallmentNumber}
+          disabled={typeFilter !== 'installments'}
+        >
+          <SelectTrigger className="w-full sm:w-[170px] h-11 bg-card border-border/50 rounded-xl">
+            <SelectValue placeholder="رقم القسط" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">كل الأقساط</SelectItem>
+            {installmentOptions.map((n) => (
+              <SelectItem key={n} value={String(n)}>القسط {n}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="rounded-2xl border border-warning/20 bg-warning/5 p-4 flex items-center justify-between">
