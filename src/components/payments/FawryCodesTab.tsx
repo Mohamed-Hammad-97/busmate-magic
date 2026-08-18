@@ -129,9 +129,25 @@ export const FawryCodesTab: React.FC = () => {
         if (typeFilter === 'insurance' && !isInsurance) return false;
         if (typeFilter === 'installments' && isInsurance) return false;
       }
+      if (typeFilter === 'installments' && installmentNumber !== 'all') {
+        if (Number(p.installment_number) !== Number(installmentNumber)) return false;
+      }
       return true;
     });
-  }, [rows, selectedCity, search, nameFilter, phoneFilter, typeFilter]);
+  }, [rows, selectedCity, search, nameFilter, phoneFilter, typeFilter, installmentNumber]);
+
+  const installmentOptions = useMemo(() => {
+    const set = new Set<number>();
+    (rows as any[]).forEach((p) => {
+      const n = Number(p.installment_number);
+      if (n > 0) set.add(n);
+    });
+    return Array.from(set).sort((a, b) => a - b);
+  }, [rows]);
+
+  useEffect(() => {
+    if (typeFilter !== 'installments') setInstallmentNumber('all');
+  }, [typeFilter]);
 
   const totalDue = filtered.reduce((sum, p: any) => sum + Number(p.amount || 0), 0);
 
