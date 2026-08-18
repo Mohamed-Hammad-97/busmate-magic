@@ -62,6 +62,7 @@ const Routes = () => {
   const canEdit = isSuperAdmin || hasDepartment('operations');
   const { selectedCity } = useCity();
   const [searchTerm, setSearchTerm] = useState('');
+  const [studentSearch, setStudentSearch] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedRoute, setSelectedRoute] = useState<RouteType | null>(null);
   const [activeTab, setActiveTab] = useState<'table' | 'map' | 'complete'>('table');
