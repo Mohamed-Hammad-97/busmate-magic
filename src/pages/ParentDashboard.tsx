@@ -129,6 +129,9 @@ export default function ParentDashboard() {
     checkPasswordStatus();
   }, [parentAccount?.id]);
 
+  // Supabase may return the embedded subscription as an object (one-to-one) or an array
+  const getSub = (reg: any) => (Array.isArray(reg?.subscriptions) ? reg.subscriptions[0] : reg?.subscriptions) || null;
+
   const { data: registrations = [] } = useQuery({
     queryKey: ["parent-registrations", parentAccount?.id],
     queryFn: async () => {
@@ -237,7 +240,7 @@ export default function ParentDashboard() {
 
   const paymentSummary = registrations.reduce(
     (acc, reg) => {
-      const subscription = reg.subscriptions?.[0];
+      const subscription = getSub(reg);
       if (subscription?.payments) {
         subscription.payments.forEach((p: any) => {
           acc.total += Number(p.amount);
@@ -329,7 +332,7 @@ export default function ParentDashboard() {
             {/* Next Payment Due */}
             {(() => {
               const nextPayment = registrations
-                .flatMap((r: any) => r.subscriptions?.[0]?.payments || [])
+                .flatMap((r: any) => getSub(r)?.payments || [])
                 .filter((p: any) => p.status !== "paid")
                 .sort((a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())[0];
               if (!nextPayment) return null;
@@ -578,7 +581,7 @@ export default function ParentDashboard() {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {activePaymentRegs.map((reg: any) => {
-                    const subscription = reg.subscriptions?.[0];
+                    const subscription = getSub(reg);
                     const payments = (subscription?.payments || []).filter((p: any) => p.status !== 'archived');
                     const paidCount = payments.filter((p: any) => p.status === "paid").length;
                     const total = payments.reduce((s: number, p: any) => s + Number(p.amount || 0) + extraFeesTotal(p), 0);
@@ -651,7 +654,7 @@ export default function ParentDashboard() {
             {/* Recent Transactions */}
             {(() => {
               const allPayments = registrations.flatMap((reg: any) => {
-                const subscription = reg.subscriptions?.[0];
+                const subscription = getSub(reg);
                 return (subscription?.payments || []).map((p: any) => ({ ...p, studentName: reg.student_name }));
               }).sort((a: any, b: any) => new Date(b.due_date).getTime() - new Date(a.due_date).getTime());
 
@@ -701,7 +704,7 @@ export default function ParentDashboard() {
             {/* Make a Payment */}
             {(() => {
               const nextPayment = registrations
-                .flatMap((r: any) => r.subscriptions?.[0]?.payments || [])
+                .flatMap((r: any) => getSub(r)?.payments || [])
                 .filter((p: any) => p.status !== "paid")
                 .sort((a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())[0];
               if (!nextPayment) return null;
@@ -858,7 +861,7 @@ export default function ParentDashboard() {
       <Dialog open={!!selectedPaymentReg} onOpenChange={() => setSelectedPaymentReg(null)}>
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto mx-2 sm:mx-auto">
           {selectedPaymentReg && (() => {
-            const subscription = selectedPaymentReg.subscriptions?.[0];
+            const subscription = getSub(selectedPaymentReg);
             const payments = [...(subscription?.payments || [])]
               .filter((p: any) => p.status !== 'archived')
               .sort((a: any, b: any) => a.installment_number - b.installment_number);
