@@ -265,7 +265,7 @@ const Payments = () => {
 
 
   const paymentsByRegistration = useMemo(() => {
-    const grouped: Record<string, { registrationId: string; payments: any[]; subscription: any; parentName: string; studentName: string; schoolName: string; paymentPhone: string; phones: string[]; totalAmount: number; paidAmount: number; isFullyPaid: boolean; isNew: boolean; createdAt: string | null; }> = {};
+    const grouped: Record<string, { registrationId: string; payments: any[]; subscription: any; parentName: string; studentName: string; schoolName: string; paymentPhone: string; lineNumber: number | null; lineName: string; phones: string[]; totalAmount: number; paidAmount: number; isFullyPaid: boolean; isNew: boolean; createdAt: string | null; }> = {};
     payments.forEach((payment: any) => {
       const registrationId = payment.subscriptions?.registration_id;
       if (!registrationId) return;
@@ -279,6 +279,8 @@ const Payments = () => {
           studentName: payment.subscriptions?.registrations?.student_name || '',
           schoolName: payment.subscriptions?.registrations?.schools?.name || '',
           paymentPhone: pa?.payment_phone || '',
+          lineNumber: (lineByRegistration as any)[registrationId]?.routeNumber ?? null,
+          lineName: (lineByRegistration as any)[registrationId]?.routeName || '',
           phones: [pa?.father_phone, pa?.mother_phone, pa?.emergency_phone, pa?.payment_phone].filter(Boolean) as string[],
           totalAmount: payment.subscriptions?.value || 0,
           paidAmount: 0,
@@ -301,7 +303,7 @@ const Payments = () => {
       reg.isFullyPaid = reg.paidAmount >= reg.totalAmount;
     });
     return grouped;
-  }, [payments]);
+  }, [payments, lineByRegistration]);
 
   const filteredByPaymentStatus = useMemo(() => {
     if (paymentTab === 'all') return payments;
