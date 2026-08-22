@@ -223,6 +223,12 @@ const Registrations: React.FC = () => {
         .update({ status: 'cancelled' })
         .eq('id', reg.id);
       if (regError) throw regError;
+      // Free the seat on any line this student was assigned to
+      const { error: assignError } = await supabase
+        .from('route_assignments')
+        .delete()
+        .eq('registration_id', reg.id);
+      if (assignError) throw assignError;
       // Deactivate the parent account
       const { error: parentError } = await supabase
         .from('parent_accounts')
@@ -233,6 +239,10 @@ const Registrations: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['registrations'] });
       queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['routes'] });
+      queryClient.invalidateQueries({ queryKey: ['route-assignments-with-locations'] });
+      queryClient.invalidateQueries({ queryKey: ['route-assignments-all'] });
+      queryClient.invalidateQueries({ queryKey: ['assigned-registration-ids'] });
       toast({ title: 'Account deactivated', description: 'The registration has been cancelled and the parent account deactivated.' });
       setDeleteTarget(null);
     },
