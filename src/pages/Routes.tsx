@@ -223,7 +223,14 @@ const Routes = () => {
 
         `);
       if (error) throw error;
-      return data;
+      // Hide cancelled registrations and deactivated parent accounts everywhere
+      return (data || []).filter((a: any) => {
+        const reg = a.registrations;
+        if (!reg) return false;
+        if (reg.status === 'cancelled') return false;
+        if (reg.parent_accounts?.is_active === false) return false;
+        return true;
+      });
     },
   });
 
@@ -234,6 +241,7 @@ const Routes = () => {
     });
     return counts;
   }, [routeAssignments]);
+
 
   const saveMutation = useMutation({
     mutationFn: async () => {
