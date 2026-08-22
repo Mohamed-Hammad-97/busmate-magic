@@ -393,11 +393,19 @@ const Routes = () => {
             id,
             student_name,
             grade,
-            parent_accounts (parent_name, father_phone, mother_phone, payment_phone)
+            status,
+            parent_accounts (parent_name, is_active, father_phone, mother_phone, payment_phone)
           )
         `);
       if (error) throw error;
-      return data || [];
+      return (data || []).filter((a: any) => {
+        const reg = a.registrations;
+        if (!reg) return false;
+        if (reg.status === 'cancelled') return false;
+        if (reg.parent_accounts?.is_active === false) return false;
+        return true;
+      });
+
     },
   });
 
