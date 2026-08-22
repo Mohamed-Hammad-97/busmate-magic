@@ -126,9 +126,11 @@ export default function SupportChat() {
       subtitle: `Support • ${c.status}`,
       type: "legacy" as ChatCategory,
       lastMessageAt: c.last_message_at,
+      unread: unreadMap[c.id] || 0,
       raw: c,
       isLegacy: true,
     })),
+
   ].sort((a, b) => {
     const ta = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
     const tb = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
