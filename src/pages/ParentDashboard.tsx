@@ -675,6 +675,16 @@ export default function ParentDashboard() {
       case "absences":
         return <AbsenceRegistration />;
 
+      case "contracts":
+        return (
+          <ContractsTab
+            registrations={registrations as any[]}
+            parentId={parentAccount?.id}
+            parentName={parentAccount?.parent_name}
+          />
+        );
+
+
       case "chat":
         return <ParentChat />;
 
