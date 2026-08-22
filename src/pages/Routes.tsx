@@ -211,13 +211,16 @@ const Routes = () => {
           registrations (
             id,
             student_name,
+            status,
             parent_accounts (
               id,
               parent_name,
+              is_active,
               pickup_latitude,
               pickup_longitude
             )
           )
+
         `);
       if (error) throw error;
       return data;
