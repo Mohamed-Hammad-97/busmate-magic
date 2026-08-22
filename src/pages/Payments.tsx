@@ -355,6 +355,7 @@ const Payments = () => {
     const result: typeof paymentsByRegistration = {};
     const phoneNorm = phoneFilter.replace(/\s+/g, '');
     const nameNorm = nameFilter.trim().toLowerCase();
+    const lineNorm = lineFilter.trim();
     const installmentCount = Number.parseInt(installmentFilter, 10);
     Object.entries(paymentsByRegistration).forEach(([regId, regData]) => {
       if (paymentTab === 'fully_paid' && !regData.isFullyPaid) return;
@@ -363,6 +364,7 @@ const Payments = () => {
       if (!matchesSearch) return;
       if (phoneNorm && !regData.phones.some((p) => p.replace(/\s+/g, '').includes(phoneNorm))) return;
       if (nameNorm && !(regData.parentName.toLowerCase().includes(nameNorm) || regData.studentName.toLowerCase().includes(nameNorm))) return;
+      if (lineNorm && String(regData.lineNumber ?? '') !== lineNorm) return;
       if (subscriptionTypeFilter !== 'all' && regData.subscription?.subscription_type !== subscriptionTypeFilter) return;
       // Insurance filter — installment_number 0 is the insurance row
       if (insuranceFilter !== 'all') {
@@ -394,7 +396,7 @@ const Payments = () => {
       result[regId] = regData;
     });
     return result;
-  }, [paymentsByRegistration, paymentTab, searchTerm, phoneFilter, nameFilter, statusFilter, installmentFilter, insuranceFilter, subscriptionTypeFilter, paymentMatchesStatus, getEffectivePaymentStatus, changesDate, sameDay]);
+  }, [paymentsByRegistration, paymentTab, searchTerm, phoneFilter, nameFilter, lineFilter, statusFilter, installmentFilter, insuranceFilter, subscriptionTypeFilter, paymentMatchesStatus, getEffectivePaymentStatus, changesDate, sameDay]);
 
   // Summary of installments changed / marked paid on selected date
   const changesSummary = useMemo(() => {
