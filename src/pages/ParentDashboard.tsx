@@ -140,8 +140,9 @@ export default function ParentDashboard() {
           schools (name, city),
           subscriptions (
             id, subscription_type, value, number_of_installments,
-            payments (*)
+            payments (*, payment_extra_fees (*))
           )
+
         `)
         .eq("parent_id", parentAccount.id)
         .order("created_at", { ascending: false });
@@ -161,6 +162,19 @@ export default function ParentDashboard() {
     },
     enabled: !!parentAccount?.id,
   });
+
+  // Live updates when finance edits installments (fawry code, status, receipts)
+  useEffect(() => {
+    if (!parentAccount?.id) return;
+    const channel = supabase
+      .channel('parent-payments-updates')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, () => {
+        queryClient.invalidateQueries({ queryKey: ["parent-registrations", parentAccount.id] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [parentAccount?.id, queryClient]);
+
 
   const { data: routeAssignments = [] } = useQuery({
     queryKey: ["parent-routes", parentAccount?.id],
@@ -197,6 +211,29 @@ export default function ParentDashboard() {
     pending: { label: t('parentPortal.pending'), icon: <Clock className="h-4 w-4 text-yellow-500" /> },
     overdue: { label: t('parentPortal.overdue'), icon: <AlertCircle className="h-4 w-4 text-red-500" /> },
   };
+
+  // Installment helpers (mirrors the finance payment profile)
+  const installmentLabel = (n: number) => {
+    if (Number(n) === 0) return 'التأمين';
+    const ordinals = ['', 'الأول', 'الثاني', 'الثالث', 'الرابع', 'الخامس', 'السادس', 'السابع', 'الثامن', 'التاسع', 'العاشر'];
+    return `القسط ${ordinals[Number(n)] || Number(n)}`;
+  };
+  const effectiveStatus = (p: any) => {
+    if (p.status === 'paid') return 'paid';
+    if (p.status === 'archived') return 'archived';
+    const due = new Date(p.due_date);
+    due.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return due < today ? 'overdue' : 'pending';
+  };
+  const extraFeesTotal = (p: any) =>
+    (p.payment_extra_fees || []).reduce((s: number, f: any) => s + Number(f.amount || 0), 0);
+
+  const activePaymentRegs = registrations.filter(
+    (r: any) => r.status !== 'cancelled' && r.status !== 'archived'
+  );
+
 
   const paymentSummary = registrations.reduce(
     (acc, reg) => {
@@ -531,7 +568,7 @@ export default function ParentDashboard() {
                 <School className="h-4 w-4 text-primary" />
                 {t('parentPortal.activeChildSubscriptions')}
               </h3>
-              {registrations.length === 0 ? (
+              {activePaymentRegs.length === 0 ? (
                 <Card className="border-0 shadow-md">
                   <CardContent className="py-12 text-center text-muted-foreground">
                     <Wallet className="h-12 w-12 mx-auto mb-3 text-muted-foreground/40" />
@@ -540,17 +577,21 @@ export default function ParentDashboard() {
                 </Card>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {registrations.map((reg: any) => {
+                  {activePaymentRegs.map((reg: any) => {
                     const subscription = reg.subscriptions?.[0];
-                    const payments = subscription?.payments || [];
+                    const payments = (subscription?.payments || []).filter((p: any) => p.status !== 'archived');
                     const paidCount = payments.filter((p: any) => p.status === "paid").length;
+                    const total = payments.reduce((s: number, p: any) => s + Number(p.amount || 0) + extraFeesTotal(p), 0);
+                    const paidAmount = payments
+                      .filter((p: any) => p.status === 'paid')
+                      .reduce((s: number, p: any) => s + Number(p.amount || 0) + extraFeesTotal(p), 0);
                     const routeAssignment = routeAssignments.find((ra: any) => ra.registration_id === reg.id);
 
                     return (
                       <Card
                         key={reg.id}
-                        className="border-0 shadow-md hover:shadow-lg transition-all cursor-pointer overflow-hidden"
-                        onClick={() => subscription?.payments?.length ? setSelectedPaymentReg(reg) : null}
+                        className={`border-0 shadow-md transition-all overflow-hidden ${payments.length ? 'hover:shadow-lg cursor-pointer' : ''}`}
+                        onClick={() => payments.length ? setSelectedPaymentReg(reg) : null}
                       >
                         <CardContent className="p-4">
                           <div className="flex items-start gap-3 mb-3">
@@ -567,17 +608,36 @@ export default function ParentDashboard() {
                               </p>
                             </div>
                           </div>
-                          {subscription && (
-                            <div className="grid grid-cols-2 gap-2 text-xs">
-                              <div>
-                                <span className="text-muted-foreground">{t('parentPortal.plan')}</span>
-                                <p className="font-semibold">{subscription.subscription_type === "monthly" ? t('parentPortal.monthlyPass') : t('parentPortal.annualPass')}</p>
+                          {payments.length > 0 ? (
+                            <>
+                              <div className="grid grid-cols-3 gap-2 text-xs">
+                                <div>
+                                  <span className="text-muted-foreground">الإجمالي</span>
+                                  <p className="font-semibold">{total.toLocaleString()} EGP</p>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">المدفوع</span>
+                                  <p className="font-semibold text-green-600">{paidAmount.toLocaleString()} EGP</p>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">المتبقي</span>
+                                  <p className="font-semibold text-amber-600">{(total - paidAmount).toLocaleString()} EGP</p>
+                                </div>
                               </div>
-                              <div>
-                                <span className="text-muted-foreground">{t('parentPortal.progress')}</span>
-                                <p className="font-semibold text-green-600">{paidCount}/{payments.length} {t('parentPortal.paidOf')}</p>
+                              <div className="mt-3">
+                                <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                                  <div
+                                    className="h-full bg-green-500 rounded-full transition-all"
+                                    style={{ width: `${total > 0 ? Math.round((paidAmount / total) * 100) : 0}%` }}
+                                  />
+                                </div>
+                                <p className="text-[10px] text-muted-foreground mt-1">
+                                  {paidCount}/{payments.length} {t('parentPortal.paidOf')}
+                                </p>
                               </div>
-                            </div>
+                            </>
+                          ) : (
+                            <p className="text-xs text-muted-foreground">لم يتم تفعيل خطة الدفع بعد</p>
                           )}
                         </CardContent>
                       </Card>
@@ -585,6 +645,7 @@ export default function ParentDashboard() {
                   })}
                 </div>
               )}
+
             </div>
 
             {/* Recent Transactions */}
@@ -798,7 +859,13 @@ export default function ParentDashboard() {
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto mx-2 sm:mx-auto">
           {selectedPaymentReg && (() => {
             const subscription = selectedPaymentReg.subscriptions?.[0];
-            const payments = subscription?.payments?.sort((a: any, b: any) => a.installment_number - b.installment_number) || [];
+            const payments = [...(subscription?.payments || [])]
+              .filter((p: any) => p.status !== 'archived')
+              .sort((a: any, b: any) => a.installment_number - b.installment_number);
+            const total = payments.reduce((s: number, p: any) => s + Number(p.amount || 0) + extraFeesTotal(p), 0);
+            const paidAmount = payments
+              .filter((p: any) => p.status === 'paid')
+              .reduce((s: number, p: any) => s + Number(p.amount || 0) + extraFeesTotal(p), 0);
             return (
               <>
                 <DialogHeader>
@@ -814,31 +881,77 @@ export default function ParentDashboard() {
                     </div>
                   </DialogTitle>
                 </DialogHeader>
+                <div className="grid grid-cols-3 gap-2 mt-2 text-center">
+                  <div className="rounded-xl border bg-muted/30 p-2">
+                    <p className="text-[10px] text-muted-foreground">الإجمالي</p>
+                    <p className="text-sm font-bold">{total.toLocaleString()}</p>
+                  </div>
+                  <div className="rounded-xl border bg-green-50/50 dark:bg-green-950/20 p-2">
+                    <p className="text-[10px] text-muted-foreground">المدفوع</p>
+                    <p className="text-sm font-bold text-green-600">{paidAmount.toLocaleString()}</p>
+                  </div>
+                  <div className="rounded-xl border bg-amber-50/50 dark:bg-amber-950/20 p-2">
+                    <p className="text-[10px] text-muted-foreground">المتبقي</p>
+                    <p className="text-sm font-bold text-amber-600">{(total - paidAmount).toLocaleString()}</p>
+                  </div>
+                </div>
                 <div className="space-y-3 mt-2">
-                  {payments.map((payment: any) => (
+                  {payments.map((payment: any) => {
+                    const st = effectiveStatus(payment);
+                    const fees = extraFeesTotal(payment);
+                    return (
                     <div
                       key={payment.id}
                       className={`p-3 sm:p-4 rounded-xl border transition-all ${
-                        payment.status === "paid"
+                        st === "paid"
                           ? "bg-green-50/50 border-green-200 dark:bg-green-950/20 dark:border-green-800/30"
-                          : payment.status === "overdue"
+                          : st === "overdue"
                           ? "bg-red-50/50 border-red-200 dark:bg-red-950/20 dark:border-red-800/30"
                           : "bg-muted/30 border-border"
                       }`}
                     >
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs sm:text-sm font-semibold">{t('parentPortal.installment')} {payment.installment_number}</span>
+                          <span className="text-xs sm:text-sm font-semibold">{installmentLabel(payment.installment_number)}</span>
                           <Badge
-                            variant={payment.status === "paid" ? "default" : payment.status === "overdue" ? "destructive" : "secondary"}
+                            variant={st === "paid" ? "default" : st === "overdue" ? "destructive" : "secondary"}
                             className="text-[10px] h-5"
                           >
-                            {paymentStatusLabels[payment.status]?.icon}
-                            <span className="ml-1">{paymentStatusLabels[payment.status]?.label}</span>
+                            {paymentStatusLabels[st]?.icon}
+                            <span className="ml-1">{paymentStatusLabels[st]?.label}</span>
                           </Badge>
                         </div>
-                        <span className="font-bold text-xs sm:text-sm">{Number(payment.amount).toLocaleString()} EGP</span>
+                        <div className="text-right">
+                          <span className="font-bold text-xs sm:text-sm">{Number(payment.amount).toLocaleString()} EGP</span>
+                          {fees > 0 && (
+                            <p className="text-[10px] text-amber-600">+ رسوم إضافية {fees.toLocaleString()} EGP</p>
+                          )}
+                        </div>
                       </div>
+                      {payment.fawry_reference_code && (
+                        <div className="mb-2 flex items-center justify-between gap-2 rounded-lg border border-primary/20 bg-primary/5 px-2.5 py-1.5">
+                          <div className="min-w-0">
+                            <p className="text-[10px] text-muted-foreground">كود فوري</p>
+                            <p className="text-xs font-bold font-mono truncate" dir="ltr">{payment.fawry_reference_code}</p>
+                            {payment.fawry_note && (
+                              <p className="text-[10px] text-muted-foreground truncate">{payment.fawry_note}</p>
+                            )}
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-2 text-[10px] shrink-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigator.clipboard.writeText(payment.fawry_reference_code);
+                              toast({ title: 'تم نسخ الكود' });
+                            }}
+                          >
+                            نسخ
+                          </Button>
+                        </div>
+                      )}
+
                       <div className="flex items-center justify-between text-[10px] sm:text-xs text-muted-foreground">
                         <span>{t('parentPortal.due')}: {format(new Date(payment.due_date), "dd MMM yyyy")}</span>
                         <div className="flex items-center gap-2">
@@ -880,7 +993,8 @@ export default function ParentDashboard() {
                         </Button>
                       )}
                     </div>
-                  ))}
+                  );})}
+
                 </div>
               </>
             );
