@@ -129,7 +129,9 @@ export default function ParentDashboard() {
     checkPasswordStatus();
   }, [parentAccount?.id]);
 
-  // Supabase returns an embedded one-to-one relation as an object, not an array
+  // Supabase may return the embedded subscription as an object (one-to-one) or an array
+  const getSub = (reg: any) => (Array.isArray(reg?.subscriptions) ? reg.subscriptions[0] : reg?.subscriptions) || null;
+
   const { data: registrations = [] } = useQuery({
     queryKey: ["parent-registrations", parentAccount?.id],
     queryFn: async () => {
