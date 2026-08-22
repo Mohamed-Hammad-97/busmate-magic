@@ -191,8 +191,8 @@ export default function ParentDashboard() {
           *,
           registrations (student_name),
           routes (
-            name, car_type, max_seats,
-            drivers (full_name, phone, license_number),
+            name, route_number, car_type, max_seats,
+            drivers (full_name, phone, license_number, vehicle_plate, vehicle_model, vehicle_color),
             supervisors (full_name, phone)
           )
         `)
