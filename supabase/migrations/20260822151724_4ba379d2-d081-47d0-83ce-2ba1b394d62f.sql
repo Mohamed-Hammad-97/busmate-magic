@@ -1,0 +1,1 @@
+ALTER TYPE public.conversation_type ADD VALUE IF NOT EXISTS 'customer_support';

@@ -22,7 +22,7 @@ import {
 import { format } from "date-fns";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-type ChatCategory = "all" | "staff_dm" | "customer_dm" | "route_group" | "legacy";
+type ChatCategory = "all" | "staff_dm" | "customer_dm" | "customer_support" | "customer_supervisor" | "route_group" | "legacy";
 
 interface UnifiedConv {
   id: string;
@@ -79,7 +79,12 @@ export default function SupportChat() {
     ...unifiedConvs.map((c) => ({
       id: c.id,
       name: c.subject?.replace("Chat with ", "") || "Chat",
-      subtitle: c.type === "staff_dm" ? "Staff" : c.type === "customer_dm" ? "Customer" : "Route Group",
+      subtitle:
+        c.type === "staff_dm" ? "Staff"
+        : c.type === "customer_dm" ? "Customer"
+        : c.type === "customer_support" ? "Customer Support"
+        : c.type === "customer_supervisor" ? "Private • Parent ↔ Supervisor"
+        : "Route Group",
       type: c.type as ChatCategory,
       lastMessageAt: c.last_message_at,
       raw: c,
@@ -380,6 +385,8 @@ export default function SupportChat() {
             { value: "all", label: "All" },
             { value: "staff_dm", label: "Staff" },
             { value: "customer_dm", label: "Customers" },
+            { value: "customer_support", label: "Support Chats" },
+            { value: "customer_supervisor", label: "Supervisor (Private)" },
             { value: "route_group", label: "Groups" },
             { value: "legacy", label: "Support" },
           ].map((cat) => (

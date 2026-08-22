@@ -2628,11 +2628,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_read_conversation: {
+        Args: { _conversation_id: string; _user_id: string }
+        Returns: boolean
+      }
       can_send_in_conversation: {
         Args: { _conversation_id: string; _user_id: string }
         Returns: boolean
       }
       cleanup_expired_otps: { Args: never; Returns: undefined }
+      conversation_type_of: {
+        Args: { _conversation_id: string }
+        Returns: Database["public"]["Enums"]["conversation_type"]
+      }
       get_user_departments: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["department"][]
@@ -2693,6 +2701,7 @@ export type Database = {
         | "customer_dm"
         | "route_group"
         | "customer_supervisor"
+        | "customer_support"
       daily_line_payment_method: "cash" | "instapay"
       daily_line_payment_status: "pending" | "paid" | "cancelled" | "refunded"
       daily_line_promo_type: "percentage" | "fixed"
@@ -2858,6 +2867,7 @@ export const Constants = {
         "customer_dm",
         "route_group",
         "customer_supervisor",
+        "customer_support",
       ],
       daily_line_payment_method: ["cash", "instapay"],
       daily_line_payment_status: ["pending", "paid", "cancelled", "refunded"],
