@@ -383,11 +383,12 @@ const Routes = () => {
             id,
             student_name,
             grade,
+            status,
             parent_accounts (parent_name, father_phone, mother_phone, payment_phone)
           )
         `);
       if (error) throw error;
-      return data || [];
+      return (data || []).filter((a: any) => a.registrations && a.registrations.status !== 'cancelled');
     },
   });
 
