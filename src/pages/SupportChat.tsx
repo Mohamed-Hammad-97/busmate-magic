@@ -646,52 +646,21 @@ export default function SupportChat() {
       </div>
 
       {/* New Staff Chat Dialog */}
-      <Dialog open={showNewStaffChat} onOpenChange={setShowNewStaffChat}>
-        <DialogContent className="max-w-md max-h-[80vh]">
-          <DialogHeader><DialogTitle>New Staff Chat</DialogTitle></DialogHeader>
-          <ScrollArea className="max-h-[60vh]">
-            <div className="space-y-2 p-1">
-              {allStaff.map((s) => (
-                <button key={`${s.type}-${s.id}`} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted transition-colors text-left"
-                  onClick={() => startStaffChat.mutate(s)} disabled={startStaffChat.isPending}>
-                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <User className="h-5 w-5 text-primary" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">{s.full_name}</p>
-                    <p className="text-xs text-muted-foreground">{s.phone}</p>
-                  </div>
-                  <Badge variant="outline" className="capitalize text-xs">{s.type}</Badge>
-                </button>
-              ))}
-            </div>
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
+      <StaffPickerDialog
+        open={showNewStaffChat}
+        onOpenChange={setShowNewStaffChat}
+        onSelect={(s) => startStaffChat.mutate(s)}
+        isPending={startStaffChat.isPending}
+      />
 
       {/* New Customer Chat Dialog */}
-      <Dialog open={showNewCustomerChat} onOpenChange={setShowNewCustomerChat}>
-        <DialogContent className="max-w-md max-h-[80vh]">
-          <DialogHeader><DialogTitle>New Customer Chat</DialogTitle></DialogHeader>
-          <ScrollArea className="max-h-[60vh]">
-            <div className="space-y-2 p-1">
-              {allCustomers.map((c: any) => (
-                <button key={c.id} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted transition-colors text-left"
-                  onClick={() => startCustomerChat.mutate(c)} disabled={startCustomerChat.isPending}>
-                  <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                    <User className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">{c.parent_name}</p>
-                    <p className="text-xs text-muted-foreground" dir="ltr">{c.father_phone}</p>
-                  </div>
-                  <Badge variant="outline" className="text-xs">{c.city}</Badge>
-                </button>
-              ))}
-            </div>
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
+      <CustomerPickerDialog
+        open={showNewCustomerChat}
+        onOpenChange={setShowNewCustomerChat}
+        onSelect={(c) => startCustomerChat.mutate(c)}
+        isPending={startCustomerChat.isPending}
+      />
+
 
       {/* New Group Chat Dialog */}
       <Dialog open={showNewGroupChat} onOpenChange={setShowNewGroupChat}>
