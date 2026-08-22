@@ -79,7 +79,12 @@ export default function SupportChat() {
     ...unifiedConvs.map((c) => ({
       id: c.id,
       name: c.subject?.replace("Chat with ", "") || "Chat",
-      subtitle: c.type === "staff_dm" ? "Staff" : c.type === "customer_dm" ? "Customer" : "Route Group",
+      subtitle:
+        c.type === "staff_dm" ? "Staff"
+        : c.type === "customer_dm" ? "Customer"
+        : c.type === "customer_support" ? "Customer Support"
+        : c.type === "customer_supervisor" ? "Private • Parent ↔ Supervisor"
+        : "Route Group",
       type: c.type as ChatCategory,
       lastMessageAt: c.last_message_at,
       raw: c,
