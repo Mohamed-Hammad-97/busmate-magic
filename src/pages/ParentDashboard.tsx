@@ -28,6 +28,7 @@ import { FileSignature } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import seaterLogo from "@/assets/seater-logo.jpg";
+import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 
 export default function ParentDashboard() {
   const { t, i18n } = useTranslation();
