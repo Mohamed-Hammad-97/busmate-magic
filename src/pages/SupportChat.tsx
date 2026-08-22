@@ -501,25 +501,38 @@ export default function SupportChat() {
           <div className="divide-y divide-border/20">
             {filteredConversations.map((conv) => {
               const isActive = selectedConvId === conv.id;
+              const isUnread = conv.unread > 0 && !isActive;
               return (
                 <button
                   key={conv.id}
                   onClick={() => setSelectedConvId(conv.id)}
                   className={`w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-muted/50 ${
-                    isActive ? "bg-primary/5 border-l-2 border-l-primary" : ""
+                    isActive
+                      ? "bg-primary/5 border-l-2 border-l-primary"
+                      : isUnread
+                      ? "bg-emerald-500/10 border-l-2 border-l-emerald-500"
+                      : ""
                   }`}
                 >
                   <div className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 ${getIconBg(conv.type)}`}>
                     {getIcon(conv.type)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-semibold truncate ${isActive ? "text-primary" : "text-foreground"}`}>{conv.name}</p>
-                    <p className="text-xs text-muted-foreground truncate mt-0.5">{conv.subtitle}</p>
+                    <p className={`text-sm truncate ${isActive ? "text-primary font-semibold" : isUnread ? "font-bold text-foreground" : "font-medium text-muted-foreground"}`}>{conv.name}</p>
+                    <p className={`text-xs truncate mt-0.5 ${isUnread ? "text-foreground/70 font-medium" : "text-muted-foreground"}`}>{conv.subtitle}</p>
                   </div>
-                  <span className="text-[10px] text-muted-foreground shrink-0">{formatTime(conv.lastMessageAt)}</span>
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <span className={`text-[10px] ${isUnread ? "text-emerald-600 font-semibold" : "text-muted-foreground"}`}>{formatTime(conv.lastMessageAt)}</span>
+                    {conv.unread > 0 && (
+                      <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-emerald-500 text-white text-[10px] font-bold flex items-center justify-center">
+                        {conv.unread > 99 ? "99+" : conv.unread}
+                      </span>
+                    )}
+                  </div>
                 </button>
               );
             })}
+
           </div>
         )}
       </ScrollArea>
