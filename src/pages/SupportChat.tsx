@@ -78,6 +78,30 @@ export default function SupportChat() {
     },
   });
 
+  // ---- Unread counts ----
+  const { data: unreadMap = {} } = useQuery({
+    queryKey: ["chat-unread-counts", user?.id],
+    queryFn: async () => {
+      const counts: Record<string, number> = {};
+      const [{ data: unified }, { data: legacy }] = await Promise.all([
+        supabase.from("unified_messages").select("conversation_id, sender_id, is_read").eq("is_read", false),
+        supabase.from("chat_messages").select("conversation_id, sender_id, is_read, sender_type").eq("is_read", false),
+      ]);
+      (unified || []).forEach((m: any) => {
+        if (m.sender_id === user?.id) return;
+        counts[m.conversation_id] = (counts[m.conversation_id] || 0) + 1;
+      });
+      (legacy || []).forEach((m: any) => {
+        if (m.sender_type === "employee") return;
+        counts[m.conversation_id] = (counts[m.conversation_id] || 0) + 1;
+      });
+      return counts;
+    },
+    enabled: !!user?.id,
+  });
+
+  const totalUnread = Object.values(unreadMap).reduce((a: number, b: number) => a + b, 0);
+
   // Combine into one list
   const allConversations = [
     ...unifiedConvs.map((c) => ({
@@ -91,9 +115,11 @@ export default function SupportChat() {
         : "Route Group",
       type: c.type as ChatCategory,
       lastMessageAt: c.last_message_at,
+      unread: unreadMap[c.id] || 0,
       raw: c,
       isLegacy: false,
     })),
+
     ...legacyConvs.map((c: any) => ({
       id: c.id,
       name: c.parent_accounts?.parent_name || "Support",
