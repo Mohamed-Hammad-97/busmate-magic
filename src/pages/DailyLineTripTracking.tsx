@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
-  ArrowLeft, Bus, Phone, Loader2, Navigation, Car, MapPin, Clock,
+  ArrowLeft, Bus, Loader2, Navigation, Car, MapPin, Clock,
   Calendar, User, CheckCircle2, AlertCircle,
 } from "lucide-react";
 import { format } from "date-fns";
