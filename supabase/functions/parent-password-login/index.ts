@@ -28,19 +28,25 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Find parent account
-    const { data: parent, error: parentError } = await supabase
+    // Find parent account (has_password flag can be stale, so don't gate on it)
+    const { data: parents, error: parentError } = await supabase
       .from("parent_accounts")
       .select("id, user_id, has_password, is_active")
       .or(`father_phone.eq.${cleanPhone},father_phone.eq.0${cleanPhone}`)
-      .single();
+      .not("user_id", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(1);
 
-    if (parentError || !parent || !parent.user_id || !parent.has_password) {
+    const parent = parents?.[0];
+
+    if (parentError || !parent?.user_id) {
+      console.log("Parent lookup failed", { hasError: !!parentError, found: parents?.length ?? 0 });
       return new Response(
         JSON.stringify({ error: "رقم الهاتف أو كلمة المرور غير صحيحة" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
 
     // Block deactivated accounts
     if (parent.is_active === false) {
