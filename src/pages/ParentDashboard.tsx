@@ -993,7 +993,8 @@ export default function ParentDashboard() {
                         </Button>
                       )}
                     </div>
-                  ))}
+                  );})}
+
                 </div>
               </>
             );
