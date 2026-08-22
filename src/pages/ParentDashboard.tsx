@@ -163,6 +163,19 @@ export default function ParentDashboard() {
     enabled: !!parentAccount?.id,
   });
 
+  // Live updates when finance edits installments (fawry code, status, receipts)
+  useEffect(() => {
+    if (!parentAccount?.id) return;
+    const channel = supabase
+      .channel('parent-payments-updates')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, () => {
+        queryClient.invalidateQueries({ queryKey: ["parent-registrations", parentAccount.id] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [parentAccount?.id, queryClient]);
+
+
   const { data: routeAssignments = [] } = useQuery({
     queryKey: ["parent-routes", parentAccount?.id],
     queryFn: async () => {
