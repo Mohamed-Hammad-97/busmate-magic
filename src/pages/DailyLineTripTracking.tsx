@@ -318,12 +318,6 @@ export default function DailyLineTripTracking() {
                     <div className="font-semibold">{driver.full_name}</div>
                     <div className="text-xs text-muted-foreground">{isRtl ? "كابتن الرحلة" : "Trip captain"}</div>
                   </div>
-                  <Button asChild size="sm" className="bg-green-600 hover:bg-green-700">
-                    <a href={`tel:${driver.phone}`}>
-                      <Phone className="h-4 w-4 mr-1" />
-                      {isRtl ? "اتصال" : "Call"}
-                    </a>
-                  </Button>
                 </div>
                 {(driver.vehicle_plate || driver.vehicle_model || driver.vehicle_color) && (
                   <div className="pt-3 border-t space-y-2">
