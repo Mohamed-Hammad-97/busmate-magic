@@ -90,12 +90,16 @@ const ManageRouteAssignmentsDialog: React.FC<Props> = ({
           id,
           student_name,
           status,
-          parent_accounts ( parent_name, father_phone )
+          parent_accounts ( parent_name, father_phone, is_active )
         `)
         .eq('school_id', schoolId)
         .in('status', ['pending_fees', 'complete']);
       if (error) throw error;
-      return data as any[];
+      return (data as any[]).filter((r: any) => {
+        const pa = Array.isArray(r.parent_accounts) ? r.parent_accounts[0] : r.parent_accounts;
+        return pa?.is_active !== false;
+      });
+
     },
   });
 
