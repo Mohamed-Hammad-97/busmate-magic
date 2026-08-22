@@ -248,6 +248,7 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({
               pickup_latitude: parentData.pickup_latitude,
               pickup_longitude: parentData.pickup_longitude,
               pickup_address: parentData.pickup_address,
+              is_active: true,
             })
             .eq('id', parentId);
           if (updateError) throw updateError;
