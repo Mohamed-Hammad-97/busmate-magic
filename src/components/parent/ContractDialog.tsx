@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, FileSignature } from "lucide-react";
 import { ContractDocument, ContractData } from "./ContractDocument";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   open: boolean;
@@ -22,6 +23,8 @@ interface Props {
 export function ContractDialog({
   open, onOpenChange, contract, parentName, index, total, isSaving, onSign, allowLater = true,
 }: Props) {
+  const { t, i18n } = useTranslation();
+  const dir = i18n.language === "ar" ? "rtl" : "ltr";
   const [agreed, setAgreed] = useState(false);
   const [signature, setSignature] = useState(parentName || "");
   const [scrolledToEnd, setScrolledToEnd] = useState(false);
@@ -40,10 +43,10 @@ export function ContractDialog({
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v && !allowLater) return; onOpenChange(v); }}>
       <DialogContent className="max-w-3xl max-h-[92vh] flex flex-col p-0 gap-0">
-        <DialogHeader className="p-5 pb-3 border-b text-right" dir="rtl">
-          <DialogTitle className="flex items-center gap-2 justify-end">
-            {t("parentPortal.contractDialogTitle")} — {contract.studentName}
+        <DialogHeader className="p-5 pb-3 border-b" dir={dir}>
+          <DialogTitle className="flex items-center gap-2">
             <FileSignature className="h-5 w-5 text-primary" />
+            {t("parentPortal.contractDialogTitle")} — {contract.studentName}
           </DialogTitle>
           <DialogDescription>
             {total && total > 1 ? `${t("parentPortal.contractOf", { index: (index ?? 0) + 1, total })} — ` : ""}
@@ -55,7 +58,7 @@ export function ContractDialog({
           <ContractDocument data={contract} parentName={parentName} />
         </div>
 
-        <div className="border-t p-4 space-y-3 bg-muted/20" dir="rtl">
+        <div className="border-t p-4 space-y-3 bg-muted/20" dir={dir}>
           {!scrolledToEnd && (
             <p className="text-xs text-amber-600 font-medium">
               {t("parentPortal.scrollToRead")}
@@ -74,7 +77,6 @@ export function ContractDialog({
               value={signature}
               onChange={(e) => setSignature(e.target.value)}
               placeholder={t("parentPortal.fullNamePlaceholder")}
-              className="text-right"
             />
           </div>
           <div className="flex gap-2 justify-end">
