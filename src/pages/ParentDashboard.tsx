@@ -799,6 +799,7 @@ export default function ParentDashboard() {
           </nav>
 
           <div className="flex items-center gap-1.5 sm:gap-2">
+            <LanguageSwitcher />
             <div className="hidden sm:block text-right">
               <p className="text-sm font-medium truncate max-w-[120px]">{parentAccount?.parent_name}</p>
             </div>
