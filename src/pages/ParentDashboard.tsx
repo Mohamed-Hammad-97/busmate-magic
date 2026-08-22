@@ -140,8 +140,9 @@ export default function ParentDashboard() {
           schools (name, city),
           subscriptions (
             id, subscription_type, value, number_of_installments,
-            payments (*)
+            payments (*, payment_extra_fees (*))
           )
+
         `)
         .eq("parent_id", parentAccount.id)
         .order("created_at", { ascending: false });
