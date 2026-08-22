@@ -978,6 +978,7 @@ const Payments = () => {
                       <TableHead className="text-xs">{t('payments.studentName')}</TableHead>
                       <TableHead className="text-xs">{t('payments.parentName')}</TableHead>
                       <TableHead className="text-xs">School</TableHead>
+                      <TableHead className="text-xs">Line</TableHead>
                       <TableHead className="text-xs">رقم الدفع والتجديد</TableHead>
                       <TableHead className="text-xs">Installment</TableHead>
                       <TableHead className="text-xs">Amount</TableHead>
@@ -992,6 +993,7 @@ const Payments = () => {
                         <TableCell className="text-sm font-medium">{p.studentName || '-'}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">{p.parentName || '-'}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">{p.schoolName || '-'}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{p.lineNumber ?? '-'}</TableCell>
                         <TableCell className="text-sm text-muted-foreground" dir="ltr">{p.paymentPhone || '-'}</TableCell>
                         <TableCell className="text-sm">
                           {Number(p.installment_number) === 0 ? 'التأمين (Insurance)' : `القسط ${p.installment_number}`}
@@ -1022,6 +1024,7 @@ const Payments = () => {
                           <TableHead className="text-xs">{t('payments.studentName')}</TableHead>
                           <TableHead className="text-xs">{t('payments.parentName')}</TableHead>
                           <TableHead className="text-xs">School</TableHead>
+                          <TableHead className="text-xs">Line</TableHead>
                           <TableHead className="text-xs">رقم الدفع والتجديد</TableHead>
                           <TableHead className="text-xs">{t('payments.subscriptionType')}</TableHead>
                           <TableHead className="text-xs">Installments</TableHead>
@@ -1034,6 +1037,7 @@ const Payments = () => {
                             <TableCell className="text-sm font-medium">{r.studentName || '-'}</TableCell>
                             <TableCell className="text-sm text-muted-foreground">{r.parentName || '-'}</TableCell>
                             <TableCell className="text-sm text-muted-foreground">{r.schoolName || '-'}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground">{r.lineNumber ?? '-'}</TableCell>
                             <TableCell className="text-sm text-muted-foreground" dir="ltr">{r.paymentPhone || '-'}</TableCell>
                             <TableCell className="text-sm">{subscriptionTypeLabels[r.subscription?.subscription_type] || '-'}</TableCell>
                             <TableCell className="text-sm">{r.subscription?.number_of_installments ?? '-'}</TableCell>
