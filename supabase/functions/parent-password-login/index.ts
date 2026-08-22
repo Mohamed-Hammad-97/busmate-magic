@@ -84,6 +84,13 @@ serve(async (req) => {
       );
     }
 
+    // Keep the flag in sync (client-side updates can be blocked by RLS)
+    if (!parent.has_password) {
+      await supabase.from("parent_accounts").update({ has_password: true }).eq("id", parent.id);
+    }
+
+
+
     return new Response(
       JSON.stringify({
         success: true,
