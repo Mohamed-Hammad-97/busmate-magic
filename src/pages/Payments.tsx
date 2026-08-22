@@ -103,7 +103,7 @@ const Payments = () => {
                 student_name,
                 status,
                 schools (name),
-                parent_accounts (parent_name, city, father_phone, mother_phone, emergency_phone, payment_phone)
+                parent_accounts (parent_name, city, is_active, father_phone, mother_phone, emergency_phone, payment_phone)
               )
             )
           `)
