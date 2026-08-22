@@ -42,12 +42,12 @@ export function ContractDialog({
       <DialogContent className="max-w-3xl max-h-[92vh] flex flex-col p-0 gap-0">
         <DialogHeader className="p-5 pb-3 border-b text-right" dir="rtl">
           <DialogTitle className="flex items-center gap-2 justify-end">
-            عقد وقواعد الاشتراك — {contract.studentName}
+            {t("parentPortal.contractDialogTitle")} — {contract.studentName}
             <FileSignature className="h-5 w-5 text-primary" />
           </DialogTitle>
           <DialogDescription>
-            {total && total > 1 ? `عقد ${(index ?? 0) + 1} من ${total} — ` : ""}
-            برجاء قراءة القواعد بالكامل ثم التوقيع بالموافقة
+            {total && total > 1 ? `${t("parentPortal.contractOf", { index: (index ?? 0) + 1, total })} — ` : ""}
+            {t("parentPortal.contractReadPrompt")}
           </DialogDescription>
         </DialogHeader>
 
@@ -58,34 +58,34 @@ export function ContractDialog({
         <div className="border-t p-4 space-y-3 bg-muted/20" dir="rtl">
           {!scrolledToEnd && (
             <p className="text-xs text-amber-600 font-medium">
-              برجاء التمرير لأسفل لقراءة العقد بالكامل قبل الموافقة
+              {t("parentPortal.scrollToRead")}
             </p>
           )}
           <div className="flex items-start gap-2">
             <Checkbox id="agree" checked={agreed} onCheckedChange={(v) => setAgreed(!!v)} />
             <Label htmlFor="agree" className="text-sm leading-snug cursor-pointer">
-              لقد قرأت ووافقت على القواعد والالتزامات الخاصة بخدمة نقل الطالب
+              {t("parentPortal.agreeCheckbox")}
             </Label>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="signature" className="text-sm">توقيع ولي الأمر (اكتب اسمك بالكامل)</Label>
+            <Label htmlFor="signature" className="text-sm">{t("parentPortal.signatureLabel")}</Label>
             <Input
               id="signature"
               value={signature}
               onChange={(e) => setSignature(e.target.value)}
-              placeholder="الاسم بالكامل"
+              placeholder={t("parentPortal.fullNamePlaceholder")}
               className="text-right"
             />
           </div>
           <div className="flex gap-2 justify-end">
             {allowLater && (
               <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isSaving}>
-                لاحقاً
+                {t("parentPortal.later")}
               </Button>
             )}
             <Button disabled={!canSign} onClick={() => onSign(signature.trim())}>
               {isSaving && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
-              أوافق وأوقع
+              {t("parentPortal.agreeAndSign")}
             </Button>
           </div>
         </div>

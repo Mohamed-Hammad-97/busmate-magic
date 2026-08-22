@@ -9,6 +9,7 @@ import { ContractDocument, ContractData } from "./ContractDocument";
 import { ContractDialog } from "./ContractDialog";
 import { buildContractData, useParentContracts } from "@/hooks/useParentContracts";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   registrations: any[];
@@ -17,6 +18,7 @@ interface Props {
 }
 
 export function ContractsTab({ registrations, parentId, parentName }: Props) {
+  const { t } = useTranslation();
   const { requiredRegs, signedByReg, signMutation } = useParentContracts(registrations, parentId);
   const [viewing, setViewing] = useState<{ data: ContractData; signature: string; acceptedAt: string } | null>(null);
   const [signingReg, setSigningReg] = useState<any>(null);
@@ -27,15 +29,15 @@ export function ContractsTab({ registrations, parentId, parentName }: Props) {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-xl sm:text-2xl font-bold">العقود والقواعد</h2>
-        <p className="text-sm text-muted-foreground mt-1">عقد منفصل لكل طالب مشترك في الخدمة</p>
+        <h2 className="text-xl sm:text-2xl font-bold">{t("parentPortal.contractsTitle")}</h2>
+        <p className="text-sm text-muted-foreground mt-1">{t("parentPortal.contractsSubtitle")}</p>
       </div>
 
       {requiredRegs.length === 0 ? (
         <Card className="border-0 shadow-md">
           <CardContent className="py-12 text-center text-muted-foreground">
             <FileText className="h-12 w-12 mx-auto mb-3 text-muted-foreground/40" />
-            <p>لا توجد عقود متاحة حتى الآن. تظهر العقود بعد اكتمال الاشتراك.</p>
+            <p>{t("parentPortal.noContracts")}</p>
           </CardContent>
         </Card>
       ) : (
@@ -52,7 +54,7 @@ export function ContractsTab({ registrations, parentId, parentName }: Props) {
                       <p className="text-xs text-muted-foreground truncate">{reg.schools?.name}</p>
                     </div>
                     <Badge variant={acceptance ? "default" : "secondary"} className="text-[10px] shrink-0">
-                      {acceptance ? "موقّع" : "بانتظار التوقيع"}
+                      {acceptance ? t("parentPortal.signed") : t("parentPortal.awaitingSignature")}
                     </Badge>
                   </div>
 
@@ -64,7 +66,7 @@ export function ContractsTab({ registrations, parentId, parentName }: Props) {
                   ) : (
                     <div className="flex items-center gap-2 text-xs text-amber-600">
                       <AlertCircle className="h-3.5 w-3.5" />
-                      يجب قراءة العقد والتوقيع عليه
+                      {t("parentPortal.mustReadAndSign")}
                     </div>
                   )}
 
@@ -85,12 +87,12 @@ export function ContractsTab({ registrations, parentId, parentName }: Props) {
                         }
                       >
                         <FileText className="h-3.5 w-3.5 ml-1" />
-                        عرض العقد
+                        {t("parentPortal.viewContract")}
                       </Button>
                     ) : (
                       <Button size="sm" className="flex-1" onClick={() => setSigningReg(reg)}>
                         <FileSignature className="h-3.5 w-3.5 ml-1" />
-                        قراءة وتوقيع
+                        {t("parentPortal.readAndSign")}
                       </Button>
                     )}
                   </div>
@@ -113,10 +115,10 @@ export function ContractsTab({ registrations, parentId, parentName }: Props) {
             { reg: signingReg, signatureName },
             {
               onSuccess: () => {
-                toast({ title: "تم التوقيع", description: "تم حفظ موافقتك على العقد بنجاح" });
+                toast({ title: t("parentPortal.contractSigned"), description: t("parentPortal.contractSignedDesc") });
                 setSigningReg(null);
               },
-              onError: () => toast({ title: "تعذر حفظ التوقيع", variant: "destructive" }),
+              onError: () => toast({ title: t("parentPortal.contractSignError"), variant: "destructive" }),
             }
           )
         }
@@ -125,7 +127,7 @@ export function ContractsTab({ registrations, parentId, parentName }: Props) {
       <Dialog open={!!viewing} onOpenChange={(v) => !v && setViewing(null)}>
         <DialogContent className="max-w-3xl max-h-[92vh] flex flex-col p-0 gap-0">
           <DialogHeader className="p-5 pb-3 border-b text-right" dir="rtl">
-            <DialogTitle>العقد الموقّع</DialogTitle>
+            <DialogTitle>{t("parentPortal.signedContract")}</DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto p-5 print:overflow-visible">
             {viewing && (
@@ -139,7 +141,7 @@ export function ContractsTab({ registrations, parentId, parentName }: Props) {
           <div className="border-t p-4 flex justify-end print:hidden">
             <Button variant="outline" onClick={handlePrint}>
               <Printer className="h-4 w-4 ml-2" />
-              طباعة
+              {t("parentPortal.print")}
             </Button>
           </div>
         </DialogContent>
