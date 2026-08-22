@@ -10,10 +10,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, CalendarOff, Trash2, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
-import { ar } from "date-fns/locale";
+import { ar, enGB } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 
 export function AbsenceRegistration() {
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
+  const dateLocale = isAr ? ar : enGB;
   const { parentAccount } = useParentAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -64,18 +68,18 @@ export function AbsenceRegistration() {
         reason: reason || null,
       });
       if (error) {
-        if (error.code === "23505") throw new Error("تم تسجيل غياب لهذا التاريخ مسبقاً");
+        if (error.code === "23505") throw new Error(t("parentPortal.absenceDuplicate"));
         throw error;
       }
     },
     onSuccess: () => {
-      toast({ title: "تم تسجيل الغياب بنجاح" });
+      toast({ title: t("parentPortal.absenceSaved") });
       setSelectedDate(undefined);
       setReason("");
       queryClient.invalidateQueries({ queryKey: ["parent-absences"] });
     },
     onError: (error: Error) => {
-      toast({ title: "خطأ", description: error.message, variant: "destructive" });
+      toast({ title: t("parentPortal.errorTitle"), description: error.message, variant: "destructive" });
     },
   });
 
@@ -86,7 +90,7 @@ export function AbsenceRegistration() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast({ title: "تم إلغاء تسجيل الغياب" });
+      toast({ title: t("parentPortal.absenceCancelled") });
       queryClient.invalidateQueries({ queryKey: ["parent-absences"] });
     },
   });
@@ -103,14 +107,14 @@ export function AbsenceRegistration() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <CalendarOff className="h-5 w-5" />
-            تسجيل غياب
+            {t("parentPortal.registerAbsence")}
           </CardTitle>
-          <CardDescription>اختر الطالب والتاريخ لتسجيل غياب مسبق</CardDescription>
+          <CardDescription>{t("parentPortal.registerAbsenceDesc")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <Select value={selectedRegistration} onValueChange={setSelectedRegistration}>
             <SelectTrigger>
-              <SelectValue placeholder="اختر الطالب" />
+              <SelectValue placeholder={t("parentPortal.selectStudent")} />
             </SelectTrigger>
             <SelectContent>
               {registrations.map((reg: any) => (
@@ -134,7 +138,7 @@ export function AbsenceRegistration() {
           </div>
 
           <Textarea
-            placeholder="سبب الغياب (اختياري)"
+            placeholder={t("parentPortal.absenceReasonPlaceholder")}
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             rows={2}
@@ -146,7 +150,7 @@ export function AbsenceRegistration() {
             disabled={!selectedDate || !selectedRegistration || registerAbsence.isPending}
           >
             {registerAbsence.isPending && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
-            تسجيل الغياب
+            {t("parentPortal.submitAbsence")}
           </Button>
         </CardContent>
       </Card>
@@ -154,7 +158,7 @@ export function AbsenceRegistration() {
       {/* Absence History */}
       <Card>
         <CardHeader>
-          <CardTitle>سجل الغياب</CardTitle>
+          <CardTitle>{t("parentPortal.absencesLog")}</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -164,7 +168,7 @@ export function AbsenceRegistration() {
           ) : absences.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <AlertCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p>لا يوجد سجل غياب</p>
+              <p>{t("parentPortal.noAbsences")}</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -176,7 +180,7 @@ export function AbsenceRegistration() {
                   <div>
                     <p className="font-medium text-sm">{absence.registrations?.student_name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {format(new Date(absence.absence_date), "EEEE dd MMMM yyyy", { locale: ar })}
+                      {format(new Date(absence.absence_date), "EEEE dd MMMM yyyy", { locale: dateLocale })}
                     </p>
                     {absence.reason && (
                       <p className="text-xs text-muted-foreground mt-1">{absence.reason}</p>
@@ -193,7 +197,7 @@ export function AbsenceRegistration() {
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     ) : (
-                      <Badge variant="secondary">منتهي</Badge>
+                      <Badge variant="secondary">{t("parentPortal.absenceExpired")}</Badge>
                     )}
                   </div>
                 </div>

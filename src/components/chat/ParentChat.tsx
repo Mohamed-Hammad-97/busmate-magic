@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useTranslation } from "react-i18next";
 
 interface SupervisorTarget {
   supervisor_id: string;
@@ -24,6 +25,7 @@ interface SupervisorTarget {
 }
 
 export function ParentChat() {
+  const { t } = useTranslation();
   const { parentAccount, user } = useParentAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -135,7 +137,7 @@ export function ParentChat() {
           .order("created_at", { ascending: true });
         return (data || []).map((m) => ({
           ...m,
-          sender_name: m.sender_type === "parent" ? parentAccount?.parent_name : "خدمة العملاء",
+          sender_name: m.sender_type === "parent" ? parentAccount?.parent_name : t('parentPortal.customerService'),
           isLegacy: true,
         }));
       }
@@ -192,7 +194,7 @@ export function ParentChat() {
       } else {
         const { error } = await supabase.from("unified_messages").insert({
           conversation_id: selectedConversationId, sender_id: user.id, sender_type: "parent",
-          sender_name: parentAccount?.parent_name || "ولي الأمر", message: newMessage.trim(),
+          sender_name: parentAccount?.parent_name || t('parentPortal.parentLabel'), message: newMessage.trim(),
         });
         if (error) throw error;
         await supabase.from("unified_conversations").update({ last_message_at: new Date().toISOString() }).eq("id", selectedConversationId);
@@ -205,7 +207,7 @@ export function ParentChat() {
       queryClient.invalidateQueries({ queryKey: ["parent-legacy-conversations"] });
     },
     onError: () => {
-      toast({ title: "تعذر إرسال الرسالة", variant: "destructive" });
+      toast({ title: t('parentPortal.sendFailed'), variant: "destructive" });
     },
   });
 
@@ -219,7 +221,7 @@ export function ParentChat() {
     },
     onError: (e: any) => {
       setStartingTarget(null);
-      toast({ title: "تعذر بدء المحادثة", description: e?.message, variant: "destructive" });
+      toast({ title: t('parentPortal.startChatFailed'), description: e?.message, variant: "destructive" });
     },
   });
 
@@ -229,17 +231,17 @@ export function ParentChat() {
   ];
 
   const convoTitle = (conv: any) => {
-    if (conv.isLegacy) return "خدمة العملاء";
-    if (conv.type === "route_group") return conv.subject || "جروب الخط";
-    if (conv.type === "customer_support" || conv.type === "customer_dm") return "خدمة العملاء";
-    if (conv.type === "customer_supervisor") return conv.subject || "المشرف";
-    return conv.subject || "محادثة";
+    if (conv.isLegacy) return t('parentPortal.customerService');
+    if (conv.type === "route_group") return conv.subject || t('parentPortal.lineGroup');
+    if (conv.type === "customer_support" || conv.type === "customer_dm") return t('parentPortal.customerService');
+    if (conv.type === "customer_supervisor") return conv.subject || t('parentPortal.supervisorTitle');
+    return conv.subject || t('parentPortal.conversation');
   };
 
   const convoSubtitle = (conv: any) => {
-    if (conv.type === "route_group") return "جروب الخط";
-    if (conv.type === "customer_supervisor") return "محادثة خاصة مع المشرف";
-    return "الدعم والمساعدة";
+    if (conv.type === "route_group") return t('parentPortal.lineGroup');
+    if (conv.type === "customer_supervisor") return t('parentPortal.supervisorChatSubtitle');
+    return t('parentPortal.supportSubtitle');
   };
 
   const filteredConversations = allConversations.filter((c: any) =>
@@ -264,7 +266,7 @@ export function ParentChat() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="بحث في المحادثات..."
+            placeholder={t('parentPortal.searchChats')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10 rounded-xl bg-muted/50 border-0 h-9 text-sm"
@@ -280,8 +282,8 @@ export function ParentChat() {
         ) : filteredConversations.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-muted-foreground px-4 text-center">
             <MessageCircle className="h-10 w-10 mb-2 opacity-30" />
-            <p className="text-sm">لا توجد محادثات</p>
-            <p className="text-xs mt-1">ابدأ محادثة جديدة من الزر بالأسفل</p>
+            <p className="text-sm">{t('parentPortal.noChats')}</p>
+            <p className="text-xs mt-1">{t('parentPortal.startFromButton')}</p>
           </div>
         ) : (
           <div className="divide-y">
@@ -320,7 +322,7 @@ export function ParentChat() {
 
       <div className="p-3 border-t">
         <Button size="sm" className="w-full gap-2" onClick={() => { setIsCreating(true); setSelectedConversationId(null); }}>
-          <Plus className="h-4 w-4" /> محادثة جديدة
+          <Plus className="h-4 w-4" /> {t('parentPortal.newChat')}
         </Button>
       </div>
     </div>
@@ -336,8 +338,8 @@ export function ParentChat() {
           </Button>
         )}
         <div>
-          <h3 className="font-semibold text-sm">محادثة جديدة</h3>
-          <p className="text-xs text-muted-foreground">اختر الجهة التي تريد مراسلتها</p>
+          <h3 className="font-semibold text-sm">{t('parentPortal.newChat')}</h3>
+          <p className="text-xs text-muted-foreground">{t('parentPortal.chooseRecipient')}</p>
         </div>
       </div>
 
@@ -353,44 +355,44 @@ export function ParentChat() {
               <Headphones className="h-5 w-5 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-medium text-sm">خدمة العملاء</p>
-              <p className="text-xs text-muted-foreground">استفسارات الاشتراك والمدفوعات والدعم</p>
+              <p className="font-medium text-sm">{t('parentPortal.customerService')}</p>
+              <p className="text-xs text-muted-foreground">{t('parentPortal.customerServiceDesc')}</p>
             </div>
             {startingTarget === "support" && <Loader2 className="h-4 w-4 animate-spin" />}
           </button>
 
           {/* Supervisors */}
           <div className="pt-2">
-            <p className="text-xs font-medium text-muted-foreground mb-2">مشرف الخط (محادثة خاصة)</p>
+            <p className="text-xs font-medium text-muted-foreground mb-2">{t('parentPortal.supervisorPrivate')}</p>
             {loadingTargets ? (
               <div className="flex items-center justify-center py-6">
                 <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
               </div>
             ) : supervisorTargets.length === 0 ? (
-              <p className="text-xs text-muted-foreground py-3">لا يوجد مشرف مرتبط بحسابك حالياً</p>
+              <p className="text-xs text-muted-foreground py-3">{t('parentPortal.noSupervisorLinked')}</p>
             ) : (
               <div className="space-y-2">
-                {supervisorTargets.map((t) => (
+                {supervisorTargets.map((tg) => (
                   <button
-                    key={t.supervisor_id}
+                    key={tg.supervisor_id}
                     className="w-full flex items-center gap-3 p-4 rounded-2xl border hover:bg-muted/50 transition-colors text-left"
                     disabled={startConversation.isPending}
                     onClick={() => {
-                      setStartingTarget(t.supervisor_id);
-                      startConversation.mutate({ target: "supervisor", supervisor_id: t.supervisor_id });
+                      setStartingTarget(tg.supervisor_id);
+                      startConversation.mutate({ target: "supervisor", supervisor_id: tg.supervisor_id });
                     }}
                   >
                     <div className="h-11 w-11 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                       <UserCog className="h-5 w-5 text-primary" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{t.supervisor_name}</p>
+                      <p className="font-medium text-sm truncate">{tg.supervisor_name}</p>
                       <p className="text-xs text-muted-foreground truncate">
-                        {t.student_name ? `${t.student_name} • ` : ""}
-                        {t.route_number ? `خط رقم ${t.route_number}` : t.route_name}
+                        {tg.student_name ? `${tg.student_name} • ` : ""}
+                        {tg.route_number ? t('parentPortal.lineNumber', { n: tg.route_number }) : tg.route_name}
                       </p>
                     </div>
-                    {startingTarget === t.supervisor_id && <Loader2 className="h-4 w-4 animate-spin" />}
+                    {startingTarget === tg.supervisor_id && <Loader2 className="h-4 w-4 animate-spin" />}
                   </button>
                 ))}
               </div>
@@ -399,9 +401,9 @@ export function ParentChat() {
 
           {/* Line groups */}
           <div className="pt-2">
-            <p className="text-xs font-medium text-muted-foreground mb-2">جروب الخط</p>
+            <p className="text-xs font-medium text-muted-foreground mb-2">{t('parentPortal.lineGroup')}</p>
             {groupConversations.length === 0 ? (
-              <p className="text-xs text-muted-foreground py-3">لم تتم إضافتك إلى جروب خط بعد</p>
+              <p className="text-xs text-muted-foreground py-3">{t('parentPortal.noLineGroup')}</p>
             ) : (
               <div className="space-y-2">
                 {groupConversations.map((g: any) => (
@@ -414,9 +416,9 @@ export function ParentChat() {
                       <Bus className="h-5 w-5 text-primary" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{g.subject || "جروب الخط"}</p>
+                      <p className="font-medium text-sm truncate">{g.subject || t('parentPortal.lineGroup')}</p>
                       <p className="text-xs text-muted-foreground">
-                        {g.canSend ? "يمكنك المشاركة في الجروب" : "للقراءة فقط"}
+                        {g.canSend ? t('parentPortal.canPostInGroup') : t('parentPortal.readOnly')}
                       </p>
                     </div>
                   </button>
@@ -436,8 +438,8 @@ export function ParentChat() {
       return (
         <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-center px-6">
           <MessageCircle className="h-16 w-16 mb-3 opacity-20" />
-          <p className="font-medium">اختر محادثة</p>
-          <p className="text-sm">اختر محادثة من القائمة أو ابدأ محادثة جديدة</p>
+          <p className="font-medium">{t('parentPortal.pickConversation')}</p>
+          <p className="text-sm">{t('parentPortal.pickConversationDesc')}</p>
         </div>
       );
     }
@@ -454,7 +456,7 @@ export function ParentChat() {
             {getConvoIcon(currentConvo)}
           </div>
           <div className="min-w-0">
-            <h3 className="font-semibold text-sm truncate">{currentConvo ? convoTitle(currentConvo) : "محادثة"}</h3>
+            <h3 className="font-semibold text-sm truncate">{currentConvo ? convoTitle(currentConvo) : t('parentPortal.conversation')}</h3>
             <p className="text-xs text-muted-foreground truncate">{currentConvo ? convoSubtitle(currentConvo) : ""}</p>
           </div>
         </div>
@@ -466,7 +468,7 @@ export function ParentChat() {
             </div>
           ) : messages.length === 0 ? (
             <div className="text-center text-muted-foreground py-8">
-              <p className="text-sm">ابدأ المحادثة بإرسال رسالة</p>
+              <p className="text-sm">{t('parentPortal.startBySending')}</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -497,7 +499,7 @@ export function ParentChat() {
           {canSendInCurrent ? (
             <form onSubmit={(e) => { e.preventDefault(); sendMessage.mutate(); }} className="flex gap-2">
               <Input
-                placeholder="اكتب رسالة..."
+                placeholder={t('parentPortal.typeMessage')}
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 disabled={sendMessage.isPending}
@@ -510,7 +512,7 @@ export function ParentChat() {
           ) : (
             <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground py-2">
               <Lock className="h-3.5 w-3.5" />
-              هذا الجروب للقراءة فقط حالياً
+              {t('parentPortal.groupReadOnly')}
             </div>
           )}
         </div>
