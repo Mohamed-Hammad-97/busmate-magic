@@ -406,7 +406,7 @@ const Payments = () => {
     Object.values(paymentsByRegistration).forEach((reg) => {
       reg.payments.forEach((p: any) => {
         if (p.status === 'paid' && sameDay(p.paid_date, changesDate)) {
-          paidOn.push({ ...p, parentName: reg.parentName, studentName: reg.studentName, schoolName: reg.schoolName, paymentPhone: reg.paymentPhone, registrationId: reg.registrationId });
+          paidOn.push({ ...p, parentName: reg.parentName, studentName: reg.studentName, schoolName: reg.schoolName, paymentPhone: reg.paymentPhone, lineNumber: reg.lineNumber, lineName: reg.lineName, registrationId: reg.registrationId });
         }
       });
       if (sameDay(reg.createdAt, changesDate)) {
@@ -655,6 +655,10 @@ const Payments = () => {
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input placeholder="Filter by name..." value={nameFilter} onChange={(e) => setNameFilter(e.target.value)} className="pl-10 h-11 bg-card border-border/50 focus:border-primary/50 rounded-xl transition-all" />
                 </div>
+                <div className="relative w-full sm:w-[170px]">
+                  <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input placeholder="Filter by line no..." value={lineFilter} onChange={(e) => setLineFilter(e.target.value)} inputMode="numeric" dir="ltr" className="pl-10 h-11 bg-card border-border/50 focus:border-primary/50 rounded-xl transition-all" />
+                </div>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger className="w-[160px] h-11 bg-card border-border/50 rounded-xl">
                     <SelectValue placeholder={t('payments.paymentStatus')} />
@@ -780,6 +784,7 @@ const Payments = () => {
                           <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('payments.parentName')}</TableHead>
                           <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('payments.studentName')}</TableHead>
                           <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">School</TableHead>
+                          <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Line</TableHead>
                           <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">رقم الدفع والتجديد</TableHead>
                           <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('payments.subscriptionType')}</TableHead>
                           <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Total</TableHead>
@@ -811,6 +816,15 @@ const Payments = () => {
 
                               <TableCell className="text-sm text-muted-foreground">{regData.studentName || '-'}</TableCell>
                               <TableCell className="text-sm text-muted-foreground">{regData.schoolName || '-'}</TableCell>
+                              <TableCell className="text-sm">
+                                {regData.lineNumber != null ? (
+                                  <span className="inline-flex items-center gap-1 text-xs font-semibold bg-primary/10 text-primary px-2.5 py-1 rounded-full" title={regData.lineName || undefined}>
+                                    <Hash className="h-3 w-3" />{regData.lineNumber}
+                                  </span>
+                                ) : (
+                                  <span className="text-muted-foreground">-</span>
+                                )}
+                              </TableCell>
                               <TableCell className="text-sm text-muted-foreground" dir="ltr">{regData.paymentPhone || '-'}</TableCell>
                               <TableCell>
                                 <span className="text-xs font-medium bg-primary/10 text-primary px-2.5 py-1 rounded-full">
