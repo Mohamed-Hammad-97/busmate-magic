@@ -169,7 +169,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
           installment_number,
           due_date,
           notes: notes ?? prev?.notes ?? null,
-          status: ((prev?.status === 'archived' ? 'pending' : prev?.status) ?? 'pending') as Enums<'payment_status'>,
+          status: (prev?.status ?? 'pending') as Enums<'payment_status'>,
           paid_date: prev?.paid_date ?? null,
           receipt_url: prev?.receipt_url ?? null,
           payment_note: prev?.payment_note ?? null,
