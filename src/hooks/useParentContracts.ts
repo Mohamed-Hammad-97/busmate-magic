@@ -45,10 +45,9 @@ export function useParentContracts(registrations: any[], parentId?: string) {
     enabled: !!parentId,
   });
 
-  // Contracts are required for registrations that are complete and have a subscription
-  const requiredRegs = registrations.filter(
-    (r: any) => r.status === "complete" && r.subscriptions?.length > 0
-  );
+  // Contracts are required for every completed registration (subscription details are optional)
+  const requiredRegs = registrations.filter((r: any) => r.status === "complete");
+
 
   const signedByReg = new Map(acceptances.map((a: any) => [a.registration_id, a]));
 
