@@ -2628,11 +2628,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_read_conversation: {
+        Args: { _conversation_id: string; _user_id: string }
+        Returns: boolean
+      }
       can_send_in_conversation: {
         Args: { _conversation_id: string; _user_id: string }
         Returns: boolean
       }
       cleanup_expired_otps: { Args: never; Returns: undefined }
+      conversation_type_of: {
+        Args: { _conversation_id: string }
+        Returns: Database["public"]["Enums"]["conversation_type"]
+      }
       get_user_departments: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["department"][]
