@@ -690,7 +690,7 @@ const HomepageAdmin = () => {
               <CardContent className="space-y-4 pt-6">
                 <div className="space-y-2">
                   <Label>Page Title</Label>
-                  <Input placeholder="Seater - Smart School & Corporate Transportation" value={settingsForm.seo_title || ""} onChange={(e) => setSettingsForm({ ...settingsForm, seo_title: e.target.value })} />
+                  <Input placeholder="Seater" value={settingsForm.seo_title || ""} onChange={(e) => setSettingsForm({ ...settingsForm, seo_title: e.target.value })} />
                 </div>
                 <div className="space-y-2">
                   <Label>Meta Description</Label>
