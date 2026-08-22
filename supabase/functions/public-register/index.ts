@@ -268,6 +268,11 @@ serve(async (req) => {
       // Existing parent - add another child registration
       console.log("Existing parent found by phone, adding new registration:", data.father_phone);
       parentId = existingParent.id;
+      const { error: reactivateError } = await supabase
+        .from('parent_accounts')
+        .update({ is_active: true })
+        .eq('id', parentId);
+      if (reactivateError) throw reactivateError;
     } else {
       // Check for duplicate national ID (only for new parents, and only if national_id provided)
       if (data.national_id?.trim()) {

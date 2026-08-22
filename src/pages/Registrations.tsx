@@ -229,12 +229,21 @@ const Registrations: React.FC = () => {
         .delete()
         .eq('registration_id', reg.id);
       if (assignError) throw assignError;
-      // Deactivate the parent account
-      const { error: parentError } = await supabase
-        .from('parent_accounts')
-        .update({ is_active: false })
-        .eq('id', reg.parent_id);
-      if (parentError) throw parentError;
+      // Only deactivate the parent when no other current child registration remains.
+      const { count: currentRegistrationCount, error: countError } = await supabase
+        .from('registrations')
+        .select('id', { count: 'exact', head: true })
+        .eq('parent_id', reg.parent_id)
+        .in('status', ['pending_fees', 'complete']);
+      if (countError) throw countError;
+
+      if ((currentRegistrationCount ?? 0) === 0) {
+        const { error: parentError } = await supabase
+          .from('parent_accounts')
+          .update({ is_active: false })
+          .eq('id', reg.parent_id);
+        if (parentError) throw parentError;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['registrations'] });

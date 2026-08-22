@@ -21,7 +21,14 @@ serve(async (req) => {
       );
     }
 
-    const cleanPhone = phone.replace(/\s/g, "").replace(/^0/, "").replace(/^\+2/, "");
+    const cleanPhone = String(phone).replace(/\D/g, "").replace(/^20/, "").replace(/^0/, "");
+
+    if (!/^1\d{9}$/.test(cleanPhone)) {
+      return new Response(
+        JSON.stringify({ error: "رقم الهاتف أو كلمة المرور غير صحيحة" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -31,13 +38,20 @@ serve(async (req) => {
     // Find parent account (has_password flag can be stale, so don't gate on it)
     const { data: parents, error: parentError } = await supabase
       .from("parent_accounts")
-      .select("id, user_id, has_password, is_active")
-      .or(`father_phone.eq.${cleanPhone},father_phone.eq.0${cleanPhone}`)
+      .select("id, user_id, has_password, is_active, registrations(status)")
+      .in("father_phone", [cleanPhone, `0${cleanPhone}`, `20${cleanPhone}`, `+20${cleanPhone}`])
       .not("user_id", "is", null)
       .order("created_at", { ascending: false });
 
-    // Prefer an active account; fall back to the newest one
-    const parent = parents?.find((p) => p.is_active !== false) ?? parents?.[0];
+    // A current registration is also proof that the account should be active.
+    // This repairs legacy rows deactivated during school-year archival or sibling cancellation.
+    const hasCurrentRegistration = (candidate: typeof parents extends (infer T)[] | null ? T : never) =>
+      candidate.registrations?.some((registration) =>
+        registration.status === "pending_fees" || registration.status === "complete"
+      ) ?? false;
+    const parent = parents?.find((candidate) => candidate.is_active !== false)
+      ?? parents?.find(hasCurrentRegistration)
+      ?? parents?.[0];
 
 
     if (parentError || !parent?.user_id) {
@@ -49,12 +63,28 @@ serve(async (req) => {
     }
 
 
-    // Block deactivated accounts
-    if (parent.is_active === false) {
+    // Block genuinely deactivated accounts, but repair a stale flag when a current
+    // registration exists so an active subscription can still be accessed.
+    if (parent.is_active === false && !hasCurrentRegistration(parent)) {
       return new Response(
         JSON.stringify({ error: "تم تعطيل هذا الحساب. تواصل مع الإدارة" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    if (parent.is_active === false) {
+      const { error: reactivateError } = await supabase
+        .from("parent_accounts")
+        .update({ is_active: true })
+        .eq("id", parent.id);
+
+      if (reactivateError) {
+        console.error("Failed to repair parent active state", { parentId: parent.id });
+        return new Response(
+          JSON.stringify({ error: "تعذر تفعيل الحساب. تواصل مع الإدارة" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
 
     // Get user email
