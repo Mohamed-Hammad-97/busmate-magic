@@ -7,6 +7,7 @@ export interface PaymentExportRow {
   parentName: string;
   studentName: string;
   schoolName: string;
+  lineNumber: string;
   paymentPhone: string;
   subscriptionType: string;
   totalAmount: number;
@@ -21,6 +22,7 @@ export interface InstallmentExportRow {
   parentName: string;
   studentName: string;
   schoolName: string;
+  lineNumber: string;
   paymentPhone: string;
   subscriptionType: string;
   installmentLabel: string;
@@ -38,6 +40,7 @@ const HEADERS = [
   'Parent Name',
   'Student Name',
   'School',
+  'Line No',
   'Payment Phone',
   'Subscription Type',
   'Total (EGP)',
@@ -52,6 +55,7 @@ const DETAIL_HEADERS = [
   'Parent Name',
   'Student Name',
   'School',
+  'Line No',
   'Payment Phone',
   'Subscription Type',
   'Installment',
@@ -82,6 +86,7 @@ export function buildPaymentRows(grouped: Record<string, any>): PaymentExportRow
       parentName: r.parentName || '',
       studentName: r.studentName || '',
       schoolName: r.schoolName || '',
+      lineNumber: r.lineNumber != null ? String(r.lineNumber) : '',
       paymentPhone: r.paymentPhone || '',
       subscriptionType: r.subscription?.subscription_type || '',
       totalAmount: total,
@@ -110,6 +115,7 @@ export function buildInstallmentRows(grouped: Record<string, any>): InstallmentE
         parentName: r.parentName || '',
         studentName: r.studentName || '',
         schoolName: r.schoolName || '',
+        lineNumber: r.lineNumber != null ? String(r.lineNumber) : '',
         paymentPhone: r.paymentPhone || '',
         subscriptionType: r.subscription?.subscription_type || '',
         installmentLabel: num === 0 ? 'Insurance' : `Installment ${num}`,
@@ -130,20 +136,20 @@ export function buildInstallmentRows(grouped: Record<string, any>): InstallmentE
 export function exportPaymentsExcel(grouped: Record<string, any>, filename = 'payments') {
   const rows = buildPaymentRows(grouped);
   const data = [HEADERS, ...rows.map((r) => [
-    r.parentName, r.studentName, r.schoolName, r.paymentPhone, r.subscriptionType,
+    r.parentName, r.studentName, r.schoolName, r.lineNumber, r.paymentPhone, r.subscriptionType,
     r.totalAmount, r.paidAmount, r.remaining,
     r.progress, r.status, r.createdAt,
   ])];
   const ws = XLSX.utils.aoa_to_sheet(data);
-  ws['!cols'] = [{ wch: 22 }, { wch: 22 }, { wch: 24 }, { wch: 16 }, { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 10 }, { wch: 14 }, { wch: 18 }];
+  ws['!cols'] = [{ wch: 22 }, { wch: 22 }, { wch: 24 }, { wch: 10 }, { wch: 16 }, { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 10 }, { wch: 14 }, { wch: 18 }];
 
   const details = buildInstallmentRows(grouped);
   const detailData = [DETAIL_HEADERS, ...details.map((d) => [
-    d.parentName, d.studentName, d.schoolName, d.paymentPhone, d.subscriptionType,
+    d.parentName, d.studentName, d.schoolName, d.lineNumber, d.paymentPhone, d.subscriptionType,
     d.installmentLabel, d.amount, d.extraFees, d.dueDate, d.paidDate, d.status, d.paidBy, d.note,
   ])];
   const wsDetails = XLSX.utils.aoa_to_sheet(detailData);
-  wsDetails['!cols'] = [{ wch: 22 }, { wch: 22 }, { wch: 24 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 13 }, { wch: 13 }, { wch: 12 }, { wch: 18 }, { wch: 28 }];
+  wsDetails['!cols'] = [{ wch: 22 }, { wch: 22 }, { wch: 24 }, { wch: 10 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 13 }, { wch: 13 }, { wch: 12 }, { wch: 18 }, { wch: 28 }];
 
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Summary');
@@ -163,7 +169,7 @@ export function exportPaymentsPDF(grouped: Record<string, any>, filename = 'paym
     startY: 25,
     head: [HEADERS],
     body: rows.map((r) => [
-      r.parentName, r.studentName, r.schoolName, r.paymentPhone, r.subscriptionType,
+      r.parentName, r.studentName, r.schoolName, r.lineNumber, r.paymentPhone, r.subscriptionType,
       r.totalAmount.toLocaleString(), r.paidAmount.toLocaleString(), r.remaining.toLocaleString(),
       r.progress, r.status, r.createdAt,
     ]),
@@ -179,7 +185,7 @@ export function exportPaymentsPDF(grouped: Record<string, any>, filename = 'paym
     startY: 20,
     head: [DETAIL_HEADERS],
     body: details.map((d) => [
-      d.parentName, d.studentName, d.schoolName, d.paymentPhone, d.subscriptionType,
+      d.parentName, d.studentName, d.schoolName, d.lineNumber, d.paymentPhone, d.subscriptionType,
       d.installmentLabel, d.amount.toLocaleString(), d.extraFees.toLocaleString(),
       d.dueDate, d.paidDate, d.status, d.paidBy, d.note,
     ]),

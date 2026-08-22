@@ -61,6 +61,7 @@ const Payments = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [phoneFilter, setPhoneFilter] = useState('');
   const [nameFilter, setNameFilter] = useState('');
+  const [lineFilter, setLineFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [installmentFilter, setInstallmentFilter] = useState<string>('');
   const [insuranceFilter, setInsuranceFilter] = useState<string>('all');
@@ -118,6 +119,28 @@ const Payments = () => {
       return all;
     },
   });
+
+  // Line (route) number per registration — no direct relation from payments to routes
+  const { data: lineByRegistration = {} } = useQuery({
+    queryKey: ['payments-route-assignments'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('route_assignments')
+        .select('registration_id, routes (route_number, name)');
+      if (error) throw error;
+      const map: Record<string, { routeNumber: number | null; routeName: string }> = {};
+      (data || []).forEach((a: any) => {
+        if (!a.registration_id || !a.routes) return;
+        map[a.registration_id] = {
+          routeNumber: a.routes.route_number ?? null,
+          routeName: a.routes.name || '',
+        };
+      });
+      return map;
+    },
+  });
+
+
 
   const cityPayments = useMemo(() => {
     // Cancelled registrations must not surface their payment plans anywhere
@@ -242,7 +265,7 @@ const Payments = () => {
 
 
   const paymentsByRegistration = useMemo(() => {
-    const grouped: Record<string, { registrationId: string; payments: any[]; subscription: any; parentName: string; studentName: string; schoolName: string; paymentPhone: string; phones: string[]; totalAmount: number; paidAmount: number; isFullyPaid: boolean; isNew: boolean; createdAt: string | null; }> = {};
+    const grouped: Record<string, { registrationId: string; payments: any[]; subscription: any; parentName: string; studentName: string; schoolName: string; paymentPhone: string; lineNumber: number | null; lineName: string; phones: string[]; totalAmount: number; paidAmount: number; isFullyPaid: boolean; isNew: boolean; createdAt: string | null; }> = {};
     payments.forEach((payment: any) => {
       const registrationId = payment.subscriptions?.registration_id;
       if (!registrationId) return;
@@ -256,6 +279,8 @@ const Payments = () => {
           studentName: payment.subscriptions?.registrations?.student_name || '',
           schoolName: payment.subscriptions?.registrations?.schools?.name || '',
           paymentPhone: pa?.payment_phone || '',
+          lineNumber: (lineByRegistration as any)[registrationId]?.routeNumber ?? null,
+          lineName: (lineByRegistration as any)[registrationId]?.routeName || '',
           phones: [pa?.father_phone, pa?.mother_phone, pa?.emergency_phone, pa?.payment_phone].filter(Boolean) as string[],
           totalAmount: payment.subscriptions?.value || 0,
           paidAmount: 0,
@@ -278,7 +303,7 @@ const Payments = () => {
       reg.isFullyPaid = reg.paidAmount >= reg.totalAmount;
     });
     return grouped;
-  }, [payments]);
+  }, [payments, lineByRegistration]);
 
   const filteredByPaymentStatus = useMemo(() => {
     if (paymentTab === 'all') return payments;
@@ -330,6 +355,7 @@ const Payments = () => {
     const result: typeof paymentsByRegistration = {};
     const phoneNorm = phoneFilter.replace(/\s+/g, '');
     const nameNorm = nameFilter.trim().toLowerCase();
+    const lineNorm = lineFilter.trim();
     const installmentCount = Number.parseInt(installmentFilter, 10);
     Object.entries(paymentsByRegistration).forEach(([regId, regData]) => {
       if (paymentTab === 'fully_paid' && !regData.isFullyPaid) return;
@@ -338,6 +364,7 @@ const Payments = () => {
       if (!matchesSearch) return;
       if (phoneNorm && !regData.phones.some((p) => p.replace(/\s+/g, '').includes(phoneNorm))) return;
       if (nameNorm && !(regData.parentName.toLowerCase().includes(nameNorm) || regData.studentName.toLowerCase().includes(nameNorm))) return;
+      if (lineNorm && String(regData.lineNumber ?? '') !== lineNorm) return;
       if (subscriptionTypeFilter !== 'all' && regData.subscription?.subscription_type !== subscriptionTypeFilter) return;
       // Insurance filter — installment_number 0 is the insurance row
       if (insuranceFilter !== 'all') {
@@ -369,7 +396,7 @@ const Payments = () => {
       result[regId] = regData;
     });
     return result;
-  }, [paymentsByRegistration, paymentTab, searchTerm, phoneFilter, nameFilter, statusFilter, installmentFilter, insuranceFilter, subscriptionTypeFilter, paymentMatchesStatus, getEffectivePaymentStatus, changesDate, sameDay]);
+  }, [paymentsByRegistration, paymentTab, searchTerm, phoneFilter, nameFilter, lineFilter, statusFilter, installmentFilter, insuranceFilter, subscriptionTypeFilter, paymentMatchesStatus, getEffectivePaymentStatus, changesDate, sameDay]);
 
   // Summary of installments changed / marked paid on selected date
   const changesSummary = useMemo(() => {
@@ -379,7 +406,7 @@ const Payments = () => {
     Object.values(paymentsByRegistration).forEach((reg) => {
       reg.payments.forEach((p: any) => {
         if (p.status === 'paid' && sameDay(p.paid_date, changesDate)) {
-          paidOn.push({ ...p, parentName: reg.parentName, studentName: reg.studentName, schoolName: reg.schoolName, paymentPhone: reg.paymentPhone, registrationId: reg.registrationId });
+          paidOn.push({ ...p, parentName: reg.parentName, studentName: reg.studentName, schoolName: reg.schoolName, paymentPhone: reg.paymentPhone, lineNumber: reg.lineNumber, lineName: reg.lineName, registrationId: reg.registrationId });
         }
       });
       if (sameDay(reg.createdAt, changesDate)) {
@@ -628,6 +655,10 @@ const Payments = () => {
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input placeholder="Filter by name..." value={nameFilter} onChange={(e) => setNameFilter(e.target.value)} className="pl-10 h-11 bg-card border-border/50 focus:border-primary/50 rounded-xl transition-all" />
                 </div>
+                <div className="relative w-full sm:w-[170px]">
+                  <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input placeholder="Filter by line no..." value={lineFilter} onChange={(e) => setLineFilter(e.target.value)} inputMode="numeric" dir="ltr" className="pl-10 h-11 bg-card border-border/50 focus:border-primary/50 rounded-xl transition-all" />
+                </div>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger className="w-[160px] h-11 bg-card border-border/50 rounded-xl">
                     <SelectValue placeholder={t('payments.paymentStatus')} />
@@ -753,6 +784,7 @@ const Payments = () => {
                           <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('payments.parentName')}</TableHead>
                           <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('payments.studentName')}</TableHead>
                           <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">School</TableHead>
+                          <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Line</TableHead>
                           <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">رقم الدفع والتجديد</TableHead>
                           <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('payments.subscriptionType')}</TableHead>
                           <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Total</TableHead>
@@ -784,6 +816,15 @@ const Payments = () => {
 
                               <TableCell className="text-sm text-muted-foreground">{regData.studentName || '-'}</TableCell>
                               <TableCell className="text-sm text-muted-foreground">{regData.schoolName || '-'}</TableCell>
+                              <TableCell className="text-sm">
+                                {regData.lineNumber != null ? (
+                                  <span className="inline-flex items-center gap-1 text-xs font-semibold bg-primary/10 text-primary px-2.5 py-1 rounded-full" title={regData.lineName || undefined}>
+                                    <Hash className="h-3 w-3" />{regData.lineNumber}
+                                  </span>
+                                ) : (
+                                  <span className="text-muted-foreground">-</span>
+                                )}
+                              </TableCell>
                               <TableCell className="text-sm text-muted-foreground" dir="ltr">{regData.paymentPhone || '-'}</TableCell>
                               <TableCell>
                                 <span className="text-xs font-medium bg-primary/10 text-primary px-2.5 py-1 rounded-full">
@@ -937,6 +978,7 @@ const Payments = () => {
                       <TableHead className="text-xs">{t('payments.studentName')}</TableHead>
                       <TableHead className="text-xs">{t('payments.parentName')}</TableHead>
                       <TableHead className="text-xs">School</TableHead>
+                      <TableHead className="text-xs">Line</TableHead>
                       <TableHead className="text-xs">رقم الدفع والتجديد</TableHead>
                       <TableHead className="text-xs">Installment</TableHead>
                       <TableHead className="text-xs">Amount</TableHead>
@@ -951,6 +993,7 @@ const Payments = () => {
                         <TableCell className="text-sm font-medium">{p.studentName || '-'}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">{p.parentName || '-'}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">{p.schoolName || '-'}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{p.lineNumber ?? '-'}</TableCell>
                         <TableCell className="text-sm text-muted-foreground" dir="ltr">{p.paymentPhone || '-'}</TableCell>
                         <TableCell className="text-sm">
                           {Number(p.installment_number) === 0 ? 'التأمين (Insurance)' : `القسط ${p.installment_number}`}
@@ -981,6 +1024,7 @@ const Payments = () => {
                           <TableHead className="text-xs">{t('payments.studentName')}</TableHead>
                           <TableHead className="text-xs">{t('payments.parentName')}</TableHead>
                           <TableHead className="text-xs">School</TableHead>
+                          <TableHead className="text-xs">Line</TableHead>
                           <TableHead className="text-xs">رقم الدفع والتجديد</TableHead>
                           <TableHead className="text-xs">{t('payments.subscriptionType')}</TableHead>
                           <TableHead className="text-xs">Installments</TableHead>
@@ -993,6 +1037,7 @@ const Payments = () => {
                             <TableCell className="text-sm font-medium">{r.studentName || '-'}</TableCell>
                             <TableCell className="text-sm text-muted-foreground">{r.parentName || '-'}</TableCell>
                             <TableCell className="text-sm text-muted-foreground">{r.schoolName || '-'}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground">{r.lineNumber ?? '-'}</TableCell>
                             <TableCell className="text-sm text-muted-foreground" dir="ltr">{r.paymentPhone || '-'}</TableCell>
                             <TableCell className="text-sm">{subscriptionTypeLabels[r.subscription?.subscription_type] || '-'}</TableCell>
                             <TableCell className="text-sm">{r.subscription?.number_of_installments ?? '-'}</TableCell>
