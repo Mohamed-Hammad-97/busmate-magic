@@ -22,7 +22,7 @@ import {
 import { format } from "date-fns";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-type ChatCategory = "all" | "staff_dm" | "customer_dm" | "route_group" | "legacy";
+type ChatCategory = "all" | "staff_dm" | "customer_dm" | "customer_support" | "customer_supervisor" | "route_group" | "legacy";
 
 interface UnifiedConv {
   id: string;
