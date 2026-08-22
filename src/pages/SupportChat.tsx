@@ -286,30 +286,6 @@ export default function SupportChat() {
   });
 
   // ---- New chat helpers ----
-  const { data: allDrivers = [] } = useQuery({
-    queryKey: ["all-drivers"],
-    queryFn: async () => {
-      const { data } = await supabase.from("drivers").select("id, full_name, phone").eq("is_active", true);
-      return (data || []).map((d) => ({ ...d, type: "driver" as const }));
-    },
-  });
-  const { data: allSupervisors = [] } = useQuery({
-    queryKey: ["all-supervisors"],
-    queryFn: async () => {
-      const { data } = await supabase.from("supervisors").select("id, full_name, phone").eq("is_active", true);
-      return (data || []).map((s) => ({ ...s, type: "supervisor" as const }));
-    },
-  });
-  const allStaff = [...allDrivers, ...allSupervisors];
-
-  const { data: allCustomers = [] } = useQuery({
-    queryKey: ["all-customers-for-chat"],
-    queryFn: async () => {
-      const { data } = await supabase.from("parent_accounts").select("id, parent_name, father_phone, city, user_id").order("parent_name");
-      return data || [];
-    },
-  });
-
   const { data: routes = [] } = useQuery({
     queryKey: ["routes-for-groups"],
     queryFn: async () => {
@@ -319,14 +295,17 @@ export default function SupportChat() {
   });
 
   const startStaffChat = useMutation({
-    mutationFn: async (staff: any) => {
+    mutationFn: async (staff: StaffTarget) => {
       if (!user?.id) throw new Error("Not authenticated");
-      let staffUserId: string | null = null;
-      const { data: accounts } = await supabase
-        .from("driver_accounts").select("user_id")
-        .eq(staff.type === "driver" ? "driver_id" : "supervisor_id", staff.id)
-        .eq("is_active", true).maybeSingle();
-      staffUserId = accounts?.user_id || null;
+      let staffUserId: string | null = staff.user_id || null;
+
+      if (staff.type !== "employee") {
+        const { data: accounts } = await supabase
+          .from("driver_accounts").select("user_id")
+          .eq(staff.type === "driver" ? "driver_id" : "supervisor_id", staff.id)
+          .eq("is_active", true).maybeSingle();
+        staffUserId = accounts?.user_id || null;
+      }
 
       if (staffUserId) {
         const { data: existing } = await supabase
@@ -356,7 +335,9 @@ export default function SupportChat() {
       if (id) { setSelectedConvId(id); setShowNewStaffChat(false); }
       queryClient.invalidateQueries({ queryKey: ["all-unified-conversations"] });
     },
+    onError: (e: any) => toast({ title: "Could not start chat", description: e.message, variant: "destructive" }),
   });
+
 
   const startCustomerChat = useMutation({
     mutationFn: async (customer: any) => {
