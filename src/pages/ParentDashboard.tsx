@@ -30,7 +30,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import seaterLogo from "@/assets/seater-logo.jpg";
 
 export default function ParentDashboard() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { parentAccount, signOut, user } = useParentAuth();
   const queryClient = useQueryClient();
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
@@ -217,9 +217,12 @@ export default function ParentDashboard() {
 
   // Installment helpers (mirrors the finance payment profile)
   const installmentLabel = (n: number) => {
-    if (Number(n) === 0) return 'التأمين';
-    const ordinals = ['', 'الأول', 'الثاني', 'الثالث', 'الرابع', 'الخامس', 'السادس', 'السابع', 'الثامن', 'التاسع', 'العاشر'];
-    return `القسط ${ordinals[Number(n)] || Number(n)}`;
+    if (Number(n) === 0) return t('parentPortal.insurance');
+    if (i18n.language === 'ar') {
+      const ordinals = ['', 'الأول', 'الثاني', 'الثالث', 'الرابع', 'الخامس', 'السادس', 'السابع', 'الثامن', 'التاسع', 'العاشر'];
+      return `القسط ${ordinals[Number(n)] || Number(n)}`;
+    }
+    return t('parentPortal.installmentN', { n: Number(n) });
   };
   const effectiveStatus = (p: any) => {
     if (p.status === 'paid') return 'paid';
@@ -260,7 +263,7 @@ export default function ParentDashboard() {
     { key: "children", label: t('parentPortal.myKids'), icon: School },
     { key: "routes", label: t('parentPortal.routes'), icon: Route },
     { key: "absences", label: t('parentPortal.absences'), icon: CalendarOff },
-    { key: "contracts", label: "العقود", icon: FileSignature },
+    { key: "contracts", label: t('parentPortal.contracts'), icon: FileSignature },
     { key: "chat", label: t('parentPortal.messages'), icon: MessageCircle },
   ];
 
@@ -623,15 +626,15 @@ export default function ParentDashboard() {
                             <>
                               <div className="grid grid-cols-3 gap-2 text-xs">
                                 <div>
-                                  <span className="text-muted-foreground">الإجمالي</span>
+                                  <span className="text-muted-foreground">{t('parentPortal.totalLabel')}</span>
                                   <p className="font-semibold">{total.toLocaleString()} EGP</p>
                                 </div>
                                 <div>
-                                  <span className="text-muted-foreground">المدفوع</span>
+                                  <span className="text-muted-foreground">{t('parentPortal.paidLabel')}</span>
                                   <p className="font-semibold text-green-600">{paidAmount.toLocaleString()} EGP</p>
                                 </div>
                                 <div>
-                                  <span className="text-muted-foreground">المتبقي</span>
+                                  <span className="text-muted-foreground">{t('parentPortal.remainingLabel')}</span>
                                   <p className="font-semibold text-amber-600">{(total - paidAmount).toLocaleString()} EGP</p>
                                 </div>
                               </div>
@@ -648,7 +651,7 @@ export default function ParentDashboard() {
                               </div>
                             </>
                           ) : (
-                            <p className="text-xs text-muted-foreground">لم يتم تفعيل خطة الدفع بعد</p>
+                            <p className="text-xs text-muted-foreground">{t('parentPortal.planNotActivated')}</p>
                           )}
                         </CardContent>
                       </Card>
@@ -854,10 +857,10 @@ export default function ParentDashboard() {
             { reg: currentPendingContract, signatureName },
             {
               onSuccess: () => {
-                toast({ title: "تم التوقيع", description: "تم حفظ موافقتك على العقد بنجاح" });
+                toast({ title: t('parentPortal.contractSigned'), description: t('parentPortal.contractSignedDesc') });
                 setContractIndex(0);
               },
-              onError: () => toast({ title: "تعذر حفظ التوقيع", variant: "destructive" }),
+              onError: () => toast({ title: t('parentPortal.contractSignError'), variant: "destructive" }),
             }
           )
         }
@@ -887,22 +890,22 @@ export default function ParentDashboard() {
                     <div>
                       <div>{selectedPaymentReg.student_name}</div>
                       <p className="text-sm font-normal text-muted-foreground">
-                        {subscription?.subscription_type === "monthly" ? "Monthly" : "Yearly"} - {Number(subscription?.value).toLocaleString()} EGP
+                        {subscription?.subscription_type === "monthly" ? t('parentPortal.monthly') : t('parentPortal.yearly')} - {Number(subscription?.value).toLocaleString()} EGP
                       </p>
                     </div>
                   </DialogTitle>
                 </DialogHeader>
                 <div className="grid grid-cols-3 gap-2 mt-2 text-center">
                   <div className="rounded-xl border bg-muted/30 p-2">
-                    <p className="text-[10px] text-muted-foreground">الإجمالي</p>
+                    <p className="text-[10px] text-muted-foreground">{t('parentPortal.totalLabel')}</p>
                     <p className="text-sm font-bold">{total.toLocaleString()}</p>
                   </div>
                   <div className="rounded-xl border bg-green-50/50 dark:bg-green-950/20 p-2">
-                    <p className="text-[10px] text-muted-foreground">المدفوع</p>
+                    <p className="text-[10px] text-muted-foreground">{t('parentPortal.paidLabel')}</p>
                     <p className="text-sm font-bold text-green-600">{paidAmount.toLocaleString()}</p>
                   </div>
                   <div className="rounded-xl border bg-amber-50/50 dark:bg-amber-950/20 p-2">
-                    <p className="text-[10px] text-muted-foreground">المتبقي</p>
+                    <p className="text-[10px] text-muted-foreground">{t('parentPortal.remainingLabel')}</p>
                     <p className="text-sm font-bold text-amber-600">{(total - paidAmount).toLocaleString()}</p>
                   </div>
                 </div>
@@ -935,14 +938,14 @@ export default function ParentDashboard() {
                         <div className="text-right">
                           <span className="font-bold text-xs sm:text-sm">{Number(payment.amount).toLocaleString()} EGP</span>
                           {fees > 0 && (
-                            <p className="text-[10px] text-amber-600">+ رسوم إضافية {fees.toLocaleString()} EGP</p>
+                            <p className="text-[10px] text-amber-600">{t('parentPortal.extraFees')} {fees.toLocaleString()} {t('parentPortal.currency')}</p>
                           )}
                         </div>
                       </div>
                       {payment.fawry_reference_code && (
                         <div className="mb-2 flex items-center justify-between gap-2 rounded-lg border border-primary/20 bg-primary/5 px-2.5 py-1.5">
                           <div className="min-w-0">
-                            <p className="text-[10px] text-muted-foreground">كود فوري</p>
+                            <p className="text-[10px] text-muted-foreground">{t('parentPortal.fawryCode')}</p>
                             <p className="text-xs font-bold font-mono truncate" dir="ltr">{payment.fawry_reference_code}</p>
                             {payment.fawry_note && (
                               <p className="text-[10px] text-muted-foreground truncate">{payment.fawry_note}</p>
@@ -955,10 +958,10 @@ export default function ParentDashboard() {
                             onClick={(e) => {
                               e.stopPropagation();
                               navigator.clipboard.writeText(payment.fawry_reference_code);
-                              toast({ title: 'تم نسخ الكود' });
+                              toast({ title: t('parentPortal.codeCopied') });
                             }}
                           >
-                            نسخ
+                            {t('parentPortal.copy')}
                           </Button>
                         </div>
                       )}
@@ -985,7 +988,7 @@ export default function ParentDashboard() {
                               }}
                             >
                               <Eye className="h-3 w-3" />
-                              إيصال
+                              {t('parentPortal.receipt')}
                             </Button>
                           )}
                         </div>
