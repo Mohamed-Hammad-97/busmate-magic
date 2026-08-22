@@ -120,10 +120,14 @@ const Payments = () => {
   });
 
   const cityPayments = useMemo(() => {
-    // Cancelled registrations must not surface their payment plans anywhere
-    const notCancelled = allPayments.filter(
-      (p: any) => p.subscriptions?.registrations?.status !== 'cancelled'
-    );
+    // Cancelled registrations and deactivated parents must not surface their payment plans anywhere
+    const notCancelled = allPayments.filter((p: any) => {
+      const reg = p.subscriptions?.registrations;
+      if (!reg || reg.status === 'cancelled') return false;
+      if (reg.parent_accounts?.is_active === false) return false;
+      return true;
+    });
+
     if (selectedCity === 'all') return notCancelled;
     const cityMapping: Record<string, string[]> = {
       cairo: ['cairo', 'القاهرة', 'قاهرة'],
