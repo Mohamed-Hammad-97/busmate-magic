@@ -524,12 +524,6 @@ export default function ParentDashboard() {
                                 <p className="font-semibold text-sm">{assignment.routes.drivers.full_name}</p>
                               </div>
                             </div>
-                            <a
-                              href={`tel:${assignment.routes.drivers.phone}`}
-                              className="h-9 w-9 flex items-center justify-center rounded-full bg-primary/10 hover:bg-primary/20 transition-colors"
-                            >
-                              <Phone className="h-4 w-4 text-primary" />
-                            </a>
                           </div>
                         </div>
                       )}
