@@ -616,6 +616,67 @@ export type Database = {
           },
         ]
       }
+      contract_acceptances: {
+        Row: {
+          accepted_at: string
+          contract_version: string
+          created_at: string
+          id: string
+          parent_id: string
+          registration_id: string
+          signature_name: string
+          snapshot: Json
+          subscription_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string
+          contract_version?: string
+          created_at?: string
+          id?: string
+          parent_id: string
+          registration_id: string
+          signature_name: string
+          snapshot?: Json
+          subscription_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string
+          contract_version?: string
+          created_at?: string
+          id?: string
+          parent_id?: string
+          registration_id?: string
+          signature_name?: string
+          snapshot?: Json
+          subscription_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_acceptances_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "parent_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_acceptances_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "registrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_acceptances_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversation_participants: {
         Row: {
           can_send: boolean | null

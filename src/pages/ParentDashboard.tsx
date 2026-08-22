@@ -21,6 +21,10 @@ import { GoogleMapsProvider } from "@/components/maps/GoogleMapsProvider";
 import { ParentChat } from "@/components/chat/ParentChat";
 import { SetPasswordDialog } from "@/components/chat/SetPasswordDialog";
 import { AbsenceRegistration } from "@/components/parent/AbsenceRegistration";
+import { ContractsTab } from "@/components/parent/ContractsTab";
+import { ContractDialog } from "@/components/parent/ContractDialog";
+import { useParentContracts, buildContractData } from "@/hooks/useParentContracts";
+import { FileSignature } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import seaterLogo from "@/assets/seater-logo.jpg";
@@ -216,8 +220,17 @@ export default function ParentDashboard() {
     { key: "children", label: t('parentPortal.myKids'), icon: School },
     { key: "routes", label: t('parentPortal.routes'), icon: Route },
     { key: "absences", label: t('parentPortal.absences'), icon: CalendarOff },
+    { key: "contracts", label: "العقود", icon: FileSignature },
     { key: "chat", label: t('parentPortal.messages'), icon: MessageCircle },
   ];
+
+  const { pending: pendingContracts, signMutation } = useParentContracts(
+    registrations as any[],
+    parentAccount?.id
+  );
+  const [contractIndex, setContractIndex] = useState(0);
+  const currentPendingContract = pendingContracts[contractIndex] ?? pendingContracts[0] ?? null;
+
 
   const renderContent = () => {
     switch (activeTab) {
@@ -662,6 +675,16 @@ export default function ParentDashboard() {
       case "absences":
         return <AbsenceRegistration />;
 
+      case "contracts":
+        return (
+          <ContractsTab
+            registrations={registrations as any[]}
+            parentId={parentAccount?.id}
+            parentName={parentAccount?.parent_name}
+          />
+        );
+
+
       case "chat":
         return <ParentChat />;
 
@@ -742,6 +765,33 @@ export default function ParentDashboard() {
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 max-w-4xl">
         {renderContent()}
       </main>
+
+      {/* Mandatory contract signing */}
+      <ContractDialog
+        key={currentPendingContract?.id}
+        open={!!currentPendingContract && !showPasswordDialog}
+        onOpenChange={() => {}}
+        allowLater={false}
+        contract={currentPendingContract ? buildContractData(currentPendingContract) : null}
+        parentName={parentAccount?.parent_name}
+        index={contractIndex}
+        total={pendingContracts.length}
+        isSaving={signMutation.isPending}
+        onSign={(signatureName) =>
+          signMutation.mutate(
+            { reg: currentPendingContract, signatureName },
+            {
+              onSuccess: () => {
+                toast({ title: "تم التوقيع", description: "تم حفظ موافقتك على العقد بنجاح" });
+                setContractIndex(0);
+              },
+              onError: () => toast({ title: "تعذر حفظ التوقيع", variant: "destructive" }),
+            }
+          )
+        }
+      />
+
+
 
       {/* Payment Detail Dialog */}
       <Dialog open={!!selectedPaymentReg} onOpenChange={() => setSelectedPaymentReg(null)}>
