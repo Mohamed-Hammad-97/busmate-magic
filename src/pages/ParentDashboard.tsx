@@ -212,6 +212,29 @@ export default function ParentDashboard() {
     overdue: { label: t('parentPortal.overdue'), icon: <AlertCircle className="h-4 w-4 text-red-500" /> },
   };
 
+  // Installment helpers (mirrors the finance payment profile)
+  const installmentLabel = (n: number) => {
+    if (Number(n) === 0) return 'التأمين';
+    const ordinals = ['', 'الأول', 'الثاني', 'الثالث', 'الرابع', 'الخامس', 'السادس', 'السابع', 'الثامن', 'التاسع', 'العاشر'];
+    return `القسط ${ordinals[Number(n)] || Number(n)}`;
+  };
+  const effectiveStatus = (p: any) => {
+    if (p.status === 'paid') return 'paid';
+    if (p.status === 'archived') return 'archived';
+    const due = new Date(p.due_date);
+    due.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return due < today ? 'overdue' : 'pending';
+  };
+  const extraFeesTotal = (p: any) =>
+    (p.payment_extra_fees || []).reduce((s: number, f: any) => s + Number(f.amount || 0), 0);
+
+  const activePaymentRegs = registrations.filter(
+    (r: any) => r.status !== 'cancelled' && r.status !== 'archived'
+  );
+
+
   const paymentSummary = registrations.reduce(
     (acc, reg) => {
       const subscription = reg.subscriptions?.[0];
