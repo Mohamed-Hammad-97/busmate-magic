@@ -61,6 +61,7 @@ const Payments = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [phoneFilter, setPhoneFilter] = useState('');
   const [nameFilter, setNameFilter] = useState('');
+  const [lineFilter, setLineFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [installmentFilter, setInstallmentFilter] = useState<string>('');
   const [insuranceFilter, setInsuranceFilter] = useState<string>('all');
@@ -118,6 +119,28 @@ const Payments = () => {
       return all;
     },
   });
+
+  // Line (route) number per registration — no direct relation from payments to routes
+  const { data: lineByRegistration = {} } = useQuery({
+    queryKey: ['payments-route-assignments'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('route_assignments')
+        .select('registration_id, routes (route_number, name)');
+      if (error) throw error;
+      const map: Record<string, { routeNumber: number | null; routeName: string }> = {};
+      (data || []).forEach((a: any) => {
+        if (!a.registration_id || !a.routes) return;
+        map[a.registration_id] = {
+          routeNumber: a.routes.route_number ?? null,
+          routeName: a.routes.name || '',
+        };
+      });
+      return map;
+    },
+  });
+
+
 
   const cityPayments = useMemo(() => {
     // Cancelled registrations must not surface their payment plans anywhere
