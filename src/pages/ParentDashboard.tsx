@@ -220,8 +220,17 @@ export default function ParentDashboard() {
     { key: "children", label: t('parentPortal.myKids'), icon: School },
     { key: "routes", label: t('parentPortal.routes'), icon: Route },
     { key: "absences", label: t('parentPortal.absences'), icon: CalendarOff },
+    { key: "contracts", label: "العقود", icon: FileSignature },
     { key: "chat", label: t('parentPortal.messages'), icon: MessageCircle },
   ];
+
+  const { pending: pendingContracts, signMutation } = useParentContracts(
+    registrations as any[],
+    parentAccount?.id
+  );
+  const [contractIndex, setContractIndex] = useState(0);
+  const currentPendingContract = pendingContracts[contractIndex] ?? pendingContracts[0] ?? null;
+
 
   const renderContent = () => {
     switch (activeTab) {
