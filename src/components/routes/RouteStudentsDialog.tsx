@@ -46,8 +46,10 @@ const RouteStudentsDialog: React.FC<RouteStudentsDialogProps> = ({ route, open, 
             id,
             student_name,
             grade,
+            status,
             parent_accounts (
               parent_name,
+              is_active,
               mother_phone,
               father_phone,
               payment_phone,
@@ -60,8 +62,16 @@ const RouteStudentsDialog: React.FC<RouteStudentsDialogProps> = ({ route, open, 
         .eq('route_id', route.id);
       if (error) throw error;
       return (data || [])
+        .filter((a: any) => {
+          const reg = a.registrations;
+          if (!reg) return false;
+          if (reg.status === 'cancelled') return false;
+          if (reg.parent_accounts?.is_active === false) return false;
+          return true;
+        })
         .map((a: any) => {
           const p = a.registrations?.parent_accounts || {};
+
           return {
             order: a.pickup_order ?? 0,
             student_name: a.registrations?.student_name || '',
