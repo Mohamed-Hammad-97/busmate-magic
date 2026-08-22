@@ -21,8 +21,12 @@ import {
 } from "@/components/ui/dialog";
 import { format } from "date-fns";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { toast } from "@/hooks/use-toast";
+import { StaffPickerDialog, StaffTarget } from "@/components/chat/StaffPickerDialog";
+import { CustomerPickerDialog, CustomerTarget } from "@/components/chat/CustomerPickerDialog";
 
 type ChatCategory = "all" | "staff_dm" | "customer_dm" | "customer_support" | "customer_supervisor" | "route_group" | "legacy";
+
 
 interface UnifiedConv {
   id: string;
@@ -74,6 +78,30 @@ export default function SupportChat() {
     },
   });
 
+  // ---- Unread counts ----
+  const { data: unreadMap = {} } = useQuery({
+    queryKey: ["chat-unread-counts", user?.id],
+    queryFn: async () => {
+      const counts: Record<string, number> = {};
+      const [{ data: unified }, { data: legacy }] = await Promise.all([
+        supabase.from("unified_messages").select("conversation_id, sender_id, is_read").eq("is_read", false),
+        supabase.from("chat_messages").select("conversation_id, sender_id, is_read, sender_type").eq("is_read", false),
+      ]);
+      (unified || []).forEach((m: any) => {
+        if (m.sender_id === user?.id) return;
+        counts[m.conversation_id] = (counts[m.conversation_id] || 0) + 1;
+      });
+      (legacy || []).forEach((m: any) => {
+        if (m.sender_type === "employee") return;
+        counts[m.conversation_id] = (counts[m.conversation_id] || 0) + 1;
+      });
+      return counts;
+    },
+    enabled: !!user?.id,
+  });
+
+  const totalUnread = Object.values(unreadMap).reduce((a: number, b: number) => a + b, 0);
+
   // Combine into one list
   const allConversations = [
     ...unifiedConvs.map((c) => ({
@@ -87,18 +115,22 @@ export default function SupportChat() {
         : "Route Group",
       type: c.type as ChatCategory,
       lastMessageAt: c.last_message_at,
+      unread: unreadMap[c.id] || 0,
       raw: c,
       isLegacy: false,
     })),
+
     ...legacyConvs.map((c: any) => ({
       id: c.id,
       name: c.parent_accounts?.parent_name || "Support",
       subtitle: `Support • ${c.status}`,
       type: "legacy" as ChatCategory,
       lastMessageAt: c.last_message_at,
+      unread: unreadMap[c.id] || 0,
       raw: c,
       isLegacy: true,
     })),
+
   ].sort((a, b) => {
     const ta = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
     const tb = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
@@ -159,6 +191,64 @@ export default function SupportChat() {
     return () => { supabase.removeChannel(channel); };
   }, [selectedConvId, selectedConv?.isLegacy, queryClient]);
 
+  // Mark the open conversation's incoming messages as read
+  useEffect(() => {
+    if (!selectedConvId || !user?.id) return;
+    const isLegacy = selectedConv?.isLegacy;
+    const markRead = async () => {
+      if (isLegacy) {
+        await supabase
+          .from("chat_messages")
+          .update({ is_read: true })
+          .eq("conversation_id", selectedConvId)
+          .eq("is_read", false)
+          .neq("sender_type", "employee");
+      } else {
+        await supabase
+          .from("unified_messages")
+          .update({ is_read: true })
+          .eq("conversation_id", selectedConvId)
+          .eq("is_read", false)
+          .neq("sender_id", user.id);
+      }
+      queryClient.invalidateQueries({ queryKey: ["chat-unread-counts"] });
+    };
+    markRead();
+  }, [selectedConvId, selectedConv?.isLegacy, messages.length, user?.id, queryClient]);
+
+  // Global new-message listener: unread badges + toast pop-up
+  const selectedConvIdRef = useRef<string | null>(null);
+  selectedConvIdRef.current = selectedConvId;
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const handleIncoming = (payload: any, isLegacy: boolean) => {
+      const msg = payload.new;
+      if (!msg) return;
+      if (!isLegacy && msg.sender_id === user.id) return;
+      if (isLegacy && msg.sender_type === "employee") return;
+      queryClient.invalidateQueries({ queryKey: ["chat-unread-counts"] });
+      queryClient.invalidateQueries({ queryKey: ["all-unified-conversations"] });
+      queryClient.invalidateQueries({ queryKey: ["legacy-conversations"] });
+      if (msg.conversation_id === selectedConvIdRef.current) return;
+      toast({
+        title: `New message${msg.sender_name ? ` from ${msg.sender_name}` : ""}`,
+        description: String(msg.message || "").slice(0, 120),
+      });
+    };
+
+    const channel = supabase
+      .channel("support-chat-global")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "unified_messages" }, (p) => handleIncoming(p, false))
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages" }, (p) => handleIncoming(p, true))
+      .on("postgres_changes", { event: "*", schema: "public", table: "unified_conversations" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["all-unified-conversations"] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user?.id, queryClient]);
+
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -196,30 +286,6 @@ export default function SupportChat() {
   });
 
   // ---- New chat helpers ----
-  const { data: allDrivers = [] } = useQuery({
-    queryKey: ["all-drivers"],
-    queryFn: async () => {
-      const { data } = await supabase.from("drivers").select("id, full_name, phone").eq("is_active", true);
-      return (data || []).map((d) => ({ ...d, type: "driver" as const }));
-    },
-  });
-  const { data: allSupervisors = [] } = useQuery({
-    queryKey: ["all-supervisors"],
-    queryFn: async () => {
-      const { data } = await supabase.from("supervisors").select("id, full_name, phone").eq("is_active", true);
-      return (data || []).map((s) => ({ ...s, type: "supervisor" as const }));
-    },
-  });
-  const allStaff = [...allDrivers, ...allSupervisors];
-
-  const { data: allCustomers = [] } = useQuery({
-    queryKey: ["all-customers-for-chat"],
-    queryFn: async () => {
-      const { data } = await supabase.from("parent_accounts").select("id, parent_name, father_phone, city, user_id").order("parent_name");
-      return data || [];
-    },
-  });
-
   const { data: routes = [] } = useQuery({
     queryKey: ["routes-for-groups"],
     queryFn: async () => {
@@ -229,14 +295,17 @@ export default function SupportChat() {
   });
 
   const startStaffChat = useMutation({
-    mutationFn: async (staff: any) => {
+    mutationFn: async (staff: StaffTarget) => {
       if (!user?.id) throw new Error("Not authenticated");
-      let staffUserId: string | null = null;
-      const { data: accounts } = await supabase
-        .from("driver_accounts").select("user_id")
-        .eq(staff.type === "driver" ? "driver_id" : "supervisor_id", staff.id)
-        .eq("is_active", true).maybeSingle();
-      staffUserId = accounts?.user_id || null;
+      let staffUserId: string | null = staff.user_id || null;
+
+      if (staff.type !== "employee") {
+        const { data: accounts } = await supabase
+          .from("driver_accounts").select("user_id")
+          .eq(staff.type === "driver" ? "driver_id" : "supervisor_id", staff.id)
+          .eq("is_active", true).maybeSingle();
+        staffUserId = accounts?.user_id || null;
+      }
 
       if (staffUserId) {
         const { data: existing } = await supabase
@@ -266,7 +335,9 @@ export default function SupportChat() {
       if (id) { setSelectedConvId(id); setShowNewStaffChat(false); }
       queryClient.invalidateQueries({ queryKey: ["all-unified-conversations"] });
     },
+    onError: (e: any) => toast({ title: "Could not start chat", description: e.message, variant: "destructive" }),
   });
+
 
   const startCustomerChat = useMutation({
     mutationFn: async (customer: any) => {
@@ -393,15 +464,21 @@ export default function SupportChat() {
             <button
               key={cat.value}
               onClick={() => setCategory(cat.value as ChatCategory)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors flex items-center gap-1 ${
                 category === cat.value
                   ? "bg-primary text-primary-foreground"
                   : "bg-muted/50 text-muted-foreground hover:bg-muted"
               }`}
             >
               {cat.label}
+              {cat.value === "all" && totalUnread > 0 && (
+                <span className="min-w-[16px] h-4 px-1 rounded-full bg-emerald-500 text-white text-[10px] font-bold flex items-center justify-center">
+                  {totalUnread > 99 ? "99+" : totalUnread}
+                </span>
+              )}
             </button>
           ))}
+
         </div>
       </div>
 
@@ -430,25 +507,38 @@ export default function SupportChat() {
           <div className="divide-y divide-border/20">
             {filteredConversations.map((conv) => {
               const isActive = selectedConvId === conv.id;
+              const isUnread = conv.unread > 0 && !isActive;
               return (
                 <button
                   key={conv.id}
                   onClick={() => setSelectedConvId(conv.id)}
                   className={`w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-muted/50 ${
-                    isActive ? "bg-primary/5 border-l-2 border-l-primary" : ""
+                    isActive
+                      ? "bg-primary/5 border-l-2 border-l-primary"
+                      : isUnread
+                      ? "bg-emerald-500/10 border-l-2 border-l-emerald-500"
+                      : ""
                   }`}
                 >
                   <div className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 ${getIconBg(conv.type)}`}>
                     {getIcon(conv.type)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-semibold truncate ${isActive ? "text-primary" : "text-foreground"}`}>{conv.name}</p>
-                    <p className="text-xs text-muted-foreground truncate mt-0.5">{conv.subtitle}</p>
+                    <p className={`text-sm truncate ${isActive ? "text-primary font-semibold" : isUnread ? "font-bold text-foreground" : "font-medium text-muted-foreground"}`}>{conv.name}</p>
+                    <p className={`text-xs truncate mt-0.5 ${isUnread ? "text-foreground/70 font-medium" : "text-muted-foreground"}`}>{conv.subtitle}</p>
                   </div>
-                  <span className="text-[10px] text-muted-foreground shrink-0">{formatTime(conv.lastMessageAt)}</span>
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <span className={`text-[10px] ${isUnread ? "text-emerald-600 font-semibold" : "text-muted-foreground"}`}>{formatTime(conv.lastMessageAt)}</span>
+                    {conv.unread > 0 && (
+                      <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-emerald-500 text-white text-[10px] font-bold flex items-center justify-center">
+                        {conv.unread > 99 ? "99+" : conv.unread}
+                      </span>
+                    )}
+                  </div>
                 </button>
               );
             })}
+
           </div>
         )}
       </ScrollArea>
@@ -575,52 +665,21 @@ export default function SupportChat() {
       </div>
 
       {/* New Staff Chat Dialog */}
-      <Dialog open={showNewStaffChat} onOpenChange={setShowNewStaffChat}>
-        <DialogContent className="max-w-md max-h-[80vh]">
-          <DialogHeader><DialogTitle>New Staff Chat</DialogTitle></DialogHeader>
-          <ScrollArea className="max-h-[60vh]">
-            <div className="space-y-2 p-1">
-              {allStaff.map((s) => (
-                <button key={`${s.type}-${s.id}`} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted transition-colors text-left"
-                  onClick={() => startStaffChat.mutate(s)} disabled={startStaffChat.isPending}>
-                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <User className="h-5 w-5 text-primary" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">{s.full_name}</p>
-                    <p className="text-xs text-muted-foreground">{s.phone}</p>
-                  </div>
-                  <Badge variant="outline" className="capitalize text-xs">{s.type}</Badge>
-                </button>
-              ))}
-            </div>
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
+      <StaffPickerDialog
+        open={showNewStaffChat}
+        onOpenChange={setShowNewStaffChat}
+        onSelect={(s) => startStaffChat.mutate(s)}
+        isPending={startStaffChat.isPending}
+      />
 
       {/* New Customer Chat Dialog */}
-      <Dialog open={showNewCustomerChat} onOpenChange={setShowNewCustomerChat}>
-        <DialogContent className="max-w-md max-h-[80vh]">
-          <DialogHeader><DialogTitle>New Customer Chat</DialogTitle></DialogHeader>
-          <ScrollArea className="max-h-[60vh]">
-            <div className="space-y-2 p-1">
-              {allCustomers.map((c: any) => (
-                <button key={c.id} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted transition-colors text-left"
-                  onClick={() => startCustomerChat.mutate(c)} disabled={startCustomerChat.isPending}>
-                  <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                    <User className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">{c.parent_name}</p>
-                    <p className="text-xs text-muted-foreground" dir="ltr">{c.father_phone}</p>
-                  </div>
-                  <Badge variant="outline" className="text-xs">{c.city}</Badge>
-                </button>
-              ))}
-            </div>
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
+      <CustomerPickerDialog
+        open={showNewCustomerChat}
+        onOpenChange={setShowNewCustomerChat}
+        onSelect={(c) => startCustomerChat.mutate(c)}
+        isPending={startCustomerChat.isPending}
+      />
+
 
       {/* New Group Chat Dialog */}
       <Dialog open={showNewGroupChat} onOpenChange={setShowNewGroupChat}>
