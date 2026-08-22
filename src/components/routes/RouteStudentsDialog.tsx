@@ -46,6 +46,7 @@ const RouteStudentsDialog: React.FC<RouteStudentsDialogProps> = ({ route, open, 
             id,
             student_name,
             grade,
+            status,
             parent_accounts (
               parent_name,
               mother_phone,
