@@ -66,7 +66,7 @@ export const FawryCodesTab: React.FC = () => {
               student_name,
               status,
               schools (name),
-              parent_accounts (parent_name, city, is_active, father_phone, payment_phone)
+              parent_accounts (parent_name, city, father_phone, payment_phone)
             )
           )
         `)
@@ -83,11 +83,9 @@ export const FawryCodesTab: React.FC = () => {
         return registration &&
           registration.status !== 'archived' &&
           registration.status !== 'cancelled' &&
-          registration.parent_accounts?.is_active !== false &&
           p.due_date &&
           isBefore(parseISO(p.due_date), startOfDay(today));
       });
-
     },
   });
 

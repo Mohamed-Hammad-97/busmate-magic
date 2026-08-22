@@ -54,19 +54,13 @@ const ManageRouteAssignmentsDialog: React.FC<Props> = ({
             id,
             student_name,
             status,
-            parent_accounts ( parent_name, father_phone, is_active )
+            parent_accounts ( parent_name, father_phone )
           )
         `)
         .eq('route_id', routeId!)
         .order('pickup_order', { ascending: true });
       if (error) throw error;
-      return (data as any[]).filter((a: any) => {
-        const reg = a.registrations;
-        if (!reg || reg.status === 'cancelled') return false;
-        const pa = Array.isArray(reg.parent_accounts) ? reg.parent_accounts[0] : reg.parent_accounts;
-        return pa?.is_active !== false;
-      });
-
+      return data as any[];
     },
   });
 
@@ -90,16 +84,12 @@ const ManageRouteAssignmentsDialog: React.FC<Props> = ({
           id,
           student_name,
           status,
-          parent_accounts ( parent_name, father_phone, is_active )
+          parent_accounts ( parent_name, father_phone )
         `)
         .eq('school_id', schoolId)
         .in('status', ['pending_fees', 'complete']);
       if (error) throw error;
-      return (data as any[]).filter((r: any) => {
-        const pa = Array.isArray(r.parent_accounts) ? r.parent_accounts[0] : r.parent_accounts;
-        return pa?.is_active !== false;
-      });
-
+      return data as any[];
     },
   });
 
