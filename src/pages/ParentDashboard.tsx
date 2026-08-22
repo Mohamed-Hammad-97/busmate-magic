@@ -568,7 +568,7 @@ export default function ParentDashboard() {
                 <School className="h-4 w-4 text-primary" />
                 {t('parentPortal.activeChildSubscriptions')}
               </h3>
-              {registrations.length === 0 ? (
+              {activePaymentRegs.length === 0 ? (
                 <Card className="border-0 shadow-md">
                   <CardContent className="py-12 text-center text-muted-foreground">
                     <Wallet className="h-12 w-12 mx-auto mb-3 text-muted-foreground/40" />
@@ -577,17 +577,21 @@ export default function ParentDashboard() {
                 </Card>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {registrations.map((reg: any) => {
+                  {activePaymentRegs.map((reg: any) => {
                     const subscription = reg.subscriptions?.[0];
-                    const payments = subscription?.payments || [];
+                    const payments = (subscription?.payments || []).filter((p: any) => p.status !== 'archived');
                     const paidCount = payments.filter((p: any) => p.status === "paid").length;
+                    const total = payments.reduce((s: number, p: any) => s + Number(p.amount || 0) + extraFeesTotal(p), 0);
+                    const paidAmount = payments
+                      .filter((p: any) => p.status === 'paid')
+                      .reduce((s: number, p: any) => s + Number(p.amount || 0) + extraFeesTotal(p), 0);
                     const routeAssignment = routeAssignments.find((ra: any) => ra.registration_id === reg.id);
 
                     return (
                       <Card
                         key={reg.id}
-                        className="border-0 shadow-md hover:shadow-lg transition-all cursor-pointer overflow-hidden"
-                        onClick={() => subscription?.payments?.length ? setSelectedPaymentReg(reg) : null}
+                        className={`border-0 shadow-md transition-all overflow-hidden ${payments.length ? 'hover:shadow-lg cursor-pointer' : ''}`}
+                        onClick={() => payments.length ? setSelectedPaymentReg(reg) : null}
                       >
                         <CardContent className="p-4">
                           <div className="flex items-start gap-3 mb-3">
@@ -604,17 +608,36 @@ export default function ParentDashboard() {
                               </p>
                             </div>
                           </div>
-                          {subscription && (
-                            <div className="grid grid-cols-2 gap-2 text-xs">
-                              <div>
-                                <span className="text-muted-foreground">{t('parentPortal.plan')}</span>
-                                <p className="font-semibold">{subscription.subscription_type === "monthly" ? t('parentPortal.monthlyPass') : t('parentPortal.annualPass')}</p>
+                          {payments.length > 0 ? (
+                            <>
+                              <div className="grid grid-cols-3 gap-2 text-xs">
+                                <div>
+                                  <span className="text-muted-foreground">الإجمالي</span>
+                                  <p className="font-semibold">{total.toLocaleString()} EGP</p>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">المدفوع</span>
+                                  <p className="font-semibold text-green-600">{paidAmount.toLocaleString()} EGP</p>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">المتبقي</span>
+                                  <p className="font-semibold text-amber-600">{(total - paidAmount).toLocaleString()} EGP</p>
+                                </div>
                               </div>
-                              <div>
-                                <span className="text-muted-foreground">{t('parentPortal.progress')}</span>
-                                <p className="font-semibold text-green-600">{paidCount}/{payments.length} {t('parentPortal.paidOf')}</p>
+                              <div className="mt-3">
+                                <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                                  <div
+                                    className="h-full bg-green-500 rounded-full transition-all"
+                                    style={{ width: `${total > 0 ? Math.round((paidAmount / total) * 100) : 0}%` }}
+                                  />
+                                </div>
+                                <p className="text-[10px] text-muted-foreground mt-1">
+                                  {paidCount}/{payments.length} {t('parentPortal.paidOf')}
+                                </p>
                               </div>
-                            </div>
+                            </>
+                          ) : (
+                            <p className="text-xs text-muted-foreground">لم يتم تفعيل خطة الدفع بعد</p>
                           )}
                         </CardContent>
                       </Card>
@@ -622,6 +645,7 @@ export default function ParentDashboard() {
                   })}
                 </div>
               )}
+
             </div>
 
             {/* Recent Transactions */}
