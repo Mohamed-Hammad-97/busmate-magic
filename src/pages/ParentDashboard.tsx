@@ -768,6 +768,7 @@ export default function ParentDashboard() {
 
       {/* Mandatory contract signing */}
       <ContractDialog
+        key={currentPendingContract?.id}
         open={!!currentPendingContract && !showPasswordDialog}
         onOpenChange={() => {}}
         allowLater={false}

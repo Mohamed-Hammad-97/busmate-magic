@@ -102,6 +102,7 @@ export function ContractsTab({ registrations, parentId, parentName }: Props) {
       )}
 
       <ContractDialog
+        key={signingReg?.id}
         open={!!signingReg}
         onOpenChange={(v) => !v && setSigningReg(null)}
         contract={signingReg ? buildContractData(signingReg) : null}
