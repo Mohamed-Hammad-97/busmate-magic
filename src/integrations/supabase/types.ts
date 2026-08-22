@@ -2693,6 +2693,7 @@ export type Database = {
         | "customer_dm"
         | "route_group"
         | "customer_supervisor"
+        | "customer_support"
       daily_line_payment_method: "cash" | "instapay"
       daily_line_payment_status: "pending" | "paid" | "cancelled" | "refunded"
       daily_line_promo_type: "percentage" | "fixed"
@@ -2858,6 +2859,7 @@ export const Constants = {
         "customer_dm",
         "route_group",
         "customer_supervisor",
+        "customer_support",
       ],
       daily_line_payment_method: ["cash", "instapay"],
       daily_line_payment_status: ["pending", "paid", "cancelled", "refunded"],
