@@ -766,6 +766,32 @@ export default function ParentDashboard() {
         {renderContent()}
       </main>
 
+      {/* Mandatory contract signing */}
+      <ContractDialog
+        open={!!currentPendingContract && !showPasswordDialog}
+        onOpenChange={() => {}}
+        allowLater={false}
+        contract={currentPendingContract ? buildContractData(currentPendingContract) : null}
+        parentName={parentAccount?.parent_name}
+        index={contractIndex}
+        total={pendingContracts.length}
+        isSaving={signMutation.isPending}
+        onSign={(signatureName) =>
+          signMutation.mutate(
+            { reg: currentPendingContract, signatureName },
+            {
+              onSuccess: () => {
+                toast({ title: "تم التوقيع", description: "تم حفظ موافقتك على العقد بنجاح" });
+                setContractIndex(0);
+              },
+              onError: () => toast({ title: "تعذر حفظ التوقيع", variant: "destructive" }),
+            }
+          )
+        }
+      />
+
+
+
       {/* Payment Detail Dialog */}
       <Dialog open={!!selectedPaymentReg} onOpenChange={() => setSelectedPaymentReg(null)}>
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto mx-2 sm:mx-auto">
