@@ -34,10 +34,11 @@ serve(async (req) => {
       .select("id, user_id, has_password, is_active")
       .or(`father_phone.eq.${cleanPhone},father_phone.eq.0${cleanPhone}`)
       .not("user_id", "is", null)
-      .order("created_at", { ascending: false })
-      .limit(1);
+      .order("created_at", { ascending: false });
 
-    const parent = parents?.[0];
+    // Prefer an active account; fall back to the newest one
+    const parent = parents?.find((p) => p.is_active !== false) ?? parents?.[0];
+
 
     if (parentError || !parent?.user_id) {
       console.log("Parent lookup failed", { hasError: !!parentError, found: parents?.length ?? 0 });
