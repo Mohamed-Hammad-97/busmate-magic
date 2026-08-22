@@ -464,15 +464,21 @@ export default function SupportChat() {
             <button
               key={cat.value}
               onClick={() => setCategory(cat.value as ChatCategory)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors flex items-center gap-1 ${
                 category === cat.value
                   ? "bg-primary text-primary-foreground"
                   : "bg-muted/50 text-muted-foreground hover:bg-muted"
               }`}
             >
               {cat.label}
+              {cat.value === "all" && totalUnread > 0 && (
+                <span className="min-w-[16px] h-4 px-1 rounded-full bg-emerald-500 text-white text-[10px] font-bold flex items-center justify-center">
+                  {totalUnread > 99 ? "99+" : totalUnread}
+                </span>
+              )}
             </button>
           ))}
+
         </div>
       </div>
 
