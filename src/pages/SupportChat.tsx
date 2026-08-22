@@ -21,8 +21,12 @@ import {
 } from "@/components/ui/dialog";
 import { format } from "date-fns";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { toast } from "@/hooks/use-toast";
+import { StaffPickerDialog, StaffTarget } from "@/components/chat/StaffPickerDialog";
+import { CustomerPickerDialog, CustomerTarget } from "@/components/chat/CustomerPickerDialog";
 
 type ChatCategory = "all" | "staff_dm" | "customer_dm" | "customer_support" | "customer_supervisor" | "route_group" | "legacy";
+
 
 interface UnifiedConv {
   id: string;
