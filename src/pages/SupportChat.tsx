@@ -385,6 +385,8 @@ export default function SupportChat() {
             { value: "all", label: "All" },
             { value: "staff_dm", label: "Staff" },
             { value: "customer_dm", label: "Customers" },
+            { value: "customer_support", label: "Support Chats" },
+            { value: "customer_supervisor", label: "Supervisor (Private)" },
             { value: "route_group", label: "Groups" },
             { value: "legacy", label: "Support" },
           ].map((cat) => (
