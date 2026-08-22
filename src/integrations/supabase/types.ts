@@ -2668,6 +2668,14 @@ export type Database = {
         Returns: boolean
       }
       is_employee: { Args: { _user_id: string }; Returns: boolean }
+      is_parent_line_driver: {
+        Args: { _driver_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_parent_line_supervisor: {
+        Args: { _supervisor_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_parent_route: {
         Args: { _route_id: string; _user_id: string }
         Returns: boolean
