@@ -60,7 +60,7 @@ const ManageRouteAssignmentsDialog: React.FC<Props> = ({
         .eq('route_id', routeId!)
         .order('pickup_order', { ascending: true });
       if (error) throw error;
-      return data as any[];
+      return (data || []).filter((a: any) => a.registrations && a.registrations.status !== 'cancelled') as any[];
     },
   });
 
