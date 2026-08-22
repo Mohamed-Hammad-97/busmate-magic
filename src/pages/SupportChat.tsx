@@ -191,6 +191,64 @@ export default function SupportChat() {
     return () => { supabase.removeChannel(channel); };
   }, [selectedConvId, selectedConv?.isLegacy, queryClient]);
 
+  // Mark the open conversation's incoming messages as read
+  useEffect(() => {
+    if (!selectedConvId || !user?.id) return;
+    const isLegacy = selectedConv?.isLegacy;
+    const markRead = async () => {
+      if (isLegacy) {
+        await supabase
+          .from("chat_messages")
+          .update({ is_read: true })
+          .eq("conversation_id", selectedConvId)
+          .eq("is_read", false)
+          .neq("sender_type", "employee");
+      } else {
+        await supabase
+          .from("unified_messages")
+          .update({ is_read: true })
+          .eq("conversation_id", selectedConvId)
+          .eq("is_read", false)
+          .neq("sender_id", user.id);
+      }
+      queryClient.invalidateQueries({ queryKey: ["chat-unread-counts"] });
+    };
+    markRead();
+  }, [selectedConvId, selectedConv?.isLegacy, messages.length, user?.id, queryClient]);
+
+  // Global new-message listener: unread badges + toast pop-up
+  const selectedConvIdRef = useRef<string | null>(null);
+  selectedConvIdRef.current = selectedConvId;
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const handleIncoming = (payload: any, isLegacy: boolean) => {
+      const msg = payload.new;
+      if (!msg) return;
+      if (!isLegacy && msg.sender_id === user.id) return;
+      if (isLegacy && msg.sender_type === "employee") return;
+      queryClient.invalidateQueries({ queryKey: ["chat-unread-counts"] });
+      queryClient.invalidateQueries({ queryKey: ["all-unified-conversations"] });
+      queryClient.invalidateQueries({ queryKey: ["legacy-conversations"] });
+      if (msg.conversation_id === selectedConvIdRef.current) return;
+      toast({
+        title: `New message${msg.sender_name ? ` from ${msg.sender_name}` : ""}`,
+        description: String(msg.message || "").slice(0, 120),
+      });
+    };
+
+    const channel = supabase
+      .channel("support-chat-global")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "unified_messages" }, (p) => handleIncoming(p, false))
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages" }, (p) => handleIncoming(p, true))
+      .on("postgres_changes", { event: "*", schema: "public", table: "unified_conversations" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["all-unified-conversations"] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user?.id, queryClient]);
+
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
