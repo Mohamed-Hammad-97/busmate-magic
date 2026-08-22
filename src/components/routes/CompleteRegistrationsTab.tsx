@@ -43,12 +43,16 @@ const CompleteRegistrationsTab: React.FC<Props> = ({ routes, canEdit }) => {
           grade,
           school_id,
           schools ( name, city ),
-          parent_accounts ( parent_name, father_phone, pickup_address, city )
+          parent_accounts ( parent_name, father_phone, pickup_address, city, is_active )
         `)
         .eq('status', 'complete')
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return data as any[];
+      return (data as any[]).filter((r: any) => {
+        const pa = Array.isArray(r.parent_accounts) ? r.parent_accounts[0] : r.parent_accounts;
+        return pa?.is_active !== false;
+      });
+
     },
   });
 
