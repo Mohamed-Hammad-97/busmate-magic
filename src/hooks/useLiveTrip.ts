@@ -162,13 +162,17 @@ export function useLiveTrip(routeId?: string) {
 
       if (tripError) throw tripError;
 
-      // Get all students assigned to this route
-      const { data: assignments, error: assignError } = await supabase
+      // Get all students assigned to this route (cancelled registrations excluded)
+      const { data: rawAssignments, error: assignError } = await supabase
         .from("route_assignments")
-        .select("registration_id, pickup_order")
+        .select("registration_id, pickup_order, registrations(status)")
         .eq("route_id", data.routeId);
 
       if (assignError) throw assignError;
+
+      const assignments = (rawAssignments || []).filter(
+        (a: any) => a.registrations && a.registrations.status !== "cancelled"
+      );
 
       // Create status entries for each student
       if (assignments && assignments.length > 0) {
