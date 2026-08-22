@@ -476,7 +476,10 @@ export default function ParentDashboard() {
                         <Bus className="h-5 w-5 sm:h-6 sm:w-6" />
                       </div>
                       <div>
-                        <h3 className="text-base sm:text-lg font-bold">{assignment.routes?.name}</h3>
+                        <h3 className="text-base sm:text-lg font-bold">
+                          {assignment.routes?.name}
+                          {assignment.routes?.route_number ? ` (#${assignment.routes.route_number})` : ""}
+                        </h3>
                         <p className="text-xs sm:text-sm text-primary-foreground/80">
                           {t('parentPortal.student')}: {assignment.registrations?.student_name}
                         </p>
@@ -490,6 +493,17 @@ export default function ParentDashboard() {
                         <Car className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                         {assignment.routes?.car_type === "ac" ? t('parentPortal.acCar') : t('parentPortal.nonAc')}
                       </Badge>
+                      {assignment.routes?.drivers?.vehicle_plate && (
+                        <Badge variant="outline" className="gap-1 px-2 sm:px-3 py-1 text-xs">
+                          <Bus className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                          <span dir="ltr">{assignment.routes.drivers.vehicle_plate}</span>
+                        </Badge>
+                      )}
+                      {(assignment.routes?.drivers?.vehicle_model || assignment.routes?.drivers?.vehicle_color) && (
+                        <Badge variant="secondary" className="px-2 sm:px-3 py-1 text-xs">
+                          {[assignment.routes.drivers.vehicle_model, assignment.routes.drivers.vehicle_color].filter(Boolean).join(" • ")}
+                        </Badge>
+                      )}
                       {assignment.pickup_order && (
                         <Badge variant="secondary" className="gap-1 px-2 sm:px-3 py-1 text-xs">
                           Order: {assignment.pickup_order}
