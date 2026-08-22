@@ -859,7 +859,13 @@ export default function ParentDashboard() {
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto mx-2 sm:mx-auto">
           {selectedPaymentReg && (() => {
             const subscription = selectedPaymentReg.subscriptions?.[0];
-            const payments = subscription?.payments?.sort((a: any, b: any) => a.installment_number - b.installment_number) || [];
+            const payments = [...(subscription?.payments || [])]
+              .filter((p: any) => p.status !== 'archived')
+              .sort((a: any, b: any) => a.installment_number - b.installment_number);
+            const total = payments.reduce((s: number, p: any) => s + Number(p.amount || 0) + extraFeesTotal(p), 0);
+            const paidAmount = payments
+              .filter((p: any) => p.status === 'paid')
+              .reduce((s: number, p: any) => s + Number(p.amount || 0) + extraFeesTotal(p), 0);
             return (
               <>
                 <DialogHeader>
@@ -875,31 +881,77 @@ export default function ParentDashboard() {
                     </div>
                   </DialogTitle>
                 </DialogHeader>
+                <div className="grid grid-cols-3 gap-2 mt-2 text-center">
+                  <div className="rounded-xl border bg-muted/30 p-2">
+                    <p className="text-[10px] text-muted-foreground">الإجمالي</p>
+                    <p className="text-sm font-bold">{total.toLocaleString()}</p>
+                  </div>
+                  <div className="rounded-xl border bg-green-50/50 dark:bg-green-950/20 p-2">
+                    <p className="text-[10px] text-muted-foreground">المدفوع</p>
+                    <p className="text-sm font-bold text-green-600">{paidAmount.toLocaleString()}</p>
+                  </div>
+                  <div className="rounded-xl border bg-amber-50/50 dark:bg-amber-950/20 p-2">
+                    <p className="text-[10px] text-muted-foreground">المتبقي</p>
+                    <p className="text-sm font-bold text-amber-600">{(total - paidAmount).toLocaleString()}</p>
+                  </div>
+                </div>
                 <div className="space-y-3 mt-2">
-                  {payments.map((payment: any) => (
+                  {payments.map((payment: any) => {
+                    const st = effectiveStatus(payment);
+                    const fees = extraFeesTotal(payment);
+                    return (
                     <div
                       key={payment.id}
                       className={`p-3 sm:p-4 rounded-xl border transition-all ${
-                        payment.status === "paid"
+                        st === "paid"
                           ? "bg-green-50/50 border-green-200 dark:bg-green-950/20 dark:border-green-800/30"
-                          : payment.status === "overdue"
+                          : st === "overdue"
                           ? "bg-red-50/50 border-red-200 dark:bg-red-950/20 dark:border-red-800/30"
                           : "bg-muted/30 border-border"
                       }`}
                     >
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs sm:text-sm font-semibold">{t('parentPortal.installment')} {payment.installment_number}</span>
+                          <span className="text-xs sm:text-sm font-semibold">{installmentLabel(payment.installment_number)}</span>
                           <Badge
-                            variant={payment.status === "paid" ? "default" : payment.status === "overdue" ? "destructive" : "secondary"}
+                            variant={st === "paid" ? "default" : st === "overdue" ? "destructive" : "secondary"}
                             className="text-[10px] h-5"
                           >
-                            {paymentStatusLabels[payment.status]?.icon}
-                            <span className="ml-1">{paymentStatusLabels[payment.status]?.label}</span>
+                            {paymentStatusLabels[st]?.icon}
+                            <span className="ml-1">{paymentStatusLabels[st]?.label}</span>
                           </Badge>
                         </div>
-                        <span className="font-bold text-xs sm:text-sm">{Number(payment.amount).toLocaleString()} EGP</span>
+                        <div className="text-right">
+                          <span className="font-bold text-xs sm:text-sm">{Number(payment.amount).toLocaleString()} EGP</span>
+                          {fees > 0 && (
+                            <p className="text-[10px] text-amber-600">+ رسوم إضافية {fees.toLocaleString()} EGP</p>
+                          )}
+                        </div>
                       </div>
+                      {payment.fawry_reference_code && (
+                        <div className="mb-2 flex items-center justify-between gap-2 rounded-lg border border-primary/20 bg-primary/5 px-2.5 py-1.5">
+                          <div className="min-w-0">
+                            <p className="text-[10px] text-muted-foreground">كود فوري</p>
+                            <p className="text-xs font-bold font-mono truncate" dir="ltr">{payment.fawry_reference_code}</p>
+                            {payment.fawry_note && (
+                              <p className="text-[10px] text-muted-foreground truncate">{payment.fawry_note}</p>
+                            )}
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-2 text-[10px] shrink-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigator.clipboard.writeText(payment.fawry_reference_code);
+                              toast({ title: 'تم نسخ الكود' });
+                            }}
+                          >
+                            نسخ
+                          </Button>
+                        </div>
+                      )}
+
                       <div className="flex items-center justify-between text-[10px] sm:text-xs text-muted-foreground">
                         <span>{t('parentPortal.due')}: {format(new Date(payment.due_date), "dd MMM yyyy")}</span>
                         <div className="flex items-center gap-2">
