@@ -65,29 +65,65 @@ export function CompanyInvoices({ companyId: fixedCompanyId }: CompanyInvoicesPr
     queryFn: async () => {
       if (!effectiveCompanyId || !companyLines.length) return [];
       const lineIds = companyLines.map((l: any) => l.id);
-      const { data, error } = await supabase.from('corporate_driver_attendance').select('company_line_id, shift_number, shift_rate').in('company_line_id', lineIds).gte('attendance_date', invoiceForm.period_start).lte('attendance_date', invoiceForm.period_end).eq('is_present', true);
+      const { data, error } = await supabase.from('corporate_driver_attendance').select('company_line_id, attendance_date, shift_number, shift_rate, extra_fee_amount, extra_fee_reason').in('company_line_id', lineIds).gte('attendance_date', invoiceForm.period_start).lte('attendance_date', invoiceForm.period_end).eq('is_present', true);
       if (error) throw error;
       return data;
     },
     enabled: !!effectiveCompanyId && companyLines.length > 0,
   });
 
+  // Each attendance record = one shift on a specific day. Dedupe only exact
+  // duplicates (same line + date + shift number), never across days.
   const lineItems = useMemo(() => {
     return companyLines.map((line: any) => {
-      const shifts = attendanceForInvoice.filter((a: any) => a.company_line_id === line.id);
-      const uniqueShifts = new Set(shifts.map((s: any) => `${s.company_line_id}-${s.shift_number}`)).size;
-      return { line_name: line.name, shifts_count: uniqueShifts, price_per_shift: Number(line.price_per_shift), total: uniqueShifts * Number(line.price_per_shift) };
-    });
+      const seen = new Set<string>();
+      let shiftsCount = 0;
+      let total = 0;
+      attendanceForInvoice
+        .filter((a: any) => a.company_line_id === line.id)
+        .forEach((a: any) => {
+          const key = `${a.company_line_id}-${a.attendance_date}-${a.shift_number}`;
+          if (seen.has(key)) return;
+          seen.add(key);
+          shiftsCount += 1;
+          total += Number(a.shift_rate ?? line.price_per_shift ?? 0);
+        });
+      const avgRate = shiftsCount > 0 ? Math.round((total / shiftsCount) * 100) / 100 : Number(line.price_per_shift ?? 0);
+      return { line_name: line.name, shifts_count: shiftsCount, price_per_shift: avgRate, total };
+    }).filter((item: any) => item.shifts_count > 0);
   }, [companyLines, attendanceForInvoice]);
 
+  // Extra fees recorded on attendance rows, grouped per line
+  const attendanceExtras = useMemo(() => {
+    const byLine = new Map<string, number>();
+    attendanceForInvoice.forEach((a: any) => {
+      const amount = Number(a.extra_fee_amount || 0);
+      if (!amount) return;
+      byLine.set(a.company_line_id, (byLine.get(a.company_line_id) || 0) + amount);
+    });
+    return Array.from(byLine.entries()).map(([lineId, amount]) => {
+      const line = companyLines.find((l: any) => l.id === lineId);
+      return { line_name: `${t('corporateMgmt.extraItemsLabel')} - ${line?.name || ''}`, shifts_count: 0, price_per_shift: 0, total: amount, is_extra: true };
+    });
+  }, [attendanceForInvoice, companyLines, t]);
+
+  const totalShifts = lineItems.reduce((s: number, i: any) => s + i.shifts_count, 0);
+  const linesTotal = lineItems.reduce((s: number, i: any) => s + i.total, 0);
+  const attendanceExtrasTotal = attendanceExtras.reduce((s: number, i: any) => s + i.total, 0);
   const extraItemsTotal = extraItems.reduce((sum, item) => sum + (item.amount || 0), 0);
-  const invoiceTotal = lineItems.reduce((sum, item) => sum + item.total, 0) + extraItemsTotal;
+  const invoiceTotal = linesTotal + attendanceExtrasTotal + extraItemsTotal;
+  const periodDays = (() => {
+    const start = new Date(invoiceForm.period_start).getTime();
+    const end = new Date(invoiceForm.period_end).getTime();
+    if (isNaN(start) || isNaN(end) || end < start) return 0;
+    return Math.round((end - start) / 86400000) + 1;
+  })();
 
   const createInvoiceMutation = useMutation({
     mutationFn: async () => {
       const company = companies.find((c: any) => c.id === effectiveCompanyId);
       const invoiceNumber = `INV-${company?.name?.slice(0, 3).toUpperCase()}-${Date.now().toString().slice(-6)}`;
-      const allItems = [...lineItems, ...extraItems.filter(e => e.name && e.amount).map(e => ({ line_name: e.name, shifts_count: 0, price_per_shift: 0, total: e.amount, is_extra: true }))];
+      const allItems = [...lineItems, ...attendanceExtras, ...extraItems.filter(e => e.name && e.amount).map(e => ({ line_name: e.name, shifts_count: 0, price_per_shift: 0, total: e.amount, is_extra: true }))];
       const { error } = await supabase.from('company_invoices').insert({
         company_id: effectiveCompanyId, invoice_number: invoiceNumber, period_start: invoiceForm.period_start, period_end: invoiceForm.period_end,
         total_amount: invoiceTotal, line_items: allItems, status: 'issued', issued_date: format(new Date(), 'yyyy-MM-dd'), notes: invoiceForm.notes || null, created_by: user?.id,
@@ -215,13 +251,26 @@ export function CompanyInvoices({ companyId: fixedCompanyId }: CompanyInvoicesPr
                         <TableRow key={i}>
                           <TableCell className="text-sm">{item.line_name}</TableCell>
                           <TableCell className="text-sm font-mono">{item.shifts_count}</TableCell>
-                          <TableCell className="text-sm font-mono">{item.price_per_shift}</TableCell>
+                          <TableCell className="text-sm font-mono">{item.price_per_shift.toLocaleString()}</TableCell>
+                          <TableCell className="text-sm font-mono font-semibold">{item.total.toLocaleString()}</TableCell>
+                        </TableRow>
+                      ))}
+                      {attendanceExtras.map((item: any, i: number) => (
+                        <TableRow key={`x-${i}`}>
+                          <TableCell className="text-sm">{item.line_name}</TableCell>
+                          <TableCell className="text-sm font-mono">-</TableCell>
+                          <TableCell className="text-sm font-mono">-</TableCell>
                           <TableCell className="text-sm font-mono font-semibold">{item.total.toLocaleString()}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
                 </div>
+              </div>
+            )}
+            {effectiveCompanyId && lineItems.length === 0 && (
+              <div className="rounded-xl border border-dashed border-border/60 p-4 text-center text-sm text-muted-foreground">
+                {t('corporateMgmt.noAttendanceInPeriod', 'لا يوجد حضور مسجل في هذه الفترة')}
               </div>
             )}
             <div className="space-y-3">
@@ -243,7 +292,9 @@ export function CompanyInvoices({ companyId: fixedCompanyId }: CompanyInvoicesPr
             </div>
             {effectiveCompanyId && (
               <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-1.5">
-                <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t('corporateMgmt.linesTotal')}</span><span className="font-mono">{lineItems.reduce((s, i) => s + i.total, 0).toLocaleString()} {cur}</span></div>
+                <div className="flex justify-between text-xs text-muted-foreground"><span>{periodDays} {t('corporateMgmt.days', 'يوم')}</span><span className="font-mono">{totalShifts} {t('corporateMgmt.shifts')}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t('corporateMgmt.linesTotal')}</span><span className="font-mono">{linesTotal.toLocaleString()} {cur}</span></div>
+                {attendanceExtrasTotal > 0 && <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t('corporateMgmt.extraItemsLabel')}</span><span className="font-mono">{attendanceExtrasTotal.toLocaleString()} {cur}</span></div>}
                 {extraItemsTotal > 0 && <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t('corporateMgmt.extraItemsLabel')}</span><span className="font-mono">{extraItemsTotal.toLocaleString()} {cur}</span></div>}
                 <div className="flex justify-between text-sm font-bold border-t border-primary/20 pt-1.5"><span>{t('corporateMgmt.totalLabel')}</span><span className="font-mono">{invoiceTotal.toLocaleString()} {cur}</span></div>
               </div>
