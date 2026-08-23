@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Plus, UserPlus, User, Phone, Key, Eye, EyeOff, Shield, ShieldCheck, MapPin, Building2, Car, Users, Power, PowerOff, Search } from "lucide-react";
 import { z } from "zod";
 import { useCity } from "@/contexts/CityContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 const phoneSchema = z.string().regex(/^01[0125]\d{8}$/, "رقم الهاتف غير صالح");
 
@@ -38,10 +39,19 @@ interface DriverAccountsManagementProps {
   staffContext?: "school" | "corporate";
 }
 
+type ServiceType = "school" | "corporate" | "daily_lines";
+
+const SERVICE_LABELS: Record<ServiceType, string> = {
+  school: "مدارس",
+  corporate: "شركات",
+  daily_lines: "خطوط يومية",
+};
+
 export function DriverAccountsManagement({ cityFilter, staffContext = "school" }: DriverAccountsManagementProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { selectedCity } = useCity();
+  const { isSuperAdmin, hasDepartment } = useAuth();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [accountType, setAccountType] = useState<"driver" | "supervisor">("driver");
   const [selectedPersonId, setSelectedPersonId] = useState<string>("");
@@ -51,15 +61,39 @@ export function DriverAccountsManagement({ cityFilter, staffContext = "school" }
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const belongsToValues = staffContext === "school" ? ["school", "both"] : ["corporate", "both"];
-  const categoryValues = staffContext === "school" ? ["school", "daily_lines"] : ["corporate"];
+  const allowedServices = useMemo<ServiceType[]>(() => {
+    if (isSuperAdmin) return ["school", "corporate", "daily_lines"];
+    const list: ServiceType[] = [];
+    if (hasDepartment("operations")) list.push("school");
+    if (hasDepartment("operation_companies")) list.push("corporate");
+    if (hasDepartment("operation_daily_lines")) list.push("daily_lines");
+    if (list.length === 0) list.push(staffContext === "corporate" ? "corporate" : "school");
+    return list;
+  }, [isSuperAdmin, hasDepartment, staffContext]);
+
+  const defaultService: ServiceType =
+    allowedServices.includes(staffContext as ServiceType)
+      ? (staffContext as ServiceType)
+      : allowedServices[0];
+
+  const [selectedService, setSelectedService] = useState<ServiceType>(defaultService);
+
+  useEffect(() => {
+    if (!allowedServices.includes(selectedService)) {
+      setSelectedService(allowedServices[0]);
+    }
+  }, [allowedServices, selectedService]);
+
+  const legacyBelongsTo =
+    selectedService === "corporate" ? ["corporate", "both"] : ["school", "both"];
 
   // Match on the categories array; fall back to legacy belongs_to for rows without categories
   const matchesContext = (person: any) => {
     const cats: string[] = Array.isArray(person?.categories) ? person.categories : [];
-    if (cats.length > 0) return cats.some((c) => categoryValues.includes(c));
-    return belongsToValues.includes(person?.belongs_to);
+    if (cats.length > 0) return cats.includes(selectedService);
+    return legacyBelongsTo.includes(person?.belongs_to);
   };
+
 
   const { data: accounts = [], isLoading: loadingAccounts } = useQuery({
     queryKey: ["driver-accounts"],
@@ -98,7 +132,7 @@ export function DriverAccountsManagement({ cityFilter, staffContext = "school" }
       }
       return true;
     });
-  }, [accounts, selectedCity, cityFilter, belongsToValues, searchTerm]);
+  }, [accounts, selectedCity, cityFilter, selectedService, searchTerm]);
 
   const takenDriverIds = useMemo(
     () => accounts.filter((a: any) => a.driver_id).map((a: any) => a.driver_id),
@@ -115,12 +149,13 @@ export function DriverAccountsManagement({ cityFilter, staffContext = "school" }
     if (cityNames.length === 0) return rows;
     return rows.filter((r: any) => {
       const c = (r.city || "").toLowerCase();
+      if (!c) return true;
       return cityNames.some((name) => c.includes(name.toLowerCase()));
     });
   };
 
   const { data: availableDrivers = [] } = useQuery({
-    queryKey: ["available-drivers", selectedCity, cityFilter, staffContext, takenDriverIds],
+    queryKey: ["available-drivers", selectedCity, cityFilter, selectedService, takenDriverIds],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("drivers")
@@ -136,7 +171,7 @@ export function DriverAccountsManagement({ cityFilter, staffContext = "school" }
   });
 
   const { data: availableSupervisors = [] } = useQuery({
-    queryKey: ["available-supervisors", selectedCity, cityFilter, staffContext, takenSupervisorIds],
+    queryKey: ["available-supervisors", selectedCity, cityFilter, selectedService, takenSupervisorIds],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("supervisors")
@@ -304,6 +339,29 @@ export function DriverAccountsManagement({ cityFilter, staffContext = "school" }
 
             <div className="space-y-5 mt-2">
               <div className="space-y-2">
+                <Label className="text-sm font-medium">الخدمة</Label>
+                <Select
+                  value={selectedService}
+                  onValueChange={(v) => {
+                    setSelectedService(v as ServiceType);
+                    setSelectedPersonId("");
+                  }}
+                  disabled={allowedServices.length === 1}
+                >
+                  <SelectTrigger className="h-11 rounded-xl border-border/50">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allowedServices.map((svc) => (
+                      <SelectItem key={svc} value={svc}>
+                        <span className="flex items-center gap-2"><Building2 className="h-4 w-4" /> {SERVICE_LABELS[svc]}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
                 <Label className="text-sm font-medium">نوع الحساب</Label>
                 <Select
                   value={accountType}
@@ -342,7 +400,8 @@ export function DriverAccountsManagement({ cityFilter, staffContext = "school" }
                 </Select>
                 {availablePersons.length === 0 && (
                   <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
-                    لا يوجد {accountType === "driver" ? "سائقين" : "مشرفين"} بدون حسابات
+                    لا يوجد {accountType === "driver" ? "سائقين" : "مشرفين"} متاحين ضمن خدمة "{SERVICE_LABELS[selectedService]}"
+                    {(cityFilter || selectedCity) ? ` في المدينة المحددة` : ""}. تأكد من تحديد الخدمة الصحيحة عند إضافة الموظف، أو أنه لديه حساب بالفعل.
                   </p>
                 )}
               </div>
