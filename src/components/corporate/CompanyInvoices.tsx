@@ -251,13 +251,26 @@ export function CompanyInvoices({ companyId: fixedCompanyId }: CompanyInvoicesPr
                         <TableRow key={i}>
                           <TableCell className="text-sm">{item.line_name}</TableCell>
                           <TableCell className="text-sm font-mono">{item.shifts_count}</TableCell>
-                          <TableCell className="text-sm font-mono">{item.price_per_shift}</TableCell>
+                          <TableCell className="text-sm font-mono">{item.price_per_shift.toLocaleString()}</TableCell>
+                          <TableCell className="text-sm font-mono font-semibold">{item.total.toLocaleString()}</TableCell>
+                        </TableRow>
+                      ))}
+                      {attendanceExtras.map((item: any, i: number) => (
+                        <TableRow key={`x-${i}`}>
+                          <TableCell className="text-sm">{item.line_name}</TableCell>
+                          <TableCell className="text-sm font-mono">-</TableCell>
+                          <TableCell className="text-sm font-mono">-</TableCell>
                           <TableCell className="text-sm font-mono font-semibold">{item.total.toLocaleString()}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
                 </div>
+              </div>
+            )}
+            {effectiveCompanyId && lineItems.length === 0 && (
+              <div className="rounded-xl border border-dashed border-border/60 p-4 text-center text-sm text-muted-foreground">
+                {t('corporateMgmt.noAttendanceInPeriod', 'لا يوجد حضور مسجل في هذه الفترة')}
               </div>
             )}
             <div className="space-y-3">
