@@ -65,23 +65,59 @@ export function CompanyInvoices({ companyId: fixedCompanyId }: CompanyInvoicesPr
     queryFn: async () => {
       if (!effectiveCompanyId || !companyLines.length) return [];
       const lineIds = companyLines.map((l: any) => l.id);
-      const { data, error } = await supabase.from('corporate_driver_attendance').select('company_line_id, shift_number, shift_rate').in('company_line_id', lineIds).gte('attendance_date', invoiceForm.period_start).lte('attendance_date', invoiceForm.period_end).eq('is_present', true);
+      const { data, error } = await supabase.from('corporate_driver_attendance').select('company_line_id, attendance_date, shift_number, shift_rate, extra_fee_amount, extra_fee_reason').in('company_line_id', lineIds).gte('attendance_date', invoiceForm.period_start).lte('attendance_date', invoiceForm.period_end).eq('is_present', true);
       if (error) throw error;
       return data;
     },
     enabled: !!effectiveCompanyId && companyLines.length > 0,
   });
 
+  // Each attendance record = one shift on a specific day. Dedupe only exact
+  // duplicates (same line + date + shift number), never across days.
   const lineItems = useMemo(() => {
     return companyLines.map((line: any) => {
-      const shifts = attendanceForInvoice.filter((a: any) => a.company_line_id === line.id);
-      const uniqueShifts = new Set(shifts.map((s: any) => `${s.company_line_id}-${s.shift_number}`)).size;
-      return { line_name: line.name, shifts_count: uniqueShifts, price_per_shift: Number(line.price_per_shift), total: uniqueShifts * Number(line.price_per_shift) };
-    });
+      const seen = new Set<string>();
+      let shiftsCount = 0;
+      let total = 0;
+      attendanceForInvoice
+        .filter((a: any) => a.company_line_id === line.id)
+        .forEach((a: any) => {
+          const key = `${a.company_line_id}-${a.attendance_date}-${a.shift_number}`;
+          if (seen.has(key)) return;
+          seen.add(key);
+          shiftsCount += 1;
+          total += Number(a.shift_rate ?? line.price_per_shift ?? 0);
+        });
+      const avgRate = shiftsCount > 0 ? Math.round((total / shiftsCount) * 100) / 100 : Number(line.price_per_shift ?? 0);
+      return { line_name: line.name, shifts_count: shiftsCount, price_per_shift: avgRate, total };
+    }).filter((item: any) => item.shifts_count > 0);
   }, [companyLines, attendanceForInvoice]);
 
+  // Extra fees recorded on attendance rows, grouped per line
+  const attendanceExtras = useMemo(() => {
+    const byLine = new Map<string, number>();
+    attendanceForInvoice.forEach((a: any) => {
+      const amount = Number(a.extra_fee_amount || 0);
+      if (!amount) return;
+      byLine.set(a.company_line_id, (byLine.get(a.company_line_id) || 0) + amount);
+    });
+    return Array.from(byLine.entries()).map(([lineId, amount]) => {
+      const line = companyLines.find((l: any) => l.id === lineId);
+      return { line_name: `${t('corporateMgmt.extraItemsLabel')} - ${line?.name || ''}`, shifts_count: 0, price_per_shift: 0, total: amount, is_extra: true };
+    });
+  }, [attendanceForInvoice, companyLines, t]);
+
+  const totalShifts = lineItems.reduce((s: number, i: any) => s + i.shifts_count, 0);
+  const linesTotal = lineItems.reduce((s: number, i: any) => s + i.total, 0);
+  const attendanceExtrasTotal = attendanceExtras.reduce((s: number, i: any) => s + i.total, 0);
   const extraItemsTotal = extraItems.reduce((sum, item) => sum + (item.amount || 0), 0);
-  const invoiceTotal = lineItems.reduce((sum, item) => sum + item.total, 0) + extraItemsTotal;
+  const invoiceTotal = linesTotal + attendanceExtrasTotal + extraItemsTotal;
+  const periodDays = (() => {
+    const start = new Date(invoiceForm.period_start).getTime();
+    const end = new Date(invoiceForm.period_end).getTime();
+    if (isNaN(start) || isNaN(end) || end < start) return 0;
+    return Math.round((end - start) / 86400000) + 1;
+  })();
 
   const createInvoiceMutation = useMutation({
     mutationFn: async () => {
