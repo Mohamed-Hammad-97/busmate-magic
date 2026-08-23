@@ -190,6 +190,7 @@ const Staff = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['supervisors'] });
+      queryClient.invalidateQueries({ queryKey: ['available-supervisors'] });
       toast.success(selectedSupervisor ? t('staff.supervisorUpdated') : t('staff.supervisorAdded'));
       setIsSupervisorDialogOpen(false);
       resetSupervisorForm();
