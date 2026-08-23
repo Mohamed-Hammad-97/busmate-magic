@@ -279,7 +279,9 @@ export function CompanyInvoices({ companyId: fixedCompanyId }: CompanyInvoicesPr
             </div>
             {effectiveCompanyId && (
               <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-1.5">
-                <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t('corporateMgmt.linesTotal')}</span><span className="font-mono">{lineItems.reduce((s, i) => s + i.total, 0).toLocaleString()} {cur}</span></div>
+                <div className="flex justify-between text-xs text-muted-foreground"><span>{periodDays} {t('corporateMgmt.days', 'يوم')}</span><span className="font-mono">{totalShifts} {t('corporateMgmt.shifts')}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t('corporateMgmt.linesTotal')}</span><span className="font-mono">{linesTotal.toLocaleString()} {cur}</span></div>
+                {attendanceExtrasTotal > 0 && <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t('corporateMgmt.extraItemsLabel')}</span><span className="font-mono">{attendanceExtrasTotal.toLocaleString()} {cur}</span></div>}
                 {extraItemsTotal > 0 && <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t('corporateMgmt.extraItemsLabel')}</span><span className="font-mono">{extraItemsTotal.toLocaleString()} {cur}</span></div>}
                 <div className="flex justify-between text-sm font-bold border-t border-primary/20 pt-1.5"><span>{t('corporateMgmt.totalLabel')}</span><span className="font-mono">{invoiceTotal.toLocaleString()} {cur}</span></div>
               </div>
