@@ -84,7 +84,7 @@ export function DriverAccountsManagement({ cityFilter, staffContext = "school" }
     return accounts.filter((acc: any) => {
       const person = acc.driver || acc.supervisor;
       if (!person) return false;
-      if (!belongsToValues.includes(person.belongs_to)) return false;
+      if (!matchesContext(person)) return false;
       if (cityNames.length > 0) {
         const personCity = (person.city || "").toLowerCase();
         if (!cityNames.some((name) => personCity.includes(name.toLowerCase()))) return false;
