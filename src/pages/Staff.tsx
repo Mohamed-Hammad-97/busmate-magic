@@ -169,6 +169,7 @@ const Staff = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['drivers'] });
+      queryClient.invalidateQueries({ queryKey: ['available-drivers'] });
       toast.success(selectedDriver ? t('staff.driverUpdated') : t('staff.driverAdded'));
       setIsDriverDialogOpen(false);
       resetDriverForm();
