@@ -473,7 +473,7 @@ export function DriverAccountsManagement({ cityFilter, staffContext = "school" }
           <p className="text-xs text-muted-foreground">ابدأ بإنشاء حساب جديد للسائقين أو المشرفين</p>
         </div>
       ) : (
-        <div className="grid gap-3">
+        <div className="grid gap-3 max-h-[60vh] overflow-y-auto pr-1">
           {filteredAccounts.map((account: any) => {
             const person = account.driver || account.supervisor;
             const isDriver = !!account.driver_id;
