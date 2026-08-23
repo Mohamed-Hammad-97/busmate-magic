@@ -78,7 +78,7 @@ export function CompanyInvoices({ companyId: fixedCompanyId }: CompanyInvoicesPr
     return companyLines.map((line: any) => {
       const seen = new Set<string>();
       let shiftsCount = 0;
-      let total = 0;
+      const rate = Number(line.price_per_shift ?? 0);
       attendanceForInvoice
         .filter((a: any) => a.company_line_id === line.id)
         .forEach((a: any) => {
@@ -86,10 +86,9 @@ export function CompanyInvoices({ companyId: fixedCompanyId }: CompanyInvoicesPr
           if (seen.has(key)) return;
           seen.add(key);
           shiftsCount += 1;
-          total += Number(a.shift_rate ?? line.price_per_shift ?? 0);
         });
-      const avgRate = shiftsCount > 0 ? Math.round((total / shiftsCount) * 100) / 100 : Number(line.price_per_shift ?? 0);
-      return { line_name: line.name, shifts_count: shiftsCount, price_per_shift: avgRate, total };
+      const total = Math.round(shiftsCount * rate * 100) / 100;
+      return { line_name: line.name, shifts_count: shiftsCount, price_per_shift: rate, total };
     }).filter((item: any) => item.shifts_count > 0);
   }, [companyLines, attendanceForInvoice]);
 
