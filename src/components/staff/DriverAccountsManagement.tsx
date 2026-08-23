@@ -339,6 +339,29 @@ export function DriverAccountsManagement({ cityFilter, staffContext = "school" }
 
             <div className="space-y-5 mt-2">
               <div className="space-y-2">
+                <Label className="text-sm font-medium">الخدمة</Label>
+                <Select
+                  value={selectedService}
+                  onValueChange={(v) => {
+                    setSelectedService(v as ServiceType);
+                    setSelectedPersonId("");
+                  }}
+                  disabled={allowedServices.length === 1}
+                >
+                  <SelectTrigger className="h-11 rounded-xl border-border/50">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allowedServices.map((svc) => (
+                      <SelectItem key={svc} value={svc}>
+                        <span className="flex items-center gap-2"><Building2 className="h-4 w-4" /> {SERVICE_LABELS[svc]}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
                 <Label className="text-sm font-medium">نوع الحساب</Label>
                 <Select
                   value={accountType}
@@ -377,7 +400,8 @@ export function DriverAccountsManagement({ cityFilter, staffContext = "school" }
                 </Select>
                 {availablePersons.length === 0 && (
                   <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
-                    لا يوجد {accountType === "driver" ? "سائقين" : "مشرفين"} بدون حسابات
+                    لا يوجد {accountType === "driver" ? "سائقين" : "مشرفين"} متاحين ضمن خدمة "{SERVICE_LABELS[selectedService]}"
+                    {(cityFilter || selectedCity) ? ` في المدينة المحددة` : ""}. تأكد من تحديد الخدمة الصحيحة عند إضافة الموظف، أو أنه لديه حساب بالفعل.
                   </p>
                 )}
               </div>
