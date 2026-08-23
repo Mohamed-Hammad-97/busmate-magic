@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Plus, UserPlus, User, Phone, Key, Eye, EyeOff, Shield, ShieldCheck, MapPin, Building2, Car, Users, Power, PowerOff, Search } from "lucide-react";
 import { z } from "zod";
 import { useCity } from "@/contexts/CityContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 const phoneSchema = z.string().regex(/^01[0125]\d{8}$/, "رقم الهاتف غير صالح");
 
@@ -131,7 +132,7 @@ export function DriverAccountsManagement({ cityFilter, staffContext = "school" }
       }
       return true;
     });
-  }, [accounts, selectedCity, cityFilter, belongsToValues, searchTerm]);
+  }, [accounts, selectedCity, cityFilter, selectedService, searchTerm]);
 
   const takenDriverIds = useMemo(
     () => accounts.filter((a: any) => a.driver_id).map((a: any) => a.driver_id),
