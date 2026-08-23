@@ -52,6 +52,14 @@ export function DriverAccountsManagement({ cityFilter, staffContext = "school" }
   const [searchTerm, setSearchTerm] = useState("");
 
   const belongsToValues = staffContext === "school" ? ["school", "both"] : ["corporate", "both"];
+  const categoryValues = staffContext === "school" ? ["school", "daily_lines"] : ["corporate"];
+
+  // Match on the categories array; fall back to legacy belongs_to for rows without categories
+  const matchesContext = (person: any) => {
+    const cats: string[] = Array.isArray(person?.categories) ? person.categories : [];
+    if (cats.length > 0) return cats.some((c) => categoryValues.includes(c));
+    return belongsToValues.includes(person?.belongs_to);
+  };
 
   const { data: accounts = [], isLoading: loadingAccounts } = useQuery({
     queryKey: ["driver-accounts"],
@@ -76,7 +84,7 @@ export function DriverAccountsManagement({ cityFilter, staffContext = "school" }
     return accounts.filter((acc: any) => {
       const person = acc.driver || acc.supervisor;
       if (!person) return false;
-      if (!belongsToValues.includes(person.belongs_to)) return false;
+      if (!matchesContext(person)) return false;
       if (cityNames.length > 0) {
         const personCity = (person.city || "").toLowerCase();
         if (!cityNames.some((name) => personCity.includes(name.toLowerCase()))) return false;
@@ -92,70 +100,55 @@ export function DriverAccountsManagement({ cityFilter, staffContext = "school" }
     });
   }, [accounts, selectedCity, cityFilter, belongsToValues, searchTerm]);
 
-  const { data: availableDrivers = [] } = useQuery({
-    queryKey: ["available-drivers", selectedCity, staffContext],
-    queryFn: async () => {
-      const existingDriverIds = accounts
-        .filter((a) => a.driver_id)
-        .map((a) => a.driver_id);
+  const takenDriverIds = useMemo(
+    () => accounts.filter((a: any) => a.driver_id).map((a: any) => a.driver_id),
+    [accounts]
+  );
+  const takenSupervisorIds = useMemo(
+    () => accounts.filter((a: any) => a.supervisor_id).map((a: any) => a.supervisor_id),
+    [accounts]
+  );
 
-      let query = supabase
+  const filterByCity = (rows: any[]) => {
+    const activeCityKey = (cityFilter || selectedCity || "").toLowerCase();
+    const cityNames = cityMapping[activeCityKey] || [];
+    if (cityNames.length === 0) return rows;
+    return rows.filter((r: any) => {
+      const c = (r.city || "").toLowerCase();
+      return cityNames.some((name) => c.includes(name.toLowerCase()));
+    });
+  };
+
+  const { data: availableDrivers = [] } = useQuery({
+    queryKey: ["available-drivers", selectedCity, cityFilter, staffContext, takenDriverIds],
+    queryFn: async () => {
+      const { data, error } = await supabase
         .from("drivers")
         .select("*")
-        .eq("is_active", true)
-        .in("belongs_to", belongsToValues);
-
-      if (existingDriverIds.length > 0) {
-        query = query.not("id", "in", `(${existingDriverIds.join(",")})`);
-      }
-
-      const { data, error } = await query;
+        .eq("is_active", true);
       if (error) throw error;
-      
-      const activeCityKey = (cityFilter || selectedCity || "").toLowerCase();
-      const cityNames = cityMapping[activeCityKey] || [];
-      if (cityNames.length > 0) {
-        return (data || []).filter((d: any) => {
-          const dCity = (d.city || "").toLowerCase();
-          return cityNames.some((name) => dCity.includes(name.toLowerCase()));
-        });
-      }
-      return data;
+
+      const rows = (data || []).filter(
+        (d: any) => matchesContext(d) && !takenDriverIds.includes(d.id)
+      );
+      return filterByCity(rows);
     },
-    enabled: accounts !== undefined,
   });
 
   const { data: availableSupervisors = [] } = useQuery({
-    queryKey: ["available-supervisors", selectedCity, staffContext],
+    queryKey: ["available-supervisors", selectedCity, cityFilter, staffContext, takenSupervisorIds],
     queryFn: async () => {
-      const existingSupervisorIds = accounts
-        .filter((a) => a.supervisor_id)
-        .map((a) => a.supervisor_id);
-
-      let query = supabase
+      const { data, error } = await supabase
         .from("supervisors")
         .select("*")
-        .eq("is_active", true)
-        .in("belongs_to", belongsToValues);
-
-      if (existingSupervisorIds.length > 0) {
-        query = query.not("id", "in", `(${existingSupervisorIds.join(",")})`);
-      }
-
-      const { data, error } = await query;
+        .eq("is_active", true);
       if (error) throw error;
-      
-      const activeCityKey = (cityFilter || selectedCity || "").toLowerCase();
-      const cityNames = cityMapping[activeCityKey] || [];
-      if (cityNames.length > 0) {
-        return (data || []).filter((s: any) => {
-          const sCity = (s.city || "").toLowerCase();
-          return cityNames.some((name) => sCity.includes(name.toLowerCase()));
-        });
-      }
-      return data;
+
+      const rows = (data || []).filter(
+        (s: any) => matchesContext(s) && !takenSupervisorIds.includes(s.id)
+      );
+      return filterByCity(rows);
     },
-    enabled: accounts !== undefined,
   });
 
   const createAccount = async () => {

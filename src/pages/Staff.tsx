@@ -169,6 +169,7 @@ const Staff = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['drivers'] });
+      queryClient.invalidateQueries({ queryKey: ['available-drivers'] });
       toast.success(selectedDriver ? t('staff.driverUpdated') : t('staff.driverAdded'));
       setIsDriverDialogOpen(false);
       resetDriverForm();
@@ -189,6 +190,7 @@ const Staff = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['supervisors'] });
+      queryClient.invalidateQueries({ queryKey: ['available-supervisors'] });
       toast.success(selectedSupervisor ? t('staff.supervisorUpdated') : t('staff.supervisorAdded'));
       setIsSupervisorDialogOpen(false);
       resetSupervisorForm();
