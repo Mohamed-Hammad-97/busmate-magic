@@ -38,10 +38,19 @@ interface DriverAccountsManagementProps {
   staffContext?: "school" | "corporate";
 }
 
+type ServiceType = "school" | "corporate" | "daily_lines";
+
+const SERVICE_LABELS: Record<ServiceType, string> = {
+  school: "مدارس",
+  corporate: "شركات",
+  daily_lines: "خطوط يومية",
+};
+
 export function DriverAccountsManagement({ cityFilter, staffContext = "school" }: DriverAccountsManagementProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { selectedCity } = useCity();
+  const { isSuperAdmin, hasDepartment } = useAuth();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [accountType, setAccountType] = useState<"driver" | "supervisor">("driver");
   const [selectedPersonId, setSelectedPersonId] = useState<string>("");
@@ -51,15 +60,39 @@ export function DriverAccountsManagement({ cityFilter, staffContext = "school" }
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const belongsToValues = staffContext === "school" ? ["school", "both"] : ["corporate", "both"];
-  const categoryValues = staffContext === "school" ? ["school", "daily_lines"] : ["corporate"];
+  const allowedServices = useMemo<ServiceType[]>(() => {
+    if (isSuperAdmin) return ["school", "corporate", "daily_lines"];
+    const list: ServiceType[] = [];
+    if (hasDepartment("operations")) list.push("school");
+    if (hasDepartment("operation_companies")) list.push("corporate");
+    if (hasDepartment("operation_daily_lines")) list.push("daily_lines");
+    if (list.length === 0) list.push(staffContext === "corporate" ? "corporate" : "school");
+    return list;
+  }, [isSuperAdmin, hasDepartment, staffContext]);
+
+  const defaultService: ServiceType =
+    allowedServices.includes(staffContext as ServiceType)
+      ? (staffContext as ServiceType)
+      : allowedServices[0];
+
+  const [selectedService, setSelectedService] = useState<ServiceType>(defaultService);
+
+  useEffect(() => {
+    if (!allowedServices.includes(selectedService)) {
+      setSelectedService(allowedServices[0]);
+    }
+  }, [allowedServices, selectedService]);
+
+  const legacyBelongsTo =
+    selectedService === "corporate" ? ["corporate", "both"] : ["school", "both"];
 
   // Match on the categories array; fall back to legacy belongs_to for rows without categories
   const matchesContext = (person: any) => {
     const cats: string[] = Array.isArray(person?.categories) ? person.categories : [];
-    if (cats.length > 0) return cats.some((c) => categoryValues.includes(c));
-    return belongsToValues.includes(person?.belongs_to);
+    if (cats.length > 0) return cats.includes(selectedService);
+    return legacyBelongsTo.includes(person?.belongs_to);
   };
+
 
   const { data: accounts = [], isLoading: loadingAccounts } = useQuery({
     queryKey: ["driver-accounts"],
