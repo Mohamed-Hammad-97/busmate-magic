@@ -52,6 +52,14 @@ export function DriverAccountsManagement({ cityFilter, staffContext = "school" }
   const [searchTerm, setSearchTerm] = useState("");
 
   const belongsToValues = staffContext === "school" ? ["school", "both"] : ["corporate", "both"];
+  const categoryValues = staffContext === "school" ? ["school", "daily_lines"] : ["corporate"];
+
+  // Match on the categories array; fall back to legacy belongs_to for rows without categories
+  const matchesContext = (person: any) => {
+    const cats: string[] = Array.isArray(person?.categories) ? person.categories : [];
+    if (cats.length > 0) return cats.some((c) => categoryValues.includes(c));
+    return belongsToValues.includes(person?.belongs_to);
+  };
 
   const { data: accounts = [], isLoading: loadingAccounts } = useQuery({
     queryKey: ["driver-accounts"],
