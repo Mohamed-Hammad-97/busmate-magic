@@ -149,12 +149,13 @@ export function DriverAccountsManagement({ cityFilter, staffContext = "school" }
     if (cityNames.length === 0) return rows;
     return rows.filter((r: any) => {
       const c = (r.city || "").toLowerCase();
+      if (!c) return true;
       return cityNames.some((name) => c.includes(name.toLowerCase()));
     });
   };
 
   const { data: availableDrivers = [] } = useQuery({
-    queryKey: ["available-drivers", selectedCity, cityFilter, staffContext, takenDriverIds],
+    queryKey: ["available-drivers", selectedCity, cityFilter, selectedService, takenDriverIds],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("drivers")
@@ -170,7 +171,7 @@ export function DriverAccountsManagement({ cityFilter, staffContext = "school" }
   });
 
   const { data: availableSupervisors = [] } = useQuery({
-    queryKey: ["available-supervisors", selectedCity, cityFilter, staffContext, takenSupervisorIds],
+    queryKey: ["available-supervisors", selectedCity, cityFilter, selectedService, takenSupervisorIds],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("supervisors")
