@@ -123,7 +123,7 @@ export function CompanyInvoices({ companyId: fixedCompanyId }: CompanyInvoicesPr
     mutationFn: async () => {
       const company = companies.find((c: any) => c.id === effectiveCompanyId);
       const invoiceNumber = `INV-${company?.name?.slice(0, 3).toUpperCase()}-${Date.now().toString().slice(-6)}`;
-      const allItems = [...lineItems, ...extraItems.filter(e => e.name && e.amount).map(e => ({ line_name: e.name, shifts_count: 0, price_per_shift: 0, total: e.amount, is_extra: true }))];
+      const allItems = [...lineItems, ...attendanceExtras, ...extraItems.filter(e => e.name && e.amount).map(e => ({ line_name: e.name, shifts_count: 0, price_per_shift: 0, total: e.amount, is_extra: true }))];
       const { error } = await supabase.from('company_invoices').insert({
         company_id: effectiveCompanyId, invoice_number: invoiceNumber, period_start: invoiceForm.period_start, period_end: invoiceForm.period_end,
         total_amount: invoiceTotal, line_items: allItems, status: 'issued', issued_date: format(new Date(), 'yyyy-MM-dd'), notes: invoiceForm.notes || null, created_by: user?.id,
