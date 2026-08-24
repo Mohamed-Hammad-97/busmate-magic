@@ -13,6 +13,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { toast } from 'sonner';
 import { CalendarDays, Check, X, Save, Minus } from 'lucide-react';
 import { format } from 'date-fns';
+import { useCity } from '@/contexts/CityContext';
+import { makeCityMatcher } from './schoolStaff';
 
 interface Props {
   canEdit: boolean;
@@ -22,6 +24,8 @@ interface Props {
 export function SchoolAttendance({ canEdit, personType }: Props) {
   const { i18n } = useTranslation();
   const ar = i18n.language === 'ar';
+  const { selectedCity } = useCity();
+  const matchesCity = makeCityMatcher(selectedCity);
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [schoolId, setSchoolId] = useState('all');
   const [routeId, setRouteId] = useState('all');
@@ -32,38 +36,38 @@ export function SchoolAttendance({ canEdit, personType }: Props) {
   const isWeekend = dow === 5 || dow === 6;
 
   const { data: schools = [] } = useQuery({
-    queryKey: ['schools-for-attendance'],
+    queryKey: ['schools-for-attendance', selectedCity],
     queryFn: async () => {
-      const { data, error } = await supabase.from('schools').select('id, name').eq('is_active', true).order('name');
+      const { data, error } = await supabase.from('schools').select('id, name, city').eq('is_active', true).order('name');
       if (error) throw error;
-      return data;
+      return (data || []).filter((s: any) => matchesCity(s.city));
     },
   });
 
   const { data: routes = [] } = useQuery({
-    queryKey: ['school-routes-attendance', personType, schoolId, routeId],
+    queryKey: ['school-routes-attendance', personType, schoolId, routeId, selectedCity],
     queryFn: async () => {
       let q = supabase
         .from('routes')
-        .select('id, name, route_number, school_id, driver_id, supervisor_id, schools(name), drivers(id, full_name), supervisors(id, full_name)')
+        .select('id, name, route_number, school_id, driver_id, supervisor_id, schools(name, city), drivers(id, full_name), supervisors(id, full_name)')
         .eq('is_active', true);
       if (schoolId !== 'all') q = q.eq('school_id', schoolId);
       if (routeId !== 'all') q = q.eq('id', routeId);
       q = personType === 'driver' ? q.not('driver_id', 'is', null) : q.not('supervisor_id', 'is', null);
       const { data, error } = await q.order('route_number');
       if (error) throw error;
-      return data || [];
+      return (data || []).filter((r: any) => matchesCity(r.schools?.city));
     },
   });
 
   const { data: routeOptions = [] } = useQuery({
-    queryKey: ['school-routes-options', schoolId],
+    queryKey: ['school-routes-options', schoolId, selectedCity],
     queryFn: async () => {
-      let q = supabase.from('routes').select('id, name, route_number').eq('is_active', true);
+      let q = supabase.from('routes').select('id, name, route_number, schools(city)').eq('is_active', true);
       if (schoolId !== 'all') q = q.eq('school_id', schoolId);
       const { data, error } = await q.order('route_number');
       if (error) throw error;
-      return data || [];
+      return (data || []).filter((r: any) => matchesCity(r.schools?.city));
     },
   });
 

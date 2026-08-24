@@ -1,5 +1,27 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useCity } from '@/contexts/CityContext';
+
+const CITY_NAMES: Record<string, string[]> = {
+  cairo: ['cairo', 'القاهرة'],
+  giza: ['giza', 'الجيزة'],
+  alexandria: ['alexandria', 'الإسكندرية'],
+};
+
+/** Names (EN/AR) matching the selected city; empty array = no filtering. */
+export const cityNamesFor = (selectedCity: string): string[] =>
+  selectedCity === 'all' ? [] : CITY_NAMES[selectedCity] || [];
+
+/** Predicate matching a stored city value against the selected city. */
+export const makeCityMatcher = (selectedCity: string) => {
+  const names = cityNamesFor(selectedCity);
+  return (value?: string | null) => {
+    if (names.length === 0) return true;
+    if (!value) return false;
+    const v = value.toLowerCase();
+    return names.some((n) => v.includes(n.toLowerCase()));
+  };
+};
 
 export interface StaffPerson {
   id: string;
@@ -14,18 +36,20 @@ const isSchoolStaff = (row: any) =>
   row.belongs_to === 'both';
 
 export function useSchoolStaff() {
+  const { selectedCity } = useCity();
+  const matchesCity = makeCityMatcher(selectedCity);
   return useQuery({
-    queryKey: ['school-staff-people'],
+    queryKey: ['school-staff-people', selectedCity],
     queryFn: async (): Promise<StaffPerson[]> => {
       const [{ data: drivers, error: dErr }, { data: supervisors, error: sErr }] = await Promise.all([
-        supabase.from('drivers').select('id, full_name, phone, belongs_to, categories').eq('is_active', true).order('full_name'),
-        supabase.from('supervisors').select('id, full_name, phone, belongs_to, categories').eq('is_active', true).order('full_name'),
+        supabase.from('drivers').select('id, full_name, phone, city, belongs_to, categories').eq('is_active', true).order('full_name'),
+        supabase.from('supervisors').select('id, full_name, phone, city, belongs_to, categories').eq('is_active', true).order('full_name'),
       ]);
       if (dErr) throw dErr;
       if (sErr) throw sErr;
       return [
-        ...(drivers || []).filter(isSchoolStaff).map((d: any) => ({ id: d.id, full_name: d.full_name, phone: d.phone, type: 'driver' as const })),
-        ...(supervisors || []).filter(isSchoolStaff).map((s: any) => ({ id: s.id, full_name: s.full_name, phone: s.phone, type: 'supervisor' as const })),
+        ...(drivers || []).filter((d: any) => isSchoolStaff(d) && matchesCity(d.city)).map((d: any) => ({ id: d.id, full_name: d.full_name, phone: d.phone, type: 'driver' as const })),
+        ...(supervisors || []).filter((s2: any) => isSchoolStaff(s2) && matchesCity(s2.city)).map((s: any) => ({ id: s.id, full_name: s.full_name, phone: s.phone, type: 'supervisor' as const })),
       ];
     },
   });
