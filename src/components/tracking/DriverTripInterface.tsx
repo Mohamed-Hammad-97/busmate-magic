@@ -150,10 +150,18 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
         {/* Header */}
         <div className="p-4 border-b bg-background sticky top-0 z-10">
           <div className="flex items-center justify-between mb-3">
-            <div>
-              <h2 className="text-lg font-bold">{route?.name || "الرحلة"}</h2>
-              <p className="text-xs text-muted-foreground">{route?.schools?.name}</p>
+            <div className="flex items-center gap-2 min-w-0">
+              {onClose && (
+                <Button variant="ghost" size="icon" className="shrink-0" onClick={onClose} aria-label="رجوع">
+                  <ArrowRight className="h-5 w-5" />
+                </Button>
+              )}
+              <div className="min-w-0">
+                <h2 className="text-lg font-bold truncate">{route?.name || "الرحلة"}</h2>
+                <p className="text-xs text-muted-foreground truncate">{route?.schools?.name}</p>
+              </div>
             </div>
+
             
             {!activeTrip || activeTrip.status === "completed" ? (
               <Button onClick={handleStartTrip} disabled={isStarting} size="sm" className="gap-2">
