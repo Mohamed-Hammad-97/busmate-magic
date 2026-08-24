@@ -2945,6 +2945,39 @@ export type Database = {
         Args: { p_record_id: string; p_table_name: string }
         Returns: undefined
       }
+      parent_booking_update_is_safe: {
+        Args: {
+          _boarded_at: string
+          _boarding_code: string
+          _discount_amount: number
+          _dropped_at: string
+          _final_price: number
+          _id: string
+          _marked_paid_at: string
+          _marked_paid_by: string
+          _original_price: number
+          _parent_id: string
+          _payment_method: Database["public"]["Enums"]["daily_line_payment_method"]
+          _payment_status: Database["public"]["Enums"]["daily_line_payment_status"]
+          _promocode_id: string
+          _trip_id: string
+        }
+        Returns: boolean
+      }
+      parent_registration_update_is_safe: {
+        Args: {
+          _car_type: Database["public"]["Enums"]["car_type"]
+          _created_by: string
+          _education_department: Database["public"]["Enums"]["education_department"]
+          _grade: string
+          _id: string
+          _parent_id: string
+          _school_id: string
+          _status: Database["public"]["Enums"]["registration_status"]
+          _student_name: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "super_admin" | "employee"
