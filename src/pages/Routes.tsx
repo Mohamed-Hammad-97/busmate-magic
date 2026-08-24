@@ -687,6 +687,17 @@ const Routes = () => {
                           <TableCell>
                             <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                               {canEdit && (
+                              {canEdit && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  title={isRtl ? 'ترتيب محطات الخط' : 'Reorder route stops'}
+                                  onClick={() => setManageRoute(route)}
+                                >
+                                  <ListOrdered className="h-4 w-4" />
+                                </Button>
+                              )}
+                              {canEdit && (
                                 <Button
                                   variant="ghost"
                                   size="sm"
