@@ -312,10 +312,15 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
           </DialogHeader>
           
           <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <MapPin className="h-5 w-5 text-muted-foreground" />
-              <div>
+            <div className="flex items-start gap-3">
+              <MapPin className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+              <div className="min-w-0">
                 <p className="text-sm">موقع الاستلام</p>
+                {selectedStudent?.registrations?.parent_accounts?.pickup_address && (
+                  <p className="text-xs text-muted-foreground break-words">
+                    {selectedStudent.registrations.parent_accounts.pickup_address}
+                  </p>
+                )}
                 <a
                   href={`https://www.google.com/maps?q=${selectedStudent?.registrations?.parent_accounts?.pickup_latitude},${selectedStudent?.registrations?.parent_accounts?.pickup_longitude}`}
                   target="_blank" rel="noopener noreferrer"
@@ -326,16 +331,37 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <Phone className="h-5 w-5 text-muted-foreground" />
-              <div>
-                <p className="text-sm">هاتف ولي الأمر</p>
-                <a href={`tel:${selectedStudent?.registrations?.parent_accounts?.father_phone}`}
-                  className="text-xs text-primary hover:underline">
-                  {selectedStudent?.registrations?.parent_accounts?.father_phone}
+            <div className="space-y-2">
+              {selectedStudent?.registrations?.parent_accounts?.father_phone && (
+                <a
+                  href={`tel:${selectedStudent.registrations.parent_accounts.father_phone}`}
+                  className="flex items-center gap-3 rounded-lg border p-2 hover:bg-muted/50"
+                >
+                  <Phone className="h-4 w-4 text-primary shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-xs text-muted-foreground">هاتف الأب</p>
+                    <p className="text-sm font-medium truncate">
+                      {selectedStudent.registrations.parent_accounts.father_phone}
+                    </p>
+                  </div>
                 </a>
-              </div>
+              )}
+              {selectedStudent?.registrations?.parent_accounts?.mother_phone && (
+                <a
+                  href={`tel:${selectedStudent.registrations.parent_accounts.mother_phone}`}
+                  className="flex items-center gap-3 rounded-lg border p-2 hover:bg-muted/50"
+                >
+                  <Phone className="h-4 w-4 text-primary shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-xs text-muted-foreground">هاتف الأم</p>
+                    <p className="text-sm font-medium truncate">
+                      {selectedStudent.registrations.parent_accounts.mother_phone}
+                    </p>
+                  </div>
+                </a>
+              )}
             </div>
+
 
             <div className="grid grid-cols-2 gap-2">
               {selectedStudent?.status === "pending" && (
