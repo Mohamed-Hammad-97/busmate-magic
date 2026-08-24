@@ -3,7 +3,9 @@ import { GoogleMap, Marker, InfoWindow, Polyline } from '@react-google-maps/api'
 import { useGoogleMaps } from "@/components/maps/GoogleMapsProvider";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2 } from "lucide-react";
+import { Loader2, Navigation } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { computeDrivingRoute } from "@/lib/googleRoutes";
 import type { TripStudentStatus, LiveTrip } from "@/hooks/useLiveTrip";
 
 interface LiveTripMapProps {
@@ -41,6 +43,7 @@ export function LiveTripMap({
   const { isLoaded } = useGoogleMaps();
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [activeMarker, setActiveMarker] = useState<string | null>(null);
+  const [roadPath, setRoadPath] = useState<google.maps.LatLngLiteral[] | null>(null);
 
   // Fetch today's absences for students on this trip
   const registrationIds = students.map(s => s.registration_id);
@@ -68,13 +71,14 @@ export function LiveTripMap({
     setMap(null);
   }, []);
 
-  // Build ordered route path for polyline
-  const routePath = React.useMemo(() => {
+  // Build the ordered list of stops (skipping absent students)
+  const stopPoints = React.useMemo(() => {
     const points: google.maps.LatLngLiteral[] = [];
 
     // Sort students by pickup_order
     const sortedStudents = [...students]
       .filter(s => s.registrations?.parent_accounts?.pickup_latitude && s.registrations?.parent_accounts?.pickup_longitude)
+      .filter(s => !todayAbsences.includes(s.registration_id))
       .sort((a, b) => (a.pickup_order || 999) - (b.pickup_order || 999));
 
     sortedStudents.forEach(student => {
@@ -88,7 +92,53 @@ export function LiveTripMap({
     }
 
     return points;
-  }, [students, trip]);
+  }, [students, trip, todayAbsences]);
+
+  // Stable key so the route is only recomputed when the stops really change
+  const stopsKey = React.useMemo(
+    () => stopPoints.map(p => `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`).join('|'),
+    [stopPoints]
+  );
+
+  // Compute a real driving route (following roads) through the stops
+  useEffect(() => {
+    let cancelled = false;
+    if (!isLoaded || stopPoints.length < 2) {
+      setRoadPath(null);
+      return;
+    }
+    (async () => {
+      const result = await computeDrivingRoute(stopPoints);
+      if (cancelled) return;
+      setRoadPath(result.path.length > 1 ? result.path : null);
+    })();
+    return () => { cancelled = true; };
+  }, [stopsKey, isLoaded]);
+
+  // Path drawn on the map: real road route when available, straight lines meanwhile
+  const routePath = roadPath ?? stopPoints;
+
+  // Turn-by-turn navigation link for the whole trip (Google caps waypoints)
+  const navigationUrl = React.useMemo(() => {
+    if (stopPoints.length < 1) return null;
+    const fmt = (p: google.maps.LatLngLiteral) => `${p.lat},${p.lng}`;
+    const destination = stopPoints[stopPoints.length - 1];
+    const waypoints = stopPoints.slice(0, -1).slice(0, 9);
+    const origin =
+      trip?.current_latitude && trip?.current_longitude
+        ? `${trip.current_latitude},${trip.current_longitude}`
+        : waypoints.length > 0
+          ? fmt(waypoints[0])
+          : fmt(destination);
+    const params = new URLSearchParams({
+      api: '1',
+      origin,
+      destination: fmt(destination),
+      travelmode: 'driving',
+    });
+    if (waypoints.length > 0) params.set('waypoints', waypoints.map(fmt).join('|'));
+    return `https://www.google.com/maps/dir/?${params.toString()}`;
+  }, [stopPoints, trip?.current_latitude, trip?.current_longitude]);
 
   // Fit bounds
   useEffect(() => {
@@ -158,6 +208,16 @@ export function LiveTripMap({
 
   return (
     <div className="relative w-full h-full">
+      {isDriver && navigationUrl && (
+        <Button
+          size="sm"
+          className="absolute top-3 left-3 z-10 gap-2 shadow-lg"
+          onClick={() => window.open(navigationUrl, '_blank', 'noopener')}
+        >
+          <Navigation className="h-4 w-4" />
+          Navigate
+        </Button>
+      )}
       <GoogleMap
         mapContainerStyle={containerStyle}
         center={defaultCenter}
@@ -179,8 +239,8 @@ export function LiveTripMap({
             options={{
               strokeColor: "#3B82F6",
               strokeOpacity: 0.8,
-              strokeWeight: 4,
-              geodesic: true,
+              strokeWeight: 5,
+              geodesic: false,
               icons: [{
                 icon: { path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale: 3, strokeColor: "#1d4ed8" },
                 offset: "50%",
