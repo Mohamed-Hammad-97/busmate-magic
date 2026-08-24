@@ -687,7 +687,6 @@ const Routes = () => {
                           <TableCell>
                             <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                               {canEdit && (
-                              {canEdit && (
                                 <Button
                                   variant="ghost"
                                   size="sm"
