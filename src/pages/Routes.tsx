@@ -33,7 +33,7 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Plus, Search, Route, Bus, Users, Edit, Map, School, Trash2, ExternalLink } from 'lucide-react';
+import { Plus, Search, Route, Bus, Users, Edit, Map, School, Trash2, ExternalLink, ListOrdered } from 'lucide-react';
 import { PageHero } from '@/components/layout/PageHero';
 import {
   AlertDialog,
@@ -51,6 +51,7 @@ import { GoogleMapsProvider } from '@/components/maps/GoogleMapsProvider';
 import type { Tables } from '@/integrations/supabase/types';
 import CompleteRegistrationsTab from '@/components/routes/CompleteRegistrationsTab';
 import RouteStudentsDialog from '@/components/routes/RouteStudentsDialog';
+import ManageRouteAssignmentsDialog from '@/components/routes/ManageRouteAssignmentsDialog';
 
 type RouteType = Tables<'routes'>;
 
@@ -70,6 +71,7 @@ const Routes = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [routeToDelete, setRouteToDelete] = useState<RouteType | null>(null);
   const [studentsRoute, setStudentsRoute] = useState<any | null>(null);
+  const [manageRoute, setManageRoute] = useState<any | null>(null);
 
 
   const [formData, setFormData] = useState({
@@ -769,6 +771,14 @@ const Routes = () => {
           route={studentsRoute}
           open={!!studentsRoute}
           onOpenChange={(o) => !o && setStudentsRoute(null)}
+        />
+
+        <ManageRouteAssignmentsDialog
+          routeId={manageRoute?.id ?? null}
+          routeName={manageRoute?.name}
+          schoolId={manageRoute?.school_id ?? ''}
+          open={!!manageRoute}
+          onOpenChange={(o) => { if (!o) { setManageRoute(null); queryClient.invalidateQueries({ queryKey: ['routes'] }); } }}
         />
 
 
