@@ -57,9 +57,12 @@ export interface TripStudentStatus {
   dropped_off_at: string | null;
   registrations?: {
     student_name: string;
+    grade?: string | null;
     parent_accounts?: {
       parent_name: string;
       father_phone: string;
+      mother_phone?: string | null;
+      pickup_address?: string | null;
       pickup_latitude: number;
       pickup_longitude: number;
     };
@@ -123,9 +126,12 @@ export function useLiveTrip(routeId?: string) {
           *,
           registrations (
             student_name,
+            grade,
             parent_accounts (
               parent_name,
               father_phone,
+              mother_phone,
+              pickup_address,
               pickup_latitude,
               pickup_longitude
             )

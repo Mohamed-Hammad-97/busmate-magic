@@ -18,6 +18,7 @@ import { GoogleMapsProvider } from "@/components/maps/GoogleMapsProvider";
 import seaterLogo from "@/assets/seater-logo.jpg";
 import { DriverChatSection } from "@/components/chat/DriverChatSection";
 import { DriverDailyLineTrips } from "@/components/tracking/DriverDailyLineTrips";
+import { DriverStudentsList } from "@/components/tracking/DriverStudentsList";
 
 export default function DriverDashboard() {
   const { t } = useTranslation();
@@ -188,6 +189,10 @@ export default function DriverDashboard() {
               <MessageCircle className="h-4 w-4" />
               {t('driverPortal.chatTab')}
             </TabsTrigger>
+            <TabsTrigger value="students" className="flex-1 gap-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
+              <Users className="h-4 w-4" />
+              {t('driverPortal.studentsTab')}
+            </TabsTrigger>
             <TabsTrigger value="history" className="flex-1 gap-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
               <History className="h-4 w-4" />
               {t('driverPortal.historyTab')}
@@ -297,6 +302,10 @@ export default function DriverDashboard() {
 
           <TabsContent value="daily" className="mt-4">
             <DriverDailyLineTrips />
+          </TabsContent>
+
+          <TabsContent value="students" className="mt-4">
+            <DriverStudentsList routes={assignedRoutes as any} />
           </TabsContent>
 
           <TabsContent value="chat" className="mt-4">

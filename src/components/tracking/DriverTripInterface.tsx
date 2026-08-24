@@ -11,8 +11,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Play, Square, MapPin, Phone, Bell, CheckCircle2,
-  Clock, Navigation, Users, Loader2, AlertCircle, Ban,
+  Clock, Navigation, Users, Loader2, AlertCircle, Ban, ArrowRight,
 } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 
 interface DriverTripInterfaceProps {
@@ -150,10 +151,18 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
         {/* Header */}
         <div className="p-4 border-b bg-background sticky top-0 z-10">
           <div className="flex items-center justify-between mb-3">
-            <div>
-              <h2 className="text-lg font-bold">{route?.name || "الرحلة"}</h2>
-              <p className="text-xs text-muted-foreground">{route?.schools?.name}</p>
+            <div className="flex items-center gap-2 min-w-0">
+              {onClose && (
+                <Button variant="ghost" size="icon" className="shrink-0" onClick={onClose} aria-label="رجوع">
+                  <ArrowRight className="h-5 w-5" />
+                </Button>
+              )}
+              <div className="min-w-0">
+                <h2 className="text-lg font-bold truncate">{route?.name || "الرحلة"}</h2>
+                <p className="text-xs text-muted-foreground truncate">{route?.schools?.name}</p>
+              </div>
             </div>
+
             
             {!activeTrip || activeTrip.status === "completed" ? (
               <Button onClick={handleStartTrip} disabled={isStarting} size="sm" className="gap-2">
@@ -247,13 +256,44 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
                         <Badge variant="outline" className="text-xs">
                           {config.label}
                         </Badge>
-                        <a
-                          href={`tel:${student.registrations?.parent_accounts?.father_phone}`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="p-1.5 hover:bg-muted rounded-full"
-                        >
-                          <Phone className="h-3.5 w-3.5" />
-                        </a>
+                        {(() => {
+                          const father = student.registrations?.parent_accounts?.father_phone;
+                          const mother = student.registrations?.parent_accounts?.mother_phone;
+                          if (father && mother) {
+                            return (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <button
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="p-1.5 hover:bg-muted rounded-full"
+                                    aria-label="اتصال"
+                                  >
+                                    <Phone className="h-3.5 w-3.5" />
+                                  </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                                  <DropdownMenuItem asChild>
+                                    <a href={`tel:${father}`}>اتصال بالأب — {father}</a>
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem asChild>
+                                    <a href={`tel:${mother}`}>اتصال بالأم — {mother}</a>
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            );
+                          }
+                          const single = father || mother;
+                          if (!single) return null;
+                          return (
+                            <a
+                              href={`tel:${single}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="p-1.5 hover:bg-muted rounded-full"
+                            >
+                              <Phone className="h-3.5 w-3.5" />
+                            </a>
+                          );
+                        })()}
                       </div>
                     </div>
                   </Card>
@@ -272,10 +312,15 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
           </DialogHeader>
           
           <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <MapPin className="h-5 w-5 text-muted-foreground" />
-              <div>
+            <div className="flex items-start gap-3">
+              <MapPin className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+              <div className="min-w-0">
                 <p className="text-sm">موقع الاستلام</p>
+                {selectedStudent?.registrations?.parent_accounts?.pickup_address && (
+                  <p className="text-xs text-muted-foreground break-words">
+                    {selectedStudent.registrations.parent_accounts.pickup_address}
+                  </p>
+                )}
                 <a
                   href={`https://www.google.com/maps?q=${selectedStudent?.registrations?.parent_accounts?.pickup_latitude},${selectedStudent?.registrations?.parent_accounts?.pickup_longitude}`}
                   target="_blank" rel="noopener noreferrer"
@@ -286,16 +331,37 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <Phone className="h-5 w-5 text-muted-foreground" />
-              <div>
-                <p className="text-sm">هاتف ولي الأمر</p>
-                <a href={`tel:${selectedStudent?.registrations?.parent_accounts?.father_phone}`}
-                  className="text-xs text-primary hover:underline">
-                  {selectedStudent?.registrations?.parent_accounts?.father_phone}
+            <div className="space-y-2">
+              {selectedStudent?.registrations?.parent_accounts?.father_phone && (
+                <a
+                  href={`tel:${selectedStudent.registrations.parent_accounts.father_phone}`}
+                  className="flex items-center gap-3 rounded-lg border p-2 hover:bg-muted/50"
+                >
+                  <Phone className="h-4 w-4 text-primary shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-xs text-muted-foreground">هاتف الأب</p>
+                    <p className="text-sm font-medium truncate">
+                      {selectedStudent.registrations.parent_accounts.father_phone}
+                    </p>
+                  </div>
                 </a>
-              </div>
+              )}
+              {selectedStudent?.registrations?.parent_accounts?.mother_phone && (
+                <a
+                  href={`tel:${selectedStudent.registrations.parent_accounts.mother_phone}`}
+                  className="flex items-center gap-3 rounded-lg border p-2 hover:bg-muted/50"
+                >
+                  <Phone className="h-4 w-4 text-primary shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-xs text-muted-foreground">هاتف الأم</p>
+                    <p className="text-sm font-medium truncate">
+                      {selectedStudent.registrations.parent_accounts.mother_phone}
+                    </p>
+                  </div>
+                </a>
+              )}
             </div>
+
 
             <div className="grid grid-cols-2 gap-2">
               {selectedStudent?.status === "pending" && (
