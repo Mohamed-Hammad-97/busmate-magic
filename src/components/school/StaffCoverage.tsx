@@ -13,7 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { Users, Plus, Pencil, Trash2, ArrowLeftRight } from 'lucide-react';
 import { format } from 'date-fns';
-import { useSchoolStaff, monthBounds } from './schoolStaff';
+import { useSchoolStaff, monthBounds, makeCityMatcher } from './schoolStaff';
+import { useCity } from '@/contexts/CityContext';
 
 export function StaffCoverage({ canEdit }: { canEdit: boolean }) {
   const { i18n } = useTranslation();
@@ -25,15 +26,17 @@ export function StaffCoverage({ canEdit }: { canEdit: boolean }) {
   const [editing, setEditing] = useState<any>(null);
   const [form, setForm] = useState({ covered: '', covering: '', route_id: 'none', coverage_date: format(new Date(), 'yyyy-MM-dd'), amount: 0, notes: '' });
 
+  const { selectedCity } = useCity();
+  const matchesCity = makeCityMatcher(selectedCity);
   const { data: staff = [] } = useSchoolStaff();
   const { start, end } = monthBounds(month);
 
   const { data: routes = [] } = useQuery({
-    queryKey: ['coverage-routes'],
+    queryKey: ['coverage-routes', selectedCity],
     queryFn: async () => {
-      const { data, error } = await supabase.from('routes').select('id, name, route_number').eq('is_active', true).order('route_number');
+      const { data, error } = await supabase.from('routes').select('id, name, route_number, schools(city)').eq('is_active', true).order('route_number');
       if (error) throw error;
-      return data || [];
+      return (data || []).filter((r: any) => matchesCity(r.schools?.city));
     },
   });
 
