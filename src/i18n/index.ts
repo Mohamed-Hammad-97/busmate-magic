@@ -957,6 +957,18 @@ const resources = {
         backToRoutes: 'Back to routes',
         selectRouteHistory: 'Select a route to view trip history:',
         logout: 'Logout',
+        studentsTab: 'Students',
+        studentsListTitle: 'Route Students',
+        searchStudents: 'Search by student or parent name',
+        selectRouteStudents: 'Select a route to view its students:',
+        noStudents: 'No students on this route',
+        fatherPhone: 'Father phone',
+        motherPhone: 'Mother phone',
+        callFather: 'Call father',
+        callMother: 'Call mother',
+        pickupAddress: 'Pickup address',
+        openInMaps: 'Open in maps',
+        back: 'Back',
       },
       // Company Portal
       companyPortal: {
