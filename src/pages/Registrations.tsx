@@ -124,6 +124,23 @@ const Registrations: React.FC = () => {
     },
   });
 
+  // Map registration_id -> route_number so each card can show its line number
+  const { data: routeNumberByRegistration = {} } = useQuery({
+    queryKey: ['registration-route-numbers'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('route_assignments')
+        .select('registration_id, routes ( route_number )');
+      if (error) throw error;
+      const map: Record<string, number | null> = {};
+      (data || []).forEach((a: any) => {
+        const r = Array.isArray(a.routes) ? a.routes[0] : a.routes;
+        if (a.registration_id) map[a.registration_id] = r?.route_number ?? null;
+      });
+      return map;
+    },
+  });
+
   const cityMapping: Record<string, string[]> = {
     cairo: ['cairo', 'القاهرة', 'قاهرة'],
     giza: ['giza', 'الجيزة', 'جيزة'],
