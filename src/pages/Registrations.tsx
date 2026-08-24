@@ -730,7 +730,18 @@ const Registrations: React.FC = () => {
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">{reg.parent_accounts?.parent_name || '-'}</TableCell>
                         <TableCell>
-                          <span className="text-sm text-muted-foreground">{reg.schools?.name || '-'}</span>
+                          <div className="flex flex-col gap-1">
+                            <span className="text-sm text-muted-foreground">{reg.schools?.name || '-'}</span>
+                            {routeNumberByRegistration[reg.id] != null ? (
+                              <span className="inline-flex w-fit items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-primary/10 text-primary">
+                                {isRtl ? `خط ${routeNumberByRegistration[reg.id]}` : `Route ${routeNumberByRegistration[reg.id]}`}
+                              </span>
+                            ) : (
+                              <span className="text-[11px] text-muted-foreground/60">
+                                {isRtl ? 'غير معين' : 'Unassigned'}
+                              </span>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>
                           {reg.parent_accounts?.pickup_address ? (
