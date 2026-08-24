@@ -32,11 +32,11 @@ export function StaffCoverage({ canEdit }: { canEdit: boolean }) {
   const { start, end } = monthBounds(month);
 
   const { data: routes = [] } = useQuery({
-    queryKey: ['coverage-routes'],
+    queryKey: ['coverage-routes', selectedCity],
     queryFn: async () => {
       const { data, error } = await supabase.from('routes').select('id, name, route_number, schools(city)').eq('is_active', true).order('route_number');
       if (error) throw error;
-      return data || [];
+      return (data || []).filter((r: any) => matchesCity(r.schools?.city));
     },
   });
 
