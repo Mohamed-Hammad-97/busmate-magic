@@ -303,6 +303,10 @@ export default function DriverDashboard() {
             <DriverDailyLineTrips />
           </TabsContent>
 
+          <TabsContent value="students" className="mt-4">
+            <DriverStudentsList routes={assignedRoutes as any} />
+          </TabsContent>
+
           <TabsContent value="chat" className="mt-4">
             <DriverChatSection />
           </TabsContent>
