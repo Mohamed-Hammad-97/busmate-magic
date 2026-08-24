@@ -344,6 +344,16 @@ export function LiveTripMap({
                         ترتيب الاستلام: {student.pickup_order}
                       </p>
                     )}
+                    {isDriver && (
+                      <a
+                        href={`https://www.google.com/maps/dir/?api=1&destination=${parent.pickup_latitude},${parent.pickup_longitude}&travelmode=driving`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ display: 'inline-block', marginTop: '6px', color: '#2563eb', fontSize: '11px', fontWeight: 600 }}
+                      >
+                        ▸ التوجه إلى هذه المحطة
+                      </a>
+                    )}
                   </div>
                 </InfoWindow>
               )}
