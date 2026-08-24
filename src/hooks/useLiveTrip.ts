@@ -126,9 +126,12 @@ export function useLiveTrip(routeId?: string) {
           *,
           registrations (
             student_name,
+            grade,
             parent_accounts (
               parent_name,
               father_phone,
+              mother_phone,
+              pickup_address,
               pickup_latitude,
               pickup_longitude
             )
