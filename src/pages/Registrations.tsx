@@ -124,6 +124,23 @@ const Registrations: React.FC = () => {
     },
   });
 
+  // Map registration_id -> route_number so each card can show its line number
+  const { data: routeNumberByRegistration = {} } = useQuery({
+    queryKey: ['registration-route-numbers'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('route_assignments')
+        .select('registration_id, routes ( route_number )');
+      if (error) throw error;
+      const map: Record<string, number | null> = {};
+      (data || []).forEach((a: any) => {
+        const r = Array.isArray(a.routes) ? a.routes[0] : a.routes;
+        if (a.registration_id) map[a.registration_id] = r?.route_number ?? null;
+      });
+      return map;
+    },
+  });
+
   const cityMapping: Record<string, string[]> = {
     cairo: ['cairo', 'القاهرة', 'قاهرة'],
     giza: ['giza', 'الجيزة', 'جيزة'],
@@ -713,7 +730,18 @@ const Registrations: React.FC = () => {
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">{reg.parent_accounts?.parent_name || '-'}</TableCell>
                         <TableCell>
-                          <span className="text-sm text-muted-foreground">{reg.schools?.name || '-'}</span>
+                          <div className="flex flex-col gap-1">
+                            <span className="text-sm text-muted-foreground">{reg.schools?.name || '-'}</span>
+                            {routeNumberByRegistration[reg.id] != null ? (
+                              <span className="inline-flex w-fit items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-primary/10 text-primary">
+                                {isRtl ? `خط ${routeNumberByRegistration[reg.id]}` : `Route ${routeNumberByRegistration[reg.id]}`}
+                              </span>
+                            ) : (
+                              <span className="text-[11px] text-muted-foreground/60">
+                                {isRtl ? 'غير معين' : 'Unassigned'}
+                              </span>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>
                           {reg.parent_accounts?.pickup_address ? (
