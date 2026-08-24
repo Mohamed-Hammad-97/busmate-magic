@@ -1987,6 +1987,18 @@ const resources = {
         backToRoutes: '← العودة للمسارات',
         selectRouteHistory: 'اختر مسار لعرض سجل رحلاته:',
         logout: 'خروج',
+        studentsTab: 'الطلاب',
+        studentsListTitle: 'طلاب الخط',
+        searchStudents: 'بحث باسم الطالب أو ولي الأمر',
+        selectRouteStudents: 'اختر مسار لعرض طلابه:',
+        noStudents: 'لا يوجد طلاب في هذا المسار',
+        fatherPhone: 'هاتف الأب',
+        motherPhone: 'هاتف الأم',
+        callFather: 'اتصال بالأب',
+        callMother: 'اتصال بالأم',
+        pickupAddress: 'عنوان الاستلام',
+        openInMaps: 'فتح في الخرائط',
+        back: 'رجوع',
       },
       // Company Portal
       companyPortal: {
