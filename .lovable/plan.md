@@ -2,9 +2,9 @@
 
 ## 1. Show route number on registration cards
 
-In the Registrations tab, each student row will show the route it belongs to (e.g. "خط 3 — Route Name"), next to the school name. Students not assigned to any route show a subtle "غير معين / Unassigned" marker.
+In the Registrations tab, each student row will show only the number of the route it belongs to (e.g. "خط 3" / "Route 3"), next to the school name — no route name. Students not assigned to any route show a subtle "غير معين / Unassigned" marker.
 
-Data: one extra query loading `route_assignments` joined with `routes (route_number, name)`, mapped by `registration_id`, so the existing registrations query stays unchanged. The same mapping is used in both Active and Archive tabs.
+Data: one extra query loading `route_assignments` joined with `routes (route_number)`, mapped by `registration_id`, so the existing registrations query stays unchanged. The same mapping is used in both Active and Archive tabs.
 
 ## 2. Reorder students inside a route
 
