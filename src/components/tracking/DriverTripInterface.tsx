@@ -11,8 +11,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Play, Square, MapPin, Phone, Bell, CheckCircle2,
-  Clock, Navigation, Users, Loader2, AlertCircle, Ban,
+  Clock, Navigation, Users, Loader2, AlertCircle, Ban, ArrowRight,
 } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 
 interface DriverTripInterfaceProps {
