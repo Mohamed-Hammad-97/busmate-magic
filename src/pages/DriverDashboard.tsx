@@ -18,6 +18,7 @@ import { GoogleMapsProvider } from "@/components/maps/GoogleMapsProvider";
 import seaterLogo from "@/assets/seater-logo.jpg";
 import { DriverChatSection } from "@/components/chat/DriverChatSection";
 import { DriverDailyLineTrips } from "@/components/tracking/DriverDailyLineTrips";
+import { DriverStudentsList } from "@/components/tracking/DriverStudentsList";
 
 export default function DriverDashboard() {
   const { t } = useTranslation();
