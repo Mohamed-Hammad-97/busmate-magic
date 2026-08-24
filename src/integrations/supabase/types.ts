@@ -2117,6 +2117,73 @@ export type Database = {
           },
         ]
       }
+      school_attendance: {
+        Row: {
+          attendance_date: string
+          created_at: string
+          created_by: string | null
+          driver_id: string | null
+          extra_deduction_amount: number
+          extra_deduction_reason: string | null
+          id: string
+          is_present: boolean
+          route_id: string
+          shift: string
+          supervisor_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          attendance_date: string
+          created_at?: string
+          created_by?: string | null
+          driver_id?: string | null
+          extra_deduction_amount?: number
+          extra_deduction_reason?: string | null
+          id?: string
+          is_present?: boolean
+          route_id: string
+          shift: string
+          supervisor_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          attendance_date?: string
+          created_at?: string
+          created_by?: string | null
+          driver_id?: string | null
+          extra_deduction_amount?: number
+          extra_deduction_reason?: string | null
+          id?: string
+          is_present?: boolean
+          route_id?: string
+          shift?: string
+          supervisor_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "school_attendance_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "school_attendance_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "school_attendance_supervisor_id_fkey"
+            columns: ["supervisor_id"]
+            isOneToOne: false
+            referencedRelation: "supervisors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       schools: {
         Row: {
           city: string | null
@@ -2182,6 +2249,192 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      staff_advances: {
+        Row: {
+          advance_date: string
+          amount: number
+          created_at: string
+          created_by: string | null
+          driver_id: string | null
+          id: string
+          notes: string | null
+          supervisor_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          advance_date?: string
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          driver_id?: string | null
+          id?: string
+          notes?: string | null
+          supervisor_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          advance_date?: string
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          driver_id?: string | null
+          id?: string
+          notes?: string | null
+          supervisor_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_advances_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_advances_supervisor_id_fkey"
+            columns: ["supervisor_id"]
+            isOneToOne: false
+            referencedRelation: "supervisors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_coverage: {
+        Row: {
+          amount: number
+          coverage_date: string
+          covered_driver_id: string | null
+          covered_supervisor_id: string | null
+          covering_driver_id: string | null
+          covering_supervisor_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          route_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          coverage_date?: string
+          covered_driver_id?: string | null
+          covered_supervisor_id?: string | null
+          covering_driver_id?: string | null
+          covering_supervisor_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          route_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          coverage_date?: string
+          covered_driver_id?: string | null
+          covered_supervisor_id?: string | null
+          covering_driver_id?: string | null
+          covering_supervisor_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          route_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_coverage_covered_driver_id_fkey"
+            columns: ["covered_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_coverage_covered_supervisor_id_fkey"
+            columns: ["covered_supervisor_id"]
+            isOneToOne: false
+            referencedRelation: "supervisors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_coverage_covering_driver_id_fkey"
+            columns: ["covering_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_coverage_covering_supervisor_id_fkey"
+            columns: ["covering_supervisor_id"]
+            isOneToOne: false
+            referencedRelation: "supervisors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_coverage_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_monthly_salaries: {
+        Row: {
+          absence_deduction_override: number | null
+          created_at: string
+          created_by: string | null
+          driver_id: string | null
+          id: string
+          month: string
+          monthly_cost: number
+          notes: string | null
+          supervisor_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          absence_deduction_override?: number | null
+          created_at?: string
+          created_by?: string | null
+          driver_id?: string | null
+          id?: string
+          month: string
+          monthly_cost?: number
+          notes?: string | null
+          supervisor_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          absence_deduction_override?: number | null
+          created_at?: string
+          created_by?: string | null
+          driver_id?: string | null
+          id?: string
+          month?: string
+          monthly_cost?: number
+          notes?: string | null
+          supervisor_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_monthly_salaries_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_monthly_salaries_supervisor_id_fkey"
+            columns: ["supervisor_id"]
+            isOneToOne: false
+            referencedRelation: "supervisors"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       staff_profiles: {
         Row: {
