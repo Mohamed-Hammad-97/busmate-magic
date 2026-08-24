@@ -256,13 +256,44 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
                         <Badge variant="outline" className="text-xs">
                           {config.label}
                         </Badge>
-                        <a
-                          href={`tel:${student.registrations?.parent_accounts?.father_phone}`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="p-1.5 hover:bg-muted rounded-full"
-                        >
-                          <Phone className="h-3.5 w-3.5" />
-                        </a>
+                        {(() => {
+                          const father = student.registrations?.parent_accounts?.father_phone;
+                          const mother = student.registrations?.parent_accounts?.mother_phone;
+                          if (father && mother) {
+                            return (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <button
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="p-1.5 hover:bg-muted rounded-full"
+                                    aria-label="اتصال"
+                                  >
+                                    <Phone className="h-3.5 w-3.5" />
+                                  </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                                  <DropdownMenuItem asChild>
+                                    <a href={`tel:${father}`}>اتصال بالأب — {father}</a>
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem asChild>
+                                    <a href={`tel:${mother}`}>اتصال بالأم — {mother}</a>
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            );
+                          }
+                          const single = father || mother;
+                          if (!single) return null;
+                          return (
+                            <a
+                              href={`tel:${single}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="p-1.5 hover:bg-muted rounded-full"
+                            >
+                              <Phone className="h-3.5 w-3.5" />
+                            </a>
+                          );
+                        })()}
                       </div>
                     </div>
                   </Card>
