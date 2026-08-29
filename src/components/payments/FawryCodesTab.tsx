@@ -50,6 +50,7 @@ export const FawryCodesTab: React.FC = () => {
   const [typeFilter, setTypeFilter] = useState<'all' | 'insurance' | 'installments'>('all');
   const [installmentNumber, setInstallmentNumber] = useState<string>('all');
   const [lineFilter, setLineFilter] = useState<string>('all');
+  const [subscriptionTypeFilter, setSubscriptionTypeFilter] = useState<'all' | 'yearly' | 'monthly'>('all');
   const [drafts, setDrafts] = useState<Record<string, { code: string; note: string; hours: string }>>({});
   const [, setTick] = useState(0);
 
@@ -197,9 +198,13 @@ export const FawryCodesTab: React.FC = () => {
       if (lineFilter !== 'all') {
         if (!route || route.id !== lineFilter) return false;
       }
+      if (subscriptionTypeFilter !== 'all') {
+        const subType = p.subscriptions?.subscription_type;
+        if (subType !== subscriptionTypeFilter) return false;
+      }
       return true;
     });
-  }, [rows, selectedCity, search, nameFilter, phoneFilter, typeFilter, installmentNumber, lineFilter, routeMap]);
+  }, [rows, selectedCity, search, nameFilter, phoneFilter, typeFilter, installmentNumber, lineFilter, routeMap, subscriptionTypeFilter]);
 
   const installmentOptions = useMemo(() => {
     const set = new Set<number>();
@@ -301,6 +306,16 @@ export const FawryCodesTab: React.FC = () => {
                 {route.route_number ? `#${route.route_number} ` : ''}{route.name}
               </SelectItem>
             ))}
+          </SelectContent>
+        </Select>
+        <Select value={subscriptionTypeFilter} onValueChange={(v) => setSubscriptionTypeFilter(v as typeof subscriptionTypeFilter)}>
+          <SelectTrigger className="w-full sm:w-[180px] h-11 bg-card border-border/50 rounded-xl">
+            <SelectValue placeholder="نوع الاشتراك" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">كل الاشتراكات</SelectItem>
+            <SelectItem value="yearly">سنوي</SelectItem>
+            <SelectItem value="monthly">شهري</SelectItem>
           </SelectContent>
         </Select>
       </div>
