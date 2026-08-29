@@ -264,6 +264,7 @@ export const FawryCodesTab: React.FC = () => {
                 <TableHead className="text-xs">المبلغ</TableHead>
                 <TableHead className="text-xs">تاريخ الاستحقاق</TableHead>
                 <TableHead className="text-xs">كود فورى</TableHead>
+                <TableHead className="text-xs">صلاحية الكود</TableHead>
                 <TableHead className="text-xs">ملاحظات</TableHead>
                 <TableHead className="text-xs text-center">تم</TableHead>
               </TableRow>
