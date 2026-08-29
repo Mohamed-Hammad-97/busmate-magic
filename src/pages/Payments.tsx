@@ -220,7 +220,7 @@ const Payments = () => {
     mutationFn: async (paymentId: string) => {
       const { error } = await supabase
         .from('payments')
-        .update({ status: 'paid', paid_date: new Date().toISOString().split('T')[0] })
+        .update({ status: 'paid', paid_date: new Date().toISOString().split('T')[0], fawry_reference_code: null, fawry_code_expires_at: null } as any)
         .eq('id', paymentId);
       if (error) throw error;
     },
