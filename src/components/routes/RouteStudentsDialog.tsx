@@ -55,6 +55,17 @@ const RouteStudentsDialog: React.FC<RouteStudentsDialogProps> = ({ route, open, 
               pickup_address,
               pickup_latitude,
               pickup_longitude
+            ),
+            subscriptions (
+              subscription_type,
+              payments (
+                installment_number,
+                status,
+                due_date,
+                fawry_cleared,
+                fawry_reference_code,
+                fawry_code_expires_at
+              )
             )
           )
         `)
@@ -64,6 +75,19 @@ const RouteStudentsDialog: React.FC<RouteStudentsDialogProps> = ({ route, open, 
         .filter((a: any) => a.registrations && a.registrations.status !== 'cancelled')
         .map((a: any) => {
           const p = a.registrations?.parent_accounts || {};
+          const subs = a.registrations?.subscriptions;
+          const sub = Array.isArray(subs) ? subs[0] : subs;
+          const now = Date.now();
+          const validCodes = ((sub?.payments as any[]) || [])
+            .filter(
+              (pay: any) =>
+                pay.fawry_reference_code &&
+                !pay.fawry_cleared &&
+                pay.status !== 'paid' &&
+                (!pay.fawry_code_expires_at || new Date(pay.fawry_code_expires_at).getTime() > now),
+            )
+            .sort((x: any, y: any) => Number(y.installment_number) - Number(x.installment_number));
+          const activeCode = validCodes[0];
           return {
             order: a.pickup_order ?? 0,
             student_name: a.registrations?.student_name || '',
@@ -72,6 +96,10 @@ const RouteStudentsDialog: React.FC<RouteStudentsDialogProps> = ({ route, open, 
             mother_phone: p.mother_phone || '',
             father_phone: p.father_phone || '',
             payment_phone: p.payment_phone || '',
+            subscription_type: sub?.subscription_type || '',
+            fawry_code: activeCode?.fawry_reference_code || '',
+            fawry_installment:
+              activeCode ? Number(activeCode.installment_number) : null,
             address: p.pickup_address || '',
             maps:
               p.pickup_latitude && p.pickup_longitude
@@ -83,12 +111,27 @@ const RouteStudentsDialog: React.FC<RouteStudentsDialogProps> = ({ route, open, 
     },
   });
 
+  const subTypeLabel = (t: string) =>
+    t === 'monthly' ? (isRtl ? 'شهري' : 'Monthly') : t === 'yearly' ? (isRtl ? 'سنوي' : 'Yearly') : '-';
+
   const fileBase = `route-${route?.route_number ?? ''}-${(route?.name || 'students').replace(/\s+/g, '-')}-${format(new Date(), 'yyyy-MM-dd')}`;
 
-  const HEADERS = ['#', 'Student Name', 'Grade', 'Parent Name', 'Mother Phone', 'Payment Phone', 'Father Phone', 'Location Address', 'Map Link'];
+  const HEADERS = ['#', 'Student Name', 'Grade', 'Parent Name', 'Mother Phone', 'Payment Phone', 'Subscription Type', 'Fawry Code', 'Father Phone', 'Location Address', 'Map Link'];
 
   const toArray = () =>
-    rows.map((r, i) => [i + 1, r.student_name, r.grade, r.parent_name, r.mother_phone, r.payment_phone, r.father_phone, r.address, r.maps]);
+    rows.map((r, i) => [
+      i + 1,
+      r.student_name,
+      r.grade,
+      r.parent_name,
+      r.mother_phone,
+      r.payment_phone,
+      r.subscription_type === 'monthly' ? 'Monthly' : r.subscription_type === 'yearly' ? 'Yearly' : '-',
+      r.fawry_code ? `${r.fawry_code}${r.fawry_installment !== null ? ` (#${r.fawry_installment})` : ''}` : '-',
+      r.father_phone,
+      r.address,
+      r.maps,
+    ]);
 
   const exportExcel = () => {
     const ws = XLSX.utils.aoa_to_sheet([HEADERS, ...toArray()]);
