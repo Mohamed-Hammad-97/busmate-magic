@@ -26,8 +26,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Search, Phone, User, CheckCircle2, Hash } from 'lucide-react';
-import { format, isBefore, parseISO, startOfDay } from 'date-fns';
+import { Search, Phone, User, CheckCircle2, Hash, Route } from 'lucide-react';
+import { format, isBefore, parseISO, startOfDay, addDays } from 'date-fns';
 import { toast } from 'sonner';
 
 const cityMapping: Record<string, string[]> = {
@@ -49,6 +49,7 @@ export const FawryCodesTab: React.FC = () => {
   const [nameFilter, setNameFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'insurance' | 'installments'>('all');
   const [installmentNumber, setInstallmentNumber] = useState<string>('all');
+  const [lineFilter, setLineFilter] = useState<string>('all');
   const [drafts, setDrafts] = useState<Record<string, { code: string; note: string; hours: string }>>({});
   const [, setTick] = useState(0);
 
@@ -67,6 +68,7 @@ export const FawryCodesTab: React.FC = () => {
           *,
           subscriptions (
             id,
+            subscription_type,
             registration_id,
             registrations (
               id,
@@ -77,24 +79,67 @@ export const FawryCodesTab: React.FC = () => {
             )
           )
         `)
-        // Fawry follows the overdue reminder card: a payment is overdue when
-        // its due date has passed, even if its stored status is still pending.
         .in('status', ['pending', 'overdue'])
         .eq('fawry_cleared', false)
         .order('due_date', { ascending: true });
       if (error) throw error;
 
-      const today = new Date();
+      const today = startOfDay(new Date());
+      const upcomingLimit = addDays(today, 7);
       return (data || []).filter((p: any) => {
         const registration = p.subscriptions?.registrations;
-        return registration &&
-          registration.status !== 'archived' &&
-          registration.status !== 'cancelled' &&
-          p.due_date &&
-          isBefore(parseISO(p.due_date), startOfDay(today));
+        if (!registration || registration.status === 'archived' || registration.status === 'cancelled') return false;
+        if (!p.due_date) return false;
+        const due = parseISO(p.due_date);
+        return isBefore(due, today) || due.getTime() <= upcomingLimit.getTime();
       });
     },
   });
+
+  const registrationIds = useMemo(() => {
+    const ids = new Set<string>();
+    (rows as any[]).forEach((p) => {
+      const regId = p.subscriptions?.registration_id;
+      if (regId) ids.add(regId);
+    });
+    return Array.from(ids);
+  }, [rows]);
+
+  const { data: routeAssignments = [] } = useQuery({
+    queryKey: ['fawry-route-assignments', registrationIds],
+    queryFn: async () => {
+      if (registrationIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from('route_assignments')
+        .select('registration_id, routes (id, name, route_number)')
+        .in('registration_id', registrationIds);
+      if (error) throw error;
+      return (data || []) as any[];
+    },
+    enabled: registrationIds.length > 0,
+  });
+
+  const routeMap = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; route_number?: number }>();
+    routeAssignments.forEach((ra: any) => {
+      const regId = ra.registration_id;
+      const route = ra.routes;
+      if (regId && route && !map.has(regId)) {
+        map.set(regId, route);
+      }
+    });
+    return map;
+  }, [routeAssignments]);
+
+  const lineOptions = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; route_number?: number }>();
+    (rows as any[]).forEach((p) => {
+      const regId = p.subscriptions?.registration_id;
+      const route = regId ? routeMap.get(regId) : undefined;
+      if (route) map.set(route.id, route);
+    });
+    return Array.from(map.values()).sort((a, b) => (a.route_number ?? 0) - (b.route_number ?? 0));
+  }, [rows, routeMap]);
 
   const codeIsValid = (p: any) =>
     !!p.fawry_reference_code &&
@@ -120,6 +165,8 @@ export const FawryCodesTab: React.FC = () => {
     return (rows as any[]).filter((p) => {
       const reg = p.subscriptions?.registrations;
       const parent = reg?.parent_accounts;
+      const regId = p.subscriptions?.registration_id;
+      const route = regId ? routeMap.get(regId) : undefined;
       if (selectedCity !== 'all') {
         const variants = cityMapping[selectedCity] || [selectedCity];
         const c = (parent?.city || '').toLowerCase();
@@ -127,7 +174,7 @@ export const FawryCodesTab: React.FC = () => {
       }
       const s = search.trim().toLowerCase();
       if (s) {
-        const hay = `${reg?.student_name || ''} ${parent?.parent_name || ''} ${reg?.schools?.name || ''} ${p.fawry_reference_code || ''}`.toLowerCase();
+        const hay = `${reg?.student_name || ''} ${parent?.parent_name || ''} ${reg?.schools?.name || ''} ${p.fawry_reference_code || ''} ${route?.name || ''}`.toLowerCase();
         if (!hay.includes(s)) return false;
       }
       if (nameFilter.trim()) {
@@ -147,9 +194,12 @@ export const FawryCodesTab: React.FC = () => {
       if (typeFilter === 'installments' && installmentNumber !== 'all') {
         if (Number(p.installment_number) !== Number(installmentNumber)) return false;
       }
+      if (lineFilter !== 'all') {
+        if (!route || route.id !== lineFilter) return false;
+      }
       return true;
     });
-  }, [rows, selectedCity, search, nameFilter, phoneFilter, typeFilter, installmentNumber]);
+  }, [rows, selectedCity, search, nameFilter, phoneFilter, typeFilter, installmentNumber, lineFilter, routeMap]);
 
   const installmentOptions = useMemo(() => {
     const set = new Set<number>();
@@ -240,6 +290,19 @@ export const FawryCodesTab: React.FC = () => {
             ))}
           </SelectContent>
         </Select>
+        <Select value={lineFilter} onValueChange={setLineFilter}>
+          <SelectTrigger className="w-full sm:w-[190px] h-11 bg-card border-border/50 rounded-xl">
+            <SelectValue placeholder="الخط" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">كل الخطوط</SelectItem>
+            {lineOptions.map((route) => (
+              <SelectItem key={route.id} value={route.id}>
+                {route.route_number ? `#${route.route_number} ` : ''}{route.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="rounded-2xl border border-warning/20 bg-warning/5 p-4 flex items-center justify-between">
@@ -253,12 +316,14 @@ export const FawryCodesTab: React.FC = () => {
         <p className="text-sm text-muted-foreground py-8 text-center">لا توجد سجلات مستحقة.</p>
       ) : (
         <div className="rounded-xl border border-border/50 overflow-x-auto max-h-[65vh] overflow-y-auto">
-          <Table className="min-w-[1100px]">
+          <Table className="min-w-[1300px]">
             <TableHeader className="sticky top-0 z-10 bg-background">
               <TableRow className="bg-muted/30 hover:bg-muted/30">
                 <TableHead className="text-xs">الطالب</TableHead>
                 <TableHead className="text-xs">ولي الأمر</TableHead>
                 <TableHead className="text-xs">المدرسة</TableHead>
+                <TableHead className="text-xs">الخط</TableHead>
+                <TableHead className="text-xs">نوع الاشتراك</TableHead>
                 <TableHead className="text-xs">رقم الدفع والتجديد</TableHead>
                 <TableHead className="text-xs">رقم القسط</TableHead>
                 <TableHead className="text-xs">المبلغ</TableHead>
@@ -273,6 +338,9 @@ export const FawryCodesTab: React.FC = () => {
               {filtered.map((p: any) => {
                 const reg = p.subscriptions?.registrations;
                 const parent = reg?.parent_accounts;
+                const regId = p.subscriptions?.registration_id;
+                const route = regId ? routeMap.get(regId) : undefined;
+                const subType = p.subscriptions?.subscription_type;
                 const draft = drafts[p.id] || { code: '', note: '', hours: '24' };
                 const valid = codeIsValid(p);
                 const expiresAt = valid && p.fawry_code_expires_at ? new Date(p.fawry_code_expires_at) : null;
@@ -282,6 +350,25 @@ export const FawryCodesTab: React.FC = () => {
                     <TableCell className="text-sm font-medium">{reg?.student_name || '-'}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{parent?.parent_name || '-'}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{reg?.schools?.name || '-'}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {route ? (
+                        <span className="inline-flex items-center gap-1">
+                          <Route className="h-3 w-3 text-muted-foreground" />
+                          {route.route_number ? `#${route.route_number} ` : ''}{route.name}
+                        </span>
+                      ) : (
+                        '-'
+                      )}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {subType === 'yearly' ? (
+                        <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">سنوي</Badge>
+                      ) : subType === 'monthly' ? (
+                        <Badge variant="outline" className="text-[10px] border-info/30 text-info">شهري</Badge>
+                      ) : (
+                        '-'
+                      )}
+                    </TableCell>
                     <TableCell className="text-sm text-muted-foreground" dir="ltr">{parent?.payment_phone || parent?.father_phone || '-'}</TableCell>
                     <TableCell className="text-sm">
                       {Number(p.installment_number) === 0 ? (
