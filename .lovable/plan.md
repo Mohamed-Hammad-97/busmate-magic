@@ -1,10 +1,12 @@
 # اكواد فورى — Line Filter + Subscription Type Column
 
-## Answer to your question: why only القسط الأول / الثاني / التأمين appear
+## Updated row visibility rule
 
-This is by design, not a bug. The Fawry tab only shows **overdue** installments — payments whose due date has already passed and are still unpaid. Installments 3, 4, 5, etc. are not due yet, so they don't appear until their due date passes.
+The Fawry tab will now show:
+- **Overdue** installments (due date already passed), as before.
+- **Upcoming installments due within the next 7 days** so customer service can generate Fawry codes early.
 
-If you want, I can change this (e.g. show all unpaid installments, or installments due within the next X days) — tell me which behavior you prefer. The plan below keeps the current overdue-only logic.
+The "إجمالي المستحق" label and total will still sum all displayed rows.
 
 ## Changes (in `src/components/payments/FawryCodesTab.tsx`)
 
