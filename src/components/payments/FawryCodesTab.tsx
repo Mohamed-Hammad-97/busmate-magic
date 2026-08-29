@@ -290,6 +290,19 @@ export const FawryCodesTab: React.FC = () => {
             ))}
           </SelectContent>
         </Select>
+        <Select value={lineFilter} onValueChange={setLineFilter}>
+          <SelectTrigger className="w-full sm:w-[190px] h-11 bg-card border-border/50 rounded-xl">
+            <SelectValue placeholder="الخط" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">كل الخطوط</SelectItem>
+            {lineOptions.map((route) => (
+              <SelectItem key={route.id} value={route.id}>
+                {route.route_number ? `#${route.route_number} ` : ''}{route.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="rounded-2xl border border-warning/20 bg-warning/5 p-4 flex items-center justify-between">
