@@ -50,6 +50,7 @@ export const FawryCodesTab: React.FC = () => {
   const [typeFilter, setTypeFilter] = useState<'all' | 'insurance' | 'installments'>('all');
   const [installmentNumber, setInstallmentNumber] = useState<string>('all');
   const [lineFilter, setLineFilter] = useState<string>('all');
+  const [subscriptionTypeFilter, setSubscriptionTypeFilter] = useState<'all' | 'yearly' | 'monthly'>('all');
   const [drafts, setDrafts] = useState<Record<string, { code: string; note: string; hours: string }>>({});
   const [, setTick] = useState(0);
 
