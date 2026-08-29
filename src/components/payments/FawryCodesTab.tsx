@@ -186,6 +186,8 @@ export const FawryCodesTab: React.FC = () => {
           fawry_cleared: true,
           fawry_cleared_at: new Date().toISOString(),
           fawry_cleared_by: employee?.id ?? null,
+          fawry_reference_code: null,
+          fawry_code_expires_at: null,
         } as any)
         .eq('id', id);
       if (error) throw error;
