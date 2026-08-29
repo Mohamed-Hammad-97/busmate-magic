@@ -944,7 +944,7 @@ export default function ParentDashboard() {
                           )}
                         </div>
                       </div>
-                      {payment.fawry_reference_code && (
+                      {payment.fawry_reference_code && payment.status !== 'paid' && (!payment.fawry_code_expires_at || new Date(payment.fawry_code_expires_at).getTime() > Date.now()) && (
                         <div className="mb-2 flex items-center justify-between gap-2 rounded-lg border border-primary/20 bg-primary/5 px-2.5 py-1.5">
                           <div className="min-w-0">
                             <p className="text-[10px] text-muted-foreground">{t('parentPortal.fawryCode')}</p>

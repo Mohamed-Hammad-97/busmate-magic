@@ -49,7 +49,14 @@ export const FawryCodesTab: React.FC = () => {
   const [nameFilter, setNameFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'insurance' | 'installments'>('all');
   const [installmentNumber, setInstallmentNumber] = useState<string>('all');
-  const [drafts, setDrafts] = useState<Record<string, { code: string; note: string }>>({});
+  const [drafts, setDrafts] = useState<Record<string, { code: string; note: string; hours: string }>>({});
+  const [, setTick] = useState(0);
+
+  // Re-render every minute so expired codes clear themselves without a refresh
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 60_000);
+    return () => clearInterval(id);
+  }, []);
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ['fawry-codes'],
@@ -89,12 +96,20 @@ export const FawryCodesTab: React.FC = () => {
     },
   });
 
+  const codeIsValid = (p: any) =>
+    !!p.fawry_reference_code &&
+    (!p.fawry_code_expires_at || new Date(p.fawry_code_expires_at).getTime() > Date.now());
+
   useEffect(() => {
     setDrafts((prev) => {
       const next = { ...prev };
       (rows as any[]).forEach((r) => {
         if (!next[r.id]) {
-          next[r.id] = { code: r.fawry_reference_code || '', note: r.fawry_note || '' };
+          next[r.id] = {
+            code: codeIsValid(r) ? r.fawry_reference_code : '',
+            note: r.fawry_note || '',
+            hours: '24',
+          };
         }
       });
       return next;
@@ -171,6 +186,8 @@ export const FawryCodesTab: React.FC = () => {
           fawry_cleared: true,
           fawry_cleared_at: new Date().toISOString(),
           fawry_cleared_by: employee?.id ?? null,
+          fawry_reference_code: null,
+          fawry_code_expires_at: null,
         } as any)
         .eq('id', id);
       if (error) throw error;
@@ -247,6 +264,7 @@ export const FawryCodesTab: React.FC = () => {
                 <TableHead className="text-xs">المبلغ</TableHead>
                 <TableHead className="text-xs">تاريخ الاستحقاق</TableHead>
                 <TableHead className="text-xs">كود فورى</TableHead>
+                <TableHead className="text-xs">صلاحية الكود</TableHead>
                 <TableHead className="text-xs">ملاحظات</TableHead>
                 <TableHead className="text-xs text-center">تم</TableHead>
               </TableRow>
@@ -255,7 +273,10 @@ export const FawryCodesTab: React.FC = () => {
               {filtered.map((p: any) => {
                 const reg = p.subscriptions?.registrations;
                 const parent = reg?.parent_accounts;
-                const draft = drafts[p.id] || { code: '', note: '' };
+                const draft = drafts[p.id] || { code: '', note: '', hours: '24' };
+                const valid = codeIsValid(p);
+                const expiresAt = valid && p.fawry_code_expires_at ? new Date(p.fawry_code_expires_at) : null;
+                const expiredCode = !!p.fawry_reference_code && !valid;
                 return (
                   <TableRow key={p.id}>
                     <TableCell className="text-sm font-medium">{reg?.student_name || '-'}</TableCell>
@@ -279,12 +300,45 @@ export const FawryCodesTab: React.FC = () => {
                         placeholder="كود فورى"
                         onChange={(e) => setDrafts((d) => ({ ...d, [p.id]: { ...draft, code: e.target.value } }))}
                         onBlur={() => {
-                          if ((p.fawry_reference_code || '') !== draft.code) {
-                            saveField.mutate({ id: p.id, patch: { fawry_reference_code: draft.code || null } });
+                          const currentCode = valid ? p.fawry_reference_code : '';
+                          if (currentCode !== draft.code) {
+                            const hours = Number(draft.hours);
+                            const expires =
+                              draft.code && hours > 0
+                                ? new Date(Date.now() + hours * 3600_000).toISOString()
+                                : null;
+                            saveField.mutate({
+                              id: p.id,
+                              patch: {
+                                fawry_reference_code: draft.code || null,
+                                fawry_code_expires_at: draft.code ? expires : null,
+                              },
+                            });
                           }
                         }}
                         className="h-9 w-[150px] rounded-lg"
                       />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col gap-1">
+                        <Input
+                          type="number"
+                          min={1}
+                          dir="ltr"
+                          disabled={!canSetReference}
+                          placeholder="ساعات"
+                          value={draft.hours}
+                          onChange={(e) => setDrafts((d) => ({ ...d, [p.id]: { ...draft, hours: e.target.value } }))}
+                          className="h-9 w-[100px] rounded-lg"
+                        />
+                        {expiresAt ? (
+                          <span className="text-[10px] text-muted-foreground">
+                            ينتهي {format(expiresAt, 'dd MMM HH:mm')}
+                          </span>
+                        ) : expiredCode ? (
+                          <span className="text-[10px] text-destructive">انتهت الصلاحية</span>
+                        ) : null}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <Input

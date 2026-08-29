@@ -55,6 +55,17 @@ const RouteStudentsDialog: React.FC<RouteStudentsDialogProps> = ({ route, open, 
               pickup_address,
               pickup_latitude,
               pickup_longitude
+            ),
+            subscriptions (
+              subscription_type,
+              payments (
+                installment_number,
+                status,
+                due_date,
+                fawry_cleared,
+                fawry_reference_code,
+                fawry_code_expires_at
+              )
             )
           )
         `)
@@ -64,6 +75,19 @@ const RouteStudentsDialog: React.FC<RouteStudentsDialogProps> = ({ route, open, 
         .filter((a: any) => a.registrations && a.registrations.status !== 'cancelled')
         .map((a: any) => {
           const p = a.registrations?.parent_accounts || {};
+          const subs = a.registrations?.subscriptions;
+          const sub = Array.isArray(subs) ? subs[0] : subs;
+          const now = Date.now();
+          const validCodes = ((sub?.payments as any[]) || [])
+            .filter(
+              (pay: any) =>
+                pay.fawry_reference_code &&
+                !pay.fawry_cleared &&
+                pay.status !== 'paid' &&
+                (!pay.fawry_code_expires_at || new Date(pay.fawry_code_expires_at).getTime() > now),
+            )
+            .sort((x: any, y: any) => Number(y.installment_number) - Number(x.installment_number));
+          const activeCode = validCodes[0];
           return {
             order: a.pickup_order ?? 0,
             student_name: a.registrations?.student_name || '',
@@ -72,6 +96,10 @@ const RouteStudentsDialog: React.FC<RouteStudentsDialogProps> = ({ route, open, 
             mother_phone: p.mother_phone || '',
             father_phone: p.father_phone || '',
             payment_phone: p.payment_phone || '',
+            subscription_type: sub?.subscription_type || '',
+            fawry_code: activeCode?.fawry_reference_code || '',
+            fawry_installment:
+              activeCode ? Number(activeCode.installment_number) : null,
             address: p.pickup_address || '',
             maps:
               p.pickup_latitude && p.pickup_longitude
@@ -83,16 +111,31 @@ const RouteStudentsDialog: React.FC<RouteStudentsDialogProps> = ({ route, open, 
     },
   });
 
+  const subTypeLabel = (t: string) =>
+    t === 'monthly' ? (isRtl ? 'شهري' : 'Monthly') : t === 'yearly' ? (isRtl ? 'سنوي' : 'Yearly') : '-';
+
   const fileBase = `route-${route?.route_number ?? ''}-${(route?.name || 'students').replace(/\s+/g, '-')}-${format(new Date(), 'yyyy-MM-dd')}`;
 
-  const HEADERS = ['#', 'Student Name', 'Grade', 'Parent Name', 'Mother Phone', 'Payment Phone', 'Father Phone', 'Location Address', 'Map Link'];
+  const HEADERS = ['#', 'Student Name', 'Grade', 'Parent Name', 'Mother Phone', 'Payment Phone', 'Subscription Type', 'Fawry Code', 'Father Phone', 'Location Address', 'Map Link'];
 
   const toArray = () =>
-    rows.map((r, i) => [i + 1, r.student_name, r.grade, r.parent_name, r.mother_phone, r.payment_phone, r.father_phone, r.address, r.maps]);
+    rows.map((r, i) => [
+      i + 1,
+      r.student_name,
+      r.grade,
+      r.parent_name,
+      r.mother_phone,
+      r.payment_phone,
+      r.subscription_type === 'monthly' ? 'Monthly' : r.subscription_type === 'yearly' ? 'Yearly' : '-',
+      r.fawry_code ? `${r.fawry_code}${r.fawry_installment !== null ? ` (#${r.fawry_installment})` : ''}` : '-',
+      r.father_phone,
+      r.address,
+      r.maps,
+    ]);
 
   const exportExcel = () => {
     const ws = XLSX.utils.aoa_to_sheet([HEADERS, ...toArray()]);
-    ws['!cols'] = [{ wch: 5 }, { wch: 24 }, { wch: 10 }, { wch: 22 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 50 }, { wch: 40 }];
+    ws['!cols'] = [{ wch: 5 }, { wch: 24 }, { wch: 10 }, { wch: 22 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 20 }, { wch: 16 }, { wch: 50 }, { wch: 40 }];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Students');
     XLSX.writeFile(wb, `${fileBase}.xlsx`);
@@ -109,7 +152,7 @@ const RouteStudentsDialog: React.FC<RouteStudentsDialogProps> = ({ route, open, 
       body: toArray().map((r) => r.map((c) => String(c ?? ''))),
       startY: 26,
       styles: { fontSize: 8, cellWidth: 'wrap' },
-      columnStyles: { 7: { cellWidth: 65 }, 8: { cellWidth: 50 } },
+      columnStyles: { 9: { cellWidth: 60 }, 10: { cellWidth: 45 } },
     });
     doc.save(`${fileBase}.pdf`);
   };
@@ -146,6 +189,8 @@ const RouteStudentsDialog: React.FC<RouteStudentsDialogProps> = ({ route, open, 
                 <TableHead className={isRtl ? 'text-right' : 'text-left'}>{isRtl ? 'اسم الطالب' : 'Student Name'}</TableHead>
                 <TableHead className={isRtl ? 'text-right' : 'text-left'}>{isRtl ? 'رقم الأم' : 'Mother Phone'}</TableHead>
                 <TableHead className={isRtl ? 'text-right' : 'text-left'}>{isRtl ? 'رقم الدفع والتجديد' : 'Payment Phone'}</TableHead>
+                <TableHead className={isRtl ? 'text-right' : 'text-left'}>{isRtl ? 'نوع الاشتراك' : 'Subscription'}</TableHead>
+                <TableHead className={isRtl ? 'text-right' : 'text-left'}>{isRtl ? 'كود فورى' : 'Fawry Code'}</TableHead>
                 <TableHead className={isRtl ? 'text-right' : 'text-left'}>{isRtl ? 'عنوان الموقع' : 'Location Address'}</TableHead>
                 <TableHead className={isRtl ? 'text-right' : 'text-left'}>{isRtl ? 'الخريطة' : 'Map'}</TableHead>
               </TableRow>
@@ -153,13 +198,13 @@ const RouteStudentsDialog: React.FC<RouteStudentsDialogProps> = ({ route, open, 
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8">
+                  <TableCell colSpan={8} className="text-center py-8">
                     {isRtl ? 'جاري التحميل...' : 'Loading...'}
                   </TableCell>
                 </TableRow>
               ) : rows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8">
+                  <TableCell colSpan={8} className="text-center py-8">
                     {isRtl ? 'لا يوجد طلاب على هذا الخط' : 'No students on this route'}
                   </TableCell>
                 </TableRow>
@@ -170,6 +215,29 @@ const RouteStudentsDialog: React.FC<RouteStudentsDialogProps> = ({ route, open, 
                     <TableCell className="font-medium whitespace-nowrap">{r.student_name}</TableCell>
                     <TableCell dir="ltr" className="whitespace-nowrap">{r.mother_phone || '-'}</TableCell>
                     <TableCell dir="ltr" className="whitespace-nowrap">{r.payment_phone || '-'}</TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      {r.subscription_type ? (
+                        <Badge variant="secondary" className="text-[10px]">{subTypeLabel(r.subscription_type)}</Badge>
+                      ) : (
+                        '-'
+                      )}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      {r.fawry_code ? (
+                        <div className="flex flex-col">
+                          <span dir="ltr" className="font-mono text-sm">{r.fawry_code}</span>
+                          {r.fawry_installment !== null && (
+                            <span className="text-[10px] text-muted-foreground">
+                              {r.fawry_installment === 0
+                                ? isRtl ? 'التأمين' : 'Insurance'
+                                : isRtl ? `القسط ${r.fawry_installment}` : `Installment ${r.fawry_installment}`}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        '-'
+                      )}
+                    </TableCell>
                     <TableCell className="max-w-md whitespace-pre-wrap break-words">{r.address || '-'}</TableCell>
                     <TableCell>
                       {r.maps ? (
