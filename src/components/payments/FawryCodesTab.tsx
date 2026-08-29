@@ -198,9 +198,13 @@ export const FawryCodesTab: React.FC = () => {
       if (lineFilter !== 'all') {
         if (!route || route.id !== lineFilter) return false;
       }
+      if (subscriptionTypeFilter !== 'all') {
+        const subType = p.subscriptions?.subscription_type;
+        if (subType !== subscriptionTypeFilter) return false;
+      }
       return true;
     });
-  }, [rows, selectedCity, search, nameFilter, phoneFilter, typeFilter, installmentNumber, lineFilter, routeMap]);
+  }, [rows, selectedCity, search, nameFilter, phoneFilter, typeFilter, installmentNumber, lineFilter, routeMap, subscriptionTypeFilter]);
 
   const installmentOptions = useMemo(() => {
     const set = new Set<number>();
