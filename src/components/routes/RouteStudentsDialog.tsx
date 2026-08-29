@@ -189,6 +189,8 @@ const RouteStudentsDialog: React.FC<RouteStudentsDialogProps> = ({ route, open, 
                 <TableHead className={isRtl ? 'text-right' : 'text-left'}>{isRtl ? 'اسم الطالب' : 'Student Name'}</TableHead>
                 <TableHead className={isRtl ? 'text-right' : 'text-left'}>{isRtl ? 'رقم الأم' : 'Mother Phone'}</TableHead>
                 <TableHead className={isRtl ? 'text-right' : 'text-left'}>{isRtl ? 'رقم الدفع والتجديد' : 'Payment Phone'}</TableHead>
+                <TableHead className={isRtl ? 'text-right' : 'text-left'}>{isRtl ? 'نوع الاشتراك' : 'Subscription'}</TableHead>
+                <TableHead className={isRtl ? 'text-right' : 'text-left'}>{isRtl ? 'كود فورى' : 'Fawry Code'}</TableHead>
                 <TableHead className={isRtl ? 'text-right' : 'text-left'}>{isRtl ? 'عنوان الموقع' : 'Location Address'}</TableHead>
                 <TableHead className={isRtl ? 'text-right' : 'text-left'}>{isRtl ? 'الخريطة' : 'Map'}</TableHead>
               </TableRow>
@@ -196,13 +198,13 @@ const RouteStudentsDialog: React.FC<RouteStudentsDialogProps> = ({ route, open, 
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8">
+                  <TableCell colSpan={8} className="text-center py-8">
                     {isRtl ? 'جاري التحميل...' : 'Loading...'}
                   </TableCell>
                 </TableRow>
               ) : rows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8">
+                  <TableCell colSpan={8} className="text-center py-8">
                     {isRtl ? 'لا يوجد طلاب على هذا الخط' : 'No students on this route'}
                   </TableCell>
                 </TableRow>
@@ -213,6 +215,29 @@ const RouteStudentsDialog: React.FC<RouteStudentsDialogProps> = ({ route, open, 
                     <TableCell className="font-medium whitespace-nowrap">{r.student_name}</TableCell>
                     <TableCell dir="ltr" className="whitespace-nowrap">{r.mother_phone || '-'}</TableCell>
                     <TableCell dir="ltr" className="whitespace-nowrap">{r.payment_phone || '-'}</TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      {r.subscription_type ? (
+                        <Badge variant="secondary" className="text-[10px]">{subTypeLabel(r.subscription_type)}</Badge>
+                      ) : (
+                        '-'
+                      )}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      {r.fawry_code ? (
+                        <div className="flex flex-col">
+                          <span dir="ltr" className="font-mono text-sm">{r.fawry_code}</span>
+                          {r.fawry_installment !== null && (
+                            <span className="text-[10px] text-muted-foreground">
+                              {r.fawry_installment === 0
+                                ? isRtl ? 'التأمين' : 'Insurance'
+                                : isRtl ? `القسط ${r.fawry_installment}` : `Installment ${r.fawry_installment}`}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        '-'
+                      )}
+                    </TableCell>
                     <TableCell className="max-w-md whitespace-pre-wrap break-words">{r.address || '-'}</TableCell>
                     <TableCell>
                       {r.maps ? (
