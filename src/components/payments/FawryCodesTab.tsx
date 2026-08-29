@@ -273,7 +273,10 @@ export const FawryCodesTab: React.FC = () => {
               {filtered.map((p: any) => {
                 const reg = p.subscriptions?.registrations;
                 const parent = reg?.parent_accounts;
-                const draft = drafts[p.id] || { code: '', note: '' };
+                const draft = drafts[p.id] || { code: '', note: '', hours: '24' };
+                const valid = codeIsValid(p);
+                const expiresAt = valid && p.fawry_code_expires_at ? new Date(p.fawry_code_expires_at) : null;
+                const expiredCode = !!p.fawry_reference_code && !valid;
                 return (
                   <TableRow key={p.id}>
                     <TableCell className="text-sm font-medium">{reg?.student_name || '-'}</TableCell>
@@ -297,12 +300,45 @@ export const FawryCodesTab: React.FC = () => {
                         placeholder="كود فورى"
                         onChange={(e) => setDrafts((d) => ({ ...d, [p.id]: { ...draft, code: e.target.value } }))}
                         onBlur={() => {
-                          if ((p.fawry_reference_code || '') !== draft.code) {
-                            saveField.mutate({ id: p.id, patch: { fawry_reference_code: draft.code || null } });
+                          const currentCode = valid ? p.fawry_reference_code : '';
+                          if (currentCode !== draft.code) {
+                            const hours = Number(draft.hours);
+                            const expires =
+                              draft.code && hours > 0
+                                ? new Date(Date.now() + hours * 3600_000).toISOString()
+                                : null;
+                            saveField.mutate({
+                              id: p.id,
+                              patch: {
+                                fawry_reference_code: draft.code || null,
+                                fawry_code_expires_at: draft.code ? expires : null,
+                              },
+                            });
                           }
                         }}
                         className="h-9 w-[150px] rounded-lg"
                       />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col gap-1">
+                        <Input
+                          type="number"
+                          min={1}
+                          dir="ltr"
+                          disabled={!canSetReference}
+                          placeholder="ساعات"
+                          value={draft.hours}
+                          onChange={(e) => setDrafts((d) => ({ ...d, [p.id]: { ...draft, hours: e.target.value } }))}
+                          className="h-9 w-[100px] rounded-lg"
+                        />
+                        {expiresAt ? (
+                          <span className="text-[10px] text-muted-foreground">
+                            ينتهي {format(expiresAt, 'dd MMM HH:mm')}
+                          </span>
+                        ) : expiredCode ? (
+                          <span className="text-[10px] text-destructive">انتهت الصلاحية</span>
+                        ) : null}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <Input
