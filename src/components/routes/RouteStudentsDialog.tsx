@@ -152,7 +152,7 @@ const RouteStudentsDialog: React.FC<RouteStudentsDialogProps> = ({ route, open, 
       body: toArray().map((r) => r.map((c) => String(c ?? ''))),
       startY: 26,
       styles: { fontSize: 8, cellWidth: 'wrap' },
-      columnStyles: { 7: { cellWidth: 65 }, 8: { cellWidth: 50 } },
+      columnStyles: { 9: { cellWidth: 60 }, 10: { cellWidth: 45 } },
     });
     doc.save(`${fileBase}.pdf`);
   };
