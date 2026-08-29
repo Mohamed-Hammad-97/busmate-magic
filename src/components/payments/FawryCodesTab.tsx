@@ -96,12 +96,20 @@ export const FawryCodesTab: React.FC = () => {
     },
   });
 
+  const codeIsValid = (p: any) =>
+    !!p.fawry_reference_code &&
+    (!p.fawry_code_expires_at || new Date(p.fawry_code_expires_at).getTime() > Date.now());
+
   useEffect(() => {
     setDrafts((prev) => {
       const next = { ...prev };
       (rows as any[]).forEach((r) => {
         if (!next[r.id]) {
-          next[r.id] = { code: r.fawry_reference_code || '', note: r.fawry_note || '' };
+          next[r.id] = {
+            code: codeIsValid(r) ? r.fawry_reference_code : '',
+            note: r.fawry_note || '',
+            hours: '24',
+          };
         }
       });
       return next;
