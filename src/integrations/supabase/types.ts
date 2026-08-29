@@ -1786,6 +1786,7 @@ export type Database = {
           fawry_cleared: boolean
           fawry_cleared_at: string | null
           fawry_cleared_by: string | null
+          fawry_code_expires_at: string | null
           fawry_note: string | null
           fawry_reference_code: string | null
           id: string
@@ -1807,6 +1808,7 @@ export type Database = {
           fawry_cleared?: boolean
           fawry_cleared_at?: string | null
           fawry_cleared_by?: string | null
+          fawry_code_expires_at?: string | null
           fawry_note?: string | null
           fawry_reference_code?: string | null
           id?: string
@@ -1828,6 +1830,7 @@ export type Database = {
           fawry_cleared?: boolean
           fawry_cleared_at?: string | null
           fawry_cleared_by?: string | null
+          fawry_code_expires_at?: string | null
           fawry_note?: string | null
           fawry_reference_code?: string | null
           id?: string
