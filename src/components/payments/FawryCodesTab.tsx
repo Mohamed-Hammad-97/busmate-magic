@@ -49,6 +49,7 @@ export const FawryCodesTab: React.FC = () => {
   const [nameFilter, setNameFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'insurance' | 'installments'>('all');
   const [installmentNumber, setInstallmentNumber] = useState<string>('all');
+  const [lineFilter, setLineFilter] = useState<string>('all');
   const [drafts, setDrafts] = useState<Record<string, { code: string; note: string; hours: string }>>({});
   const [, setTick] = useState(0);
 
