@@ -1,29 +1,33 @@
-# Add dedicated Line column to registration records
+# Route students: subscription type + live Fawry code with expiry
 
 ## Goal
-Show each registration's assigned route/line number as a standalone column in the Registrations tab summary table, styled as a blue circular badge (e.g. "# 26"), matching the attached screenshot.
+In the Routes tab, when opening a line's students list, show two new columns next to "رقم الدفع والتجديد":
+1. Subscription type (شهري / سنوي).
+2. The Fawry reference code entered by finance in اكواد فورى, which expires automatically.
 
-## Current state
-- `src/pages/Registrations.tsx` already fetches `routeNumberByRegistration` from `route_assignments` joined with `routes.route_number`.
-- The route number is currently rendered underneath the School cell as a small pill, not as its own column.
-- The summary table columns are: Student, Parent, School, Pickup Address, Grade, Type, Status, Date, Actions.
+## Fawry code expiry
 
-## Changes
+- When finance enters a reference code in اكواد فورى, they also enter how many hours it stays valid (e.g. 24). The row shows a small countdown / "ينتهي في ..." label.
+- Once the hours pass, the code is treated as empty everywhere (Fawry tab cell, route students dialog, parent portal) and finance can enter a new one.
+- When the installment is marked paid, or the row is cleared with the "تم" action, the code and its expiry are removed immediately.
+- Expiry is computed from a stored expiry timestamp, so it works the same for every viewer without a background job.
 
-1. **Add a LINE column to the registrations table**
-   - Insert a new `<TableHead>` between School and Pickup Address (or after School) labeled "Line" / "الخط".
-   - Add a matching `<TableCell>` in each row that renders:
-     - If a route number exists: a circular/rounded primary badge showing `# {routeNumberByRegistration[reg.id]}`.
-     - If unassigned: a subtle muted text label "Unassigned" / "غير معين".
-   - Remove the existing route-number pill from the School cell so the School column only shows the school name.
+## Route students dialog columns
 
-2. **Style the badge to match the screenshot**
-   - Use a compact circular or pill-shaped badge with primary background/foreground colors.
-   - Keep it RTL-aware (text direction and column order already handled by the table).
+Columns become: #, Student Name, Mother Phone, Payment Phone, **Subscription Type**, **Fawry Code**, Location Address, Map.
 
-3. **No data changes**
-   - Reuse the existing `routeNumberByRegistration` query and mapping.
-   - No backend or schema changes required.
+- Subscription type comes from the student's subscription (monthly → شهري / Monthly, yearly → سنوي / Yearly); "-" if no plan.
+- Fawry code shows the newest still-valid, not-yet-paid, not-cleared installment code for that student, with the installment number under it (e.g. "القسط 2"). Empty if none valid.
+- Both columns are added to the Excel and PDF exports as well.
 
-## Files
-- `src/pages/Registrations.tsx`
+## Technical notes
+
+- Migration: add `fawry_code_expires_at timestamptz` (nullable) to `public.payments`. No breaking changes.
+- `src/components/payments/FawryCodesTab.tsx`:
+  - Add an "صلاحية (ساعات)" number input per row (finance/super admin only, default from a component-level default of 24). Saving the code sets `fawry_reference_code` and `fawry_code_expires_at = now + hours`; clearing the code sets both to null.
+  - Treat a code as absent when `fawry_code_expires_at <= now`; render the cell empty and show an "انتهت الصلاحية" hint. A light interval tick re-renders so expiry appears without a manual refresh.
+  - The paid/clear mutation also nulls `fawry_reference_code` and `fawry_code_expires_at`.
+- Marking an installment paid elsewhere (`PaymentProfileDialog.tsx` / `Payments.tsx` paid mutations) also nulls both fawry fields in the same update.
+- `src/components/routes/RouteStudentsDialog.tsx`: extend the select to `registrations -> subscriptions(subscription_type, payments(installment_number, status, fawry_reference_code, fawry_code_expires_at, fawry_cleared, due_date))`, pick the newest valid code client-side, add the two table columns plus `HEADERS`/row builders for xlsx and jspdf.
+- Parent portal payment view filters out expired codes with the same rule.
+- No RLS changes needed; employees already read `payments`.
