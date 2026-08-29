@@ -68,6 +68,7 @@ export const FawryCodesTab: React.FC = () => {
           *,
           subscriptions (
             id,
+            subscription_type,
             registration_id,
             registrations (
               id,
@@ -78,21 +79,19 @@ export const FawryCodesTab: React.FC = () => {
             )
           )
         `)
-        // Fawry follows the overdue reminder card: a payment is overdue when
-        // its due date has passed, even if its stored status is still pending.
         .in('status', ['pending', 'overdue'])
         .eq('fawry_cleared', false)
         .order('due_date', { ascending: true });
       if (error) throw error;
 
-      const today = new Date();
+      const today = startOfDay(new Date());
+      const upcomingLimit = addDays(today, 7);
       return (data || []).filter((p: any) => {
         const registration = p.subscriptions?.registrations;
-        return registration &&
-          registration.status !== 'archived' &&
-          registration.status !== 'cancelled' &&
-          p.due_date &&
-          isBefore(parseISO(p.due_date), startOfDay(today));
+        if (!registration || registration.status === 'archived' || registration.status === 'cancelled') return false;
+        if (!p.due_date) return false;
+        const due = parseISO(p.due_date);
+        return isBefore(due, today) || due.getTime() <= upcomingLimit.getTime();
       });
     },
   });
