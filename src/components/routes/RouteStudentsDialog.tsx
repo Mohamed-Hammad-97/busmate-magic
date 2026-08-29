@@ -135,7 +135,7 @@ const RouteStudentsDialog: React.FC<RouteStudentsDialogProps> = ({ route, open, 
 
   const exportExcel = () => {
     const ws = XLSX.utils.aoa_to_sheet([HEADERS, ...toArray()]);
-    ws['!cols'] = [{ wch: 5 }, { wch: 24 }, { wch: 10 }, { wch: 22 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 50 }, { wch: 40 }];
+    ws['!cols'] = [{ wch: 5 }, { wch: 24 }, { wch: 10 }, { wch: 22 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 20 }, { wch: 16 }, { wch: 50 }, { wch: 40 }];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Students');
     XLSX.writeFile(wb, `${fileBase}.xlsx`);
