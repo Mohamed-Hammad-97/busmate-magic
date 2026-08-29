@@ -49,7 +49,14 @@ export const FawryCodesTab: React.FC = () => {
   const [nameFilter, setNameFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'insurance' | 'installments'>('all');
   const [installmentNumber, setInstallmentNumber] = useState<string>('all');
-  const [drafts, setDrafts] = useState<Record<string, { code: string; note: string }>>({});
+  const [drafts, setDrafts] = useState<Record<string, { code: string; note: string; hours: string }>>({});
+  const [, setTick] = useState(0);
+
+  // Re-render every minute so expired codes clear themselves without a refresh
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 60_000);
+    return () => clearInterval(id);
+  }, []);
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ['fawry-codes'],
