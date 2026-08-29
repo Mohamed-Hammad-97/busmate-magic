@@ -338,6 +338,9 @@ export const FawryCodesTab: React.FC = () => {
               {filtered.map((p: any) => {
                 const reg = p.subscriptions?.registrations;
                 const parent = reg?.parent_accounts;
+                const regId = p.subscriptions?.registration_id;
+                const route = regId ? routeMap.get(regId) : undefined;
+                const subType = p.subscriptions?.subscription_type;
                 const draft = drafts[p.id] || { code: '', note: '', hours: '24' };
                 const valid = codeIsValid(p);
                 const expiresAt = valid && p.fawry_code_expires_at ? new Date(p.fawry_code_expires_at) : null;
@@ -347,6 +350,25 @@ export const FawryCodesTab: React.FC = () => {
                     <TableCell className="text-sm font-medium">{reg?.student_name || '-'}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{parent?.parent_name || '-'}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{reg?.schools?.name || '-'}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {route ? (
+                        <span className="inline-flex items-center gap-1">
+                          <Route className="h-3 w-3 text-muted-foreground" />
+                          {route.route_number ? `#${route.route_number} ` : ''}{route.name}
+                        </span>
+                      ) : (
+                        '-'
+                      )}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {subType === 'yearly' ? (
+                        <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">سنوي</Badge>
+                      ) : subType === 'monthly' ? (
+                        <Badge variant="outline" className="text-[10px] border-info/30 text-info">شهري</Badge>
+                      ) : (
+                        '-'
+                      )}
+                    </TableCell>
                     <TableCell className="text-sm text-muted-foreground" dir="ltr">{parent?.payment_phone || parent?.father_phone || '-'}</TableCell>
                     <TableCell className="text-sm">
                       {Number(p.installment_number) === 0 ? (
