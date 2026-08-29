@@ -165,6 +165,8 @@ export const FawryCodesTab: React.FC = () => {
     return (rows as any[]).filter((p) => {
       const reg = p.subscriptions?.registrations;
       const parent = reg?.parent_accounts;
+      const regId = p.subscriptions?.registration_id;
+      const route = regId ? routeMap.get(regId) : undefined;
       if (selectedCity !== 'all') {
         const variants = cityMapping[selectedCity] || [selectedCity];
         const c = (parent?.city || '').toLowerCase();
@@ -172,7 +174,7 @@ export const FawryCodesTab: React.FC = () => {
       }
       const s = search.trim().toLowerCase();
       if (s) {
-        const hay = `${reg?.student_name || ''} ${parent?.parent_name || ''} ${reg?.schools?.name || ''} ${p.fawry_reference_code || ''}`.toLowerCase();
+        const hay = `${reg?.student_name || ''} ${parent?.parent_name || ''} ${reg?.schools?.name || ''} ${p.fawry_reference_code || ''} ${route?.name || ''}`.toLowerCase();
         if (!hay.includes(s)) return false;
       }
       if (nameFilter.trim()) {
@@ -192,9 +194,12 @@ export const FawryCodesTab: React.FC = () => {
       if (typeFilter === 'installments' && installmentNumber !== 'all') {
         if (Number(p.installment_number) !== Number(installmentNumber)) return false;
       }
+      if (lineFilter !== 'all') {
+        if (!route || route.id !== lineFilter) return false;
+      }
       return true;
     });
-  }, [rows, selectedCity, search, nameFilter, phoneFilter, typeFilter, installmentNumber]);
+  }, [rows, selectedCity, search, nameFilter, phoneFilter, typeFilter, installmentNumber, lineFilter, routeMap]);
 
   const installmentOptions = useMemo(() => {
     const set = new Set<number>();
