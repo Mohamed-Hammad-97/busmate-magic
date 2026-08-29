@@ -96,6 +96,51 @@ export const FawryCodesTab: React.FC = () => {
     },
   });
 
+  const registrationIds = useMemo(() => {
+    const ids = new Set<string>();
+    (rows as any[]).forEach((p) => {
+      const regId = p.subscriptions?.registration_id;
+      if (regId) ids.add(regId);
+    });
+    return Array.from(ids);
+  }, [rows]);
+
+  const { data: routeAssignments = [] } = useQuery({
+    queryKey: ['fawry-route-assignments', registrationIds],
+    queryFn: async () => {
+      if (registrationIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from('route_assignments')
+        .select('registration_id, routes (id, name, route_number)')
+        .in('registration_id', registrationIds);
+      if (error) throw error;
+      return (data || []) as any[];
+    },
+    enabled: registrationIds.length > 0,
+  });
+
+  const routeMap = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; route_number?: number }>();
+    routeAssignments.forEach((ra: any) => {
+      const regId = ra.registration_id;
+      const route = ra.routes;
+      if (regId && route && !map.has(regId)) {
+        map.set(regId, route);
+      }
+    });
+    return map;
+  }, [routeAssignments]);
+
+  const lineOptions = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; route_number?: number }>();
+    (rows as any[]).forEach((p) => {
+      const regId = p.subscriptions?.registration_id;
+      const route = regId ? routeMap.get(regId) : undefined;
+      if (route) map.set(route.id, route);
+    });
+    return Array.from(map.values()).sort((a, b) => (a.route_number ?? 0) - (b.route_number ?? 0));
+  }, [rows, routeMap]);
+
   const codeIsValid = (p: any) =>
     !!p.fawry_reference_code &&
     (!p.fawry_code_expires_at || new Date(p.fawry_code_expires_at).getTime() > Date.now());
