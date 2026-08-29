@@ -308,6 +308,16 @@ export const FawryCodesTab: React.FC = () => {
             ))}
           </SelectContent>
         </Select>
+        <Select value={subscriptionTypeFilter} onValueChange={(v) => setSubscriptionTypeFilter(v as typeof subscriptionTypeFilter)}>
+          <SelectTrigger className="w-full sm:w-[180px] h-11 bg-card border-border/50 rounded-xl">
+            <SelectValue placeholder="نوع الاشتراك" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">كل الاشتراكات</SelectItem>
+            <SelectItem value="yearly">سنوي</SelectItem>
+            <SelectItem value="monthly">شهري</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="rounded-2xl border border-warning/20 bg-warning/5 p-4 flex items-center justify-between">
