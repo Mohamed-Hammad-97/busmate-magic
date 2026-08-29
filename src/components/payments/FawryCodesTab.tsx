@@ -316,7 +316,7 @@ export const FawryCodesTab: React.FC = () => {
         <p className="text-sm text-muted-foreground py-8 text-center">لا توجد سجلات مستحقة.</p>
       ) : (
         <div className="rounded-xl border border-border/50 overflow-x-auto max-h-[65vh] overflow-y-auto">
-          <Table className="min-w-[1100px]">
+          <Table className="min-w-[1300px]">
             <TableHeader className="sticky top-0 z-10 bg-background">
               <TableRow className="bg-muted/30 hover:bg-muted/30">
                 <TableHead className="text-xs">الطالب</TableHead>
