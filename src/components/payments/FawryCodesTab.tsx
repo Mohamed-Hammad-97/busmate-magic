@@ -356,6 +356,15 @@ export const FawryCodesTab: React.FC = () => {
             <SelectItem value="monthly">شهري</SelectItem>
           </SelectContent>
         </Select>
+        <Button
+          variant="outline"
+          onClick={exportExcel}
+          disabled={filtered.length === 0}
+          className="h-11 rounded-xl gap-2"
+        >
+          <FileSpreadsheet className="h-4 w-4" />
+          Excel
+        </Button>
       </div>
 
       <div className="rounded-2xl border border-warning/20 bg-warning/5 p-4 flex items-center justify-between">
