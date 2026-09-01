@@ -213,12 +213,12 @@ const Registrations: React.FC = () => {
       if (reg.status !== 'archived') return false;
       const y = String(new Date(reg.updated_at || reg.created_at).getFullYear());
       const matchesYear = archiveYear === 'all' || y === archiveYear;
-      return matchesSearch && matchesSchool && matchesYear && matchesPhone && matchesName;
+      return matchesSearch && matchesSchool && matchesYear && matchesPhone && matchesName && matchesGrade;
     }
 
     const matchesStatus =
       statusFilter === 'all' ? reg.status !== 'archived' : reg.status === statusFilter;
-    return matchesSearch && matchesStatus && matchesSchool && matchesPhone && matchesName;
+    return matchesSearch && matchesStatus && matchesSchool && matchesPhone && matchesName && matchesGrade;
   });
 
   const handleViewDetails = (registration: Registration) => {
