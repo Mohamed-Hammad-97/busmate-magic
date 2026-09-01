@@ -76,6 +76,7 @@ const Registrations: React.FC = () => {
   const [nameFilter, setNameFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [schoolFilter, setSchoolFilter] = useState<string>('all');
+  const [gradeFilter, setGradeFilter] = useState<string>('all');
   const [mainTab, setMainTab] = useState<'active' | 'archive' | 'other'>('active');
   const [archiveYear, setArchiveYear] = useState<string>('all');
   const [deleteTarget, setDeleteTarget] = useState<Registration | null>(null);
@@ -190,6 +191,9 @@ const Registrations: React.FC = () => {
       reg.parent_accounts?.national_id?.includes(searchQuery) ||
       reg.schools?.name?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesSchool = schoolFilter === 'all' || reg.school_id === schoolFilter;
+    const matchesGrade =
+      gradeFilter === 'all' ||
+      (reg.grade || '').trim().toLowerCase() === gradeFilter.toLowerCase();
 
     const phoneNorm = phoneFilter.replace(/\s+/g, '');
     const matchesPhone = !phoneNorm || [
