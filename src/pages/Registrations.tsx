@@ -76,6 +76,7 @@ const Registrations: React.FC = () => {
   const [nameFilter, setNameFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [schoolFilter, setSchoolFilter] = useState<string>('all');
+  const [gradeFilter, setGradeFilter] = useState<string>('all');
   const [mainTab, setMainTab] = useState<'active' | 'archive' | 'other'>('active');
   const [archiveYear, setArchiveYear] = useState<string>('all');
   const [deleteTarget, setDeleteTarget] = useState<Registration | null>(null);
@@ -190,6 +191,9 @@ const Registrations: React.FC = () => {
       reg.parent_accounts?.national_id?.includes(searchQuery) ||
       reg.schools?.name?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesSchool = schoolFilter === 'all' || reg.school_id === schoolFilter;
+    const matchesGrade =
+      gradeFilter === 'all' ||
+      (reg.grade || '').trim().toLowerCase() === gradeFilter.toLowerCase();
 
     const phoneNorm = phoneFilter.replace(/\s+/g, '');
     const matchesPhone = !phoneNorm || [
@@ -209,12 +213,12 @@ const Registrations: React.FC = () => {
       if (reg.status !== 'archived') return false;
       const y = String(new Date(reg.updated_at || reg.created_at).getFullYear());
       const matchesYear = archiveYear === 'all' || y === archiveYear;
-      return matchesSearch && matchesSchool && matchesYear && matchesPhone && matchesName;
+      return matchesSearch && matchesSchool && matchesYear && matchesPhone && matchesName && matchesGrade;
     }
 
     const matchesStatus =
       statusFilter === 'all' ? reg.status !== 'archived' : reg.status === statusFilter;
-    return matchesSearch && matchesStatus && matchesSchool && matchesPhone && matchesName;
+    return matchesSearch && matchesStatus && matchesSchool && matchesPhone && matchesName && matchesGrade;
   });
 
   const handleViewDetails = (registration: Registration) => {
@@ -648,6 +652,21 @@ const Registrations: React.FC = () => {
               {schoolsList.map((school) => (
                 <SelectItem key={school.id} value={school.id}>
                   {school.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={gradeFilter} onValueChange={setGradeFilter}>
+            <SelectTrigger className="w-full sm:w-[170px] h-11 bg-card border-border/50 rounded-xl">
+              <SelectValue placeholder="All Grades" />
+            </SelectTrigger>
+            <SelectContent className="bg-card border border-border z-50 rounded-xl">
+              <SelectItem value="all">All Grades</SelectItem>
+              <SelectItem value="KG1">KG1</SelectItem>
+              <SelectItem value="KG2">KG2</SelectItem>
+              {Array.from({ length: 12 }, (_, i) => (
+                <SelectItem key={i + 1} value={`Grade ${i + 1}`}>
+                  Grade {i + 1}
                 </SelectItem>
               ))}
             </SelectContent>
