@@ -26,9 +26,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Search, Phone, User, CheckCircle2, Hash, Route } from 'lucide-react';
+import { Search, Phone, User, CheckCircle2, Hash, Route, FileSpreadsheet } from 'lucide-react';
 import { format, isBefore, parseISO, startOfDay, addDays } from 'date-fns';
 import { toast } from 'sonner';
+import * as XLSX from 'xlsx';
 
 const cityMapping: Record<string, string[]> = {
   cairo: ['cairo', 'القاهرة'],
@@ -220,6 +221,43 @@ export const FawryCodesTab: React.FC = () => {
   }, [typeFilter]);
 
   const totalDue = filtered.reduce((sum, p: any) => sum + Number(p.amount || 0), 0);
+
+  const exportExcel = () => {
+    const headers = [
+      'الطالب', 'ولي الأمر', 'المدرسة', 'الخط', 'نوع الاشتراك',
+      'رقم الدفع والتجديد', 'رقم القسط', 'المبلغ (EGP)', 'تاريخ الاستحقاق',
+      'كود فورى', 'صلاحية الكود', 'ملاحظات',
+    ];
+    const data = filtered.map((p: any) => {
+      const reg = p.subscriptions?.registrations;
+      const parent = reg?.parent_accounts;
+      const regId = p.subscriptions?.registration_id;
+      const route = regId ? routeMap.get(regId) : undefined;
+      const subType = p.subscriptions?.subscription_type;
+      const valid = codeIsValid(p);
+      const n = Number(p.installment_number);
+      return [
+        reg?.student_name || '',
+        parent?.parent_name || '',
+        reg?.schools?.name || '',
+        route ? `${route.route_number ? `#${route.route_number} ` : ''}${route.name}` : '',
+        subType === 'yearly' ? 'سنوي' : subType === 'monthly' ? 'شهري' : '',
+        parent?.payment_phone || parent?.father_phone || '',
+        n === 0 ? 'التأمين' : `القسط ${n}`,
+        Number(p.amount || 0),
+        p.due_date ? format(new Date(p.due_date), 'yyyy-MM-dd') : '',
+        valid ? p.fawry_reference_code || '' : '',
+        valid && p.fawry_code_expires_at ? format(new Date(p.fawry_code_expires_at), 'yyyy-MM-dd HH:mm') : '',
+        p.fawry_note || '',
+      ];
+    });
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
+    ws['!cols'] = [{ wch: 22 }, { wch: 22 }, { wch: 24 }, { wch: 20 }, { wch: 12 }, { wch: 18 }, { wch: 12 }, { wch: 14 }, { wch: 14 }, { wch: 18 }, { wch: 18 }, { wch: 28 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'اكواد فورى');
+    XLSX.writeFile(wb, `fawry-codes-${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+    toast.success(`تم تصدير ${filtered.length} سجل`);
+  };
 
   const saveField = useMutation({
     mutationFn: async ({ id, patch }: { id: string; patch: Record<string, any> }) => {
