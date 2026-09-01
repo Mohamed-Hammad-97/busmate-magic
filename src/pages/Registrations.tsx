@@ -656,6 +656,21 @@ const Registrations: React.FC = () => {
               ))}
             </SelectContent>
           </Select>
+          <Select value={gradeFilter} onValueChange={setGradeFilter}>
+            <SelectTrigger className="w-full sm:w-[170px] h-11 bg-card border-border/50 rounded-xl">
+              <SelectValue placeholder="All Grades" />
+            </SelectTrigger>
+            <SelectContent className="bg-card border border-border z-50 rounded-xl">
+              <SelectItem value="all">All Grades</SelectItem>
+              <SelectItem value="KG1">KG1</SelectItem>
+              <SelectItem value="KG2">KG2</SelectItem>
+              {Array.from({ length: 12 }, (_, i) => (
+                <SelectItem key={i + 1} value={`Grade ${i + 1}`}>
+                  Grade {i + 1}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Premium Table */}
