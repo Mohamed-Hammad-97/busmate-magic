@@ -494,8 +494,24 @@ export const FawryCodesTab: React.FC = () => {
                           placeholder="ساعات"
                           value={draft.hours}
                           onChange={(e) => setDrafts((d) => ({ ...d, [p.id]: { ...draft, hours: e.target.value } }))}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                          }}
+                          onBlur={() => {
+                            const hours = Number(draft.hours);
+                            if (!valid || !hours || hours <= 0) return;
+                            const current = remainingHours(p);
+                            if (current !== null && Math.abs(current - hours) <= 0) return;
+                            saveField.mutate({
+                              id: p.id,
+                              patch: {
+                                fawry_code_expires_at: new Date(Date.now() + hours * 3600_000).toISOString(),
+                              },
+                            });
+                          }}
                           className="h-9 w-[100px] rounded-lg"
                         />
+
                         {expiresAt ? (
                           <span className="text-[10px] text-muted-foreground">
                             ينتهي {format(expiresAt, 'dd MMM HH:mm')}
