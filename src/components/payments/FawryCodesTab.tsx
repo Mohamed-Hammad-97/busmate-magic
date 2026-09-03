@@ -147,21 +147,37 @@ export const FawryCodesTab: React.FC = () => {
     !!p.fawry_reference_code &&
     (!p.fawry_code_expires_at || new Date(p.fawry_code_expires_at).getTime() > Date.now());
 
+  const remainingHours = (p: any) => {
+    if (!p.fawry_code_expires_at) return null;
+    const diff = new Date(p.fawry_code_expires_at).getTime() - Date.now();
+    if (diff <= 0) return null;
+    return Math.max(1, Math.ceil(diff / 3600_000));
+  };
+
   useEffect(() => {
     setDrafts((prev) => {
       const next = { ...prev };
       (rows as any[]).forEach((r) => {
+        const valid = codeIsValid(r);
+        const hrs = valid ? remainingHours(r) : null;
         if (!next[r.id]) {
           next[r.id] = {
-            code: codeIsValid(r) ? r.fawry_reference_code : '',
+            code: valid ? r.fawry_reference_code : '',
             note: r.fawry_note || '',
-            hours: '24',
+            hours: hrs !== null ? String(hrs) : '24',
           };
+        } else if (valid && hrs !== null && next[r.id].code === (r.fawry_reference_code || '')) {
+          // keep the hours box in sync with the stored expiry
+          const shown = Number(next[r.id].hours);
+          if (!shown || Math.abs(shown - hrs) > 1) {
+            next[r.id] = { ...next[r.id], hours: String(hrs) };
+          }
         }
       });
       return next;
     });
   }, [rows]);
+
 
   const filtered = useMemo(() => {
     return (rows as any[]).filter((p) => {
@@ -478,8 +494,24 @@ export const FawryCodesTab: React.FC = () => {
                           placeholder="ساعات"
                           value={draft.hours}
                           onChange={(e) => setDrafts((d) => ({ ...d, [p.id]: { ...draft, hours: e.target.value } }))}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                          }}
+                          onBlur={() => {
+                            const hours = Number(draft.hours);
+                            if (!valid || !hours || hours <= 0) return;
+                            const current = remainingHours(p);
+                            if (current !== null && Math.abs(current - hours) <= 0) return;
+                            saveField.mutate({
+                              id: p.id,
+                              patch: {
+                                fawry_code_expires_at: new Date(Date.now() + hours * 3600_000).toISOString(),
+                              },
+                            });
+                          }}
                           className="h-9 w-[100px] rounded-lg"
                         />
+
                         {expiresAt ? (
                           <span className="text-[10px] text-muted-foreground">
                             ينتهي {format(expiresAt, 'dd MMM HH:mm')}
