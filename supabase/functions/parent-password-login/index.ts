@@ -35,13 +35,21 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Find parent account (has_password flag can be stale, so don't gate on it)
+    // Find parent account (has_password flag can be stale, so don't gate on it).
+    // Accept the father's OR the mother's phone in any stored format.
+    const phoneVariants = [cleanPhone, `0${cleanPhone}`, `20${cleanPhone}`, `+20${cleanPhone}`];
+    const orFilter = [
+      ...phoneVariants.map((p) => `father_phone.eq.${p}`),
+      ...phoneVariants.map((p) => `mother_phone.eq.${p}`),
+    ].join(",");
+
     const { data: parents, error: parentError } = await supabase
       .from("parent_accounts")
       .select("id, user_id, has_password, is_active, registrations(status)")
-      .in("father_phone", [cleanPhone, `0${cleanPhone}`, `20${cleanPhone}`, `+20${cleanPhone}`])
+      .or(orFilter)
       .not("user_id", "is", null)
       .order("created_at", { ascending: false });
+
 
     // A current registration is also proof that the account should be active.
     // This repairs legacy rows deactivated during school-year archival or sibling cancellation.
