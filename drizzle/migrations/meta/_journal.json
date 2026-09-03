@@ -8,6 +8,13 @@
       "when": 1787999263392,
       "tag": "0000_add_fawry_code_expiry",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788432402596,
+      "tag": "0001_grant_execute_helpers_to_anon",
+      "breakpoints": true
     }
   ]
 }
