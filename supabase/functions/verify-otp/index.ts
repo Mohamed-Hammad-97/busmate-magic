@@ -82,12 +82,21 @@ const handler = async (req: Request): Promise<Response> => {
     // Mark OTP verified
     await supabase.from("otp_codes").update({ verified: true }).eq("id", activeOtp.id);
 
-    // Find parent account by phone
-    const { data: parentAccount, error: parentError } = await supabase
+    // Find parent account by father's OR mother's phone (any stored format)
+    const phoneVariants = [cleanPhone, `0${cleanPhone}`, `20${cleanPhone}`, `+20${cleanPhone}`];
+    const orFilter = [
+      ...phoneVariants.map((p) => `father_phone.eq.${p}`),
+      ...phoneVariants.map((p) => `mother_phone.eq.${p}`),
+    ].join(",");
+
+    const { data: parentAccounts, error: parentError } = await supabase
       .from("parent_accounts")
       .select("id, user_id, parent_name, father_phone")
-      .or(`father_phone.eq.${cleanPhone},father_phone.eq.0${cleanPhone}`)
-      .single();
+      .or(orFilter)
+      .order("created_at", { ascending: false });
+
+    const parentAccount = parentAccounts?.find((p) => p.user_id) ?? parentAccounts?.[0];
+
 
     if (parentError || !parentAccount) {
       // Use a generic message to avoid phone enumeration

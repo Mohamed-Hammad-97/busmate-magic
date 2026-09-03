@@ -20,11 +20,12 @@ const SchoolManagement = () => {
   const isFinance = hasDepartment('finance') || isSuperAdmin;
 
   const [searchParams, setSearchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'drivers-attendance');
+  const normalizeTab = (tab: string | null) =>
+    !tab || tab === 'attendance' ? 'drivers-attendance' : tab;
+  const [activeTab, setActiveTab] = useState(normalizeTab(searchParams.get('tab')));
 
   useEffect(() => {
-    const tab = searchParams.get('tab');
-    if (tab) setActiveTab(tab);
+    setActiveTab(normalizeTab(searchParams.get('tab')));
   }, [searchParams]);
 
   const handleTabChange = (value: string) => {
