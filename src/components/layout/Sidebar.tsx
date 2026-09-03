@@ -85,7 +85,7 @@ const navEntries: NavEntry[] = [
     icon: GraduationCap,
     multiDepartment: ['operations', 'finance'],
     children: [
-      { label: "Attendance", href: "/school-management?tab=attendance", icon: CalendarDays },
+      { label: "Attendance", href: "/school-management?tab=drivers-attendance", icon: CalendarDays },
       { label: "Staff Files", href: "/school-management?tab=profiles", icon: FileText },
       { label: "Salaries", href: "/school-management?tab=salaries", icon: DollarSign, department: "finance" },
     ],
