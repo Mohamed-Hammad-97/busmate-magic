@@ -292,6 +292,20 @@ export const FawryCodesTab: React.FC = () => {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const saveNote = useMutation({
+    mutationFn: async ({ id, note, resolved }: { id: string; note: string | null; resolved?: boolean }) =>
+      savePaymentNote({ paymentId: id, field: 'fawry_note', note, resolved }),
+    onSuccess: (_d, vars) => {
+      queryClient.invalidateQueries({ queryKey: ['fawry-codes'] });
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      toast.success(
+        vars.resolved === true ? 'تم حل الملاحظة' : vars.resolved === false ? 'تم إعادة فتح الملاحظة' : 'تم حفظ الملاحظة',
+      );
+    },
+    onError: (e: any) => toast.error(e.message || 'تعذر حفظ الملاحظة'),
+  });
+
+
   const clearRow = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
