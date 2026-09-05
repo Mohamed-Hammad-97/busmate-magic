@@ -46,12 +46,15 @@ import {
   Receipt,
   Trash2,
   Undo2,
+  RotateCcw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { InvoiceGenerator } from './InvoiceGenerator';
 import { ReceiptUpload } from './ReceiptUpload';
 import { useAuth } from '@/contexts/AuthContext';
+import { savePaymentNote, useCanEditPaymentNotes, useNoteAuthors } from './paymentNotes';
 import SubscriptionDialog from '@/components/registrations/SubscriptionDialog';
+
 
 interface PaymentProfileDialogProps {
   open: boolean;
@@ -78,6 +81,9 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
 }) => {
   const queryClient = useQueryClient();
   const { user, employee, isSuperAdmin } = useAuth();
+  const canEditNotes = useCanEditPaymentNotes();
+  const noteAuthors = useNoteAuthors();
+  const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
   const [editingPaymentId, setEditingPaymentId] = useState<string | null>(null);
   const [editDueDate, setEditDueDate] = useState('');
   const [editPaidDate, setEditPaidDate] = useState('');
@@ -203,10 +209,11 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
 
   const updatePaymentMutation = useMutation({
     mutationFn: async ({ paymentId, dueDate, paidDate, amount, note }: { paymentId: string; dueDate: string; paidDate: string | null; amount: number; note: string | null }) => {
-      const updateData: any = { due_date: dueDate, amount, payment_note: note };
+      const updateData: any = { due_date: dueDate, amount };
       if (paidDate) updateData.paid_date = paidDate;
       const { error } = await supabase.from('payments').update(updateData).eq('id', paymentId);
       if (error) throw error;
+      await savePaymentNote({ paymentId, field: 'payment_note', note });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
@@ -220,15 +227,15 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
   });
 
   const updateNoteMutation = useMutation({
-    mutationFn: async ({ paymentId, note }: { paymentId: string; note: string }) => {
-      const { error } = await supabase.from('payments').update({ payment_note: note } as any).eq('id', paymentId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
+    mutationFn: async ({ paymentId, note, resolved }: { paymentId: string; note: string | null; resolved?: boolean }) =>
+      savePaymentNote({ paymentId, field: 'payment_note', note, resolved }),
+    onSuccess: (_d, vars) => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
-      toast.success('Note saved');
+      toast.success(
+        vars.resolved === true ? 'تم حل الملاحظة' : vars.resolved === false ? 'تم إعادة فتح الملاحظة' : 'تم حفظ الملاحظة',
+      );
     },
-    onError: () => toast.error('Failed to save note'),
+    onError: (e: any) => toast.error(e?.message || 'تعذر حفظ الملاحظة'),
   });
 
   const addFeeMutation = useMutation({
@@ -501,11 +508,62 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
                             <TableCell className="text-xs text-muted-foreground">
                               {payment.paid_by_name || '—'}
                             </TableCell>
-                            <TableCell className="max-w-[180px]">
+                            <TableCell className="max-w-[220px]">
                               {isEditing && canManageInstallments ? (
                                 <Textarea value={editNote} onChange={(e) => setEditNote(e.target.value)} className="min-h-[36px] text-xs" placeholder="قيد الدفع..." rows={2} />
+                              ) : canEditNotes ? (
+                                <div className="space-y-1">
+                                  <div className="flex items-start gap-1">
+                                    <Textarea
+                                      value={noteDrafts[payment.id] ?? payment.payment_note ?? ''}
+                                      onChange={(e) => setNoteDrafts((d) => ({ ...d, [payment.id]: e.target.value }))}
+                                      onBlur={() => {
+                                        const value = noteDrafts[payment.id];
+                                        if (value === undefined) return;
+                                        if ((payment.payment_note || '') === value) return;
+                                        updateNoteMutation.mutate({ paymentId: payment.id, note: value || null });
+                                      }}
+                                      rows={2}
+                                      placeholder="قيد الدفع..."
+                                      className={cn('min-h-[36px] text-xs', payment.payment_note_resolved_at && 'text-muted-foreground line-through')}
+                                    />
+                                    {(payment.payment_note || noteDrafts[payment.id]) && (
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        title={payment.payment_note_resolved_at ? 'إعادة فتح الملاحظة' : 'تم حل الملاحظة'}
+                                        className={cn('h-7 w-7 rounded-lg shrink-0', payment.payment_note_resolved_at ? 'text-muted-foreground' : 'text-success hover:bg-success/10')}
+                                        onClick={() =>
+                                          updateNoteMutation.mutate({
+                                            paymentId: payment.id,
+                                            note: noteDrafts[payment.id] ?? payment.payment_note ?? null,
+                                            resolved: !payment.payment_note_resolved_at,
+                                          })
+                                        }
+                                      >
+                                        {payment.payment_note_resolved_at ? <RotateCcw className="h-3.5 w-3.5" /> : <CheckCircle className="h-3.5 w-3.5" />}
+                                      </Button>
+                                    )}
+                                  </div>
+                                  {payment.payment_note && (
+                                    <span className="block text-[10px] text-muted-foreground">
+                                      {payment.payment_note_resolved_at
+                                        ? `تم الحل: ${noteAuthors.get(payment.payment_note_resolved_by) || '—'} · ${format(new Date(payment.payment_note_resolved_at), 'dd MMM HH:mm')}`
+                                        : payment.payment_note_updated_at
+                                          ? `${noteAuthors.get(payment.payment_note_updated_by) || '—'} · ${format(new Date(payment.payment_note_updated_at), 'dd MMM HH:mm')}`
+                                          : ''}
+                                    </span>
+                                  )}
+                                </div>
                               ) : payment.payment_note ? (
-                                <span className="text-xs text-foreground line-clamp-2" title={payment.payment_note}>{payment.payment_note}</span>
+                                <div className="space-y-0.5">
+                                  <span className={cn('text-xs text-foreground line-clamp-2', payment.payment_note_resolved_at && 'text-muted-foreground line-through')} title={payment.payment_note}>
+                                    {payment.payment_note}
+                                  </span>
+                                  {payment.payment_note_resolved_at && (
+                                    <Badge variant="secondary" className="text-[9px]">تم الحل</Badge>
+                                  )}
+                                </div>
                               ) : (
                                 <span className="text-xs text-muted-foreground">—</span>
                               )}

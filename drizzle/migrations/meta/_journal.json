@@ -15,6 +15,13 @@
       "when": 1788432402596,
       "tag": "0001_grant_execute_helpers_to_anon",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788610906440,
+      "tag": "0002_payment_notes_resolution",
+      "breakpoints": true
     }
   ]
 }

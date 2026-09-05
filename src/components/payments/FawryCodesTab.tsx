@@ -26,10 +26,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Search, Phone, User, CheckCircle2, Hash, Route, FileSpreadsheet } from 'lucide-react';
+import { Search, Phone, User, CheckCircle2, Hash, Route, FileSpreadsheet, RotateCcw } from 'lucide-react';
 import { format, isBefore, parseISO, startOfDay, addDays } from 'date-fns';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
+import { savePaymentNote, useCanEditPaymentNotes, useNoteAuthors } from './paymentNotes';
 
 const cityMapping: Record<string, string[]> = {
   cairo: ['cairo', 'القاهرة'],
@@ -42,8 +43,9 @@ export const FawryCodesTab: React.FC = () => {
   const { selectedCity } = useCity();
   const { isSuperAdmin, hasDepartment, employee } = useAuth();
   const canSetReference = isSuperAdmin || hasDepartment('finance');
-  const canSetNote = isSuperAdmin || hasDepartment('finance') || hasDepartment('customer_support');
+  const canSetNote = useCanEditPaymentNotes();
   const canClear = isSuperAdmin || hasDepartment('finance');
+  const authors = useNoteAuthors();
 
   const [search, setSearch] = useState('');
   const [phoneFilter, setPhoneFilter] = useState('');
@@ -52,6 +54,7 @@ export const FawryCodesTab: React.FC = () => {
   const [installmentNumber, setInstallmentNumber] = useState<string>('all');
   const [lineFilter, setLineFilter] = useState<string>('all');
   const [subscriptionTypeFilter, setSubscriptionTypeFilter] = useState<'all' | 'yearly' | 'monthly'>('all');
+  const [noteFilter, setNoteFilter] = useState<'all' | 'open' | 'resolved'>('all');
   const [drafts, setDrafts] = useState<Record<string, { code: string; note: string; hours: string }>>({});
   const [, setTick] = useState(0);
 
@@ -219,9 +222,11 @@ export const FawryCodesTab: React.FC = () => {
         const subType = p.subscriptions?.subscription_type;
         if (subType !== subscriptionTypeFilter) return false;
       }
+      if (noteFilter === 'open' && !(p.fawry_note && !p.fawry_note_resolved_at)) return false;
+      if (noteFilter === 'resolved' && !p.fawry_note_resolved_at) return false;
       return true;
     });
-  }, [rows, selectedCity, search, nameFilter, phoneFilter, typeFilter, installmentNumber, lineFilter, routeMap, subscriptionTypeFilter]);
+  }, [rows, selectedCity, search, nameFilter, phoneFilter, typeFilter, installmentNumber, lineFilter, routeMap, subscriptionTypeFilter, noteFilter]);
 
   const installmentOptions = useMemo(() => {
     const set = new Set<number>();
@@ -242,7 +247,7 @@ export const FawryCodesTab: React.FC = () => {
     const headers = [
       'الطالب', 'ولي الأمر', 'المدرسة', 'الخط', 'نوع الاشتراك',
       'رقم الدفع والتجديد', 'رقم القسط', 'المبلغ (EGP)', 'تاريخ الاستحقاق',
-      'كود فورى', 'صلاحية الكود', 'ملاحظات',
+      'كود فورى', 'صلاحية الكود', 'ملاحظات', 'حالة الملاحظة',
     ];
     const data = filtered.map((p: any) => {
       const reg = p.subscriptions?.registrations;
@@ -265,10 +270,11 @@ export const FawryCodesTab: React.FC = () => {
         valid ? p.fawry_reference_code || '' : '',
         valid && p.fawry_code_expires_at ? format(new Date(p.fawry_code_expires_at), 'yyyy-MM-dd HH:mm') : '',
         p.fawry_note || '',
+        p.fawry_note ? (p.fawry_note_resolved_at ? 'تم الحل' : 'مفتوحة') : '',
       ];
     });
     const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
-    ws['!cols'] = [{ wch: 22 }, { wch: 22 }, { wch: 24 }, { wch: 20 }, { wch: 12 }, { wch: 18 }, { wch: 12 }, { wch: 14 }, { wch: 14 }, { wch: 18 }, { wch: 18 }, { wch: 28 }];
+    ws['!cols'] = [{ wch: 22 }, { wch: 22 }, { wch: 24 }, { wch: 20 }, { wch: 12 }, { wch: 18 }, { wch: 12 }, { wch: 14 }, { wch: 14 }, { wch: 18 }, { wch: 18 }, { wch: 28 }, { wch: 14 }];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'اكواد فورى');
     XLSX.writeFile(wb, `fawry-codes-${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
@@ -286,6 +292,20 @@ export const FawryCodesTab: React.FC = () => {
     },
     onError: (e: any) => toast.error(e.message),
   });
+
+  const saveNote = useMutation({
+    mutationFn: async ({ id, note, resolved }: { id: string; note: string | null; resolved?: boolean }) =>
+      savePaymentNote({ paymentId: id, field: 'fawry_note', note, resolved }),
+    onSuccess: (_d, vars) => {
+      queryClient.invalidateQueries({ queryKey: ['fawry-codes'] });
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      toast.success(
+        vars.resolved === true ? 'تم حل الملاحظة' : vars.resolved === false ? 'تم إعادة فتح الملاحظة' : 'تم حفظ الملاحظة',
+      );
+    },
+    onError: (e: any) => toast.error(e.message || 'تعذر حفظ الملاحظة'),
+  });
+
 
   const clearRow = useMutation({
     mutationFn: async (id: string) => {
@@ -370,6 +390,16 @@ export const FawryCodesTab: React.FC = () => {
             <SelectItem value="all">كل الاشتراكات</SelectItem>
             <SelectItem value="yearly">سنوي</SelectItem>
             <SelectItem value="monthly">شهري</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={noteFilter} onValueChange={(v) => setNoteFilter(v as typeof noteFilter)}>
+          <SelectTrigger className="w-full sm:w-[180px] h-11 bg-card border-border/50 rounded-xl">
+            <SelectValue placeholder="الملاحظات" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">كل الملاحظات</SelectItem>
+            <SelectItem value="open">ملاحظات غير محلولة</SelectItem>
+            <SelectItem value="resolved">ملاحظات تم حلها</SelectItem>
           </SelectContent>
         </Select>
         <Button
@@ -522,18 +552,51 @@ export const FawryCodesTab: React.FC = () => {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Input
-                        value={draft.note}
-                        disabled={!canSetNote}
-                        placeholder="ملاحظات"
-                        onChange={(e) => setDrafts((d) => ({ ...d, [p.id]: { ...draft, note: e.target.value } }))}
-                        onBlur={() => {
-                          if ((p.fawry_note || '') !== draft.note) {
-                            saveField.mutate({ id: p.id, patch: { fawry_note: draft.note || null } });
-                          }
-                        }}
-                        className="h-9 w-[180px] rounded-lg"
-                      />
+                      <div className="flex flex-col gap-1 w-[220px]">
+                        <div className="flex items-center gap-1">
+                          <Input
+                            value={draft.note}
+                            disabled={!canSetNote}
+                            placeholder="ملاحظات"
+                            onChange={(e) => setDrafts((d) => ({ ...d, [p.id]: { ...draft, note: e.target.value } }))}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                            }}
+                            onBlur={() => {
+                              if ((p.fawry_note || '') !== draft.note) {
+                                saveNote.mutate({ id: p.id, note: draft.note || null });
+                              }
+                            }}
+                            className={`h-9 w-[180px] rounded-lg ${p.fawry_note_resolved_at ? 'text-muted-foreground line-through' : ''}`}
+                          />
+                          {canSetNote && (p.fawry_note || draft.note) && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              title={p.fawry_note_resolved_at ? 'إعادة فتح الملاحظة' : 'تم حل الملاحظة'}
+                              className={`h-8 w-8 ${p.fawry_note_resolved_at ? 'text-muted-foreground' : 'text-success hover:bg-success/10'}`}
+                              onClick={() =>
+                                saveNote.mutate({
+                                  id: p.id,
+                                  note: draft.note || p.fawry_note || null,
+                                  resolved: !p.fawry_note_resolved_at,
+                                })
+                              }
+                            >
+                              {p.fawry_note_resolved_at ? <RotateCcw className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
+                            </Button>
+                          )}
+                        </div>
+                        {p.fawry_note && (
+                          <span className="text-[10px] text-muted-foreground">
+                            {p.fawry_note_resolved_at
+                              ? `تم الحل: ${authors.get(p.fawry_note_resolved_by) || '—'} · ${format(new Date(p.fawry_note_resolved_at), 'dd MMM HH:mm')}`
+                              : p.fawry_note_updated_at
+                                ? `${authors.get(p.fawry_note_updated_by) || '—'} · ${format(new Date(p.fawry_note_updated_at), 'dd MMM HH:mm')}`
+                                : ''}
+                          </span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="text-center">
                       {canClear ? (
