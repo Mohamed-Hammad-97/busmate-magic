@@ -270,6 +270,7 @@ export const FawryCodesTab: React.FC = () => {
         valid ? p.fawry_reference_code || '' : '',
         valid && p.fawry_code_expires_at ? format(new Date(p.fawry_code_expires_at), 'yyyy-MM-dd HH:mm') : '',
         p.fawry_note || '',
+        p.fawry_note ? (p.fawry_note_resolved_at ? 'تم الحل' : 'مفتوحة') : '',
       ];
     });
     const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
