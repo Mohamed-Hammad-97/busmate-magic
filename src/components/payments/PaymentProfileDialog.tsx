@@ -46,12 +46,15 @@ import {
   Receipt,
   Trash2,
   Undo2,
+  RotateCcw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { InvoiceGenerator } from './InvoiceGenerator';
 import { ReceiptUpload } from './ReceiptUpload';
 import { useAuth } from '@/contexts/AuthContext';
+import { savePaymentNote, useCanEditPaymentNotes, useNoteAuthors } from './paymentNotes';
 import SubscriptionDialog from '@/components/registrations/SubscriptionDialog';
+
 
 interface PaymentProfileDialogProps {
   open: boolean;
