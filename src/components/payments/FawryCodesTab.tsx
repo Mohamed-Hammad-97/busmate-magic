@@ -391,6 +391,16 @@ export const FawryCodesTab: React.FC = () => {
             <SelectItem value="monthly">شهري</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={noteFilter} onValueChange={(v) => setNoteFilter(v as typeof noteFilter)}>
+          <SelectTrigger className="w-full sm:w-[180px] h-11 bg-card border-border/50 rounded-xl">
+            <SelectValue placeholder="الملاحظات" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">كل الملاحظات</SelectItem>
+            <SelectItem value="open">ملاحظات غير محلولة</SelectItem>
+            <SelectItem value="resolved">ملاحظات تم حلها</SelectItem>
+          </SelectContent>
+        </Select>
         <Button
           variant="outline"
           onClick={exportExcel}
