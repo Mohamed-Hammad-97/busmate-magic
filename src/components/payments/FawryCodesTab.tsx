@@ -222,9 +222,11 @@ export const FawryCodesTab: React.FC = () => {
         const subType = p.subscriptions?.subscription_type;
         if (subType !== subscriptionTypeFilter) return false;
       }
+      if (noteFilter === 'open' && !(p.fawry_note && !p.fawry_note_resolved_at)) return false;
+      if (noteFilter === 'resolved' && !p.fawry_note_resolved_at) return false;
       return true;
     });
-  }, [rows, selectedCity, search, nameFilter, phoneFilter, typeFilter, installmentNumber, lineFilter, routeMap, subscriptionTypeFilter]);
+  }, [rows, selectedCity, search, nameFilter, phoneFilter, typeFilter, installmentNumber, lineFilter, routeMap, subscriptionTypeFilter, noteFilter]);
 
   const installmentOptions = useMemo(() => {
     const set = new Set<number>();
