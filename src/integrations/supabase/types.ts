@@ -1788,6 +1788,10 @@ export type Database = {
           fawry_cleared_by: string | null
           fawry_code_expires_at: string | null
           fawry_note: string | null
+          fawry_note_resolved_at: string | null
+          fawry_note_resolved_by: string | null
+          fawry_note_updated_at: string | null
+          fawry_note_updated_by: string | null
           fawry_reference_code: string | null
           id: string
           installment_number: number
@@ -1796,6 +1800,10 @@ export type Database = {
           paid_by_name: string | null
           paid_date: string | null
           payment_note: string | null
+          payment_note_resolved_at: string | null
+          payment_note_resolved_by: string | null
+          payment_note_updated_at: string | null
+          payment_note_updated_by: string | null
           receipt_url: string | null
           status: Database["public"]["Enums"]["payment_status"]
           subscription_id: string
@@ -1810,6 +1818,10 @@ export type Database = {
           fawry_cleared_by?: string | null
           fawry_code_expires_at?: string | null
           fawry_note?: string | null
+          fawry_note_resolved_at?: string | null
+          fawry_note_resolved_by?: string | null
+          fawry_note_updated_at?: string | null
+          fawry_note_updated_by?: string | null
           fawry_reference_code?: string | null
           id?: string
           installment_number: number
@@ -1818,6 +1830,10 @@ export type Database = {
           paid_by_name?: string | null
           paid_date?: string | null
           payment_note?: string | null
+          payment_note_resolved_at?: string | null
+          payment_note_resolved_by?: string | null
+          payment_note_updated_at?: string | null
+          payment_note_updated_by?: string | null
           receipt_url?: string | null
           status?: Database["public"]["Enums"]["payment_status"]
           subscription_id: string
@@ -1832,6 +1848,10 @@ export type Database = {
           fawry_cleared_by?: string | null
           fawry_code_expires_at?: string | null
           fawry_note?: string | null
+          fawry_note_resolved_at?: string | null
+          fawry_note_resolved_by?: string | null
+          fawry_note_updated_at?: string | null
+          fawry_note_updated_by?: string | null
           fawry_reference_code?: string | null
           id?: string
           installment_number?: number
@@ -1840,6 +1860,10 @@ export type Database = {
           paid_by_name?: string | null
           paid_date?: string | null
           payment_note?: string | null
+          payment_note_resolved_at?: string | null
+          payment_note_resolved_by?: string | null
+          payment_note_updated_at?: string | null
+          payment_note_updated_by?: string | null
           receipt_url?: string | null
           status?: Database["public"]["Enums"]["payment_status"]
           subscription_id?: string
@@ -2980,6 +3004,15 @@ export type Database = {
           _student_name: string
         }
         Returns: boolean
+      }
+      set_payment_note: {
+        Args: {
+          _field: string
+          _note: string
+          _payment_id: string
+          _resolved?: boolean
+        }
+        Returns: undefined
       }
     }
     Enums: {
