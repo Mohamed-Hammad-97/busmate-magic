@@ -502,11 +502,62 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
                             <TableCell className="text-xs text-muted-foreground">
                               {payment.paid_by_name || '—'}
                             </TableCell>
-                            <TableCell className="max-w-[180px]">
+                            <TableCell className="max-w-[220px]">
                               {isEditing && canManageInstallments ? (
                                 <Textarea value={editNote} onChange={(e) => setEditNote(e.target.value)} className="min-h-[36px] text-xs" placeholder="قيد الدفع..." rows={2} />
+                              ) : canEditNotes ? (
+                                <div className="space-y-1">
+                                  <div className="flex items-start gap-1">
+                                    <Textarea
+                                      value={noteDrafts[payment.id] ?? payment.payment_note ?? ''}
+                                      onChange={(e) => setNoteDrafts((d) => ({ ...d, [payment.id]: e.target.value }))}
+                                      onBlur={() => {
+                                        const value = noteDrafts[payment.id];
+                                        if (value === undefined) return;
+                                        if ((payment.payment_note || '') === value) return;
+                                        updateNoteMutation.mutate({ paymentId: payment.id, note: value || null });
+                                      }}
+                                      rows={2}
+                                      placeholder="قيد الدفع..."
+                                      className={cn('min-h-[36px] text-xs', payment.payment_note_resolved_at && 'text-muted-foreground line-through')}
+                                    />
+                                    {(payment.payment_note || noteDrafts[payment.id]) && (
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        title={payment.payment_note_resolved_at ? 'إعادة فتح الملاحظة' : 'تم حل الملاحظة'}
+                                        className={cn('h-7 w-7 rounded-lg shrink-0', payment.payment_note_resolved_at ? 'text-muted-foreground' : 'text-success hover:bg-success/10')}
+                                        onClick={() =>
+                                          updateNoteMutation.mutate({
+                                            paymentId: payment.id,
+                                            note: noteDrafts[payment.id] ?? payment.payment_note ?? null,
+                                            resolved: !payment.payment_note_resolved_at,
+                                          })
+                                        }
+                                      >
+                                        {payment.payment_note_resolved_at ? <RotateCcw className="h-3.5 w-3.5" /> : <CheckCircle className="h-3.5 w-3.5" />}
+                                      </Button>
+                                    )}
+                                  </div>
+                                  {payment.payment_note && (
+                                    <span className="block text-[10px] text-muted-foreground">
+                                      {payment.payment_note_resolved_at
+                                        ? `تم الحل: ${noteAuthors.get(payment.payment_note_resolved_by) || '—'} · ${format(new Date(payment.payment_note_resolved_at), 'dd MMM HH:mm')}`
+                                        : payment.payment_note_updated_at
+                                          ? `${noteAuthors.get(payment.payment_note_updated_by) || '—'} · ${format(new Date(payment.payment_note_updated_at), 'dd MMM HH:mm')}`
+                                          : ''}
+                                    </span>
+                                  )}
+                                </div>
                               ) : payment.payment_note ? (
-                                <span className="text-xs text-foreground line-clamp-2" title={payment.payment_note}>{payment.payment_note}</span>
+                                <div className="space-y-0.5">
+                                  <span className={cn('text-xs text-foreground line-clamp-2', payment.payment_note_resolved_at && 'text-muted-foreground line-through')} title={payment.payment_note}>
+                                    {payment.payment_note}
+                                  </span>
+                                  {payment.payment_note_resolved_at && (
+                                    <Badge variant="secondary" className="text-[9px]">تم الحل</Badge>
+                                  )}
+                                </div>
                               ) : (
                                 <span className="text-xs text-muted-foreground">—</span>
                               )}
