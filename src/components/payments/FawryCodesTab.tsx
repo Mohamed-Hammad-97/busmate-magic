@@ -43,8 +43,9 @@ export const FawryCodesTab: React.FC = () => {
   const { selectedCity } = useCity();
   const { isSuperAdmin, hasDepartment, employee } = useAuth();
   const canSetReference = isSuperAdmin || hasDepartment('finance');
-  const canSetNote = isSuperAdmin || hasDepartment('finance') || hasDepartment('customer_support');
+  const canSetNote = useCanEditPaymentNotes();
   const canClear = isSuperAdmin || hasDepartment('finance');
+  const authors = useNoteAuthors();
 
   const [search, setSearch] = useState('');
   const [phoneFilter, setPhoneFilter] = useState('');
@@ -53,6 +54,7 @@ export const FawryCodesTab: React.FC = () => {
   const [installmentNumber, setInstallmentNumber] = useState<string>('all');
   const [lineFilter, setLineFilter] = useState<string>('all');
   const [subscriptionTypeFilter, setSubscriptionTypeFilter] = useState<'all' | 'yearly' | 'monthly'>('all');
+  const [noteFilter, setNoteFilter] = useState<'all' | 'open' | 'resolved'>('all');
   const [drafts, setDrafts] = useState<Record<string, { code: string; note: string; hours: string }>>({});
   const [, setTick] = useState(0);
 
