@@ -1001,7 +1001,18 @@ const Payments = () => {
                         <TableCell className="text-sm font-semibold text-success">{Number(p.amount).toLocaleString()} EGP</TableCell>
                         <TableCell className="text-sm text-muted-foreground">{p.due_date ? format(new Date(p.due_date), 'dd MMM yyyy', { locale: dateLocale }) : '-'}</TableCell>
                         <TableCell className="text-sm">{p.paid_by_name || '-'}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{p.payment_note || '-'}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {p.payment_note ? (
+                            <span className="inline-flex items-center gap-1.5">
+                              <span className={p.payment_note_resolved_at ? 'line-through' : ''}>{p.payment_note}</span>
+                              {p.payment_note_resolved_at && (
+                                <Badge variant="secondary" className="text-[9px]">تم الحل</Badge>
+                              )}
+                            </span>
+                          ) : (
+                            '-'
+                          )}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
