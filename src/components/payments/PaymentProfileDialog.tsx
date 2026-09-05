@@ -203,10 +203,11 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
 
   const updatePaymentMutation = useMutation({
     mutationFn: async ({ paymentId, dueDate, paidDate, amount, note }: { paymentId: string; dueDate: string; paidDate: string | null; amount: number; note: string | null }) => {
-      const updateData: any = { due_date: dueDate, amount, payment_note: note };
+      const updateData: any = { due_date: dueDate, amount };
       if (paidDate) updateData.paid_date = paidDate;
       const { error } = await supabase.from('payments').update(updateData).eq('id', paymentId);
       if (error) throw error;
+      await savePaymentNote({ paymentId, field: 'payment_note', note });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
@@ -220,15 +221,15 @@ export const PaymentProfileDialog: React.FC<PaymentProfileDialogProps> = ({
   });
 
   const updateNoteMutation = useMutation({
-    mutationFn: async ({ paymentId, note }: { paymentId: string; note: string }) => {
-      const { error } = await supabase.from('payments').update({ payment_note: note } as any).eq('id', paymentId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
+    mutationFn: async ({ paymentId, note, resolved }: { paymentId: string; note: string | null; resolved?: boolean }) =>
+      savePaymentNote({ paymentId, field: 'payment_note', note, resolved }),
+    onSuccess: (_d, vars) => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
-      toast.success('Note saved');
+      toast.success(
+        vars.resolved === true ? 'تم حل الملاحظة' : vars.resolved === false ? 'تم إعادة فتح الملاحظة' : 'تم حفظ الملاحظة',
+      );
     },
-    onError: () => toast.error('Failed to save note'),
+    onError: (e: any) => toast.error(e?.message || 'تعذر حفظ الملاحظة'),
   });
 
   const addFeeMutation = useMutation({
