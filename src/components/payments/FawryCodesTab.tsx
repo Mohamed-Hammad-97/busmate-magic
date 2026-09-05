@@ -522,18 +522,51 @@ export const FawryCodesTab: React.FC = () => {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Input
-                        value={draft.note}
-                        disabled={!canSetNote}
-                        placeholder="ملاحظات"
-                        onChange={(e) => setDrafts((d) => ({ ...d, [p.id]: { ...draft, note: e.target.value } }))}
-                        onBlur={() => {
-                          if ((p.fawry_note || '') !== draft.note) {
-                            saveField.mutate({ id: p.id, patch: { fawry_note: draft.note || null } });
-                          }
-                        }}
-                        className="h-9 w-[180px] rounded-lg"
-                      />
+                      <div className="flex flex-col gap-1 w-[220px]">
+                        <div className="flex items-center gap-1">
+                          <Input
+                            value={draft.note}
+                            disabled={!canSetNote}
+                            placeholder="ملاحظات"
+                            onChange={(e) => setDrafts((d) => ({ ...d, [p.id]: { ...draft, note: e.target.value } }))}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                            }}
+                            onBlur={() => {
+                              if ((p.fawry_note || '') !== draft.note) {
+                                saveNote.mutate({ id: p.id, note: draft.note || null });
+                              }
+                            }}
+                            className={`h-9 w-[180px] rounded-lg ${p.fawry_note_resolved_at ? 'text-muted-foreground line-through' : ''}`}
+                          />
+                          {canSetNote && (p.fawry_note || draft.note) && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              title={p.fawry_note_resolved_at ? 'إعادة فتح الملاحظة' : 'تم حل الملاحظة'}
+                              className={`h-8 w-8 ${p.fawry_note_resolved_at ? 'text-muted-foreground' : 'text-success hover:bg-success/10'}`}
+                              onClick={() =>
+                                saveNote.mutate({
+                                  id: p.id,
+                                  note: draft.note || p.fawry_note || null,
+                                  resolved: !p.fawry_note_resolved_at,
+                                })
+                              }
+                            >
+                              {p.fawry_note_resolved_at ? <RotateCcw className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
+                            </Button>
+                          )}
+                        </div>
+                        {p.fawry_note && (
+                          <span className="text-[10px] text-muted-foreground">
+                            {p.fawry_note_resolved_at
+                              ? `تم الحل: ${authors.get(p.fawry_note_resolved_by) || '—'} · ${format(new Date(p.fawry_note_resolved_at), 'dd MMM HH:mm')}`
+                              : p.fawry_note_updated_at
+                                ? `${authors.get(p.fawry_note_updated_by) || '—'} · ${format(new Date(p.fawry_note_updated_at), 'dd MMM HH:mm')}`
+                                : ''}
+                          </span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="text-center">
                       {canClear ? (
