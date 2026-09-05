@@ -247,7 +247,7 @@ export const FawryCodesTab: React.FC = () => {
     const headers = [
       'الطالب', 'ولي الأمر', 'المدرسة', 'الخط', 'نوع الاشتراك',
       'رقم الدفع والتجديد', 'رقم القسط', 'المبلغ (EGP)', 'تاريخ الاستحقاق',
-      'كود فورى', 'صلاحية الكود', 'ملاحظات',
+      'كود فورى', 'صلاحية الكود', 'ملاحظات', 'حالة الملاحظة',
     ];
     const data = filtered.map((p: any) => {
       const reg = p.subscriptions?.registrations;
