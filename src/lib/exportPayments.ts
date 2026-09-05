@@ -34,6 +34,7 @@ export interface InstallmentExportRow {
   status: string;
   paidBy: string;
   note: string;
+  noteStatus: string;
 }
 
 const HEADERS = [
