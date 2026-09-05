@@ -66,6 +66,7 @@ const DETAIL_HEADERS = [
   'Status',
   'Paid By',
   'Note',
+  'Note Status',
 ];
 
 const fmtDate = (d?: string | null) => (d ? format(new Date(d), 'yyyy-MM-dd') : '');
@@ -127,6 +128,7 @@ export function buildInstallmentRows(grouped: Record<string, any>): InstallmentE
         status: p.status || '',
         paidBy: p.paid_by_name || '',
         note: p.payment_note || '',
+        noteStatus: p.payment_note ? (p.payment_note_resolved_at ? 'Resolved' : 'Open') : '',
       });
     });
   });
@@ -146,10 +148,10 @@ export function exportPaymentsExcel(grouped: Record<string, any>, filename = 'pa
   const details = buildInstallmentRows(grouped);
   const detailData = [DETAIL_HEADERS, ...details.map((d) => [
     d.parentName, d.studentName, d.schoolName, d.lineNumber, d.paymentPhone, d.subscriptionType,
-    d.installmentLabel, d.amount, d.extraFees, d.dueDate, d.paidDate, d.status, d.paidBy, d.note,
+    d.installmentLabel, d.amount, d.extraFees, d.dueDate, d.paidDate, d.status, d.paidBy, d.note, d.noteStatus,
   ])];
   const wsDetails = XLSX.utils.aoa_to_sheet(detailData);
-  wsDetails['!cols'] = [{ wch: 22 }, { wch: 22 }, { wch: 24 }, { wch: 10 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 13 }, { wch: 13 }, { wch: 12 }, { wch: 18 }, { wch: 28 }];
+  wsDetails['!cols'] = [{ wch: 22 }, { wch: 22 }, { wch: 24 }, { wch: 10 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 13 }, { wch: 13 }, { wch: 12 }, { wch: 18 }, { wch: 28 }, { wch: 12 }];
 
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Summary');
@@ -187,7 +189,7 @@ export function exportPaymentsPDF(grouped: Record<string, any>, filename = 'paym
     body: details.map((d) => [
       d.parentName, d.studentName, d.schoolName, d.lineNumber, d.paymentPhone, d.subscriptionType,
       d.installmentLabel, d.amount.toLocaleString(), d.extraFees.toLocaleString(),
-      d.dueDate, d.paidDate, d.status, d.paidBy, d.note,
+      d.dueDate, d.paidDate, d.status, d.paidBy, d.note, d.noteStatus,
     ]),
     styles: { fontSize: 7, cellPadding: 1.5 },
     headStyles: { fillColor: [59, 130, 246], textColor: 255 },
