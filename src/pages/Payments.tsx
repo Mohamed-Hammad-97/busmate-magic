@@ -572,7 +572,13 @@ const Payments = () => {
                   <FileSpreadsheet className="h-4 w-4 mr-2 text-emerald-600" />
                   Download Excel
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => exportPaymentsPDF(filteredGrouped, `payments-${mainTab}`, `Payments — ${mainTab === 'active' ? 'Active' : 'Archive'}`)}>
+                <DropdownMenuItem onClick={() => {
+                  const rtl = i18n.language === 'ar';
+                  const title = rtl
+                    ? `المدفوعات — ${mainTab === 'active' ? 'النشطة' : 'الأرشيف'}`
+                    : `Payments — ${mainTab === 'active' ? 'Active' : 'Archive'}`;
+                  void exportPaymentsPDF(filteredGrouped, `payments-${mainTab}`, title, rtl);
+                }}>
                   <FileText className="h-4 w-4 mr-2 text-red-600" />
                   Download PDF
                 </DropdownMenuItem>
