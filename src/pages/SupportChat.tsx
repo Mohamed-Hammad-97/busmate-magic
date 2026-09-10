@@ -576,7 +576,10 @@ export default function SupportChat() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className={`text-sm truncate ${isActive ? "text-primary font-semibold" : isUnread ? "font-bold text-foreground" : "font-medium text-muted-foreground"}`}>{conv.name}</p>
-                    <p className={`text-xs truncate mt-0.5 ${isUnread ? "text-foreground/70 font-medium" : "text-muted-foreground"}`}>{conv.subtitle}</p>
+                    <p className={`text-xs truncate mt-0.5 ${isUnread ? "text-foreground/70 font-medium" : "text-muted-foreground"}`}>{conv.meta || conv.subtitle}</p>
+                    {conv.meta && (
+                      <p className="text-[10px] truncate text-muted-foreground/70">{conv.subtitle}</p>
+                    )}
                   </div>
                   <div className="flex flex-col items-end gap-1 shrink-0">
                     <span className={`text-[10px] ${isUnread ? "text-emerald-600 font-semibold" : "text-muted-foreground"}`}>{formatTime(conv.lastMessageAt)}</span>
@@ -627,6 +630,9 @@ export default function SupportChat() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-sm text-foreground truncate">{selectedConv.name}</p>
+            {selectedConv.meta && (
+              <p className="text-xs text-muted-foreground truncate">{selectedConv.meta}</p>
+            )}
             <p className="text-xs text-green-500 font-medium">Online</p>
           </div>
           {isRouteGroup && (
