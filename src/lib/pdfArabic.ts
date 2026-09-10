@@ -17,12 +17,27 @@ function toBase64(buffer: ArrayBuffer): string {
   return btoa(binary);
 }
 
+function isTrueTypeFont(buffer: ArrayBuffer): boolean {
+  if (buffer.byteLength < 4) return false;
+  const tag = new DataView(buffer).getUint32(0);
+  // 0x00010000 (TTF), 'true', 'ttcf', 'OTTO'
+  return tag === 0x00010000 || tag === 0x74727565 || tag === 0x74746366 || tag === 0x4f54544f;
+}
+
+async function fetchFont(url: string): Promise<ArrayBuffer> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Font request failed: ${res.status}`);
+  const buf = await res.arrayBuffer();
+  if (!isTrueTypeFont(buf)) throw new Error('Font response is not a TrueType file');
+  return buf;
+}
+
 async function loadFonts() {
   if (!fontsPromise) {
     fontsPromise = (async () => {
       const [reg, bold] = await Promise.all([
-        fetch(regularAsset.url).then((r) => r.arrayBuffer()),
-        fetch(boldAsset.url).then((r) => r.arrayBuffer()),
+        fetchFont(regularAsset.url),
+        fetchFont(boldAsset.url),
       ]);
       return { regular: toBase64(reg), bold: toBase64(bold) };
     })().catch((e) => {
