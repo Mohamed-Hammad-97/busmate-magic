@@ -66,7 +66,7 @@ const Routes = () => {
   const [studentSearch, setStudentSearch] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedRoute, setSelectedRoute] = useState<RouteType | null>(null);
-  const [activeTab, setActiveTab] = useState<'table' | 'map' | 'complete'>('table');
+  const [activeTab, setActiveTab] = useState<'table' | 'map' | 'complete' | 'print'>('table');
   const [mapSelectedRoute, setMapSelectedRoute] = useState<any>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [routeToDelete, setRouteToDelete] = useState<RouteType | null>(null);
@@ -549,6 +549,9 @@ const Routes = () => {
               <TabsTrigger value="complete">
                 {isRtl ? 'التسجيلات المكتملة' : 'Complete Registrations'}
               </TabsTrigger>
+              <TabsTrigger value="print">
+                {isRtl ? 'طباعة الكشوف' : 'Print Tables'}
+              </TabsTrigger>
             </TabsList>
 
             {/* Search */}
@@ -764,6 +767,9 @@ const Routes = () => {
           </TabsContent>
           <TabsContent value="complete" className="mt-4">
             <CompleteRegistrationsTab routes={routes} canEdit={canEdit} />
+          </TabsContent>
+          <TabsContent value="print" className="mt-4">
+            <PrintTablesTab />
           </TabsContent>
         </Tabs>
 
