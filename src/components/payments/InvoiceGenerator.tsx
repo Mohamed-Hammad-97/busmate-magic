@@ -28,13 +28,14 @@ interface InvoiceGeneratorProps {
   variant?: 'button' | 'icon';
 }
 
-const buildPDF = (data: InvoiceData): jsPDF => {
-  const doc = new jsPDF();
+const buildPDF = async (data: InvoiceData, isRtl: boolean): Promise<jsPDF> => {
+  const doc = await createArabicPdf();
+  const right = (text: string, y: number) => drawHeading(doc, text, y, isRtl, 20);
 
   // Header
   doc.setFontSize(20);
   doc.setTextColor(40, 40, 40);
-  doc.text('INVOICE / فاتورة', 105, 20, { align: 'center' });
+  doc.text(isRtl ? 'فاتورة' : 'INVOICE', 105, 20, { align: 'center' });
 
   // Invoice Info
   doc.setFontSize(10);
@@ -42,30 +43,43 @@ const buildPDF = (data: InvoiceData): jsPDF => {
   const invoiceNumber = `INV-${data.registrationId.slice(0, 8).toUpperCase()}`;
   const invoiceDate = format(new Date(), 'dd MMM yyyy');
 
-  doc.text(`Invoice #: ${invoiceNumber}`, 20, 35);
-  doc.text(`Date: ${invoiceDate}`, 20, 42);
+  right(`${isRtl ? 'رقم الفاتورة' : 'Invoice #'}: ${invoiceNumber}`, 35);
+  right(`${isRtl ? 'التاريخ' : 'Date'}: ${invoiceDate}`, 42);
 
   // Customer Info
   doc.setFontSize(12);
   doc.setTextColor(40);
-  doc.text('Bill To:', 20, 55);
+  right(isRtl ? 'فاتورة إلى:' : 'Bill To:', 55);
   doc.setFontSize(10);
-  doc.text(`Parent: ${data.parentName}`, 20, 63);
-  doc.text(`Student: ${data.studentName}`, 20, 70);
-  doc.text(`Subscription: ${data.subscriptionType === 'monthly' ? 'Monthly' : 'Yearly'}`, 20, 77);
+  right(`${isRtl ? 'ولي الأمر' : 'Parent'}: ${data.parentName}`, 63);
+  right(`${isRtl ? 'الطالب' : 'Student'}: ${data.studentName}`, 70);
+  const subType = data.subscriptionType === 'monthly'
+    ? (isRtl ? 'شهري' : 'Monthly')
+    : (isRtl ? 'سنوي' : 'Yearly');
+  right(`${isRtl ? 'نوع الاشتراك' : 'Subscription'}: ${subType}`, 77);
+
+  const currency = isRtl ? 'ج.م' : 'EGP';
+  const statusLabel = (s: string) =>
+    s === 'paid' ? (isRtl ? 'مدفوع' : 'Paid')
+      : s === 'overdue' ? (isRtl ? 'متأخر' : 'Overdue')
+        : (isRtl ? 'قيد الانتظار' : 'Pending');
 
   // Payments Table
-  const tableData = data.payments.map(p => [
-    p.installment_number,
-    `${Number(p.amount).toLocaleString()} EGP`,
+  const tableData = data.payments.map(p => rtlRow([
+    String(p.installment_number),
+    `${Number(p.amount).toLocaleString()} ${currency}`,
     format(new Date(p.due_date), 'dd MMM yyyy'),
     p.paid_date ? format(new Date(p.paid_date), 'dd MMM yyyy') : '-',
-    p.status === 'paid' ? 'Paid' : p.status === 'overdue' ? 'Overdue' : 'Pending'
-  ]);
+    statusLabel(p.status),
+  ], isRtl));
 
-  autoTable(doc, {
+  const head = isRtl
+    ? ['#', 'المبلغ', 'تاريخ الاستحقاق', 'تاريخ السداد', 'الحالة']
+    : ['#', 'Amount', 'Due Date', 'Paid Date', 'Status'];
+
+  autoTable(doc, withArabicTable(doc, isRtl, {
     startY: 90,
-    head: [['#', 'Amount', 'Due Date', 'Paid Date', 'Status']],
+    head: [rtlRow(head, isRtl)],
     body: tableData,
     theme: 'striped',
     headStyles: {
@@ -77,14 +91,7 @@ const buildPDF = (data: InvoiceData): jsPDF => {
       fontSize: 9,
       cellPadding: 4,
     },
-    columnStyles: {
-      0: { cellWidth: 15 },
-      1: { cellWidth: 40 },
-      2: { cellWidth: 40 },
-      3: { cellWidth: 40 },
-      4: { cellWidth: 30 }
-    }
-  });
+  }));
 
   // Summary
   const finalY = (doc as any).lastAutoTable.finalY + 15;
@@ -92,25 +99,25 @@ const buildPDF = (data: InvoiceData): jsPDF => {
   doc.setFontSize(11);
   doc.setTextColor(40);
 
-  doc.text('Summary:', 20, finalY);
+  right(isRtl ? 'الملخص:' : 'Summary:', finalY);
   doc.setFontSize(10);
-  doc.text(`Total Amount: ${data.totalAmount.toLocaleString()} EGP`, 20, finalY + 8);
-  doc.text(`Amount Paid: ${data.paidAmount.toLocaleString()} EGP`, 20, finalY + 15);
+  right(`${isRtl ? 'إجمالي المبلغ' : 'Total Amount'}: ${data.totalAmount.toLocaleString()} ${currency}`, finalY + 8);
+  right(`${isRtl ? 'المبلغ المدفوع' : 'Amount Paid'}: ${data.paidAmount.toLocaleString()} ${currency}`, finalY + 15);
 
   const remaining = data.totalAmount - data.paidAmount;
   if (remaining > 0) {
     doc.setTextColor(220, 38, 38);
-    doc.text(`Remaining: ${remaining.toLocaleString()} EGP`, 20, finalY + 22);
+    right(`${isRtl ? 'المتبقي' : 'Remaining'}: ${remaining.toLocaleString()} ${currency}`, finalY + 22);
   } else {
     doc.setTextColor(22, 163, 74);
-    doc.text('Status: FULLY PAID', 20, finalY + 22);
+    right(isRtl ? 'الحالة: تم السداد بالكامل' : 'Status: FULLY PAID', finalY + 22);
   }
 
   // Footer
   doc.setFontSize(8);
   doc.setTextColor(150);
-  doc.text('Thank you for your business!', 105, 280, { align: 'center' });
-  doc.text('This is a computer-generated invoice.', 105, 285, { align: 'center' });
+  doc.text(isRtl ? 'شكراً لتعاملكم معنا!' : 'Thank you for your business!', 105, 280, { align: 'center' });
+  doc.text(isRtl ? 'هذه فاتورة صادرة إلكترونياً.' : 'This is a computer-generated invoice.', 105, 285, { align: 'center' });
 
   return doc;
 };
