@@ -560,7 +560,12 @@ const Registrations: React.FC = () => {
                   <FileSpreadsheet className="h-4 w-4 mr-2 text-emerald-600" />
                   Download Excel
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => exportRegistrationsPDF(filteredRegistrations, `registrations-${mainTab}`, `Registrations — ${mainTab === 'active' ? 'Active' : 'Archive'}`)}>
+                <DropdownMenuItem onClick={() => {
+                  const title = isRtl
+                    ? `التسجيلات — ${mainTab === 'active' ? 'النشطة' : 'الأرشيف'}`
+                    : `Registrations — ${mainTab === 'active' ? 'Active' : 'Archive'}`;
+                  void exportRegistrationsPDF(filteredRegistrations, `registrations-${mainTab}`, title, isRtl);
+                }}>
                   <FileText className="h-4 w-4 mr-2 text-red-600" />
                   Download PDF
                 </DropdownMenuItem>
