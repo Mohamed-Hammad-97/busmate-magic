@@ -303,7 +303,6 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
             </ScrollArea>
           </div>
         )}
-      </div>
 
       {/* Student Action Dialog */}
       <Dialog open={showStudentDialog} onOpenChange={setShowStudentDialog}>
