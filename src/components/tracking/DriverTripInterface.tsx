@@ -389,6 +389,6 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
           </div>
         </DialogContent>
       </Dialog>
-    </ScrollArea>
+    </div>
   );
 }
