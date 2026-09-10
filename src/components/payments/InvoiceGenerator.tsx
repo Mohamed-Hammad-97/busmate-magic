@@ -127,10 +127,12 @@ const buildPDF = async (data: InvoiceData, isRtl: boolean): Promise<jsPDF> => {
 export const InvoiceGenerator: React.FC<InvoiceGeneratorProps> = ({ data, variant = 'button' }) => {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const { i18n } = useTranslation();
+  const isRtl = i18n.language === 'ar';
 
-  const openPreview = () => {
+  const openPreview = async () => {
     try {
-      const doc = buildPDF(data);
+      const doc = await buildPDF(data, isRtl);
       const blob = doc.output('blob');
       const url = URL.createObjectURL(blob);
       setPreviewUrl(url);
@@ -141,9 +143,9 @@ export const InvoiceGenerator: React.FC<InvoiceGeneratorProps> = ({ data, varian
     }
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     try {
-      const doc = buildPDF(data);
+      const doc = await buildPDF(data, isRtl);
       doc.save(`Invoice-${data.studentName || data.parentName}-${format(new Date(), 'yyyyMMdd')}.pdf`);
       toast.success('تم تحميل الفاتورة بنجاح');
     } catch (error) {
