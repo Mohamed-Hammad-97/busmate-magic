@@ -299,7 +299,8 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
                   </Card>
                 );
               })}
-            </div>
+              </div>
+            </ScrollArea>
           </div>
         )}
       </div>
