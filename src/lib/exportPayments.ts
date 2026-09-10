@@ -1,7 +1,7 @@
 import * as XLSX from 'xlsx';
-import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
+import { createArabicPdf, withArabicTable, rtlRow, drawHeading } from './pdfArabic';
 
 export interface PaymentExportRow {
   parentName: string;
