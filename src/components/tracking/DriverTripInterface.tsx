@@ -214,15 +214,16 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
 
         {/* Student List */}
         {activeTrip?.status === "in_progress" && (
-          <div className="border-t">
-            <div className="p-3 bg-muted/50 sticky top-0">
+          <div className="border-t flex-1 min-h-0 flex flex-col">
+            <div className="p-3 bg-muted/50 shrink-0">
               <h3 className="font-semibold flex items-center gap-2 text-sm">
                 <Users className="h-4 w-4" />
                 الطلاب ({tripStudents.length})
               </h3>
             </div>
-            <div className="p-2 space-y-2">
-              {tripStudents.map((student) => {
+            <ScrollArea className="flex-1">
+              <div className="p-2 space-y-2">
+                {tripStudents.map((student) => {
                 const config = STATUS_CONFIG[student.status as StudentStatus];
                 const isAbsent = todayAbsences.includes(student.registration_id);
                 return (
