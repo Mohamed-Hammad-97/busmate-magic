@@ -20,8 +20,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { FileSpreadsheet, FileText, Users } from 'lucide-react';
 import * as XLSX from 'xlsx';
-import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { createArabicPdf, withArabicTable, rtlRow, drawHeading } from '@/lib/pdfArabic';
 import { format } from 'date-fns';
 
 interface RouteStudentsDialogProps {
@@ -140,19 +140,33 @@ const RouteStudentsDialog: React.FC<RouteStudentsDialogProps> = ({ route, open, 
     XLSX.writeFile(wb, `${fileBase}.xlsx`);
   };
 
-  const exportPdf = () => {
-    const doc = new jsPDF({ orientation: 'landscape' });
+  const exportPdf = async () => {
+    const doc = await createArabicPdf({ orientation: 'landscape' });
     doc.setFontSize(14);
-    doc.text(`Route #${route?.route_number ?? '-'} - ${route?.name || ''}`, 14, 14);
+    drawHeading(
+      doc,
+      isRtl
+        ? `خط رقم ${route?.route_number ?? '-'} - ${route?.name || ''}`
+        : `Route #${route?.route_number ?? '-'} - ${route?.name || ''}`,
+      14,
+      isRtl
+    );
     doc.setFontSize(10);
-    doc.text(`School: ${route?.schools?.name || '-'}  |  Students: ${rows.length}`, 14, 21);
-    autoTable(doc, {
-      head: [HEADERS],
-      body: toArray().map((r) => r.map((c) => String(c ?? ''))),
+    drawHeading(
+      doc,
+      isRtl
+        ? `المدرسة: ${route?.schools?.name || '-'}  |  عدد الطلاب: ${rows.length}`
+        : `School: ${route?.schools?.name || '-'}  |  Students: ${rows.length}`,
+      21,
+      isRtl
+    );
+    autoTable(doc, withArabicTable(doc, isRtl, {
+      head: [rtlRow(isRtl ? HEADERS_AR : HEADERS, isRtl)],
+      body: toArray().map((r) => rtlRow(r.map((c) => String(c ?? '')), isRtl)),
       startY: 26,
       styles: { fontSize: 8, cellWidth: 'wrap' },
-      columnStyles: { 6: { cellWidth: 90 } },
-    });
+      columnStyles: isRtl ? { 0: { cellWidth: 90 } } : { 6: { cellWidth: 90 } },
+    }));
     doc.save(`${fileBase}.pdf`);
   };
 

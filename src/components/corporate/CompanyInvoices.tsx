@@ -133,21 +133,29 @@ export function CompanyInvoices({ companyId: fixedCompanyId }: CompanyInvoicesPr
     onError: () => toast.error(t('corporateMgmt.error')),
   });
 
-  const downloadInvoicePDF = (invoice: any) => {
-    const doc = new jsPDF();
-    doc.setFont('helvetica'); doc.setFontSize(20);
-    doc.text('INVOICE', 105, 20, { align: 'center' });
+  const downloadInvoicePDF = async (invoice: any) => {
+    const rtl = isRtl;
+    const doc = await createArabicPdf();
+    doc.setFontSize(20);
+    doc.text(rtl ? 'فاتورة' : 'INVOICE', 105, 20, { align: 'center' });
     doc.setFontSize(12);
-    doc.text(`Invoice #: ${invoice.invoice_number}`, 14, 35);
-    doc.text(`Company: ${invoice.company?.name || ''}`, 14, 42);
-    doc.text(`Period: ${invoice.period_start} - ${invoice.period_end}`, 14, 49);
-    doc.text(`Issued: ${invoice.issued_date || ''}`, 14, 56);
+    drawHeading(doc, `${rtl ? 'رقم الفاتورة' : 'Invoice #'}: ${invoice.invoice_number}`, 35, rtl);
+    drawHeading(doc, `${rtl ? 'الشركة' : 'Company'}: ${invoice.company?.name || ''}`, 42, rtl);
+    drawHeading(doc, `${rtl ? 'الفترة' : 'Period'}: ${invoice.period_start} - ${invoice.period_end}`, 49, rtl);
+    drawHeading(doc, `${rtl ? 'تاريخ الإصدار' : 'Issued'}: ${invoice.issued_date || ''}`, 56, rtl);
     const items = Array.isArray(invoice.line_items) ? invoice.line_items : [];
-    autoTable(doc, {
-      startY: 65, head: [['Item', 'Shifts', 'Rate/Shift', 'Total']],
-      body: items.map((item: any) => [item.line_name, item.is_extra ? '-' : item.shifts_count, item.is_extra ? '-' : `${item.price_per_shift} EGP`, `${item.total} EGP`]),
-      foot: [['', '', 'Total', `${invoice.total_amount} EGP`]],
-    });
+    const head = rtl ? ['البند', 'عدد الورديات', 'سعر الوردية', 'الإجمالي'] : ['Item', 'Shifts', 'Rate/Shift', 'Total'];
+    autoTable(doc, withArabicTable(doc, rtl, {
+      startY: 65,
+      head: [rtlRow(head, rtl)],
+      body: items.map((item: any) => rtlRow([
+        item.line_name,
+        item.is_extra ? '-' : item.shifts_count,
+        item.is_extra ? '-' : `${item.price_per_shift} ${rtl ? 'ج.م' : 'EGP'}`,
+        `${item.total} ${rtl ? 'ج.م' : 'EGP'}`,
+      ], rtl)),
+      foot: [rtlRow(['', '', rtl ? 'الإجمالي' : 'Total', `${invoice.total_amount} ${rtl ? 'ج.م' : 'EGP'}`], rtl)],
+    }));
     doc.save(`${invoice.invoice_number}.pdf`);
   };
 
