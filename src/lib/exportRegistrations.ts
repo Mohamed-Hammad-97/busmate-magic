@@ -114,7 +114,21 @@ export async function exportRegistrationsPDF(
   autoTable(doc, withArabicTable(doc, isRtl, {
     startY: 25,
     head: [rtlRow(isRtl ? HEADERS_AR : HEADERS, isRtl)],
-    body: toRows(regs).map((r) => rtlRow(r, isRtl)),
+    body: toRows(regs).map((r) => {
+      if (!isRtl) return r;
+      const AR: Record<string, string> = {
+        AC: 'مكيفة',
+        'Non-AC': 'غير مكيفة',
+        pending: 'قيد المراجعة',
+        approved: 'مقبول',
+        rejected: 'مرفوض',
+        completed: 'مكتمل',
+        cancelled: 'ملغي',
+        active: 'نشط',
+      };
+      const localized = r.map((c, i) => (i === 4 || i === 5 ? AR[String(c)] || c : c));
+      return rtlRow(localized, isRtl);
+    }),
     styles: { fontSize: 6, cellPadding: 1.5, overflow: 'linebreak' },
     headStyles: { fillColor: [59, 130, 246], textColor: 255, fontSize: 6 },
     alternateRowStyles: { fillColor: [245, 247, 250] },
