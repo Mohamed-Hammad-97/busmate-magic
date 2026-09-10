@@ -38,17 +38,36 @@ export function CustomerChatSection() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("parent_accounts")
-        .select("id, parent_name, father_phone, city, user_id")
+        .select("id, parent_name, father_phone, mother_phone, city, user_id, registrations(student_name, status)")
         .order("parent_name");
       if (error) throw error;
-      return data;
+      return (data || []).map((c: any) => ({
+        ...c,
+        students: (c.registrations || [])
+          .filter((r: any) => r.status !== "cancelled")
+          .map((r: any) => r.student_name)
+          .filter(Boolean)
+          .join("، "),
+      }));
     },
   });
 
-  const filteredCustomers = customers.filter((c) =>
+  const filteredCustomers = customers.filter((c: any) =>
     c.parent_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.father_phone.includes(searchTerm)
+    (c.father_phone || "").includes(searchTerm) ||
+    (c.mother_phone || "").includes(searchTerm) ||
+    (c.students || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const customerByParentId = new Map<string, any>((customers as any[]).map((c: any) => [c.id, c]));
+  const convMeta = (conv: any) => {
+    const pid = (conv.conversation_participants || []).find(
+      (p: any) => p.participant_type === "parent" && p.participant_ref_id,
+    )?.participant_ref_id;
+    const c = pid ? customerByParentId.get(pid) : null;
+    if (!c) return "";
+    return [c.students, c.father_phone || c.mother_phone].filter(Boolean).join(" • ");
+  };
 
   const startChat = useMutation({
     mutationFn: async (customer: typeof customers[0]) => {
