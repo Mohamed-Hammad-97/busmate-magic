@@ -78,6 +78,49 @@ export default function SupportChat() {
     },
   });
 
+  // ---- Parent info (student names + phone) for customer conversations ----
+  const parentIds = Array.from(
+    new Set([
+      ...unifiedConvs.flatMap((c: any) =>
+        (c.conversation_participants || [])
+          .filter((p: any) => p.participant_type === "parent" && p.participant_ref_id)
+          .map((p: any) => p.participant_ref_id as string),
+      ),
+      ...legacyConvs.map((c: any) => c.parent_id).filter(Boolean),
+    ]),
+  );
+
+  const { data: parentInfo = {} } = useQuery({
+    queryKey: ["chat-parent-info", parentIds.sort().join(",")],
+    enabled: parentIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("parent_accounts")
+        .select("id, parent_name, father_phone, mother_phone, registrations(student_name, status)")
+        .in("id", parentIds);
+      if (error) throw error;
+      const map: Record<string, { name: string; phone: string; students: string }> = {};
+      (data || []).forEach((p: any) => {
+        const students = (p.registrations || [])
+          .filter((r: any) => r.status !== "cancelled")
+          .map((r: any) => r.student_name)
+          .filter(Boolean);
+        map[p.id] = {
+          name: p.parent_name || "",
+          phone: p.father_phone || p.mother_phone || "",
+          students: students.join("، "),
+        };
+      });
+      return map;
+    },
+  });
+
+  const parentMeta = (parentId?: string | null) => {
+    const info = parentId ? (parentInfo as any)[parentId] : null;
+    if (!info) return "";
+    return [info.students, info.phone].filter(Boolean).join(" • ");
+  };
+
   // ---- Unread counts ----
   const { data: unreadMap = {} } = useQuery({
     queryKey: ["chat-unread-counts", user?.id],
@@ -104,26 +147,33 @@ export default function SupportChat() {
 
   // Combine into one list
   const allConversations = [
-    ...unifiedConvs.map((c) => ({
-      id: c.id,
-      name: c.subject?.replace("Chat with ", "") || "Chat",
-      subtitle:
-        c.type === "staff_dm" ? "Staff"
-        : c.type === "customer_dm" ? "Customer"
-        : c.type === "customer_support" ? "Customer Support"
-        : c.type === "customer_supervisor" ? "Private • Parent ↔ Supervisor"
-        : "Route Group",
-      type: c.type as ChatCategory,
-      lastMessageAt: c.last_message_at,
-      unread: unreadMap[c.id] || 0,
-      raw: c,
-      isLegacy: false,
-    })),
+    ...unifiedConvs.map((c) => {
+      const parentId = (c.conversation_participants || []).find(
+        (p: any) => p.participant_type === "parent" && p.participant_ref_id,
+      )?.participant_ref_id as string | undefined;
+      return {
+        id: c.id,
+        name: c.subject?.replace("Chat with ", "") || "Chat",
+        subtitle:
+          c.type === "staff_dm" ? "Staff"
+          : c.type === "customer_dm" ? "Customer"
+          : c.type === "customer_support" ? "Customer Support"
+          : c.type === "customer_supervisor" ? "Private • Parent ↔ Supervisor"
+          : "Route Group",
+        meta: parentMeta(parentId),
+        type: c.type as ChatCategory,
+        lastMessageAt: c.last_message_at,
+        unread: unreadMap[c.id] || 0,
+        raw: c,
+        isLegacy: false,
+      };
+    }),
 
     ...legacyConvs.map((c: any) => ({
       id: c.id,
       name: c.parent_accounts?.parent_name || "Support",
       subtitle: `Support • ${c.status}`,
+      meta: parentMeta(c.parent_id),
       type: "legacy" as ChatCategory,
       lastMessageAt: c.last_message_at,
       unread: unreadMap[c.id] || 0,
@@ -138,7 +188,8 @@ export default function SupportChat() {
   });
 
   const filteredConversations = allConversations.filter((c) => {
-    const matchSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const term = searchTerm.toLowerCase();
+    const matchSearch = c.name.toLowerCase().includes(term) || (c.meta || "").toLowerCase().includes(term);
     const matchCategory = category === "all" || c.type === category;
     return matchSearch && matchCategory;
   });
@@ -525,7 +576,10 @@ export default function SupportChat() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className={`text-sm truncate ${isActive ? "text-primary font-semibold" : isUnread ? "font-bold text-foreground" : "font-medium text-muted-foreground"}`}>{conv.name}</p>
-                    <p className={`text-xs truncate mt-0.5 ${isUnread ? "text-foreground/70 font-medium" : "text-muted-foreground"}`}>{conv.subtitle}</p>
+                    <p className={`text-xs truncate mt-0.5 ${isUnread ? "text-foreground/70 font-medium" : "text-muted-foreground"}`}>{conv.meta || conv.subtitle}</p>
+                    {conv.meta && (
+                      <p className="text-[10px] truncate text-muted-foreground/70">{conv.subtitle}</p>
+                    )}
                   </div>
                   <div className="flex flex-col items-end gap-1 shrink-0">
                     <span className={`text-[10px] ${isUnread ? "text-emerald-600 font-semibold" : "text-muted-foreground"}`}>{formatTime(conv.lastMessageAt)}</span>
@@ -576,6 +630,9 @@ export default function SupportChat() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-sm text-foreground truncate">{selectedConv.name}</p>
+            {selectedConv.meta && (
+              <p className="text-xs text-muted-foreground truncate">{selectedConv.meta}</p>
+            )}
             <p className="text-xs text-green-500 font-medium">Online</p>
           </div>
           {isRouteGroup && (

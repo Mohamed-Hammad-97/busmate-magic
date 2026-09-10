@@ -81,6 +81,45 @@ export function DriverChatSection() {
     enabled: !!user?.id,
   });
 
+  // Parent details (student names + phone) for the conversations
+  const parentIds = Array.from(
+    new Set(
+      conversations.flatMap((c: any) =>
+        (c.otherParticipants || [])
+          .filter((p: any) => p.participant_type === "parent" && p.participant_ref_id)
+          .map((p: any) => p.participant_ref_id as string),
+      ),
+    ),
+  );
+
+  const { data: parentInfo = {} } = useQuery({
+    queryKey: ["driver-chat-parents", parentIds.sort().join(",")],
+    enabled: parentIds.length > 0,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("parent_accounts")
+        .select("id, parent_name, father_phone, mother_phone, registrations(student_name, status)")
+        .in("id", parentIds);
+      const map: Record<string, string> = {};
+      (data || []).forEach((p: any) => {
+        const students = (p.registrations || [])
+          .filter((r: any) => r.status !== "cancelled")
+          .map((r: any) => r.student_name)
+          .filter(Boolean)
+          .join("، ");
+        map[p.id] = [students, p.father_phone || p.mother_phone].filter(Boolean).join(" • ");
+      });
+      return map;
+    },
+  });
+
+  const convMeta = (convo: any) => {
+    const pid = (convo?.otherParticipants || []).find(
+      (p: any) => p.participant_type === "parent" && p.participant_ref_id,
+    )?.participant_ref_id;
+    return pid ? (parentInfo as any)[pid] || "" : "";
+  };
+
   // Fetch messages for selected conversation
   const { data: messages = [] } = useQuery({
     queryKey: ["driver-chat-messages", selectedConversationId],
@@ -199,6 +238,9 @@ export function DriverChatSection() {
                         </Badge>
                       )}
                     </div>
+                    {convMeta(convo) && (
+                      <p className="text-xs text-muted-foreground truncate mt-0.5">{convMeta(convo)}</p>
+                    )}
                     {convo.lastMessage && (
                       <p className="text-xs text-muted-foreground truncate mt-0.5">
                         {convo.lastMessage.sender_name}: {convo.lastMessage.message}
@@ -237,6 +279,9 @@ export function DriverChatSection() {
         </Button>
         <div className="min-w-0">
           <p className="font-medium text-sm truncate">{currentConvo?.subject || "محادثة"}</p>
+          {convMeta(currentConvo) && (
+            <p className="text-xs text-muted-foreground truncate">{convMeta(currentConvo)}</p>
+          )}
         </div>
       </div>
 

@@ -51,6 +51,7 @@ const RouteStudentsDialog: React.FC<RouteStudentsDialogProps> = ({ route, open, 
               parent_name,
               mother_phone,
               father_phone,
+              emergency_phone,
               payment_phone,
               pickup_address,
               pickup_latitude,
@@ -95,6 +96,7 @@ const RouteStudentsDialog: React.FC<RouteStudentsDialogProps> = ({ route, open, 
             parent_name: p.parent_name || '',
             mother_phone: p.mother_phone || '',
             father_phone: p.father_phone || '',
+            emergency_phone: p.emergency_phone || '',
             payment_phone: p.payment_phone || '',
             subscription_type: sub?.subscription_type || '',
             fawry_code: activeCode?.fawry_reference_code || '',
@@ -116,26 +118,22 @@ const RouteStudentsDialog: React.FC<RouteStudentsDialogProps> = ({ route, open, 
 
   const fileBase = `route-${route?.route_number ?? ''}-${(route?.name || 'students').replace(/\s+/g, '-')}-${format(new Date(), 'yyyy-MM-dd')}`;
 
-  const HEADERS = ['#', 'Student Name', 'Grade', 'Parent Name', 'Mother Phone', 'Payment Phone', 'Subscription Type', 'Fawry Code', 'Father Phone', 'Location Address', 'Map Link'];
+  const HEADERS = ['#', 'Student Name', 'Grade', 'Mother Phone', 'Father Phone', 'Emergency Phone', 'Address'];
 
   const toArray = () =>
     rows.map((r, i) => [
       i + 1,
       r.student_name,
       r.grade,
-      r.parent_name,
       r.mother_phone,
-      r.payment_phone,
-      r.subscription_type === 'monthly' ? 'Monthly' : r.subscription_type === 'yearly' ? 'Yearly' : '-',
-      r.fawry_code ? `${r.fawry_code}${r.fawry_installment !== null ? ` (#${r.fawry_installment})` : ''}` : '-',
       r.father_phone,
+      r.emergency_phone,
       r.address,
-      r.maps,
     ]);
 
   const exportExcel = () => {
     const ws = XLSX.utils.aoa_to_sheet([HEADERS, ...toArray()]);
-    ws['!cols'] = [{ wch: 5 }, { wch: 24 }, { wch: 10 }, { wch: 22 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 20 }, { wch: 16 }, { wch: 50 }, { wch: 40 }];
+    ws['!cols'] = [{ wch: 5 }, { wch: 26 }, { wch: 10 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 55 }];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Students');
     XLSX.writeFile(wb, `${fileBase}.xlsx`);
@@ -152,7 +150,7 @@ const RouteStudentsDialog: React.FC<RouteStudentsDialogProps> = ({ route, open, 
       body: toArray().map((r) => r.map((c) => String(c ?? ''))),
       startY: 26,
       styles: { fontSize: 8, cellWidth: 'wrap' },
-      columnStyles: { 9: { cellWidth: 60 }, 10: { cellWidth: 45 } },
+      columnStyles: { 6: { cellWidth: 90 } },
     });
     doc.save(`${fileBase}.pdf`);
   };
