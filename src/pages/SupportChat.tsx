@@ -147,26 +147,33 @@ export default function SupportChat() {
 
   // Combine into one list
   const allConversations = [
-    ...unifiedConvs.map((c) => ({
-      id: c.id,
-      name: c.subject?.replace("Chat with ", "") || "Chat",
-      subtitle:
-        c.type === "staff_dm" ? "Staff"
-        : c.type === "customer_dm" ? "Customer"
-        : c.type === "customer_support" ? "Customer Support"
-        : c.type === "customer_supervisor" ? "Private • Parent ↔ Supervisor"
-        : "Route Group",
-      type: c.type as ChatCategory,
-      lastMessageAt: c.last_message_at,
-      unread: unreadMap[c.id] || 0,
-      raw: c,
-      isLegacy: false,
-    })),
+    ...unifiedConvs.map((c) => {
+      const parentId = (c.conversation_participants || []).find(
+        (p: any) => p.participant_type === "parent" && p.participant_ref_id,
+      )?.participant_ref_id as string | undefined;
+      return {
+        id: c.id,
+        name: c.subject?.replace("Chat with ", "") || "Chat",
+        subtitle:
+          c.type === "staff_dm" ? "Staff"
+          : c.type === "customer_dm" ? "Customer"
+          : c.type === "customer_support" ? "Customer Support"
+          : c.type === "customer_supervisor" ? "Private • Parent ↔ Supervisor"
+          : "Route Group",
+        meta: parentMeta(parentId),
+        type: c.type as ChatCategory,
+        lastMessageAt: c.last_message_at,
+        unread: unreadMap[c.id] || 0,
+        raw: c,
+        isLegacy: false,
+      };
+    }),
 
     ...legacyConvs.map((c: any) => ({
       id: c.id,
       name: c.parent_accounts?.parent_name || "Support",
       subtitle: `Support • ${c.status}`,
+      meta: parentMeta(c.parent_id),
       type: "legacy" as ChatCategory,
       lastMessageAt: c.last_message_at,
       unread: unreadMap[c.id] || 0,
@@ -181,7 +188,8 @@ export default function SupportChat() {
   });
 
   const filteredConversations = allConversations.filter((c) => {
-    const matchSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const term = searchTerm.toLowerCase();
+    const matchSearch = c.name.toLowerCase().includes(term) || (c.meta || "").toLowerCase().includes(term);
     const matchCategory = category === "all" || c.type === category;
     return matchSearch && matchCategory;
   });
