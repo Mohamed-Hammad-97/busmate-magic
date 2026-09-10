@@ -188,6 +188,7 @@ export function CustomerChatSection() {
                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
                     <Phone className="h-3 w-3" />
                     <span dir="ltr">{customer.father_phone}</span>
+                    {(customer as any).students && <span className="truncate">• {(customer as any).students}</span>}
                   </div>
                 </div>
                 <Badge variant="outline" className="text-xs">{customer.city}</Badge>
@@ -240,6 +241,9 @@ export function CustomerChatSection() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm truncate">{conv.subject || "Customer Chat"}</p>
+                    {convMeta(conv) && (
+                      <p className="text-xs text-muted-foreground truncate">{convMeta(conv)}</p>
+                    )}
                     <p className="text-xs text-muted-foreground">
                       {conv.last_message_at ? format(new Date(conv.last_message_at), "dd MMM HH:mm") : "No messages"}
                     </p>
