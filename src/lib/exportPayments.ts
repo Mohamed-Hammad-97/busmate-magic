@@ -232,7 +232,8 @@ export async function exportPaymentsPDF(
     head: [rtlRow(detailHead, isRtl)],
     body: details.map((d) => rtlRow([
       d.parentName, d.studentName, d.schoolName, d.lineNumber, d.paymentPhone, d.subscriptionType,
-      d.installmentLabel, d.amount.toLocaleString(), d.extraFees.toLocaleString(),
+      isRtl ? (d.installmentOrder === 0 ? 'التأمين' : `القسط ${d.installmentOrder}`) : d.installmentLabel,
+      d.amount.toLocaleString(), d.extraFees.toLocaleString(),
       d.dueDate, d.paidDate, d.status, d.paidBy, d.note, d.noteStatus,
     ], isRtl)),
     styles: { fontSize: 7, cellPadding: 1.5 },

@@ -1,7 +1,7 @@
 import * as XLSX from 'xlsx';
-import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
+import { createArabicPdf, withArabicTable, rtlRow, drawHeading } from './pdfArabic';
 
 const HEADERS = [
   'Student Name',
@@ -69,19 +69,55 @@ export function exportRegistrationsExcel(regs: any[], filename = 'registrations'
   XLSX.writeFile(wb, `${filename}-${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
 }
 
-export function exportRegistrationsPDF(regs: any[], filename = 'registrations', title = 'Registrations Report') {
-  const doc = new jsPDF({ orientation: 'landscape', format: 'a3' });
+const HEADERS_AR = [
+  'اسم الطالب',
+  'الصف',
+  'المدرسة',
+  'القسم التعليمي',
+  'نوع السيارة',
+  'الحالة',
+  'اسم ولي الأمر',
+  'الوظيفة',
+  'الرقم القومي',
+  'رقم الأب',
+  'رقم الأم',
+  'رقم الطوارئ',
+  'رقم الدفع والتجديد',
+  'المدينة',
+  'خط العرض',
+  'خط الطول',
+  'موقع الالتقاط (خرائط)',
+  'ملاحظات',
+  'صورة الطالب',
+  'تاريخ الإنشاء',
+  'تاريخ التحديث',
+];
+
+export async function exportRegistrationsPDF(
+  regs: any[],
+  filename = 'registrations',
+  title = 'Registrations Report',
+  isRtl = false
+) {
+  const doc = await createArabicPdf({ orientation: 'landscape', format: 'a3' });
   doc.setFontSize(14);
-  doc.text(title, 14, 14);
+  drawHeading(doc, title, 14, isRtl);
   doc.setFontSize(9);
-  doc.text(`Generated: ${format(new Date(), 'yyyy-MM-dd HH:mm')}  •  ${regs.length} records`, 14, 20);
-  autoTable(doc, {
+  drawHeading(
+    doc,
+    isRtl
+      ? `تاريخ التصدير: ${format(new Date(), 'yyyy-MM-dd HH:mm')}  •  ${regs.length} سجل`
+      : `Generated: ${format(new Date(), 'yyyy-MM-dd HH:mm')}  •  ${regs.length} records`,
+    20,
+    isRtl
+  );
+  autoTable(doc, withArabicTable(doc, isRtl, {
     startY: 25,
-    head: [HEADERS],
-    body: toRows(regs),
+    head: [rtlRow(isRtl ? HEADERS_AR : HEADERS, isRtl)],
+    body: toRows(regs).map((r) => rtlRow(r, isRtl)),
     styles: { fontSize: 6, cellPadding: 1.5, overflow: 'linebreak' },
     headStyles: { fillColor: [59, 130, 246], textColor: 255, fontSize: 6 },
     alternateRowStyles: { fillColor: [245, 247, 250] },
-  });
+  }));
   doc.save(`${filename}-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
 }
