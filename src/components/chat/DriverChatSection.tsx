@@ -238,6 +238,9 @@ export function DriverChatSection() {
                         </Badge>
                       )}
                     </div>
+                    {convMeta(convo) && (
+                      <p className="text-xs text-muted-foreground truncate mt-0.5">{convMeta(convo)}</p>
+                    )}
                     {convo.lastMessage && (
                       <p className="text-xs text-muted-foreground truncate mt-0.5">
                         {convo.lastMessage.sender_name}: {convo.lastMessage.message}
@@ -276,6 +279,9 @@ export function DriverChatSection() {
         </Button>
         <div className="min-w-0">
           <p className="font-medium text-sm truncate">{currentConvo?.subject || "محادثة"}</p>
+          {convMeta(currentConvo) && (
+            <p className="text-xs text-muted-foreground truncate">{convMeta(currentConvo)}</p>
+          )}
         </div>
       </div>
 
