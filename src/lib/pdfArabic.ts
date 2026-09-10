@@ -33,7 +33,13 @@ async function loadFonts() {
   return fontsPromise;
 }
 
-type PdfOptions = ConstructorParameters<typeof jsPDF>[0];
+type PdfOptions = {
+  orientation?: 'p' | 'portrait' | 'l' | 'landscape';
+  unit?: string;
+  format?: string | number[];
+  compress?: boolean;
+  [key: string]: any;
+};
 
 /**
  * Creates a jsPDF document with an Arabic-capable font (Amiri) registered
