@@ -146,10 +146,9 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
   }
 
   return (
-    <ScrollArea className="h-full">
-      <div className="flex flex-col min-h-full">
-        {/* Header */}
-        <div className="p-4 border-b bg-background sticky top-0 z-10">
+    <div className="h-full flex flex-col overflow-hidden">
+      {/* Header */}
+      <div className="p-4 border-b bg-background shrink-0">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2 min-w-0">
               {onClose && (
@@ -215,15 +214,16 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
 
         {/* Student List */}
         {activeTrip?.status === "in_progress" && (
-          <div className="border-t">
-            <div className="p-3 bg-muted/50 sticky top-0">
+          <div className="border-t flex-1 min-h-0 flex flex-col">
+            <div className="p-3 bg-muted/50 shrink-0">
               <h3 className="font-semibold flex items-center gap-2 text-sm">
                 <Users className="h-4 w-4" />
                 الطلاب ({tripStudents.length})
               </h3>
             </div>
-            <div className="p-2 space-y-2">
-              {tripStudents.map((student) => {
+            <ScrollArea className="flex-1">
+              <div className="p-2 space-y-2">
+                {tripStudents.map((student) => {
                 const config = STATUS_CONFIG[student.status as StudentStatus];
                 const isAbsent = todayAbsences.includes(student.registration_id);
                 return (
@@ -299,10 +299,10 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
                   </Card>
                 );
               })}
-            </div>
+              </div>
+            </ScrollArea>
           </div>
         )}
-      </div>
 
       {/* Student Action Dialog */}
       <Dialog open={showStudentDialog} onOpenChange={setShowStudentDialog}>
@@ -388,6 +388,6 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
           </div>
         </DialogContent>
       </Dialog>
-    </ScrollArea>
+    </div>
   );
 }
