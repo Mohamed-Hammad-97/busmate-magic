@@ -146,10 +146,9 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
   }
 
   return (
-    <ScrollArea className="h-full">
-      <div className="flex flex-col min-h-full">
-        {/* Header */}
-        <div className="p-4 border-b bg-background sticky top-0 z-10">
+    <div className="h-full flex flex-col overflow-hidden">
+      {/* Header */}
+      <div className="p-4 border-b bg-background shrink-0">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2 min-w-0">
               {onClose && (
