@@ -14,15 +14,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { FileText, Plus, Download, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
-import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { createArabicPdf, withArabicTable, rtlRow, drawHeading } from '@/lib/pdfArabic';
 
 interface ExtraItem { name: string; amount: number; }
 
 interface CompanyInvoicesProps { companyId?: string; }
 
 export function CompanyInvoices({ companyId: fixedCompanyId }: CompanyInvoicesProps = {}) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.language === 'ar';
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
