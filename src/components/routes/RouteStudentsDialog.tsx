@@ -119,6 +119,7 @@ const RouteStudentsDialog: React.FC<RouteStudentsDialogProps> = ({ route, open, 
   const fileBase = `route-${route?.route_number ?? ''}-${(route?.name || 'students').replace(/\s+/g, '-')}-${format(new Date(), 'yyyy-MM-dd')}`;
 
   const HEADERS = ['#', 'Student Name', 'Grade', 'Mother Phone', 'Father Phone', 'Emergency Phone', 'Address'];
+  const HEADERS_AR = ['#', 'اسم الطالب', 'الصف', 'رقم الأم', 'رقم الأب', 'رقم الطوارئ', 'العنوان'];
 
   const toArray = () =>
     rows.map((r, i) => [
