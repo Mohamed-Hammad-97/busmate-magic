@@ -118,26 +118,22 @@ const RouteStudentsDialog: React.FC<RouteStudentsDialogProps> = ({ route, open, 
 
   const fileBase = `route-${route?.route_number ?? ''}-${(route?.name || 'students').replace(/\s+/g, '-')}-${format(new Date(), 'yyyy-MM-dd')}`;
 
-  const HEADERS = ['#', 'Student Name', 'Grade', 'Parent Name', 'Mother Phone', 'Payment Phone', 'Subscription Type', 'Fawry Code', 'Father Phone', 'Location Address', 'Map Link'];
+  const HEADERS = ['#', 'Student Name', 'Grade', 'Mother Phone', 'Father Phone', 'Emergency Phone', 'Address'];
 
   const toArray = () =>
     rows.map((r, i) => [
       i + 1,
       r.student_name,
       r.grade,
-      r.parent_name,
       r.mother_phone,
-      r.payment_phone,
-      r.subscription_type === 'monthly' ? 'Monthly' : r.subscription_type === 'yearly' ? 'Yearly' : '-',
-      r.fawry_code ? `${r.fawry_code}${r.fawry_installment !== null ? ` (#${r.fawry_installment})` : ''}` : '-',
       r.father_phone,
+      r.emergency_phone,
       r.address,
-      r.maps,
     ]);
 
   const exportExcel = () => {
     const ws = XLSX.utils.aoa_to_sheet([HEADERS, ...toArray()]);
-    ws['!cols'] = [{ wch: 5 }, { wch: 24 }, { wch: 10 }, { wch: 22 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 20 }, { wch: 16 }, { wch: 50 }, { wch: 40 }];
+    ws['!cols'] = [{ wch: 5 }, { wch: 26 }, { wch: 10 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 55 }];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Students');
     XLSX.writeFile(wb, `${fileBase}.xlsx`);
