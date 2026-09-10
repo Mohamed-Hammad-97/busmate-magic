@@ -4,8 +4,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { FileText, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
-import jsPDF from 'jspdf';
+import type jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { useTranslation } from 'react-i18next';
+import { createArabicPdf, withArabicTable, rtlRow, drawHeading } from '@/lib/pdfArabic';
 
 interface InvoiceData {
   parentName: string;
