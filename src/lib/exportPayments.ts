@@ -160,42 +160,85 @@ export function exportPaymentsExcel(grouped: Record<string, any>, filename = 'pa
   XLSX.writeFile(wb, `${filename}-${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
 }
 
-export function exportPaymentsPDF(grouped: Record<string, any>, filename = 'payments', title = 'Payments Report') {
+const HEADERS_AR = [
+  'اسم ولي الأمر',
+  'اسم الطالب',
+  'المدرسة',
+  'رقم الخط',
+  'رقم الدفع والتجديد',
+  'نوع الاشتراك',
+  'الإجمالي (ج.م)',
+  'المدفوع (ج.م)',
+  'المتبقي (ج.م)',
+  'نسبة السداد',
+  'الحالة',
+  'تاريخ الإنشاء',
+];
+
+const DETAIL_HEADERS_AR = [
+  'اسم ولي الأمر',
+  'اسم الطالب',
+  'المدرسة',
+  'رقم الخط',
+  'رقم الدفع والتجديد',
+  'نوع الاشتراك',
+  'القسط',
+  'المبلغ (ج.م)',
+  'رسوم إضافية (ج.م)',
+  'تاريخ الاستحقاق',
+  'تاريخ السداد',
+  'الحالة',
+  'تم السداد بواسطة',
+  'ملاحظة',
+  'حالة الملاحظة',
+];
+
+export async function exportPaymentsPDF(
+  grouped: Record<string, any>,
+  filename = 'payments',
+  title = 'Payments Report',
+  isRtl = false
+) {
   const rows = buildPaymentRows(grouped);
   const details = buildInstallmentRows(grouped);
-  const doc = new jsPDF({ orientation: 'landscape' });
+  const head = isRtl ? HEADERS_AR : HEADERS;
+  const detailHead = isRtl ? DETAIL_HEADERS_AR : DETAIL_HEADERS;
+  const doc = await createArabicPdf({ orientation: 'landscape' });
   doc.setFontSize(14);
-  doc.text(title, 14, 14);
+  drawHeading(doc, title, 14, isRtl);
   doc.setFontSize(9);
-  doc.text(`Generated: ${format(new Date(), 'yyyy-MM-dd HH:mm')}  •  ${rows.length} records  •  ${details.length} installments`, 14, 20);
-  autoTable(doc, {
+  const meta = isRtl
+    ? `تاريخ التصدير: ${format(new Date(), 'yyyy-MM-dd HH:mm')}  •  ${rows.length} سجل  •  ${details.length} قسط`
+    : `Generated: ${format(new Date(), 'yyyy-MM-dd HH:mm')}  •  ${rows.length} records  •  ${details.length} installments`;
+  drawHeading(doc, meta, 20, isRtl);
+  autoTable(doc, withArabicTable(doc, isRtl, {
     startY: 25,
-    head: [HEADERS],
-    body: rows.map((r) => [
+    head: [rtlRow(head, isRtl)],
+    body: rows.map((r) => rtlRow([
       r.parentName, r.studentName, r.schoolName, r.lineNumber, r.paymentPhone, r.subscriptionType,
       r.totalAmount.toLocaleString(), r.paidAmount.toLocaleString(), r.remaining.toLocaleString(),
       r.progress, r.status, r.createdAt,
-    ]),
+    ], isRtl)),
     styles: { fontSize: 8, cellPadding: 2 },
     headStyles: { fillColor: [59, 130, 246], textColor: 255 },
     alternateRowStyles: { fillColor: [245, 247, 250] },
-  });
+  }));
 
   doc.addPage('a4', 'landscape');
   doc.setFontSize(12);
-  doc.text('Installment Details', 14, 14);
-  autoTable(doc, {
+  drawHeading(doc, isRtl ? 'تفاصيل الأقساط' : 'Installment Details', 14, isRtl);
+  autoTable(doc, withArabicTable(doc, isRtl, {
     startY: 20,
-    head: [DETAIL_HEADERS],
-    body: details.map((d) => [
+    head: [rtlRow(detailHead, isRtl)],
+    body: details.map((d) => rtlRow([
       d.parentName, d.studentName, d.schoolName, d.lineNumber, d.paymentPhone, d.subscriptionType,
       d.installmentLabel, d.amount.toLocaleString(), d.extraFees.toLocaleString(),
       d.dueDate, d.paidDate, d.status, d.paidBy, d.note, d.noteStatus,
-    ]),
+    ], isRtl)),
     styles: { fontSize: 7, cellPadding: 1.5 },
     headStyles: { fillColor: [59, 130, 246], textColor: 255 },
     alternateRowStyles: { fillColor: [245, 247, 250] },
-  });
+  }));
 
   doc.save(`${filename}-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
 }
