@@ -78,6 +78,49 @@ export default function SupportChat() {
     },
   });
 
+  // ---- Parent info (student names + phone) for customer conversations ----
+  const parentIds = Array.from(
+    new Set([
+      ...unifiedConvs.flatMap((c: any) =>
+        (c.conversation_participants || [])
+          .filter((p: any) => p.participant_type === "parent" && p.participant_ref_id)
+          .map((p: any) => p.participant_ref_id as string),
+      ),
+      ...legacyConvs.map((c: any) => c.parent_id).filter(Boolean),
+    ]),
+  );
+
+  const { data: parentInfo = {} } = useQuery({
+    queryKey: ["chat-parent-info", parentIds.sort().join(",")],
+    enabled: parentIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("parent_accounts")
+        .select("id, parent_name, father_phone, mother_phone, registrations(student_name, status)")
+        .in("id", parentIds);
+      if (error) throw error;
+      const map: Record<string, { name: string; phone: string; students: string }> = {};
+      (data || []).forEach((p: any) => {
+        const students = (p.registrations || [])
+          .filter((r: any) => r.status !== "cancelled")
+          .map((r: any) => r.student_name)
+          .filter(Boolean);
+        map[p.id] = {
+          name: p.parent_name || "",
+          phone: p.father_phone || p.mother_phone || "",
+          students: students.join("، "),
+        };
+      });
+      return map;
+    },
+  });
+
+  const parentMeta = (parentId?: string | null) => {
+    const info = parentId ? (parentInfo as any)[parentId] : null;
+    if (!info) return "";
+    return [info.students, info.phone].filter(Boolean).join(" • ");
+  };
+
   // ---- Unread counts ----
   const { data: unreadMap = {} } = useQuery({
     queryKey: ["chat-unread-counts", user?.id],
