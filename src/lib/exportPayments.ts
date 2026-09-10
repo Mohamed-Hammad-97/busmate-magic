@@ -201,6 +201,18 @@ export async function exportPaymentsPDF(
 ) {
   const rows = buildPaymentRows(grouped);
   const details = buildInstallmentRows(grouped);
+  const AR_LABELS: Record<string, string> = {
+    'Fully Paid': 'مدفوع بالكامل',
+    Partial: 'سداد جزئي',
+    Resolved: 'تم الحل',
+    Open: 'مفتوحة',
+    paid: 'مدفوع',
+    pending: 'قيد الانتظار',
+    overdue: 'متأخر',
+    monthly: 'شهري',
+    yearly: 'سنوي',
+  };
+  const L = (v: string) => (isRtl && v ? AR_LABELS[v] || v : v);
   const head = isRtl ? HEADERS_AR : HEADERS;
   const detailHead = isRtl ? DETAIL_HEADERS_AR : DETAIL_HEADERS;
   const doc = await createArabicPdf({ orientation: 'landscape' });
