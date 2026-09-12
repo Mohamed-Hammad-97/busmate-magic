@@ -184,24 +184,28 @@ export function OperationsMapView() {
     setMap(null);
   }, []);
 
-  // Fit bounds to show all buses
+  // Fit bounds to show all buses (zoomed out overview)
   useEffect(() => {
     if (!map || selectedTrip || !isLoaded || !window.google?.maps) return;
 
     const bounds = new google.maps.LatLngBounds();
-    let hasValidBounds = false;
+    let points = 0;
 
     activeTrips.forEach((trip) => {
       if (trip.current_latitude && trip.current_longitude) {
         bounds.extend({ lat: trip.current_latitude, lng: trip.current_longitude });
-        hasValidBounds = true;
+        points += 1;
       }
     });
 
-    if (hasValidBounds) {
+    if (points === 1) {
+      map.setCenter(bounds.getCenter());
+      map.setZoom(13);
+    } else if (points > 1) {
       map.fitBounds(bounds, 100);
     }
   }, [map, activeTrips, selectedTrip, isLoaded]);
+
 
   // Center on selected trip
   useEffect(() => {
