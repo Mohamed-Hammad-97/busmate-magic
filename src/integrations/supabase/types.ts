@@ -1740,6 +1740,44 @@ export type Database = {
         }
         Relationships: []
       }
+      parent_phone_credentials: {
+        Row: {
+          created_at: string
+          family_id: string | null
+          id: string
+          parent_account_id: string | null
+          password_hash: string
+          phone_normalized: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          family_id?: string | null
+          id?: string
+          parent_account_id?: string | null
+          password_hash: string
+          phone_normalized: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          family_id?: string | null
+          id?: string
+          parent_account_id?: string | null
+          password_hash?: string
+          phone_normalized?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_phone_credentials_parent_account_id_fkey"
+            columns: ["parent_account_id"]
+            isOneToOne: false
+            referencedRelation: "parent_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_extra_fees: {
         Row: {
           amount: number

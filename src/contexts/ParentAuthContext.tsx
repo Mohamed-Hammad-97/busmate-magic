@@ -21,6 +21,8 @@ interface ParentAuthContextType {
   parentAccount: ParentAccount | null;
   /** Every parent record belonging to the signed-in family (father + mother numbers). */
   parentAccountIds: string[];
+  /** The phone number this session signed in with (father's or mother's). */
+  loginPhone: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   checkAuthMethod: (phone: string) => Promise<{ exists: boolean; has_password: boolean }>;
@@ -30,6 +32,8 @@ interface ParentAuthContextType {
   signOut: () => Promise<void>;
 }
 
+const LOGIN_PHONE_KEY = "seater_parent_login_phone";
+
 const ParentAuthContext = createContext<ParentAuthContextType | undefined>(undefined);
 
 export function ParentAuthProvider({ children }: { children: React.ReactNode }) {
@@ -38,6 +42,18 @@ export function ParentAuthProvider({ children }: { children: React.ReactNode }) 
   const [parentAccount, setParentAccount] = useState<ParentAccount | null>(null);
   const [parentAccountIds, setParentAccountIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loginPhone, setLoginPhone] = useState<string | null>(
+    typeof window !== "undefined" ? sessionStorage.getItem(LOGIN_PHONE_KEY) : null
+  );
+
+  const rememberLoginPhone = (phone: string) => {
+    setLoginPhone(phone);
+    try {
+      sessionStorage.setItem(LOGIN_PHONE_KEY, phone);
+    } catch {
+      /* ignore */
+    }
+  };
 
   const fetchParentAccount = async (userId: string) => {
     try {
@@ -151,6 +167,8 @@ export function ParentAuthProvider({ children }: { children: React.ReactNode }) 
           setUser(sessionData.session.user);
         }
 
+        rememberLoginPhone(cleanPhone);
+
         // Fetch parent account after successful verification
         if (data.user_id) {
           await fetchParentAccount(data.user_id);
@@ -206,6 +224,8 @@ export function ParentAuthProvider({ children }: { children: React.ReactNode }) 
           setUser(sessionData.session.user);
         }
 
+        rememberLoginPhone(cleanPhone);
+
         if (data.user_id) {
           await fetchParentAccount(data.user_id);
         }
@@ -221,6 +241,12 @@ export function ParentAuthProvider({ children }: { children: React.ReactNode }) 
     await supabase.auth.signOut();
     setParentAccount(null);
     setParentAccountIds([]);
+    setLoginPhone(null);
+    try {
+      sessionStorage.removeItem(LOGIN_PHONE_KEY);
+    } catch {
+      /* ignore */
+    }
   };
 
   const value: ParentAuthContextType = {
@@ -232,6 +258,7 @@ export function ParentAuthProvider({ children }: { children: React.ReactNode }) 
       : parentAccount
         ? [parentAccount.id]
         : [],
+    loginPhone,
     isLoading,
     isAuthenticated: !!user && !!parentAccount,
     checkAuthMethod,
