@@ -115,11 +115,28 @@ export function SetPasswordDialog({ open, onOpenChange, onSuccess }: SetPassword
             تعيين كلمة المرور
           </DialogTitle>
           <DialogDescription>
-            قم بتعيين كلمة مرور لحسابك حتى تتمكن من تسجيل الدخول بسهولة في المرات القادمة
+            كلمة المرور خاصة برقم الهاتف الذي تستخدمه، ولكل ولي أمر كلمة مرور مستقلة
+            {loginPhone ? ` (0${normalize(loginPhone)})` : ""}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {!loginPhone && familyPhones.length > 1 && (
+            <div className="space-y-2">
+              <Label>رقم الهاتف</Label>
+              <Select value={selectedPhone} onValueChange={setSelectedPhone}>
+                <SelectTrigger>
+                  <SelectValue placeholder="اختر رقم الهاتف" />
+                </SelectTrigger>
+                <SelectContent>
+                  {familyPhones.map((p) => (
+                    <SelectItem key={p} value={p}>{`0${p}`}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="password">كلمة المرور الجديدة</Label>
             <div className="relative">
