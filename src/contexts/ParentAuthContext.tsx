@@ -26,7 +26,7 @@ interface ParentAuthContextType {
   checkAuthMethod: (phone: string) => Promise<{ exists: boolean; has_password: boolean }>;
   sendOtp: (phone: string) => Promise<{ error: Error | null }>;
   verifyOtp: (phone: string, token: string) => Promise<{ error: Error | null }>;
-  loginWithPassword: (phone: string, password: string) => Promise<{ error: Error | null }>;
+  loginWithPassword: (phone: string, password: string) => Promise<{ error: Error | null; needsOtp: boolean }>;
   signOut: () => Promise<void>;
 }
 
@@ -185,10 +185,10 @@ export function ParentAuthProvider({ children }: { children: React.ReactNode }) 
       });
 
       if (error) {
-        return { error: new Error(error.message || "فشل في تسجيل الدخول") };
+        return { error: new Error(error.message || "فشل في تسجيل الدخول"), needsOtp: false };
       }
       if (data?.error) {
-        return { error: new Error(data.error) };
+        return { error: new Error(data.error), needsOtp: data.needs_otp === true };
       }
 
       if (data?.success && data?.session) {
@@ -198,7 +198,7 @@ export function ParentAuthProvider({ children }: { children: React.ReactNode }) 
         });
 
         if (sessionError) {
-          return { error: new Error("فشل في تسجيل الدخول") };
+          return { error: new Error("فشل في تسجيل الدخول"), needsOtp: false };
         }
 
         if (sessionData.session) {
@@ -211,9 +211,9 @@ export function ParentAuthProvider({ children }: { children: React.ReactNode }) 
         }
       }
 
-      return { error: null };
+      return { error: null, needsOtp: false };
     } catch (error) {
-      return { error: error as Error };
+      return { error: error as Error, needsOtp: false };
     }
   };
 

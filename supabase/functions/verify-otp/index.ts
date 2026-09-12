@@ -1,11 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { resolveParentFamily, unifyFamilyId } from "../_shared/parent-family.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
 
 interface VerifyOtpRequest {
   phone: string;
@@ -98,14 +94,12 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const parentEmail = `parent_${parentAccount.id}@parent.seaterapp.local`;
-    const tempPassword = crypto.randomUUID();
 
     let userId = parentAccount.user_id;
 
     if (!userId) {
       const { data: authData, error: authError } = await supabase.auth.admin.createUser({
         email: parentEmail,
-        password: tempPassword,
         email_confirm: true,
         user_metadata: {
           parent_name: parentAccount.parent_name,
@@ -127,18 +121,6 @@ const handler = async (req: Request): Promise<Response> => {
         .from("parent_accounts")
         .update({ user_id: userId })
         .eq("id", parentAccount.id);
-    } else {
-      const { error: updateError } = await supabase.auth.admin.updateUserById(userId, {
-        password: tempPassword,
-      });
-
-      if (updateError) {
-        console.error("Error updating user password:", updateError);
-        return new Response(
-          JSON.stringify({ error: "Failed to prepare login" }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
     }
 
     await supabase.from("otp_codes").delete().eq("id", activeOtp.id);
@@ -146,14 +128,30 @@ const handler = async (req: Request): Promise<Response> => {
     const { data: userData } = await supabase.auth.admin.getUserById(userId);
     const userEmail = userData?.user?.email || parentEmail;
 
+    // Mint an email OTP internally to establish a session without replacing the
+    // parent's saved password. The token never leaves this function.
+    const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+      type: "magiclink",
+      email: userEmail,
+    });
+
+    const tokenHash = linkData?.properties?.hashed_token;
+    if (linkError || !tokenHash) {
+      console.error("Error preparing OTP session:", linkError);
+      return new Response(
+        JSON.stringify({ error: "Failed to prepare login" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const anonClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!
     );
 
-    const { data: signInData, error: signInError } = await anonClient.auth.signInWithPassword({
-      email: userEmail,
-      password: tempPassword,
+    const { data: signInData, error: signInError } = await anonClient.auth.verifyOtp({
+      token_hash: tokenHash,
+      type: "email",
     });
 
     if (signInError || !signInData.session) {

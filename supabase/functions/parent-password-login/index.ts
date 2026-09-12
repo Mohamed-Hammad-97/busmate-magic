@@ -1,16 +1,12 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import {
   hasCurrentRegistration,
   normalizePhone,
   resolveParentFamily,
   unifyFamilyId,
 } from "../_shared/parent-family.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -32,7 +28,7 @@ serve(async (req) => {
     if (!/^1\d{9}$/.test(cleanPhone)) {
       return new Response(
         JSON.stringify({ error: "رقم الهاتف أو كلمة المرور غير صحيحة" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -54,10 +50,10 @@ serve(async (req) => {
 
     if (candidates.length === 0) {
       console.log("Parent lookup failed", { found: family.rows.length });
-      return new Response(
-        JSON.stringify({ error: "رقم الهاتف أو كلمة المرور غير صحيحة" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({
+        error: "تعذر تسجيل الدخول بكلمة المرور. استخدم رمز التحقق للدخول أو إعادة تعيين كلمة المرور",
+        needs_otp: true,
+      }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // Block genuinely deactivated accounts, but repair a stale flag when a current
@@ -68,18 +64,6 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ error: "تم تعطيل هذا الحساب. تواصل مع الإدارة" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // No record of this family ever set a password: tell the parent to use the
-    // SMS code instead of showing a misleading "wrong password" error.
-    if (!family.rows.some((r) => r.has_password)) {
-      return new Response(
-        JSON.stringify({
-          error: "لم يتم تعيين كلمة مرور لهذا الحساب. سجّل الدخول برمز التحقق المرسل على الهاتف",
-          needs_otp: true,
-        }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -124,10 +108,22 @@ serve(async (req) => {
         candidates: candidates.length,
         lastError,
       });
-      return new Response(
-        JSON.stringify({ error: "رقم الهاتف أو كلمة المرور غير صحيحة" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+
+      // The saved-password marker may be stale (legacy OTP sign-in previously
+      // replaced passwords). Clear it so verified OTP login prompts the parent
+      // to choose a fresh password without blocking valid future attempts.
+      const candidateIds = candidates.map((candidate) => candidate.id);
+      if (candidateIds.length > 0) {
+        await supabase
+          .from("parent_accounts")
+          .update({ has_password: false })
+          .in("id", candidateIds);
+      }
+
+      return new Response(JSON.stringify({
+        error: "تعذر تسجيل الدخول بكلمة المرور. استخدم رمز التحقق للدخول أو إعادة تعيين كلمة المرور",
+        needs_otp: true,
+      }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // Repair stale flags on the record that actually signed in
