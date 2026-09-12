@@ -134,12 +134,7 @@ serve(async (req) => {
         success: true,
         user_id: parent.user_id,
         parent_account_id: parent.id,
-        session: {
-          access_token: signInData.session.access_token,
-          refresh_token: signInData.session.refresh_token,
-          expires_in: signInData.session.expires_in,
-          token_type: signInData.session.token_type,
-        },
+        session,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
