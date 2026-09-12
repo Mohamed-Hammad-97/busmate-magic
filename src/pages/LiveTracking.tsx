@@ -26,7 +26,7 @@ export default function LiveTracking() {
         .from("routes")
         .select(`
           *,
-          schools!inner (name, city),
+          schools (name, city),
           drivers (full_name),
           supervisors (full_name),
           route_assignments (count)
@@ -103,10 +103,7 @@ export default function LiveTracking() {
                   <Card key={route.id} className="hover:shadow-md transition-shadow">
                     <CardHeader className="pb-2">
                       <div className="flex items-center justify-between">
-                        <CardTitle className="text-base">
-                          {route.route_number ? `#${route.route_number} ` : ''}{route.name}
-                        </CardTitle>
-
+                        <CardTitle className="text-base">{route.name}</CardTitle>
                         {isActive && (
                           <Badge className="bg-green-500">{t('liveTracking.active')}</Badge>
                         )}
@@ -161,10 +158,7 @@ export default function LiveTracking() {
                         <div className="flex items-center gap-2">
                           <Bus className="h-5 w-5 text-primary" />
                           <div>
-                            <p className="font-medium text-sm">
-                              {route.route_number ? `#${route.route_number} ` : ''}{route.name}
-                            </p>
-
+                            <p className="font-medium text-sm">{route.name}</p>
                             <p className="text-xs text-muted-foreground">{route.schools?.name}</p>
                           </div>
                         </div>
