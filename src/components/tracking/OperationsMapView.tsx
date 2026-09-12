@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import { GoogleMap, Marker, InfoWindow } from '@react-google-maps/api';
 import { useGoogleMaps } from "@/components/maps/GoogleMapsProvider";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -207,13 +207,20 @@ export function OperationsMapView() {
   }, [map, activeTrips, selectedTrip, isLoaded]);
 
 
-  // Center on selected trip
+  // Zoom in on the selected bus (only when the selection changes)
+  const zoomedTripIdRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!map || !selectedTrip?.current_latitude || !selectedTrip?.current_longitude) return;
-    
+    if (!map || !selectedTrip?.current_latitude || !selectedTrip?.current_longitude) {
+      if (!selectedTrip) zoomedTripIdRef.current = null;
+      return;
+    }
     map.panTo({ lat: selectedTrip.current_latitude, lng: selectedTrip.current_longitude });
-    map.setZoom(14);
+    if (zoomedTripIdRef.current !== selectedTrip.id) {
+      map.setZoom(15);
+      zoomedTripIdRef.current = selectedTrip.id;
+    }
   }, [map, selectedTrip]);
+
 
   if (!isLoaded) {
     return (
