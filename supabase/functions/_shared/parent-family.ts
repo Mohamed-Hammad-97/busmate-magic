@@ -10,6 +10,7 @@ export interface FamilyParentRow {
   user_id: string | null;
   parent_name: string | null;
   is_active: boolean | null;
+  has_password: boolean | null;
   family_id: string | null;
   created_at: string;
   father_phone: string | null;
@@ -34,7 +35,7 @@ export const phoneVariants = (clean: string): string[] => [
 ];
 
 const SELECT_COLS =
-  "id, user_id, parent_name, is_active, family_id, created_at, father_phone, mother_phone, registrations(status)";
+  "id, user_id, parent_name, is_active, has_password, family_id, created_at, father_phone, mother_phone, registrations(status)";
 
 const byOldest = (a: FamilyParentRow, b: FamilyParentRow) =>
   new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
