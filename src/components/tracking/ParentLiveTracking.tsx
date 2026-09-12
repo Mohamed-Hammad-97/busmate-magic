@@ -49,7 +49,7 @@ export function ParentLiveTracking() {
             )
           )
         `)
-        .eq("parent_id", parentAccount.id)
+        .in("parent_id", familyIds)
         .eq("status", "complete");
       if (error) throw error;
       // Pre-generate signed URLs for photos
@@ -65,7 +65,7 @@ export function ParentLiveTracking() {
       }
       return data;
     },
-    enabled: !!parentAccount?.id,
+    enabled: familyIds.length > 0,
   });
 
   const routeIds = registrations
