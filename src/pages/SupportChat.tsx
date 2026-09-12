@@ -528,7 +528,14 @@ export default function SupportChat() {
         <Button variant="outline" size="sm" className="text-xs h-7 gap-1 rounded-lg flex-1" onClick={() => setShowNewCustomerChat(true)}>
           <Plus className="h-3 w-3" /> Customer
         </Button>
-        <Button variant="outline" size="sm" className="text-xs h-7 gap-1 rounded-lg flex-1" onClick={() => setShowNewGroupChat(true)} disabled={availableRoutes.length === 0}>
+        <Button
+          variant="outline"
+          size="sm"
+          className="text-xs h-7 gap-1 rounded-lg flex-1"
+          onClick={() => setShowNewGroupChat(true)}
+          disabled={availableRoutes.length === 0}
+          title={availableRoutes.length === 0 ? "Every line already has a group chat" : "Create a line group chat"}
+        >
           <Plus className="h-3 w-3" /> Group
         </Button>
       </div>
@@ -738,7 +745,11 @@ export default function SupportChat() {
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-sm text-muted-foreground">Creates a group with all customers on this route. Customers receive only by default.</p>
+            <p className="text-sm text-muted-foreground">
+              {availableRoutes.length === 0
+                ? "Every line already has a group chat — open it from the Groups filter."
+                : "Creates a group with the line supervisor and all customers on this route. Customers receive only by default."}
+            </p>
             <Button className="w-full" onClick={() => createGroupChat.mutate(selectedRouteId)}
               disabled={!selectedRouteId || createGroupChat.isPending}>
               {createGroupChat.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
