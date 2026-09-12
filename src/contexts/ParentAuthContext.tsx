@@ -26,7 +26,7 @@ interface ParentAuthContextType {
   checkAuthMethod: (phone: string) => Promise<{ exists: boolean; has_password: boolean }>;
   sendOtp: (phone: string) => Promise<{ error: Error | null }>;
   verifyOtp: (phone: string, token: string) => Promise<{ error: Error | null }>;
-  loginWithPassword: (phone: string, password: string) => Promise<{ error: Error | null }>;
+  loginWithPassword: (phone: string, password: string) => Promise<{ error: Error | null; needsOtp: boolean }>;
   signOut: () => Promise<void>;
 }
 
