@@ -145,7 +145,7 @@ const PrintTablesTab: React.FC<Props> = () => {
       head: [rtlRow([`خط رقم: ${lineNo}`, 'المشرفة', 'السائق'], true)],
       body: [
         rtlRow(
-          ['', `${supervisorName}${supervisorPhone ? ` - ت: ${supervisorPhone}` : ''} - ر.ق:`, driverName],
+          [schoolName, `${supervisorName}${supervisorPhone ? ` - ت: ${supervisorPhone}` : ''} - ر.ق:`, driverName],
           true,
         ),
       ],
@@ -156,14 +156,16 @@ const PrintTablesTab: React.FC<Props> = () => {
 
     autoTable(doc, withArabicTable(doc, true, {
       startY: (doc as any).lastAutoTable.finalY + 4,
-      head: [rtlRow(['مسلسل الخط', 'اسم الطالب/ة:', 'المدرسة:', 'المرحلة:'], true)],
+      head: [rtlRow(['', 'مسلسل الخط', 'اسم الطالب/ة:', 'المدرسة:', 'المرحلة:'], true)],
       body: paddedRows.map((r) =>
-        rtlRow([r.serial, r.student_name, r.school_name, r.stage], true),
+        rtlRow(['', r.serial, r.student_name, r.school_name, r.stage], true),
       ),
       theme: 'grid',
       styles: { fontSize: 9, halign: 'center', cellPadding: 2.5 },
       headStyles: { fillColor: [31, 116, 165], textColor: 255, halign: 'center' },
+      columnStyles: { 4: { cellWidth: 10, fillColor: [220, 236, 245] } },
     }));
+
 
     const y = (doc as any).lastAutoTable.finalY + 8;
     doc.setFontSize(9);
