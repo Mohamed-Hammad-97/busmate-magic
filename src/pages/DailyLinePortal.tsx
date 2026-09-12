@@ -26,7 +26,9 @@ export default function DailyLinePortal() {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.language === "ar";
   const navigate = useNavigate();
-  const { user, parentAccount, signOut, isLoading } = useParentAuth();
+  const { user, parentAccount, parentAccountIds, signOut, isLoading } = useParentAuth();
+  const familyIds = parentAccountIds.length > 0 ? parentAccountIds : parentAccount ? [parentAccount.id] : [];
+  const familyKey = familyIds.join(",");
   const { toast } = useToast();
   const qc = useQueryClient();
   const [tab, setTab] = useState("trips");
@@ -37,13 +39,13 @@ export default function DailyLinePortal() {
 
   // ---------- BOOKINGS ----------
   const { data: bookings = [], isLoading: loadingBookings } = useQuery({
-    queryKey: ["dl-bookings", parentAccount?.id, parentAccount?.father_phone],
+    queryKey: ["dl-bookings", familyKey, parentAccount?.father_phone],
     enabled: !!parentAccount,
     queryFn: async () => {
       if (!parentAccount) return [];
-      // Match by parent_id OR by passenger_phone (covers pre-account bookings)
+      // Match by any family record OR by passenger_phone (covers pre-account bookings)
       const phones = [parentAccount.father_phone, parentAccount.mother_phone].filter(Boolean);
-      const orParts: string[] = [`parent_id.eq.${parentAccount.id}`];
+      const orParts: string[] = familyIds.map((id) => `parent_id.eq.${id}`);
       phones.forEach((p) => orParts.push(`passenger_phone.eq.${p}`));
       const { data } = await supabase
         .from("daily_line_bookings")
