@@ -46,15 +46,18 @@ serve(async (req) => {
 
     // The phone must belong to the signed-in parent's own family.
     const family = await resolveParentFamily(supabase, cleanPhone);
+
+    const { data: callerRow } = await supabase
+      .from("parent_accounts")
+      .select("family_id")
+      .eq("user_id", userId)
+      .limit(1)
+      .maybeSingle();
+    const callerFamilyId = callerRow?.family_id ?? null;
+
     const owned = family.rows.some((r) => r.user_id === userId) ||
-      family.rows.some((r) => r.family_id && r.family_id === (
-        await supabase
-          .from("parent_accounts")
-          .select("family_id")
-          .eq("user_id", userId)
-          .limit(1)
-          .maybeSingle()
-      ).data?.family_id);
+      (!!callerFamilyId &&
+        family.rows.some((r) => r.family_id === callerFamilyId));
 
     if (!owned) return json({ error: "Not authorized" }, 403);
 
