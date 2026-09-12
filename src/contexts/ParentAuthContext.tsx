@@ -220,12 +220,18 @@ export function ParentAuthProvider({ children }: { children: React.ReactNode }) 
   const signOut = async () => {
     await supabase.auth.signOut();
     setParentAccount(null);
+    setParentAccountIds([]);
   };
 
   const value: ParentAuthContextType = {
     user,
     session,
     parentAccount,
+    parentAccountIds: parentAccountIds.length > 0
+      ? parentAccountIds
+      : parentAccount
+        ? [parentAccount.id]
+        : [],
     isLoading,
     isAuthenticated: !!user && !!parentAccount,
     checkAuthMethod,
