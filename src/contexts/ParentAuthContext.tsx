@@ -21,6 +21,8 @@ interface ParentAuthContextType {
   parentAccount: ParentAccount | null;
   /** Every parent record belonging to the signed-in family (father + mother numbers). */
   parentAccountIds: string[];
+  /** The phone number this session signed in with (father's or mother's). */
+  loginPhone: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   checkAuthMethod: (phone: string) => Promise<{ exists: boolean; has_password: boolean }>;
@@ -29,6 +31,8 @@ interface ParentAuthContextType {
   loginWithPassword: (phone: string, password: string) => Promise<{ error: Error | null; needsOtp: boolean }>;
   signOut: () => Promise<void>;
 }
+
+const LOGIN_PHONE_KEY = "seater_parent_login_phone";
 
 const ParentAuthContext = createContext<ParentAuthContextType | undefined>(undefined);
 
