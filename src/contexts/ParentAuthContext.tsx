@@ -167,6 +167,8 @@ export function ParentAuthProvider({ children }: { children: React.ReactNode }) 
           setUser(sessionData.session.user);
         }
 
+        rememberLoginPhone(cleanPhone);
+
         // Fetch parent account after successful verification
         if (data.user_id) {
           await fetchParentAccount(data.user_id);
