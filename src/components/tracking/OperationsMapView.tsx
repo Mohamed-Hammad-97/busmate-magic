@@ -269,20 +269,37 @@ export function OperationsMapView() {
                 `),
                 scaledSize: new google.maps.Size(48, 48),
               }}
+              title={routeLabel(trip)}
               onClick={() => setSelectedTrip(trip)}
             />
           );
         })}
       </GoogleMap>
 
-      {/* Active trips count badge */}
-      <div className="absolute top-4 left-4 bg-background/95 backdrop-blur-sm rounded-lg px-4 py-2 shadow-lg border">
-        <div className="flex items-center gap-2">
-          <Bus className="h-5 w-5 text-primary" />
-          <span className="font-semibold">{activeTrips.length}</span>
-          <span className="text-muted-foreground">باص نشط</span>
-        </div>
+      {/* Header: selected bus, or live bus counters */}
+      <div className="absolute top-4 left-4 bg-background/95 backdrop-blur-sm rounded-lg px-4 py-2 shadow-lg border max-w-[60%]">
+        {selectedTrip ? (
+          <div className="flex items-center gap-2">
+            <Bus className="h-5 w-5 text-primary shrink-0" />
+            <span className="font-semibold truncate">{routeLabel(selectedTrip)}</span>
+            <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => setSelectedTrip(null)}>
+              كل الباصات
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <Bus className="h-5 w-5 text-primary" />
+            <span className="font-semibold">{tripsWithLocation.length}</span>
+            <span className="text-muted-foreground text-sm">
+              باص على الخريطة
+              {activeTrips.length - tripsWithLocation.length > 0
+                ? ` · ${activeTrips.length - tripsWithLocation.length} بانتظار إشارة GPS`
+                : ""}
+            </span>
+          </div>
+        )}
       </div>
+
 
       {/* No active trips message */}
       {!tripsLoading && activeTrips.length === 0 && (
