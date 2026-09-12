@@ -198,7 +198,7 @@ export function ParentAuthProvider({ children }: { children: React.ReactNode }) 
         });
 
         if (sessionError) {
-          return { error: new Error("فشل في تسجيل الدخول") };
+          return { error: new Error("فشل في تسجيل الدخول"), needsOtp: false };
         }
 
         if (sessionData.session) {
