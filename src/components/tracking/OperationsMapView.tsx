@@ -20,8 +20,10 @@ interface ActiveTrip {
   routes: {
     id: string;
     name: string;
+    route_number: number | null;
     schools: {
       name: string;
+      city: string | null;
       latitude: number;
       longitude: number;
     };
@@ -35,6 +37,10 @@ interface ActiveTrip {
     phone: string;
   } | null;
 }
+
+const routeLabel = (trip: ActiveTrip) =>
+  `${trip.routes?.route_number ? `#${trip.routes.route_number} ` : ""}${trip.routes?.name ?? ""}`;
+
 
 interface TripStudent {
   id: string;
