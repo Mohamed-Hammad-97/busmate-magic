@@ -353,7 +353,7 @@ export default function SupportChat() {
   const { data: routes = [] } = useQuery({
     queryKey: ["routes-for-groups"],
     queryFn: async () => {
-      const { data } = await supabase.from("routes").select("id, name, school_id, driver_id, supervisor_id, schools(name)").eq("is_active", true).order("name");
+      const { data } = await supabase.from("routes").select("id, name, route_number, school_id, driver_id, supervisor_id, schools(name)").eq("is_active", true).order("route_number", { ascending: true, nullsFirst: false });
       return data || [];
     },
   });
@@ -754,7 +754,7 @@ export default function SupportChat() {
               <SelectTrigger><SelectValue placeholder="Choose a route..." /></SelectTrigger>
               <SelectContent>
                 {availableRoutes.map((r: any) => (
-                  <SelectItem key={r.id} value={r.id}>{r.name} — {r.schools?.name}</SelectItem>
+                  <SelectItem key={r.id} value={r.id}>{r.route_number ? `#${r.route_number} ` : ''}{r.name} — {r.schools?.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
