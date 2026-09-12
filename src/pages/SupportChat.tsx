@@ -402,19 +402,21 @@ export default function SupportChat() {
           }
         }
       }
-      const { data: conv } = await supabase.from("unified_conversations")
+      const { data: conv, error: convError } = await supabase.from("unified_conversations")
         .insert({ type: "customer_dm" as any, subject: `Chat with ${customer.parent_name}`, created_by: user.id })
         .select().single();
-      if (!conv) throw new Error("Failed");
+      if (convError || !conv) throw new Error(convError?.message || "Failed to create conversation");
       const participants: any[] = [{ conversation_id: conv.id, user_id: user.id, participant_type: "employee", participant_ref_id: employee?.id, can_send: true }];
       if (customer.user_id) participants.push({ conversation_id: conv.id, user_id: customer.user_id, participant_type: "parent", participant_ref_id: customer.id, can_send: true });
-      await supabase.from("conversation_participants").insert(participants);
+      const { error: partError } = await supabase.from("conversation_participants").insert(participants);
+      if (partError) throw new Error(partError.message);
       return conv.id;
     },
     onSuccess: (id) => {
       if (id) { setSelectedConvId(id); setShowNewCustomerChat(false); }
       queryClient.invalidateQueries({ queryKey: ["all-unified-conversations"] });
     },
+    onError: (e: any) => toast({ title: "Could not start chat", description: e.message, variant: "destructive" }),
   });
 
   const [selectedRouteId, setSelectedRouteId] = useState("");
