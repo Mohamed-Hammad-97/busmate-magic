@@ -26,12 +26,14 @@ export default function LiveTracking() {
         .from("routes")
         .select(`
           *,
-          schools (name, city),
+          schools!inner (name, city),
           drivers (full_name),
           supervisors (full_name),
           route_assignments (count)
         `)
-        .eq("is_active", true);
+        .eq("is_active", true)
+        .order("route_number", { ascending: true, nullsFirst: false });
+
 
       if (selectedCity !== "all") {
         query = query.eq("schools.city", selectedCity);
