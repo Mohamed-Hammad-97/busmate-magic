@@ -174,16 +174,21 @@ export function ParentChat() {
   useEffect(() => {
     if (!selectedConversationId || !user?.id) return;
     const table = isLegacySelected ? "chat_messages" : "unified_messages";
-    supabase
-      .from(table)
-      .update({ is_read: true })
-      .eq("conversation_id", selectedConversationId)
-      .neq("sender_id", user.id)
-      .eq("is_read", false)
-      .then(() => {
-        queryClient.invalidateQueries({ queryKey: ["parent-unified-conversations"] });
-      });
+    const run = async () => {
+      if (!isLegacySelected) {
+        await supabase.rpc("mark_conversation_read", { _conversation_id: selectedConversationId });
+      }
+      await supabase
+        .from(table)
+        .update({ is_read: true })
+        .eq("conversation_id", selectedConversationId)
+        .neq("sender_id", user.id)
+        .eq("is_read", false);
+      queryClient.invalidateQueries({ queryKey: ["parent-unified-conversations"] });
+    };
+    run();
   }, [selectedConversationId, messages, user?.id, isLegacySelected, queryClient]);
+
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });

@@ -29,12 +29,16 @@ export function DriverChatSection() {
       if (!user?.id) return [];
       const { data: participantData } = await supabase
         .from("conversation_participants")
-        .select("conversation_id")
+        .select("conversation_id, last_read_at")
         .eq("user_id", user.id);
 
       if (!participantData || participantData.length === 0) return [];
 
+      const lastReadMap = new Map(
+        participantData.map((p: any) => [p.conversation_id, p.last_read_at as string | null]),
+      );
       const conversationIds = participantData.map((p) => p.conversation_id);
+
       const { data: convos } = await supabase
         .from("unified_conversations")
         .select("*")
