@@ -121,17 +121,27 @@ export default function SupportChat() {
     return [info.students, info.phone].filter(Boolean).join(" • ");
   };
 
-  // ---- Unread counts ----
+  // ---- Unread counts (per-user read position) ----
   const { data: unreadMap = {} } = useQuery({
     queryKey: ["chat-unread-counts", user?.id],
     queryFn: async () => {
       const counts: Record<string, number> = {};
-      const [{ data: unified }, { data: legacy }] = await Promise.all([
-        supabase.from("unified_messages").select("conversation_id, sender_id, is_read").eq("is_read", false),
+      if (!user?.id) return counts;
+
+      const [{ data: myParts }, { data: unified }, { data: legacy }] = await Promise.all([
+        supabase.from("conversation_participants").select("conversation_id, last_read_at").eq("user_id", user.id),
+        supabase.from("unified_messages").select("conversation_id, sender_id, created_at"),
         supabase.from("chat_messages").select("conversation_id, sender_id, is_read, sender_type").eq("is_read", false),
       ]);
+
+      const lastRead = new Map<string, string | null>(
+        (myParts || []).map((p: any) => [p.conversation_id, p.last_read_at]),
+      );
+
       (unified || []).forEach((m: any) => {
-        if (m.sender_id === user?.id) return;
+        if (m.sender_id === user.id) return;
+        const seenAt = lastRead.get(m.conversation_id);
+        if (seenAt && new Date(m.created_at) <= new Date(seenAt)) return;
         counts[m.conversation_id] = (counts[m.conversation_id] || 0) + 1;
       });
       (legacy || []).forEach((m: any) => {
@@ -142,6 +152,7 @@ export default function SupportChat() {
     },
     enabled: !!user?.id,
   });
+
 
   const totalUnread = Object.values(unreadMap).reduce((a: number, b: number) => a + b, 0);
 
