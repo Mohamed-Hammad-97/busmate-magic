@@ -116,6 +116,9 @@ export function OperationsMapView() {
       ? allActiveTrips
       : allActiveTrips.filter((t) => t.routes?.schools?.city === selectedCity);
 
+  const tripsWithLocation = activeTrips.filter((t) => t.current_latitude && t.current_longitude);
+
+
   // Live position updates
   useEffect(() => {
     const channel = supabase
