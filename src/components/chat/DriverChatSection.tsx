@@ -164,19 +164,22 @@ export function DriverChatSection() {
     return () => { supabase.removeChannel(channel); };
   }, [selectedConversationId, queryClient]);
 
-  // Mark messages as read
+  // Mark messages as read (per-user read position)
   useEffect(() => {
     if (!selectedConversationId || !user?.id) return;
-    supabase
-      .from("unified_messages")
-      .update({ is_read: true })
-      .eq("conversation_id", selectedConversationId)
-      .neq("sender_id", user.id)
-      .eq("is_read", false)
-      .then(() => {
-        queryClient.invalidateQueries({ queryKey: ["driver-conversations"] });
-      });
+    const run = async () => {
+      await supabase.rpc("mark_conversation_read", { _conversation_id: selectedConversationId });
+      await supabase
+        .from("unified_messages")
+        .update({ is_read: true })
+        .eq("conversation_id", selectedConversationId)
+        .neq("sender_id", user.id)
+        .eq("is_read", false);
+      queryClient.invalidateQueries({ queryKey: ["driver-conversations"] });
+    };
+    run();
   }, [selectedConversationId, messages, user?.id, queryClient]);
+
 
   // Scroll to bottom
   useEffect(() => {
