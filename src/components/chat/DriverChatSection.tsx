@@ -63,13 +63,16 @@ export function DriverChatSection() {
             .limit(1)
             .maybeSingle();
 
-          // Get unread count
-          const { count } = await supabase
+          // Get unread count (per-user read position)
+          const lastRead = lastReadMap.get(convo.id) || null;
+          let unreadQuery = supabase
             .from("unified_messages")
             .select("*", { count: "exact", head: true })
             .eq("conversation_id", convo.id)
-            .eq("is_read", false)
             .neq("sender_id", user.id);
+          if (lastRead) unreadQuery = unreadQuery.gt("created_at", lastRead);
+          const { count } = await unreadQuery;
+
 
           return {
             ...convo,
