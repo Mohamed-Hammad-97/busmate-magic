@@ -29,12 +29,16 @@ export function DriverChatSection() {
       if (!user?.id) return [];
       const { data: participantData } = await supabase
         .from("conversation_participants")
-        .select("conversation_id")
+        .select("conversation_id, last_read_at")
         .eq("user_id", user.id);
 
       if (!participantData || participantData.length === 0) return [];
 
+      const lastReadMap = new Map(
+        participantData.map((p: any) => [p.conversation_id, p.last_read_at as string | null]),
+      );
       const conversationIds = participantData.map((p) => p.conversation_id);
+
       const { data: convos } = await supabase
         .from("unified_conversations")
         .select("*")
@@ -59,13 +63,16 @@ export function DriverChatSection() {
             .limit(1)
             .maybeSingle();
 
-          // Get unread count
-          const { count } = await supabase
+          // Get unread count (per-user read position)
+          const lastRead = lastReadMap.get(convo.id) || null;
+          let unreadQuery = supabase
             .from("unified_messages")
             .select("*", { count: "exact", head: true })
             .eq("conversation_id", convo.id)
-            .eq("is_read", false)
             .neq("sender_id", user.id);
+          if (lastRead) unreadQuery = unreadQuery.gt("created_at", lastRead);
+          const { count } = await unreadQuery;
+
 
           return {
             ...convo,
@@ -157,19 +164,22 @@ export function DriverChatSection() {
     return () => { supabase.removeChannel(channel); };
   }, [selectedConversationId, queryClient]);
 
-  // Mark messages as read
+  // Mark messages as read (per-user read position)
   useEffect(() => {
     if (!selectedConversationId || !user?.id) return;
-    supabase
-      .from("unified_messages")
-      .update({ is_read: true })
-      .eq("conversation_id", selectedConversationId)
-      .neq("sender_id", user.id)
-      .eq("is_read", false)
-      .then(() => {
-        queryClient.invalidateQueries({ queryKey: ["driver-conversations"] });
-      });
+    const run = async () => {
+      await supabase.rpc("mark_conversation_read", { _conversation_id: selectedConversationId });
+      await supabase
+        .from("unified_messages")
+        .update({ is_read: true })
+        .eq("conversation_id", selectedConversationId)
+        .neq("sender_id", user.id)
+        .eq("is_read", false);
+      queryClient.invalidateQueries({ queryKey: ["driver-conversations"] });
+    };
+    run();
   }, [selectedConversationId, messages, user?.id, queryClient]);
+
 
   // Scroll to bottom
   useEffect(() => {

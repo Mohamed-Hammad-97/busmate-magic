@@ -1,7 +1,9 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import { GoogleMap, Marker, InfoWindow } from '@react-google-maps/api';
 import { useGoogleMaps } from "@/components/maps/GoogleMapsProvider";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCity } from "@/contexts/CityContext";
+
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Bus, Users, Phone, MapPin, Clock, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,8 +22,10 @@ interface ActiveTrip {
   routes: {
     id: string;
     name: string;
+    route_number: number | null;
     schools: {
       name: string;
+      city: string | null;
       latitude: number;
       longitude: number;
     };
@@ -35,6 +39,10 @@ interface ActiveTrip {
     phone: string;
   } | null;
 }
+
+const routeLabel = (trip: ActiveTrip) =>
+  `${trip.routes?.route_number ? `#${trip.routes.route_number} ` : ""}${trip.routes?.name ?? ""}`;
+
 
 interface TripStudent {
   id: string;
@@ -67,13 +75,15 @@ const defaultCenter = {
 
 export function OperationsMapView() {
   const { isLoaded } = useGoogleMaps();
+  const { selectedCity } = useCity();
+  const queryClient = useQueryClient();
 
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [selectedTrip, setSelectedTrip] = useState<ActiveTrip | null>(null);
   const [activeMarker, setActiveMarker] = useState<string | null>(null);
 
   // Fetch all active trips with realtime refresh
-  const { data: activeTrips = [], isLoading: tripsLoading } = useQuery({
+  const { data: allActiveTrips = [], isLoading: tripsLoading } = useQuery({
     queryKey: ["all-active-trips"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -87,7 +97,8 @@ export function OperationsMapView() {
           routes!inner (
             id,
             name,
-            schools (name, latitude, longitude)
+            route_number,
+            schools (name, city, latitude, longitude)
           ),
           drivers (full_name, phone),
           supervisors (full_name, phone)
@@ -97,8 +108,51 @@ export function OperationsMapView() {
       if (error) throw error;
       return data as unknown as ActiveTrip[];
     },
-    refetchInterval: 5000, // Refresh every 5 seconds
+    refetchInterval: 15000,
   });
+
+  const activeTrips =
+    selectedCity === "all"
+      ? allActiveTrips
+      : allActiveTrips.filter((t) => t.routes?.schools?.city === selectedCity);
+
+  const tripsWithLocation = activeTrips.filter((t) => t.current_latitude && t.current_longitude);
+
+
+  // Live position updates
+  useEffect(() => {
+    const channel = supabase
+      .channel("operations-live-trips")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "live_trips" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["all-active-trips"] });
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
+  // Keep the selected trip's data fresh (position, status)
+  useEffect(() => {
+    if (!selectedTrip) return;
+    const fresh = activeTrips.find((t) => t.id === selectedTrip.id);
+    if (!fresh) {
+      setSelectedTrip(null);
+      return;
+    }
+    if (
+      fresh.current_latitude !== selectedTrip.current_latitude ||
+      fresh.current_longitude !== selectedTrip.current_longitude ||
+      fresh.status !== selectedTrip.status
+    ) {
+      setSelectedTrip(fresh);
+    }
+  }, [activeTrips, selectedTrip]);
+
 
   // Fetch students for selected trip
   const { data: tripStudents = [] } = useQuery({
@@ -133,32 +187,43 @@ export function OperationsMapView() {
     setMap(null);
   }, []);
 
-  // Fit bounds to show all buses
+  // Fit bounds to show all buses (zoomed out overview)
   useEffect(() => {
     if (!map || selectedTrip || !isLoaded || !window.google?.maps) return;
 
     const bounds = new google.maps.LatLngBounds();
-    let hasValidBounds = false;
+    let points = 0;
 
     activeTrips.forEach((trip) => {
       if (trip.current_latitude && trip.current_longitude) {
         bounds.extend({ lat: trip.current_latitude, lng: trip.current_longitude });
-        hasValidBounds = true;
+        points += 1;
       }
     });
 
-    if (hasValidBounds) {
+    if (points === 1) {
+      map.setCenter(bounds.getCenter());
+      map.setZoom(13);
+    } else if (points > 1) {
       map.fitBounds(bounds, 100);
     }
   }, [map, activeTrips, selectedTrip, isLoaded]);
 
-  // Center on selected trip
+
+  // Zoom in on the selected bus (only when the selection changes)
+  const zoomedTripIdRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!map || !selectedTrip?.current_latitude || !selectedTrip?.current_longitude) return;
-    
+    if (!map || !selectedTrip?.current_latitude || !selectedTrip?.current_longitude) {
+      if (!selectedTrip) zoomedTripIdRef.current = null;
+      return;
+    }
     map.panTo({ lat: selectedTrip.current_latitude, lng: selectedTrip.current_longitude });
-    map.setZoom(14);
+    if (zoomedTripIdRef.current !== selectedTrip.id) {
+      map.setZoom(15);
+      zoomedTripIdRef.current = selectedTrip.id;
+    }
   }, [map, selectedTrip]);
+
 
   if (!isLoaded) {
     return (
@@ -207,20 +272,37 @@ export function OperationsMapView() {
                 `),
                 scaledSize: new google.maps.Size(48, 48),
               }}
+              title={routeLabel(trip)}
               onClick={() => setSelectedTrip(trip)}
             />
           );
         })}
       </GoogleMap>
 
-      {/* Active trips count badge */}
-      <div className="absolute top-4 left-4 bg-background/95 backdrop-blur-sm rounded-lg px-4 py-2 shadow-lg border">
-        <div className="flex items-center gap-2">
-          <Bus className="h-5 w-5 text-primary" />
-          <span className="font-semibold">{activeTrips.length}</span>
-          <span className="text-muted-foreground">باص نشط</span>
-        </div>
+      {/* Header: selected bus, or live bus counters */}
+      <div className="absolute top-4 left-4 bg-background/95 backdrop-blur-sm rounded-lg px-4 py-2 shadow-lg border max-w-[60%]">
+        {selectedTrip ? (
+          <div className="flex items-center gap-2">
+            <Bus className="h-5 w-5 text-primary shrink-0" />
+            <span className="font-semibold truncate">{routeLabel(selectedTrip)}</span>
+            <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => setSelectedTrip(null)}>
+              كل الباصات
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <Bus className="h-5 w-5 text-primary" />
+            <span className="font-semibold">{tripsWithLocation.length}</span>
+            <span className="text-muted-foreground text-sm">
+              باص على الخريطة
+              {activeTrips.length - tripsWithLocation.length > 0
+                ? ` · ${activeTrips.length - tripsWithLocation.length} بانتظار إشارة GPS`
+                : ""}
+            </span>
+          </div>
+        )}
       </div>
+
 
       {/* No active trips message */}
       {!tripsLoading && activeTrips.length === 0 && (
@@ -233,6 +315,17 @@ export function OperationsMapView() {
         </div>
       )}
 
+      {/* Active trips with no GPS fix yet */}
+      {!tripsLoading && activeTrips.length > 0 && tripsWithLocation.length === 0 && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm pointer-events-none">
+          <div className="text-center p-6 bg-background rounded-lg shadow-lg border pointer-events-auto">
+            <Bus className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+            <h3 className="font-semibold text-lg">بانتظار إشارة GPS من السائقين</h3>
+            <p className="text-muted-foreground text-sm">{activeTrips.length} رحلة نشطة</p>
+          </div>
+        </div>
+      )}
+
       {/* Selected trip details panel */}
       {selectedTrip && (
         <Card className="absolute top-4 right-4 w-80 max-h-[calc(100%-2rem)] overflow-hidden shadow-xl">
@@ -240,8 +333,9 @@ export function OperationsMapView() {
             <div className="flex items-center justify-between">
               <CardTitle className="text-base flex items-center gap-2">
                 <Bus className="h-5 w-5 text-primary" />
-                {selectedTrip.routes.name}
+                {routeLabel(selectedTrip)}
               </CardTitle>
+
               <Button
                 variant="ghost"
                 size="icon"

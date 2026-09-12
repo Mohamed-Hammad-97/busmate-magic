@@ -10,17 +10,21 @@
 ## The changes
 
 ### 1. Line groups stay in sync automatically
+
 When a student is added to a line, that student's parent is added to the line's group. When removed (or the subscription is cancelled), the parent is removed — unless another child of theirs is still on the same line. This runs in the database, so it works no matter who makes the change (staff, operations, or automated assignment).
 
 ### 2. Operations see all line groups
+
 Support Chat becomes available to operations as well as customer service. Operations staff see all line groups plus their own conversations, and can create a group for any line that doesn't have one yet.
 
 ### 3. Real unread counters (1, 2, 3 …) for everyone
+
 Each person gets their own read position per conversation. The chat list shows the number of messages they haven't read, the number clears the moment they open the chat, and a total badge appears on the chat entry. This applies to staff chat, the driver/supervisor portal, and the parent portal alike.
 
 ### 4. Better live tracking for employees
+
 - The line number is shown beside the line name everywhere on the tracking screen (map header, bus popup, list).
-- The map opens zoomed out to fit every bus that is live right now.
+- The map opens zoomed out to fit every bus that is live right now according to the city.
 - Clicking a bus zooms in on it and shows a header with its line number and name; closing returns to the full view.
 - Bus positions update live instead of waiting for the next refresh, and buses with no GPS signal yet are counted separately so the screen never looks empty by mistake.
 

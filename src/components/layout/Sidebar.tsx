@@ -77,7 +77,7 @@ const navEntries: NavEntry[] = [
   { label: "Drivers & Staff", href: "/staff", icon: Bus, department: "operations" },
   { label: "Payments", href: "/payments", icon: CreditCard, multiDepartment: ["customer_support", "finance"] },
   { label: "Submissions", href: "/submissions", icon: MessageCircle, department: "customer_support" },
-  { label: "Support Chat", href: "/support-chat", icon: MessageCircle, department: "customer_support" },
+  { label: "Support Chat", href: "/support-chat", icon: MessageCircle, multiDepartment: ["customer_support", "operations"] },
   {
     type: 'group',
     label: 'School Management',
