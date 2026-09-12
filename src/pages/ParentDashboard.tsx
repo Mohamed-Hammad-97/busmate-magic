@@ -273,7 +273,7 @@ export default function ParentDashboard() {
 
   const { pending: pendingContracts, signMutation } = useParentContracts(
     registrations as any[],
-    parentAccount?.id
+    familyIds
   );
   const [contractIndex, setContractIndex] = useState(0);
   const currentPendingContract = pendingContracts[contractIndex] ?? pendingContracts[0] ?? null;
