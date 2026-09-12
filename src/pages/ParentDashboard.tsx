@@ -758,7 +758,7 @@ export default function ParentDashboard() {
         return (
           <ContractsTab
             registrations={registrations as any[]}
-            parentId={parentAccount?.id}
+            parentId={familyIds}
             parentName={parentAccount?.parent_name}
           />
         );
