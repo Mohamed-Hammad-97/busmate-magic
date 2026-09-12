@@ -73,13 +73,15 @@ const defaultCenter = {
 
 export function OperationsMapView() {
   const { isLoaded } = useGoogleMaps();
+  const { selectedCity } = useCity();
+  const queryClient = useQueryClient();
 
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [selectedTrip, setSelectedTrip] = useState<ActiveTrip | null>(null);
   const [activeMarker, setActiveMarker] = useState<string | null>(null);
 
   // Fetch all active trips with realtime refresh
-  const { data: activeTrips = [], isLoading: tripsLoading } = useQuery({
+  const { data: allActiveTrips = [], isLoading: tripsLoading } = useQuery({
     queryKey: ["all-active-trips"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -93,7 +95,8 @@ export function OperationsMapView() {
           routes!inner (
             id,
             name,
-            schools (name, latitude, longitude)
+            route_number,
+            schools (name, city, latitude, longitude)
           ),
           drivers (full_name, phone),
           supervisors (full_name, phone)
@@ -103,8 +106,48 @@ export function OperationsMapView() {
       if (error) throw error;
       return data as unknown as ActiveTrip[];
     },
-    refetchInterval: 5000, // Refresh every 5 seconds
+    refetchInterval: 15000,
   });
+
+  const activeTrips =
+    selectedCity === "all"
+      ? allActiveTrips
+      : allActiveTrips.filter((t) => t.routes?.schools?.city === selectedCity);
+
+  // Live position updates
+  useEffect(() => {
+    const channel = supabase
+      .channel("operations-live-trips")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "live_trips" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["all-active-trips"] });
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
+  // Keep the selected trip's data fresh (position, status)
+  useEffect(() => {
+    if (!selectedTrip) return;
+    const fresh = activeTrips.find((t) => t.id === selectedTrip.id);
+    if (!fresh) {
+      setSelectedTrip(null);
+      return;
+    }
+    if (
+      fresh.current_latitude !== selectedTrip.current_latitude ||
+      fresh.current_longitude !== selectedTrip.current_longitude ||
+      fresh.status !== selectedTrip.status
+    ) {
+      setSelectedTrip(fresh);
+    }
+  }, [activeTrips, selectedTrip]);
+
 
   // Fetch students for selected trip
   const { data: tripStudents = [] } = useQuery({
