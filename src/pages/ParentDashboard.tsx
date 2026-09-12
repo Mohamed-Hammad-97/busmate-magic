@@ -32,7 +32,10 @@ import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 
 export default function ParentDashboard() {
   const { t, i18n } = useTranslation();
-  const { parentAccount, signOut, user } = useParentAuth();
+  const { parentAccount, parentAccountIds, signOut, user } = useParentAuth();
+  // Every record of this family (father's and mother's numbers share one login)
+  const familyIds = parentAccountIds.length > 0 ? parentAccountIds : parentAccount ? [parentAccount.id] : [];
+  const familyKey = familyIds.join(",");
   const queryClient = useQueryClient();
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [selectedPaymentReg, setSelectedPaymentReg] = useState<any>(null);
