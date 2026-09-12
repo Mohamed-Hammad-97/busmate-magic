@@ -1682,6 +1682,7 @@ export type Database = {
           city: string
           created_at: string
           emergency_phone: string
+          family_id: string | null
           father_phone: string
           has_password: boolean
           id: string
@@ -1701,6 +1702,7 @@ export type Database = {
           city: string
           created_at?: string
           emergency_phone: string
+          family_id?: string | null
           father_phone: string
           has_password?: boolean
           id?: string
@@ -1720,6 +1722,7 @@ export type Database = {
           city?: string
           created_at?: string
           emergency_phone?: string
+          family_id?: string | null
           father_phone?: string
           has_password?: boolean
           id?: string
@@ -2972,6 +2975,7 @@ export type Database = {
         Args: { p_record_id: string; p_table_name: string }
         Returns: undefined
       }
+      normalize_eg_phone: { Args: { _phone: string }; Returns: string }
       parent_booking_update_is_safe: {
         Args: {
           _boarded_at: string
