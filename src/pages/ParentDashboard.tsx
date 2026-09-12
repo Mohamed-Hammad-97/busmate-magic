@@ -134,9 +134,9 @@ export default function ParentDashboard() {
   const getSub = (reg: any) => (Array.isArray(reg?.subscriptions) ? reg.subscriptions[0] : reg?.subscriptions) || null;
 
   const { data: registrations = [] } = useQuery({
-    queryKey: ["parent-registrations", parentAccount?.id],
+    queryKey: ["parent-registrations", familyKey],
     queryFn: async () => {
-      if (!parentAccount?.id) return [];
+      if (familyIds.length === 0) return [];
       const { data, error } = await supabase
         .from("registrations")
         .select(`
@@ -148,7 +148,7 @@ export default function ParentDashboard() {
           )
 
         `)
-        .eq("parent_id", parentAccount.id)
+        .in("parent_id", familyIds)
         .order("created_at", { ascending: false });
       if (error) throw error;
       // Pre-generate signed URLs for all photos
@@ -164,20 +164,20 @@ export default function ParentDashboard() {
       }
       return data;
     },
-    enabled: !!parentAccount?.id,
+    enabled: familyIds.length > 0,
   });
 
   // Live updates when finance edits installments (fawry code, status, receipts)
   useEffect(() => {
-    if (!parentAccount?.id) return;
+    if (familyIds.length === 0) return;
     const channel = supabase
       .channel('parent-payments-updates')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, () => {
-        queryClient.invalidateQueries({ queryKey: ["parent-registrations", parentAccount.id] });
+        queryClient.invalidateQueries({ queryKey: ["parent-registrations", familyKey] });
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [parentAccount?.id, queryClient]);
+  }, [familyKey, queryClient]);
 
 
   const { data: routeAssignments = [] } = useQuery({
