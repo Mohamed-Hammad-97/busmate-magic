@@ -59,10 +59,11 @@ export function ParentChat() {
       if (!user?.id) return [];
       const { data: participantData } = await supabase
         .from("conversation_participants")
-        .select("conversation_id, can_send")
+        .select("conversation_id, can_send, last_read_at")
         .eq("user_id", user.id);
       if (!participantData || participantData.length === 0) return [];
       const canSendMap = new Map(participantData.map((p) => [p.conversation_id, p.can_send !== false]));
+      const lastReadMap = new Map(participantData.map((p: any) => [p.conversation_id, p.last_read_at as string | null]));
       const conversationIds = participantData.map((p) => p.conversation_id);
       const { data: convos } = await supabase
         .from("unified_conversations")
@@ -78,12 +79,14 @@ export function ParentChat() {
             .order("created_at", { ascending: false })
             .limit(1)
             .maybeSingle();
-          const { count } = await supabase
+          const lastRead = lastReadMap.get(convo.id) || null;
+          let unreadQuery = supabase
             .from("unified_messages")
             .select("*", { count: "exact", head: true })
             .eq("conversation_id", convo.id)
-            .eq("is_read", false)
             .neq("sender_id", user.id);
+          if (lastRead) unreadQuery = unreadQuery.gt("created_at", lastRead);
+          const { count } = await unreadQuery;
           return {
             ...convo,
             lastMessage: lastMsg,
@@ -92,6 +95,7 @@ export function ParentChat() {
               ? (canSendMap.get(convo.id) ?? false) && convo.allow_customer_messages !== false
               : canSendMap.get(convo.id) ?? true,
           };
+
         })
       );
       return enriched;
