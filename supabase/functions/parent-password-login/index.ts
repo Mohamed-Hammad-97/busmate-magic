@@ -67,18 +67,6 @@ serve(async (req) => {
       );
     }
 
-    // No record of this family ever set a password: tell the parent to use the
-    // SMS code instead of showing a misleading "wrong password" error.
-    if (!family.rows.some((r) => r.has_password)) {
-      return new Response(
-        JSON.stringify({
-          error: "لم يتم تعيين كلمة مرور لهذا الحساب. سجّل الدخول برمز التحقق المرسل على الهاتف",
-          needs_otp: true,
-        }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
     const anonClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!
@@ -120,6 +108,18 @@ serve(async (req) => {
         candidates: candidates.length,
         lastError,
       });
+
+      // The saved-password marker may be stale (legacy OTP sign-in previously
+      // replaced passwords). Clear it so verified OTP login prompts the parent
+      // to choose a fresh password without blocking valid future attempts.
+      const candidateIds = candidates.map((candidate) => candidate.id);
+      if (candidateIds.length > 0) {
+        await supabase
+          .from("parent_accounts")
+          .update({ has_password: false })
+          .in("id", candidateIds);
+      }
+
       return new Response(JSON.stringify({
         error: "تعذر تسجيل الدخول بكلمة المرور. استخدم رمز التحقق للدخول أو إعادة تعيين كلمة المرور",
         needs_otp: true,
