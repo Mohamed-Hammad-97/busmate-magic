@@ -71,6 +71,18 @@ serve(async (req) => {
       );
     }
 
+    // No record of this family ever set a password: tell the parent to use the
+    // SMS code instead of showing a misleading "wrong password" error.
+    if (!family.rows.some((r) => r.has_password)) {
+      return new Response(
+        JSON.stringify({
+          error: "لم يتم تعيين كلمة مرور لهذا الحساب. سجّل الدخول برمز التحقق المرسل على الهاتف",
+          needs_otp: true,
+        }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const anonClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!
