@@ -24,15 +24,17 @@ const STATUS_LABELS: Record<string, { label: string; color: string; description:
 };
 
 export function ParentLiveTracking() {
-  const { user, parentAccount } = useParentAuth();
+  const { user, parentAccount, parentAccountIds } = useParentAuth();
+  const familyIds = parentAccountIds.length > 0 ? parentAccountIds : parentAccount ? [parentAccount.id] : [];
+  const familyKey = familyIds.join(",");
   const { notifications, markAsRead } = useParentNotifications(user?.id);
   const isMobile = useIsMobile();
   const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
 
   const { data: registrations = [], isLoading: registrationsLoading } = useQuery({
-    queryKey: ["parent-registrations-tracking", parentAccount?.id],
+    queryKey: ["parent-registrations-tracking", familyKey],
     queryFn: async () => {
-      if (!parentAccount?.id) return [];
+      if (familyIds.length === 0) return [];
       const { data, error } = await supabase
         .from("registrations")
         .select(`

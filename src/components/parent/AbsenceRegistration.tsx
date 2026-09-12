@@ -62,10 +62,12 @@ export function AbsenceRegistration() {
   // Register absence
   const registerAbsence = useMutation({
     mutationFn: async () => {
-      if (!selectedDate || !selectedRegistration || !parentAccount?.id) return;
+      if (!selectedDate || !selectedRegistration || familyIds.length === 0) return;
+      // The absence belongs to the same record the child is registered under
+      const reg = registrations.find((r: any) => r.id === selectedRegistration) as any;
       const { error } = await supabase.from("student_absences").insert({
         registration_id: selectedRegistration,
-        parent_id: parentAccount.id,
+        parent_id: reg?.parent_id ?? parentAccount!.id,
         absence_date: format(selectedDate, "yyyy-MM-dd"),
         reason: reason || null,
       });
