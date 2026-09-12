@@ -28,21 +28,24 @@ export function buildContractData(reg: any): ContractData {
   };
 }
 
-export function useParentContracts(registrations: any[], parentId?: string) {
+export function useParentContracts(registrations: any[], parentIds?: string | string[]) {
   const queryClient = useQueryClient();
 
+  const ids = (Array.isArray(parentIds) ? parentIds : parentIds ? [parentIds] : []).filter(Boolean);
+  const idsKey = ids.join(",");
+
   const { data: acceptances = [] } = useQuery({
-    queryKey: ["parent-contracts", parentId],
+    queryKey: ["parent-contracts", idsKey],
     queryFn: async () => {
-      if (!parentId) return [];
+      if (ids.length === 0) return [];
       const { data, error } = await supabase
         .from("contract_acceptances")
         .select("*")
-        .eq("parent_id", parentId);
+        .in("parent_id", ids);
       if (error) throw error;
       return data || [];
     },
-    enabled: !!parentId,
+    enabled: ids.length > 0,
   });
 
   // Contracts are required for every completed registration (subscription details are optional)
@@ -59,7 +62,8 @@ export function useParentContracts(registrations: any[], parentId?: string) {
       const { error } = await supabase.from("contract_acceptances").insert({
         registration_id: reg.id,
         subscription_id: reg.subscriptions?.[0]?.id ?? null,
-        parent_id: parentId!,
+        // The contract must belong to the same record the child is registered under
+        parent_id: reg.parent_id ?? ids[0],
         contract_version: CONTRACT_VERSION,
         signature_name: signatureName,
         snapshot: data as any,
@@ -67,7 +71,7 @@ export function useParentContracts(registrations: any[], parentId?: string) {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["parent-contracts", parentId] });
+      queryClient.invalidateQueries({ queryKey: ["parent-contracts", idsKey] });
     },
   });
 

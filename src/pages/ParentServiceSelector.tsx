@@ -14,17 +14,19 @@ export default function ParentServiceSelector() {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.language === "ar";
   const navigate = useNavigate();
-  const { parentAccount, signOut, isLoading } = useParentAuth();
+  const { parentAccount, parentAccountIds, signOut, isLoading } = useParentAuth();
+  const familyIds = parentAccountIds.length > 0 ? parentAccountIds : parentAccount ? [parentAccount.id] : [];
+  const familyKey = familyIds.join(",");
 
   // School/other registrations
   const { data: registrations = [], isLoading: loadingRegs } = useQuery({
-    queryKey: ["selector-registrations", parentAccount?.id],
+    queryKey: ["selector-registrations", familyKey],
     enabled: !!parentAccount,
     queryFn: async () => {
       const { data } = await supabase
         .from("registrations")
         .select("id")
-        .eq("parent_id", parentAccount!.id)
+        .in("parent_id", familyIds)
         .limit(1);
       return data || [];
     },
@@ -32,12 +34,12 @@ export default function ParentServiceSelector() {
 
   // Daily line bookings (match by parent_id OR phone)
   const { data: dlBookings = [], isLoading: loadingDl } = useQuery({
-    queryKey: ["selector-dl-bookings", parentAccount?.id],
+    queryKey: ["selector-dl-bookings", familyKey],
     enabled: !!parentAccount,
     queryFn: async () => {
       if (!parentAccount) return [];
       const phones = [parentAccount.father_phone, parentAccount.mother_phone].filter(Boolean);
-      const orParts: string[] = [`parent_id.eq.${parentAccount.id}`];
+      const orParts: string[] = familyIds.map((id) => `parent_id.eq.${id}`);
       phones.forEach((p) => orParts.push(`passenger_phone.eq.${p}`));
       const { data } = await supabase
         .from("daily_line_bookings")

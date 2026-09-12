@@ -1,5 +1,11 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import {
+  hasCurrentRegistration,
+  normalizePhone,
+  resolveParentFamily,
+  unifyFamilyId,
+} from "../_shared/parent-family.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -21,7 +27,7 @@ serve(async (req) => {
       );
     }
 
-    const cleanPhone = String(phone).replace(/\D/g, "").replace(/^20/, "").replace(/^0/, "");
+    const cleanPhone = normalizePhone(String(phone));
 
     if (!/^1\d{9}$/.test(cleanPhone)) {
       return new Response(
@@ -35,35 +41,14 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Find parent account (has_password flag can be stale, so don't gate on it).
-    // Accept the father's OR the mother's phone in any stored format.
-    const phoneVariants = [cleanPhone, `0${cleanPhone}`, `20${cleanPhone}`, `+20${cleanPhone}`];
-    const orFilter = [
-      ...phoneVariants.map((p) => `father_phone.eq.${p}`),
-      ...phoneVariants.map((p) => `mother_phone.eq.${p}`),
-    ].join(",");
+    // Resolve the whole family for this number (father's or mother's) so every
+    // number of the same family reaches the same login.
+    const family = await resolveParentFamily(supabase, cleanPhone);
+    await unifyFamilyId(supabase, family);
+    const parent = family.primary;
 
-    const { data: parents, error: parentError } = await supabase
-      .from("parent_accounts")
-      .select("id, user_id, has_password, is_active, registrations(status)")
-      .or(orFilter)
-      .not("user_id", "is", null)
-      .order("created_at", { ascending: false });
-
-
-    // A current registration is also proof that the account should be active.
-    // This repairs legacy rows deactivated during school-year archival or sibling cancellation.
-    const hasCurrentRegistration = (candidate: typeof parents extends (infer T)[] | null ? T : never) =>
-      candidate.registrations?.some((registration) =>
-        registration.status === "pending_fees" || registration.status === "complete"
-      ) ?? false;
-    const parent = parents?.find((candidate) => candidate.is_active !== false)
-      ?? parents?.find(hasCurrentRegistration)
-      ?? parents?.[0];
-
-
-    if (parentError || !parent?.user_id) {
-      console.log("Parent lookup failed", { hasError: !!parentError, found: parents?.length ?? 0 });
+    if (!parent?.user_id) {
+      console.log("Parent lookup failed", { found: family.rows.length });
       return new Response(
         JSON.stringify({ error: "رقم الهاتف أو كلمة المرور غير صحيحة" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -73,7 +58,8 @@ serve(async (req) => {
 
     // Block genuinely deactivated accounts, but repair a stale flag when a current
     // registration exists so an active subscription can still be accessed.
-    if (parent.is_active === false && !hasCurrentRegistration(parent)) {
+    const familyHasRegistration = family.rows.some(hasCurrentRegistration);
+    if (parent.is_active === false && !familyHasRegistration) {
       return new Response(
         JSON.stringify({ error: "تم تعطيل هذا الحساب. تواصل مع الإدارة" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }

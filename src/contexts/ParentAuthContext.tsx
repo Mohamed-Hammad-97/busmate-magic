@@ -19,6 +19,8 @@ interface ParentAuthContextType {
   user: User | null;
   session: Session | null;
   parentAccount: ParentAccount | null;
+  /** Every parent record belonging to the signed-in family (father + mother numbers). */
+  parentAccountIds: string[];
   isLoading: boolean;
   isAuthenticated: boolean;
   checkAuthMethod: (phone: string) => Promise<{ exists: boolean; has_password: boolean }>;
@@ -34,19 +36,26 @@ export function ParentAuthProvider({ children }: { children: React.ReactNode }) 
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [parentAccount, setParentAccount] = useState<ParentAccount | null>(null);
+  const [parentAccountIds, setParentAccountIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchParentAccount = async (userId: string) => {
     try {
+      // RLS returns every record of the family (records sharing a phone number),
+      // not just the one holding the login.
       const { data } = await supabase
         .from("parent_accounts")
         .select("*")
-        .eq("user_id", userId)
-        .maybeSingle();
-      
-      if (data) {
-        setParentAccount(data as ParentAccount);
-      }
+        .order("created_at", { ascending: true });
+
+      const rows = (data ?? []) as ParentAccount[];
+      if (rows.length === 0) return;
+
+      const primary =
+        rows.find((row) => (row as unknown as { user_id?: string }).user_id === userId) ?? rows[0];
+
+      setParentAccount(primary);
+      setParentAccountIds(rows.map((row) => row.id));
     } catch (error) {
       console.error("Error fetching parent account:", error);
     }
@@ -64,6 +73,7 @@ export function ParentAuthProvider({ children }: { children: React.ReactNode }) 
           }, 0);
         } else {
           setParentAccount(null);
+          setParentAccountIds([]);
         }
         setIsLoading(false);
       }
@@ -210,12 +220,18 @@ export function ParentAuthProvider({ children }: { children: React.ReactNode }) 
   const signOut = async () => {
     await supabase.auth.signOut();
     setParentAccount(null);
+    setParentAccountIds([]);
   };
 
   const value: ParentAuthContextType = {
     user,
     session,
     parentAccount,
+    parentAccountIds: parentAccountIds.length > 0
+      ? parentAccountIds
+      : parentAccount
+        ? [parentAccount.id]
+        : [],
     isLoading,
     isAuthenticated: !!user && !!parentAccount,
     checkAuthMethod,

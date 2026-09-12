@@ -13,7 +13,7 @@ import { useTranslation } from "react-i18next";
 
 interface Props {
   registrations: any[];
-  parentId?: string;
+  parentId?: string | string[];
   parentName?: string;
 }
 

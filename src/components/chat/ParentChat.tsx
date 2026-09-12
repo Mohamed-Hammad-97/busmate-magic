@@ -26,7 +26,9 @@ interface SupervisorTarget {
 
 export function ParentChat() {
   const { t } = useTranslation();
-  const { parentAccount, user } = useParentAuth();
+  const { parentAccount, parentAccountIds, user } = useParentAuth();
+  const familyIds = parentAccountIds.length > 0 ? parentAccountIds : parentAccount ? [parentAccount.id] : [];
+  const familyKey = familyIds.join(",");
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
@@ -98,18 +100,18 @@ export function ParentChat() {
   });
 
   const { data: legacyConversations = [] } = useQuery({
-    queryKey: ["parent-legacy-conversations", parentAccount?.id],
+    queryKey: ["parent-legacy-conversations", familyKey],
     queryFn: async () => {
-      if (!parentAccount?.id) return [];
+      if (familyIds.length === 0) return [];
       const { data, error } = await supabase
         .from("chat_conversations")
         .select("*")
-        .eq("parent_id", parentAccount.id)
+        .in("parent_id", familyIds)
         .order("last_message_at", { ascending: false });
       if (error) throw error;
       return (data || []).map((c) => ({ ...c, isLegacy: true, canSend: true }));
     },
-    enabled: !!parentAccount?.id,
+    enabled: familyIds.length > 0,
   });
 
   // Supervisors available to this parent (for the new-chat picker)

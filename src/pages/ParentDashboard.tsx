@@ -32,7 +32,10 @@ import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 
 export default function ParentDashboard() {
   const { t, i18n } = useTranslation();
-  const { parentAccount, signOut, user } = useParentAuth();
+  const { parentAccount, parentAccountIds, signOut, user } = useParentAuth();
+  // Every record of this family (father's and mother's numbers share one login)
+  const familyIds = parentAccountIds.length > 0 ? parentAccountIds : parentAccount ? [parentAccount.id] : [];
+  const familyKey = familyIds.join(",");
   const queryClient = useQueryClient();
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [selectedPaymentReg, setSelectedPaymentReg] = useState<any>(null);
@@ -118,25 +121,25 @@ export default function ParentDashboard() {
         .from("parent_accounts")
         .select("has_password")
         .eq("id", parentAccount.id)
-        .single();
+        .maybeSingle();
       const { data: registrations } = await supabase
         .from("registrations")
         .select("status")
-        .eq("parent_id", parentAccount.id);
+        .in("parent_id", familyIds);
       if (account && !account.has_password && registrations && registrations.length > 0) {
         setShowPasswordDialog(true);
       }
     };
     checkPasswordStatus();
-  }, [parentAccount?.id]);
+  }, [parentAccount?.id, familyKey]);
 
   // Supabase may return the embedded subscription as an object (one-to-one) or an array
   const getSub = (reg: any) => (Array.isArray(reg?.subscriptions) ? reg.subscriptions[0] : reg?.subscriptions) || null;
 
   const { data: registrations = [] } = useQuery({
-    queryKey: ["parent-registrations", parentAccount?.id],
+    queryKey: ["parent-registrations", familyKey],
     queryFn: async () => {
-      if (!parentAccount?.id) return [];
+      if (familyIds.length === 0) return [];
       const { data, error } = await supabase
         .from("registrations")
         .select(`
@@ -148,7 +151,7 @@ export default function ParentDashboard() {
           )
 
         `)
-        .eq("parent_id", parentAccount.id)
+        .in("parent_id", familyIds)
         .order("created_at", { ascending: false });
       if (error) throw error;
       // Pre-generate signed URLs for all photos
@@ -164,26 +167,26 @@ export default function ParentDashboard() {
       }
       return data;
     },
-    enabled: !!parentAccount?.id,
+    enabled: familyIds.length > 0,
   });
 
   // Live updates when finance edits installments (fawry code, status, receipts)
   useEffect(() => {
-    if (!parentAccount?.id) return;
+    if (familyIds.length === 0) return;
     const channel = supabase
       .channel('parent-payments-updates')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, () => {
-        queryClient.invalidateQueries({ queryKey: ["parent-registrations", parentAccount.id] });
+        queryClient.invalidateQueries({ queryKey: ["parent-registrations", familyKey] });
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [parentAccount?.id, queryClient]);
+  }, [familyKey, queryClient]);
 
 
   const { data: routeAssignments = [] } = useQuery({
-    queryKey: ["parent-routes", parentAccount?.id],
+    queryKey: ["parent-routes", familyKey],
     queryFn: async () => {
-      if (!parentAccount?.id) return [];
+      if (familyIds.length === 0) return [];
       const regIds = registrations.map((r) => r.id);
       if (regIds.length === 0) return [];
       const { data, error } = await supabase
@@ -270,7 +273,7 @@ export default function ParentDashboard() {
 
   const { pending: pendingContracts, signMutation } = useParentContracts(
     registrations as any[],
-    parentAccount?.id
+    familyIds
   );
   const [contractIndex, setContractIndex] = useState(0);
   const currentPendingContract = pendingContracts[contractIndex] ?? pendingContracts[0] ?? null;
@@ -755,7 +758,7 @@ export default function ParentDashboard() {
         return (
           <ContractsTab
             registrations={registrations as any[]}
-            parentId={parentAccount?.id}
+            parentId={familyIds}
             parentName={parentAccount?.parent_name}
           />
         );

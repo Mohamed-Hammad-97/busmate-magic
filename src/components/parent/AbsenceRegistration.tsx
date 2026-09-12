@@ -18,7 +18,9 @@ export function AbsenceRegistration() {
   const { t, i18n } = useTranslation();
   const isAr = i18n.language === "ar";
   const dateLocale = isAr ? ar : enGB;
-  const { parentAccount } = useParentAuth();
+  const { parentAccount, parentAccountIds } = useParentAuth();
+  const familyIds = parentAccountIds.length > 0 ? parentAccountIds : parentAccount ? [parentAccount.id] : [];
+  const familyKey = familyIds.join(",");
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
@@ -27,43 +29,45 @@ export function AbsenceRegistration() {
 
   // Fetch registrations
   const { data: registrations = [] } = useQuery({
-    queryKey: ["parent-registrations-absence", parentAccount?.id],
+    queryKey: ["parent-registrations-absence", familyKey],
     queryFn: async () => {
-      if (!parentAccount?.id) return [];
+      if (familyIds.length === 0) return [];
       const { data, error } = await supabase
         .from("registrations")
-        .select("id, student_name, schools (name)")
-        .eq("parent_id", parentAccount.id)
+        .select("id, student_name, parent_id, schools (name)")
+        .in("parent_id", familyIds)
         .eq("status", "complete");
       if (error) throw error;
       return data;
     },
-    enabled: !!parentAccount?.id,
+    enabled: familyIds.length > 0,
   });
 
   // Fetch existing absences
   const { data: absences = [], isLoading } = useQuery({
-    queryKey: ["parent-absences", parentAccount?.id],
+    queryKey: ["parent-absences", familyKey],
     queryFn: async () => {
-      if (!parentAccount?.id) return [];
+      if (familyIds.length === 0) return [];
       const { data, error } = await supabase
         .from("student_absences")
         .select("*, registrations (student_name)")
-        .eq("parent_id", parentAccount.id)
+        .in("parent_id", familyIds)
         .order("absence_date", { ascending: false });
       if (error) throw error;
       return data;
     },
-    enabled: !!parentAccount?.id,
+    enabled: familyIds.length > 0,
   });
 
   // Register absence
   const registerAbsence = useMutation({
     mutationFn: async () => {
-      if (!selectedDate || !selectedRegistration || !parentAccount?.id) return;
+      if (!selectedDate || !selectedRegistration || familyIds.length === 0) return;
+      // The absence belongs to the same record the child is registered under
+      const reg = registrations.find((r: any) => r.id === selectedRegistration) as any;
       const { error } = await supabase.from("student_absences").insert({
         registration_id: selectedRegistration,
-        parent_id: parentAccount.id,
+        parent_id: reg?.parent_id ?? parentAccount!.id,
         absence_date: format(selectedDate, "yyyy-MM-dd"),
         reason: reason || null,
       });
