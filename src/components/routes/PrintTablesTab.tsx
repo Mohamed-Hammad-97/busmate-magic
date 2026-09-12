@@ -158,12 +158,12 @@ const PrintTablesTab: React.FC<Props> = () => {
       startY: (doc as any).lastAutoTable.finalY + 4,
       head: [rtlRow(['', 'مسلسل الخط', 'اسم الطالب/ة:', 'المدرسة:', 'المرحلة:'], true)],
       body: paddedRows.map((r) =>
-        rtlRow(['\u2610', r.serial, r.student_name, r.school_name, r.stage], true),
+        rtlRow(['', r.serial, r.student_name, r.school_name, r.stage], true),
       ),
       theme: 'grid',
       styles: { fontSize: 9, halign: 'center', cellPadding: 2.5 },
       headStyles: { fillColor: [31, 116, 165], textColor: 255, halign: 'center' },
-      columnStyles: { [0]: { cellWidth: 10 } },
+      columnStyles: { 4: { cellWidth: 10, fillColor: [220, 236, 245] } },
     }));
 
 
