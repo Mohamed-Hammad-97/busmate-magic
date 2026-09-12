@@ -315,6 +315,17 @@ export function OperationsMapView() {
         </div>
       )}
 
+      {/* Active trips with no GPS fix yet */}
+      {!tripsLoading && activeTrips.length > 0 && tripsWithLocation.length === 0 && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm pointer-events-none">
+          <div className="text-center p-6 bg-background rounded-lg shadow-lg border pointer-events-auto">
+            <Bus className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+            <h3 className="font-semibold text-lg">بانتظار إشارة GPS من السائقين</h3>
+            <p className="text-muted-foreground text-sm">{activeTrips.length} رحلة نشطة</p>
+          </div>
+        </div>
+      )}
+
       {/* Selected trip details panel */}
       {selectedTrip && (
         <Card className="absolute top-4 right-4 w-80 max-h-[calc(100%-2rem)] overflow-hidden shadow-xl">
@@ -322,8 +333,9 @@ export function OperationsMapView() {
             <div className="flex items-center justify-between">
               <CardTitle className="text-base flex items-center gap-2">
                 <Bus className="h-5 w-5 text-primary" />
-                {selectedTrip.routes.name}
+                {routeLabel(selectedTrip)}
               </CardTitle>
+
               <Button
                 variant="ghost"
                 size="icon"
