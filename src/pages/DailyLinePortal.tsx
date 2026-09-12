@@ -103,14 +103,14 @@ export default function DailyLinePortal() {
 
   // ---------- CHAT ----------
   const { data: conversations = [] } = useQuery({
-    queryKey: ["dl-chat-convos", parentAccount?.id],
+    queryKey: ["dl-chat-convos", familyKey],
     enabled: !!parentAccount && tab === "chat",
     queryFn: async () => {
-      if (!parentAccount) return [];
+      if (familyIds.length === 0) return [];
       const { data } = await supabase
         .from("chat_conversations")
         .select("*")
-        .eq("parent_id", parentAccount.id)
+        .in("parent_id", familyIds)
         .like("subject", `${DAILY_LINE_TAG}%`)
         .order("last_message_at", { ascending: false });
       return data || [];
@@ -201,7 +201,7 @@ export default function DailyLinePortal() {
       return data;
     },
     onSuccess: (conv) => {
-      qc.invalidateQueries({ queryKey: ["dl-chat-convos", parentAccount?.id] });
+      qc.invalidateQueries({ queryKey: ["dl-chat-convos", familyKey] });
       setActiveConv(conv.id);
     },
     onError: (e: any) => toast({ title: e.message, variant: "destructive" }),
