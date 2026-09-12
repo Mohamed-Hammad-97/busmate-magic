@@ -184,9 +184,9 @@ export default function ParentDashboard() {
 
 
   const { data: routeAssignments = [] } = useQuery({
-    queryKey: ["parent-routes", parentAccount?.id],
+    queryKey: ["parent-routes", familyKey],
     queryFn: async () => {
-      if (!parentAccount?.id) return [];
+      if (familyIds.length === 0) return [];
       const regIds = registrations.map((r) => r.id);
       if (regIds.length === 0) return [];
       const { data, error } = await supabase
