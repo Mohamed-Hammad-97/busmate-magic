@@ -45,9 +45,14 @@ serve(async (req) => {
     // number of the same family reaches the same login.
     const family = await resolveParentFamily(supabase, cleanPhone);
     await unifyFamilyId(supabase, family);
-    const parent = family.primary;
 
-    if (!parent?.user_id) {
+    // Candidate logins of the family: the preferred one first, then the rest.
+    const candidates = [
+      ...(family.primary?.user_id ? [family.primary] : []),
+      ...family.rows.filter((r) => r.user_id && r.id !== family.primary?.id),
+    ];
+
+    if (candidates.length === 0) {
       console.log("Parent lookup failed", { found: family.rows.length });
       return new Response(
         JSON.stringify({ error: "رقم الهاتف أو كلمة المرور غير صحيحة" }),
@@ -55,64 +60,72 @@ serve(async (req) => {
       );
     }
 
-
     // Block genuinely deactivated accounts, but repair a stale flag when a current
     // registration exists so an active subscription can still be accessed.
     const familyHasRegistration = family.rows.some(hasCurrentRegistration);
-    if (parent.is_active === false && !familyHasRegistration) {
+    const anyActive = candidates.some((r) => r.is_active !== false);
+    if (!anyActive && !familyHasRegistration) {
       return new Response(
         JSON.stringify({ error: "تم تعطيل هذا الحساب. تواصل مع الإدارة" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    if (parent.is_active === false) {
-      const { error: reactivateError } = await supabase
-        .from("parent_accounts")
-        .update({ is_active: true })
-        .eq("id", parent.id);
-
-      if (reactivateError) {
-        console.error("Failed to repair parent active state", { parentId: parent.id });
-        return new Response(
-          JSON.stringify({ error: "تعذر تفعيل الحساب. تواصل مع الإدارة" }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-    }
-
-    // Get user email
-    const { data: userData } = await supabase.auth.admin.getUserById(parent.user_id);
-    if (!userData?.user?.email) {
-      return new Response(
-        JSON.stringify({ error: "رقم الهاتف أو كلمة المرور غير صحيحة" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Sign in with password using anon client
     const anonClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!
     );
 
-    const { data: signInData, error: signInError } = await anonClient.auth.signInWithPassword({
-      email: userData.user.email,
-      password: password,
-    });
+    // The password belongs to whichever family record the parent originally set it
+    // on, so try every login of the family until one matches.
+    let parent: typeof candidates[number] | null = null;
+    let session: { access_token: string; refresh_token: string; expires_in: number; token_type: string } | null = null;
+    let lastError: unknown = null;
 
-    if (signInError || !signInData.session) {
-      console.error("Password login failed:", signInError);
+    for (const candidate of candidates) {
+      const { data: userData } = await supabase.auth.admin.getUserById(candidate.user_id!);
+      const email = userData?.user?.email;
+      if (!email) continue;
+
+      const { data: signInData, error: signInError } = await anonClient.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (signInError || !signInData?.session) {
+        lastError = signInError;
+        continue;
+      }
+
+      parent = candidate;
+      session = {
+        access_token: signInData.session.access_token,
+        refresh_token: signInData.session.refresh_token,
+        expires_in: signInData.session.expires_in,
+        token_type: signInData.session.token_type,
+      };
+      break;
+    }
+
+    if (!parent || !session) {
+      console.error("Password login failed for family", {
+        candidates: candidates.length,
+        lastError,
+      });
       return new Response(
         JSON.stringify({ error: "رقم الهاتف أو كلمة المرور غير صحيحة" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Keep the flag in sync (client-side updates can be blocked by RLS)
+    // Repair stale flags on the record that actually signed in
+    if (parent.is_active === false) {
+      await supabase.from("parent_accounts").update({ is_active: true }).eq("id", parent.id);
+    }
     if (!parent.has_password) {
       await supabase.from("parent_accounts").update({ has_password: true }).eq("id", parent.id);
     }
+
 
 
 
