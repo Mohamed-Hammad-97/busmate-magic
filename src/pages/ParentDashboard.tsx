@@ -118,17 +118,17 @@ export default function ParentDashboard() {
         .from("parent_accounts")
         .select("has_password")
         .eq("id", parentAccount.id)
-        .single();
+        .maybeSingle();
       const { data: registrations } = await supabase
         .from("registrations")
         .select("status")
-        .eq("parent_id", parentAccount.id);
+        .in("parent_id", familyIds);
       if (account && !account.has_password && registrations && registrations.length > 0) {
         setShowPasswordDialog(true);
       }
     };
     checkPasswordStatus();
-  }, [parentAccount?.id]);
+  }, [parentAccount?.id, familyKey]);
 
   // Supabase may return the embedded subscription as an object (one-to-one) or an array
   const getSub = (reg: any) => (Array.isArray(reg?.subscriptions) ? reg.subscriptions[0] : reg?.subscriptions) || null;
