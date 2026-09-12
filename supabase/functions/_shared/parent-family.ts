@@ -10,6 +10,7 @@ export interface FamilyParentRow {
   user_id: string | null;
   parent_name: string | null;
   is_active: boolean | null;
+  has_password: boolean | null;
   family_id: string | null;
   created_at: string;
   father_phone: string | null;
