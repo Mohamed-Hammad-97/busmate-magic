@@ -99,10 +99,14 @@ export default function ParentAuth() {
 
     setIsLoading(true);
     setError("");
-    const { error } = await loginWithPassword(phone, password);
+    const { error, needsOtp } = await loginWithPassword(phone, password);
     setIsLoading(false);
 
     if (error) {
+      if (needsOtp) {
+        await handleSwitchToOtp();
+        return;
+      }
       setError(error.message);
       toast({ variant: "destructive", title: t('parentPortal.loginError'), description: error.message });
     }

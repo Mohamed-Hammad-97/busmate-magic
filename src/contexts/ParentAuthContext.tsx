@@ -188,7 +188,7 @@ export function ParentAuthProvider({ children }: { children: React.ReactNode }) 
         return { error: new Error(error.message || "فشل في تسجيل الدخول") };
       }
       if (data?.error) {
-        return { error: new Error(data.error) };
+        return { error: new Error(data.error), needsOtp: data.needs_otp === true };
       }
 
       if (data?.success && data?.session) {
@@ -211,9 +211,9 @@ export function ParentAuthProvider({ children }: { children: React.ReactNode }) 
         }
       }
 
-      return { error: null };
+      return { error: null, needsOtp: false };
     } catch (error) {
-      return { error: error as Error };
+      return { error: error as Error, needsOtp: false };
     }
   };
 
