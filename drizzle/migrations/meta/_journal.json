@@ -43,6 +43,13 @@
       "when": 1789205966710,
       "tag": "0005_create_parent_phone_credentials",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1789207636141,
+      "tag": "0006_chat_read_state_and_route_group_sync",
+      "breakpoints": true
     }
   ]
 }

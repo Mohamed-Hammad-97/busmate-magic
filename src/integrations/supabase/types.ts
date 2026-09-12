@@ -683,6 +683,7 @@ export type Database = {
           conversation_id: string
           created_at: string
           id: string
+          last_read_at: string | null
           participant_ref_id: string | null
           participant_type: string
           user_id: string | null
@@ -692,6 +693,7 @@ export type Database = {
           conversation_id: string
           created_at?: string
           id?: string
+          last_read_at?: string | null
           participant_ref_id?: string | null
           participant_type: string
           user_id?: string | null
@@ -701,6 +703,7 @@ export type Database = {
           conversation_id?: string
           created_at?: string
           id?: string
+          last_read_at?: string | null
           participant_ref_id?: string | null
           participant_type?: string
           user_id?: string | null
@@ -3011,6 +3014,10 @@ export type Database = {
       }
       log_sensitive_data_access: {
         Args: { p_record_id: string; p_table_name: string }
+        Returns: undefined
+      }
+      mark_conversation_read: {
+        Args: { _conversation_id: string }
         Returns: undefined
       }
       normalize_eg_phone: { Args: { _phone: string }; Returns: string }
