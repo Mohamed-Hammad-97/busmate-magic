@@ -1,7 +1,9 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { GoogleMap, Marker, InfoWindow } from '@react-google-maps/api';
 import { useGoogleMaps } from "@/components/maps/GoogleMapsProvider";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCity } from "@/contexts/CityContext";
+
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Bus, Users, Phone, MapPin, Clock, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
