@@ -266,6 +266,7 @@ export default function SupportChat() {
           .eq("is_read", false)
           .neq("sender_type", "employee");
       } else {
+        await supabase.rpc("mark_conversation_read", { _conversation_id: selectedConvId });
         await supabase
           .from("unified_messages")
           .update({ is_read: true })
@@ -273,6 +274,7 @@ export default function SupportChat() {
           .eq("is_read", false)
           .neq("sender_id", user.id);
       }
+
       queryClient.invalidateQueries({ queryKey: ["chat-unread-counts"] });
     };
     markRead();
