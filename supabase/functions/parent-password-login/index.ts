@@ -58,7 +58,8 @@ serve(async (req) => {
 
     // Block genuinely deactivated accounts, but repair a stale flag when a current
     // registration exists so an active subscription can still be accessed.
-    if (parent.is_active === false && !hasCurrentRegistration(parent)) {
+    const familyHasRegistration = family.rows.some(hasCurrentRegistration);
+    if (parent.is_active === false && !familyHasRegistration) {
       return new Response(
         JSON.stringify({ error: "تم تعطيل هذا الحساب. تواصل مع الإدارة" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
