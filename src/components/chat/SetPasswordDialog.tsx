@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useParentAuth } from "@/contexts/ParentAuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +11,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Lock, Eye, EyeOff, CheckCircle } from "lucide-react";
 import { z } from "zod";
@@ -19,6 +27,9 @@ const passwordSchema = z.string()
   .regex(/[A-Za-z]/, "يجب أن تحتوي على حرف واحد على الأقل")
   .regex(/[0-9]/, "يجب أن تحتوي على رقم واحد على الأقل");
 
+const normalize = (phone: string) =>
+  String(phone ?? "").replace(/\D/g, "").replace(/^20/, "").replace(/^0/, "");
+
 interface SetPasswordDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -27,11 +38,24 @@ interface SetPasswordDialogProps {
 
 export function SetPasswordDialog({ open, onOpenChange, onSuccess }: SetPasswordDialogProps) {
   const { toast } = useToast();
+  const { loginPhone, parentAccount } = useParentAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
+
+  // Each phone number of the family keeps its own password.
+  const familyPhones = [parentAccount?.father_phone, parentAccount?.mother_phone]
+    .filter(Boolean)
+    .map((p) => normalize(p as string))
+    .filter((p, i, arr) => p && arr.indexOf(p) === i);
+
+  const [selectedPhone, setSelectedPhone] = useState<string>(
+    loginPhone ? normalize(loginPhone) : familyPhones[0] ?? ""
+  );
+
+  const targetPhone = loginPhone ? normalize(loginPhone) : selectedPhone;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,27 +73,26 @@ export function SetPasswordDialog({ open, onOpenChange, onSuccess }: SetPassword
       return;
     }
 
+    if (!targetPhone) {
+      setErrors(["اختر رقم الهاتف الخاص بكلمة المرور"]);
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.auth.updateUser({ password });
-      
-      if (error) throw error;
+      const { data, error } = await supabase.functions.invoke("set-parent-password", {
+        body: { phone: targetPhone, password },
+      });
 
-      // Update has_password flag
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase
-          .from("parent_accounts")
-          .update({ has_password: true })
-          .eq("user_id", user.id);
-      }
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       toast({
         title: "تم تعيين كلمة المرور",
-        description: "يمكنك الآن تسجيل الدخول باستخدام رقم هاتفك وكلمة المرور",
+        description: "يمكنك الآن تسجيل الدخول برقم هاتفك وكلمة المرور الخاصة بك",
       });
-      
+
       onSuccess();
       onOpenChange(false);
     } catch (error: any) {
