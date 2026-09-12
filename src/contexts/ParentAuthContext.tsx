@@ -73,6 +73,7 @@ export function ParentAuthProvider({ children }: { children: React.ReactNode }) 
           }, 0);
         } else {
           setParentAccount(null);
+          setParentAccountIds([]);
         }
         setIsLoading(false);
       }
