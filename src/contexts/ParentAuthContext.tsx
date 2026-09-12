@@ -224,6 +224,8 @@ export function ParentAuthProvider({ children }: { children: React.ReactNode }) 
           setUser(sessionData.session.user);
         }
 
+        rememberLoginPhone(cleanPhone);
+
         if (data.user_id) {
           await fetchParentAccount(data.user_id);
         }
@@ -239,6 +241,12 @@ export function ParentAuthProvider({ children }: { children: React.ReactNode }) 
     await supabase.auth.signOut();
     setParentAccount(null);
     setParentAccountIds([]);
+    setLoginPhone(null);
+    try {
+      sessionStorage.removeItem(LOGIN_PHONE_KEY);
+    } catch {
+      /* ignore */
+    }
   };
 
   const value: ParentAuthContextType = {
@@ -250,6 +258,7 @@ export function ParentAuthProvider({ children }: { children: React.ReactNode }) 
       : parentAccount
         ? [parentAccount.id]
         : [],
+    loginPhone,
     isLoading,
     isAuthenticated: !!user && !!parentAccount,
     checkAuthMethod,
