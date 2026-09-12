@@ -372,14 +372,15 @@ export default function SupportChat() {
         }
       }
 
-      const { data: conv } = await supabase.from("unified_conversations")
+      const { data: conv, error: convError } = await supabase.from("unified_conversations")
         .insert({ type: "staff_dm" as any, subject: `Chat with ${staff.full_name}`, created_by: user.id })
         .select().single();
-      if (!conv) throw new Error("Failed");
+      if (convError || !conv) throw new Error(convError?.message || "Failed to create conversation");
 
       const participants: any[] = [{ conversation_id: conv.id, user_id: user.id, participant_type: "employee", participant_ref_id: employee?.id, can_send: true }];
       if (staffUserId) participants.push({ conversation_id: conv.id, user_id: staffUserId, participant_type: staff.type, participant_ref_id: staff.id, can_send: true });
-      await supabase.from("conversation_participants").insert(participants);
+      const { error: partError } = await supabase.from("conversation_participants").insert(participants);
+      if (partError) throw new Error(partError.message);
       return conv.id;
     },
     onSuccess: (id) => {
@@ -426,36 +427,20 @@ export default function SupportChat() {
   const createGroupChat = useMutation({
     mutationFn: async (routeId: string) => {
       if (!user?.id) throw new Error("Not authenticated");
-      const route = routes.find((r) => r.id === routeId);
-      if (!route) throw new Error("Route not found");
-      const { data: conv } = await supabase.from("unified_conversations")
-        .insert({ type: "route_group" as any, route_id: routeId, subject: `${route.name} - Group Chat`, allow_customer_messages: false, created_by: user.id })
-        .select().single();
-      if (!conv) throw new Error("Failed");
-
-      const participants: any[] = [{ conversation_id: conv.id, user_id: user.id, participant_type: "employee", participant_ref_id: employee?.id, can_send: true }];
-      if ((route as any).supervisor_id) {
-        const { data: supAccount } = await supabase.from("driver_accounts").select("user_id").eq("supervisor_id", (route as any).supervisor_id).eq("is_active", true).maybeSingle();
-        if (supAccount?.user_id) participants.push({ conversation_id: conv.id, user_id: supAccount.user_id, participant_type: "supervisor", participant_ref_id: (route as any).supervisor_id, can_send: true });
-      }
-      const { data: assignments } = await supabase.from("route_assignments").select("registration_id, registrations(parent_id, parent_accounts(id, user_id))").eq("route_id", routeId);
-      if (assignments) {
-        const addedIds = new Set(participants.map((p) => p.user_id));
-        for (const a of assignments) {
-          const parent = (a as any).registrations?.parent_accounts;
-          if (parent?.user_id && !addedIds.has(parent.user_id)) {
-            participants.push({ conversation_id: conv.id, user_id: parent.user_id, participant_type: "parent", participant_ref_id: parent.id, can_send: false });
-            addedIds.add(parent.user_id);
-          }
-        }
-      }
-      await supabase.from("conversation_participants").insert(participants);
-      return conv.id;
+      const { data, error } = await supabase.functions.invoke("create-route-group-chat", {
+        body: { routeId },
+      });
+      if (error) throw new Error(error.message || "Failed to create group chat");
+      if (data?.error) throw new Error(data.error);
+      if (!data?.conversation_id) throw new Error("Failed to create group chat");
+      return data.conversation_id as string;
     },
     onSuccess: (id) => {
       if (id) { setSelectedConvId(id); setShowNewGroupChat(false); setSelectedRouteId(""); }
       queryClient.invalidateQueries({ queryKey: ["all-unified-conversations"] });
+      toast({ title: "Group chat created" });
     },
+    onError: (e: any) => toast({ title: "Could not create group chat", description: e.message, variant: "destructive" }),
   });
 
   // Toggle customer messages for route groups
