@@ -82,23 +82,13 @@ const handler = async (req: Request): Promise<Response> => {
     // Mark OTP verified
     await supabase.from("otp_codes").update({ verified: true }).eq("id", activeOtp.id);
 
-    // Find parent account by father's OR mother's phone (any stored format)
-    const phoneVariants = [cleanPhone, `0${cleanPhone}`, `20${cleanPhone}`, `+20${cleanPhone}`];
-    const orFilter = [
-      ...phoneVariants.map((p) => `father_phone.eq.${p}`),
-      ...phoneVariants.map((p) => `mother_phone.eq.${p}`),
-    ].join(",");
+    // Resolve the whole family for this number (father's or mother's, any format)
+    // so both parents always reach the same single login.
+    const family = await resolveParentFamily(supabase, cleanPhone);
+    await unifyFamilyId(supabase, family);
+    const parentAccount = family.primary;
 
-    const { data: parentAccounts, error: parentError } = await supabase
-      .from("parent_accounts")
-      .select("id, user_id, parent_name, father_phone")
-      .or(orFilter)
-      .order("created_at", { ascending: false });
-
-    const parentAccount = parentAccounts?.find((p) => p.user_id) ?? parentAccounts?.[0];
-
-
-    if (parentError || !parentAccount) {
+    if (!parentAccount) {
       // Use a generic message to avoid phone enumeration
       return new Response(
         JSON.stringify({ error: GENERIC_ERROR }),
