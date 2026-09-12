@@ -42,6 +42,18 @@ export function ParentAuthProvider({ children }: { children: React.ReactNode }) 
   const [parentAccount, setParentAccount] = useState<ParentAccount | null>(null);
   const [parentAccountIds, setParentAccountIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loginPhone, setLoginPhone] = useState<string | null>(
+    typeof window !== "undefined" ? sessionStorage.getItem(LOGIN_PHONE_KEY) : null
+  );
+
+  const rememberLoginPhone = (phone: string) => {
+    setLoginPhone(phone);
+    try {
+      sessionStorage.setItem(LOGIN_PHONE_KEY, phone);
+    } catch {
+      /* ignore */
+    }
+  };
 
   const fetchParentAccount = async (userId: string) => {
     try {
