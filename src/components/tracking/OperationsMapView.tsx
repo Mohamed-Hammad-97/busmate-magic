@@ -1,19 +1,20 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { GoogleMap, Marker, InfoWindow } from '@react-google-maps/api';
 import { useGoogleMaps } from "@/components/maps/GoogleMapsProvider";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useCity } from "@/contexts/CityContext";
 import { matchesCity } from "@/lib/cityMatch";
 
 
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Bus, Users, Phone, MapPin, Clock, X } from "lucide-react";
+import { Loader2, Bus, Users, Phone, MapPin, Clock, X, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { format } from "date-fns";
+import { format, formatDistanceToNowStrict } from "date-fns";
 import { ar } from "date-fns/locale";
+import { useToast } from "@/hooks/use-toast";
 
 interface ActiveTrip {
   id: string;
@@ -21,6 +22,7 @@ interface ActiveTrip {
   current_latitude: number | null;
   current_longitude: number | null;
   started_at: string | null;
+  last_location_update: string | null;
   routes: {
     id: string;
     name: string;
@@ -79,6 +81,7 @@ export function OperationsMapView() {
   const { isLoaded } = useGoogleMaps();
   const { selectedCity } = useCity();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [selectedTrip, setSelectedTrip] = useState<ActiveTrip | null>(null);
@@ -96,6 +99,7 @@ export function OperationsMapView() {
           current_latitude,
           current_longitude,
           started_at,
+          last_location_update,
           routes!inner (
             id,
             name,
@@ -119,7 +123,41 @@ export function OperationsMapView() {
       : allActiveTrips.filter((t) => matchesCity(t.routes?.schools?.city, selectedCity));
 
 
-  const tripsWithLocation = activeTrips.filter((t) => t.current_latitude && t.current_longitude);
+  const STALE_MS = 3 * 60 * 60 * 1000;
+  const isStale = (t: ActiveTrip) => {
+    if (!t.current_latitude || !t.current_longitude) return true;
+    const last = t.last_location_update ? new Date(t.last_location_update).getTime() : 0;
+    return Date.now() - last > STALE_MS;
+  };
+
+  const tripsWithLocation = activeTrips.filter(
+    (t) => t.current_latitude && t.current_longitude && !isStale(t),
+  );
+  const staleTrips = activeTrips.filter((t) => isStale(t));
+
+  const endTripMutation = useMutation({
+    mutationFn: async (tripId: string) => {
+      const { error } = await supabase
+        .from("live_trips")
+        .update({ status: "completed", completed_at: new Date().toISOString() })
+        .eq("id", tripId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: "تم إنهاء الرحلة" });
+      queryClient.invalidateQueries({ queryKey: ["all-active-trips"] });
+      queryClient.invalidateQueries({ queryKey: ["active-trips"] });
+    },
+    onError: (e: Error) => toast({ title: "خطأ", description: e.message, variant: "destructive" }),
+  });
+
+  const signalAge = (t: ActiveTrip) => {
+    const ref = t.last_location_update || t.started_at;
+    if (!ref) return "";
+    return formatDistanceToNowStrict(new Date(ref), { locale: ar, addSuffix: true });
+  };
+
+
 
 
   // Live position updates
@@ -280,6 +318,30 @@ export function OperationsMapView() {
             />
           );
         })}
+
+        {/* Faded markers at the school for trips without a GPS signal */}
+        {staleTrips.map((trip) => {
+          const school = trip.routes?.schools;
+          if (!school?.latitude || !school?.longitude) return null;
+          if (!window.google?.maps) return null;
+          return (
+            <Marker
+              key={`stale-${trip.id}`}
+              position={{ lat: Number(school.latitude), lng: Number(school.longitude) }}
+              opacity={0.55}
+              icon={{
+                url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                  <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 48 48">
+                    <circle cx="24" cy="24" r="21" fill="#94A3B8" stroke="white" stroke-width="3" stroke-dasharray="4 3"/>
+                    <path d="M35 23.5C35 22 34 21 32 21H29L27 16H21L19 21H16C14 21 13 22 13 23.5L13 32H15V33.5C15 34.3 15.7 35 16.5 35C17.3 35 18 34.3 18 33.5V32H30V33.5C30 34.3 30.7 35 31.5 35C32.3 35 33 34.3 33 33.5V32H35V23.5ZM17 28C16 28 15 27 15 26C15 25 16 24 17 24C18 24 19 25 19 26C19 27 18 28 17 28ZM31 28C30 28 29 27 29 26C29 25 30 24 31 24C32 24 33 25 33 26C33 27 32 28 31 28Z" fill="white"/>
+                  </svg>
+                `),
+                scaledSize: new google.maps.Size(44, 44),
+              }}
+              title={`${routeLabel(trip)} — بانتظار إشارة GPS`}
+            />
+          );
+        })}
       </GoogleMap>
 
       {/* Header: selected bus, or live bus counters */}
@@ -293,18 +355,23 @@ export function OperationsMapView() {
             </Button>
           </div>
         ) : (
-          <div className="flex items-center gap-2">
-            <Bus className="h-5 w-5 text-primary" />
-            <span className="font-semibold">{tripsWithLocation.length}</span>
-            <span className="text-muted-foreground text-sm">
-              باص على الخريطة
-              {activeTrips.length - tripsWithLocation.length > 0
-                ? ` · ${activeTrips.length - tripsWithLocation.length} بانتظار إشارة GPS`
-                : ""}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-sm">
+              <Bus className="h-4 w-4 text-primary" />
+              <span className="font-semibold">{tripsWithLocation.length}</span>
+              <span className="text-muted-foreground">باص على الخريطة</span>
             </span>
+            {staleTrips.length > 0 && (
+              <span className="flex items-center gap-1.5 rounded-full bg-amber-500/15 px-2.5 py-1 text-sm">
+                <AlertTriangle className="h-4 w-4 text-amber-600" />
+                <span className="font-semibold">{staleTrips.length}</span>
+                <span className="text-muted-foreground">بدون إشارة</span>
+              </span>
+            )}
           </div>
         )}
       </div>
+
 
 
       {/* No active trips message */}
@@ -318,15 +385,39 @@ export function OperationsMapView() {
         </div>
       )}
 
-      {/* Active trips with no GPS fix yet */}
-      {!tripsLoading && activeTrips.length > 0 && tripsWithLocation.length === 0 && (
-        <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm pointer-events-none">
-          <div className="text-center p-6 bg-background rounded-lg shadow-lg border pointer-events-auto">
-            <Bus className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-            <h3 className="font-semibold text-lg">بانتظار إشارة GPS من السائقين</h3>
-            <p className="text-muted-foreground text-sm">{activeTrips.length} رحلة نشطة</p>
-          </div>
-        </div>
+      {/* Active trips with no GPS signal */}
+      {!tripsLoading && staleTrips.length > 0 && !selectedTrip && (
+        <Card className="absolute bottom-4 right-4 w-[19rem] max-w-[calc(100%-2rem)] shadow-xl" dir="rtl">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-600" />
+              رحلات بدون إشارة GPS ({staleTrips.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <ScrollArea className="max-h-44">
+              <div className="space-y-2">
+                {staleTrips.map((trip) => (
+                  <div key={trip.id} className="rounded-md border bg-muted/30 p-2 text-sm">
+                    <p className="font-medium">{routeLabel(trip)}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {trip.drivers?.full_name || "بدون سائق"} · بدأت {signalAge(trip)}
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-2 h-7 w-full text-xs"
+                      disabled={endTripMutation.isPending}
+                      onClick={() => endTripMutation.mutate(trip.id)}
+                    >
+                      إنهاء الرحلة
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
       )}
 
       {/* Selected trip details panel */}
