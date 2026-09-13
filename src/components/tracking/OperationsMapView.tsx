@@ -7,7 +7,7 @@ import { matchesCity } from "@/lib/cityMatch";
 
 
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Bus, Users, Phone, MapPin, Clock, X } from "lucide-react";
+import { Loader2, Bus, Users, Phone, MapPin, Clock, X, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
