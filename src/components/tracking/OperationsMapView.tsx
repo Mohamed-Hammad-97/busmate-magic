@@ -123,7 +123,41 @@ export function OperationsMapView() {
       : allActiveTrips.filter((t) => matchesCity(t.routes?.schools?.city, selectedCity));
 
 
-  const tripsWithLocation = activeTrips.filter((t) => t.current_latitude && t.current_longitude);
+  const STALE_MS = 3 * 60 * 60 * 1000;
+  const isStale = (t: ActiveTrip) => {
+    if (!t.current_latitude || !t.current_longitude) return true;
+    const last = t.last_location_update ? new Date(t.last_location_update).getTime() : 0;
+    return Date.now() - last > STALE_MS;
+  };
+
+  const tripsWithLocation = activeTrips.filter(
+    (t) => t.current_latitude && t.current_longitude && !isStale(t),
+  );
+  const staleTrips = activeTrips.filter((t) => isStale(t));
+
+  const endTripMutation = useMutation({
+    mutationFn: async (tripId: string) => {
+      const { error } = await supabase
+        .from("live_trips")
+        .update({ status: "completed", completed_at: new Date().toISOString() })
+        .eq("id", tripId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: "تم إنهاء الرحلة" });
+      queryClient.invalidateQueries({ queryKey: ["all-active-trips"] });
+      queryClient.invalidateQueries({ queryKey: ["active-trips"] });
+    },
+    onError: (e: Error) => toast({ title: "خطأ", description: e.message, variant: "destructive" }),
+  });
+
+  const signalAge = (t: ActiveTrip) => {
+    const ref = t.last_location_update || t.started_at;
+    if (!ref) return "";
+    return formatDistanceToNowStrict(new Date(ref), { locale: ar, addSuffix: true });
+  };
+
+
 
 
   // Live position updates
