@@ -22,9 +22,9 @@ interface TripHistoryProps {
 }
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  pending: { label: "في الانتظار", color: "bg-amber-500" },
-  arriving: { label: "في الطريق", color: "bg-blue-500" },
-  picked_up: { label: "تم الاستلام", color: "bg-green-500" },
+  pending: { label: "في الانتظار", color: "bg-warning text-warning-foreground" },
+  arriving: { label: "في الطريق", color: "bg-info text-info-foreground" },
+  picked_up: { label: "تم الاستلام", color: "bg-success text-success-foreground" },
   dropped_off: { label: "تم التوصيل", color: "bg-muted-foreground" },
 };
 
@@ -187,70 +187,82 @@ export function TripHistory({ routeId, routeName, routeNumber }: TripHistoryProp
 
       {/* Trip Detail Dialog */}
       <Dialog open={!!selectedTripId} onOpenChange={() => setSelectedTripId(null)}>
-        <DialogContent className="max-w-lg max-h-[80vh]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Bus className="h-5 w-5 text-primary" />
-              تفاصيل الرحلة
+        <DialogContent
+          dir="rtl"
+          className="flex h-[min(90dvh,46rem)] w-[calc(100%-1.5rem)] max-w-2xl flex-col gap-0 overflow-hidden p-0 sm:rounded-xl"
+        >
+          <DialogHeader className="shrink-0 border-b px-5 py-4 text-start sm:px-6">
+            <DialogTitle className="flex items-center gap-2 pe-8 text-lg leading-7">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                <Bus className="h-5 w-5 text-primary" />
+              </span>
+              <span className="min-w-0">
+                <span className="block">تفاصيل الرحلة</span>
+                {routeName && (
+                  <span className="mt-0.5 block truncate text-xs font-normal text-muted-foreground">
+                    #{routeNumber ?? "-"} - {routeName}
+                  </span>
+                )}
+              </span>
             </DialogTitle>
           </DialogHeader>
 
           {selectedTrip && (
-            <div className="space-y-4">
+            <div className="flex min-h-0 flex-1 flex-col gap-4 px-4 pb-4 pt-4 sm:px-6 sm:pb-6">
               {/* Trip summary */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-muted/50 rounded-lg p-3">
+              <div className="grid shrink-0 grid-cols-2 gap-2 sm:gap-3">
+                <div className="min-w-0 rounded-lg border bg-muted/30 p-3">
                   <p className="text-xs text-muted-foreground">بداية الرحلة</p>
-                  <p className="font-medium text-sm">
+                  <p className="mt-1 break-words text-sm font-semibold tabular-nums">
                     {selectedTrip.started_at ? format(new Date(selectedTrip.started_at), "HH:mm - dd/MM/yyyy") : "-"}
                   </p>
                 </div>
-                <div className="bg-muted/50 rounded-lg p-3">
+                <div className="min-w-0 rounded-lg border bg-muted/30 p-3">
                   <p className="text-xs text-muted-foreground">نهاية الرحلة</p>
-                  <p className="font-medium text-sm">
+                  <p className="mt-1 break-words text-sm font-semibold tabular-nums">
                     {selectedTrip.completed_at ? format(new Date(selectedTrip.completed_at), "HH:mm - dd/MM/yyyy") : "-"}
                   </p>
                 </div>
                 {(selectedTrip as any).drivers && (
-                  <div className="bg-muted/50 rounded-lg p-3">
+                  <div className="min-w-0 rounded-lg border bg-muted/30 p-3">
                     <p className="text-xs text-muted-foreground">السائق</p>
-                    <p className="font-medium text-sm">{(selectedTrip as any).drivers.full_name}</p>
+                    <p className="mt-1 break-words text-sm font-semibold">{(selectedTrip as any).drivers.full_name}</p>
                   </div>
                 )}
                 {(selectedTrip as any).supervisors && (
-                  <div className="bg-muted/50 rounded-lg p-3">
+                  <div className="min-w-0 rounded-lg border bg-muted/30 p-3">
                     <p className="text-xs text-muted-foreground">المشرف</p>
-                    <p className="font-medium text-sm">{(selectedTrip as any).supervisors.full_name}</p>
+                    <p className="mt-1 break-words text-sm font-semibold">{(selectedTrip as any).supervisors.full_name}</p>
                   </div>
                 )}
               </div>
 
               {/* Students */}
-              <div>
-                <h4 className="font-semibold text-sm flex items-center gap-2 mb-3">
-                  <Users className="h-4 w-4" />
+              <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border bg-muted/10">
+                <h4 className="flex shrink-0 items-center gap-2 border-b bg-background px-4 py-3 text-sm font-semibold">
+                  <Users className="h-4 w-4 text-primary" />
                   الطلاب ({tripDetails.length})
                 </h4>
-                <ScrollArea className="max-h-[300px]">
+                <ScrollArea className="min-h-0 flex-1">
                   {detailsLoading ? (
                     <div className="flex justify-center py-6">
                       <Loader2 className="h-5 w-5 animate-spin" />
                     </div>
                   ) : (
-                    <div className="space-y-2">
+                    <div className="space-y-2 p-2 sm:p-3">
                       {tripDetails.map((student: any) => {
                         const statusInfo = STATUS_LABELS[student.status] || STATUS_LABELS.pending;
                         return (
-                          <div key={student.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                            <div className="flex items-center gap-3">
+                          <div key={student.id} className="flex min-h-16 items-center justify-between gap-3 rounded-lg border bg-card p-3 shadow-sm">
+                            <div className="flex min-w-0 items-center gap-3">
                               {student.pickup_order && (
-                                <span className="w-6 h-6 bg-primary text-primary-foreground rounded-full text-xs flex items-center justify-center font-bold">
+                                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
                                   {student.pickup_order}
                                 </span>
                               )}
-                              <div>
-                                <p className="font-medium text-sm">{student.registrations?.student_name}</p>
-                                <div className="flex items-center gap-3 text-[10px] text-muted-foreground mt-0.5">
+                              <div className="min-w-0">
+                                <p className="break-words text-sm font-semibold leading-5">{student.registrations?.student_name}</p>
+                                <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
                                   {student.picked_up_at && (
                                     <span>استلام: {format(new Date(student.picked_up_at), "HH:mm")}</span>
                                   )}
@@ -260,7 +272,7 @@ export function TripHistory({ routeId, routeName, routeNumber }: TripHistoryProp
                                 </div>
                               </div>
                             </div>
-                            <Badge className={`${statusInfo.color} text-white text-[10px]`}>
+                            <Badge className={`${statusInfo.color} shrink-0 whitespace-nowrap border-0 text-[10px]`}>
                               {statusInfo.label}
                             </Badge>
                           </div>
@@ -269,7 +281,7 @@ export function TripHistory({ routeId, routeName, routeNumber }: TripHistoryProp
                     </div>
                   )}
                 </ScrollArea>
-              </div>
+              </section>
             </div>
           )}
         </DialogContent>
