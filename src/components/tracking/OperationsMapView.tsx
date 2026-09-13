@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { GoogleMap, Marker, InfoWindow } from '@react-google-maps/api';
 import { useGoogleMaps } from "@/components/maps/GoogleMapsProvider";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useCity } from "@/contexts/CityContext";
 import { matchesCity } from "@/lib/cityMatch";
 
@@ -12,8 +12,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { format } from "date-fns";
+import { format, formatDistanceToNowStrict } from "date-fns";
 import { ar } from "date-fns/locale";
+import { useToast } from "@/hooks/use-toast";
 
 interface ActiveTrip {
   id: string;
@@ -21,6 +22,7 @@ interface ActiveTrip {
   current_latitude: number | null;
   current_longitude: number | null;
   started_at: string | null;
+  last_location_update: string | null;
   routes: {
     id: string;
     name: string;
