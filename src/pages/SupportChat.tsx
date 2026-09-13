@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import {
   MessageCircle, Send, Search, Loader2, User, Plus, Phone,
-  ArrowLeft, CheckCircle, UserCircle, Users, Bus, Headphones,
+  ArrowLeft, CheckCircle, UserCircle, Users, Bus, Headphones, MailOpen,
 } from "lucide-react";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -45,6 +45,7 @@ export default function SupportChat() {
   const [selectedConvId, setSelectedConvId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [category, setCategory] = useState<ChatCategory>("all");
+  const [showUnreadOnly, setShowUnreadOnly] = useState(false);
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -216,6 +217,7 @@ export default function SupportChat() {
   });
 
   const filteredConversations = allConversations.filter((c) => {
+    if (showUnreadOnly && c.unread === 0) return false;
     const term = searchTerm.toLowerCase();
     const matchSearch = c.name.toLowerCase().includes(term) || (c.meta || "").toLowerCase().includes(term);
     const matchCategory = category === "all" || c.type === category;
@@ -520,6 +522,24 @@ export default function SupportChat() {
           />
         </div>
         <div className="flex gap-1 overflow-x-auto pb-1">
+          {totalUnread > 0 && (
+            <button
+              onClick={() => setShowUnreadOnly((v) => !v)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors flex items-center gap-1 ${
+                showUnreadOnly
+                  ? "bg-emerald-600 text-white"
+                  : "bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/25"
+              }`}
+            >
+              <MailOpen className="h-3 w-3" />
+              Unread
+              <span className={`min-w-[16px] h-4 px-1 rounded-full text-[10px] font-bold flex items-center justify-center ${
+                showUnreadOnly ? "bg-white/25 text-white" : "bg-emerald-500 text-white"
+              }`}>
+                {totalUnread > 99 ? "99+" : totalUnread}
+              </span>
+            </button>
+          )}
           {[
             { value: "all", label: "All" },
             { value: "staff_dm", label: "Staff" },
@@ -531,15 +551,15 @@ export default function SupportChat() {
           ].map((cat) => (
             <button
               key={cat.value}
-              onClick={() => setCategory(cat.value as ChatCategory)}
+              onClick={() => { setCategory(cat.value as ChatCategory); setShowUnreadOnly(false); }}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors flex items-center gap-1 ${
-                category === cat.value
+                category === cat.value && !showUnreadOnly
                   ? "bg-primary text-primary-foreground"
                   : "bg-muted/50 text-muted-foreground hover:bg-muted"
               }`}
             >
               {cat.label}
-              {cat.value === "all" && totalUnread > 0 && (
+              {cat.value === "all" && totalUnread > 0 && !showUnreadOnly && (
                 <span className="min-w-[16px] h-4 px-1 rounded-full bg-emerald-500 text-white text-[10px] font-bold flex items-center justify-center">
                   {totalUnread > 99 ? "99+" : totalUnread}
                 </span>
@@ -576,7 +596,7 @@ export default function SupportChat() {
         ) : filteredConversations.length === 0 ? (
           <div className="py-12 text-center text-muted-foreground">
             <MessageCircle className="h-10 w-10 mx-auto mb-2 text-muted-foreground/30" />
-            <p className="text-sm">No conversations</p>
+            <p className="text-sm">{showUnreadOnly ? "No unread messages" : "No conversations"}</p>
           </div>
         ) : (
           <div className="divide-y divide-border/20">
