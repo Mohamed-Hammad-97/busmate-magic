@@ -355,18 +355,23 @@ export function OperationsMapView() {
             </Button>
           </div>
         ) : (
-          <div className="flex items-center gap-2">
-            <Bus className="h-5 w-5 text-primary" />
-            <span className="font-semibold">{tripsWithLocation.length}</span>
-            <span className="text-muted-foreground text-sm">
-              باص على الخريطة
-              {activeTrips.length - tripsWithLocation.length > 0
-                ? ` · ${activeTrips.length - tripsWithLocation.length} بانتظار إشارة GPS`
-                : ""}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-sm">
+              <Bus className="h-4 w-4 text-primary" />
+              <span className="font-semibold">{tripsWithLocation.length}</span>
+              <span className="text-muted-foreground">باص على الخريطة</span>
             </span>
+            {staleTrips.length > 0 && (
+              <span className="flex items-center gap-1.5 rounded-full bg-amber-500/15 px-2.5 py-1 text-sm">
+                <AlertTriangle className="h-4 w-4 text-amber-600" />
+                <span className="font-semibold">{staleTrips.length}</span>
+                <span className="text-muted-foreground">بدون إشارة</span>
+              </span>
+            )}
           </div>
         )}
       </div>
+
 
 
       {/* No active trips message */}
