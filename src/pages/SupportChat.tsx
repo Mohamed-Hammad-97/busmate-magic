@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import {
   MessageCircle, Send, Search, Loader2, User, Plus, Phone,
-  ArrowLeft, CheckCircle, UserCircle, Users, Bus, Headphones,
+  ArrowLeft, CheckCircle, UserCircle, Users, Bus, Headphones, MailOpen,
 } from "lucide-react";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -45,6 +45,7 @@ export default function SupportChat() {
   const [selectedConvId, setSelectedConvId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [category, setCategory] = useState<ChatCategory>("all");
+  const [showUnreadOnly, setShowUnreadOnly] = useState(false);
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -216,6 +217,7 @@ export default function SupportChat() {
   });
 
   const filteredConversations = allConversations.filter((c) => {
+    if (showUnreadOnly && c.unread === 0) return false;
     const term = searchTerm.toLowerCase();
     const matchSearch = c.name.toLowerCase().includes(term) || (c.meta || "").toLowerCase().includes(term);
     const matchCategory = category === "all" || c.type === category;
