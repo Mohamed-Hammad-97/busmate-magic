@@ -81,6 +81,7 @@ export function OperationsMapView() {
   const { isLoaded } = useGoogleMaps();
   const { selectedCity } = useCity();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [selectedTrip, setSelectedTrip] = useState<ActiveTrip | null>(null);
@@ -98,6 +99,7 @@ export function OperationsMapView() {
           current_latitude,
           current_longitude,
           started_at,
+          last_location_update,
           routes!inner (
             id,
             name,
