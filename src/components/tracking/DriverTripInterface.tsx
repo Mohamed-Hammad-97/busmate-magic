@@ -193,10 +193,21 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
             </div>
           )}
 
-          {geoError && (
-            <div className="mt-2 p-2 bg-destructive/10 rounded-lg flex items-center gap-2 text-destructive text-sm">
-              <AlertCircle className="h-4 w-4" />
-              {geoError}
+          {activeTrip?.status === "in_progress" && (geoError || !isTracking || (!latitude && !longitude)) && (
+            <div className="mt-2 p-3 bg-destructive/10 rounded-lg flex items-start gap-2 text-destructive text-sm">
+              <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="font-medium">موقع الباص غير ظاهر للإدارة وأولياء الأمور</p>
+                <p className="text-xs opacity-80">{geoError || "لم يتم تشغيل تتبع الموقع بعد"}</p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="mt-2 h-7 text-xs"
+                  onClick={handleRetryTracking}
+                >
+                  تشغيل تتبع الموقع
+                </Button>
+              </div>
             </div>
           )}
         </div>
