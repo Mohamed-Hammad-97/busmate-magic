@@ -13,16 +13,18 @@ import { MapPin, Users, Map, List, History, Bus, ChevronLeft } from "lucide-reac
 import { useCity } from "@/contexts/CityContext";
 import { GoogleMapsProvider } from "@/components/maps/GoogleMapsProvider";
 import { PageHero } from "@/components/layout/PageHero";
+import { matchesCity } from "@/lib/cityMatch";
+
 
 export default function LiveTracking() {
   const { t } = useTranslation();
   const { selectedCity } = useCity();
   const [historyRouteId, setHistoryRouteId] = useState<string | null>(null);
 
-  const { data: routes = [], isLoading } = useQuery({
-    queryKey: ["routes-for-tracking", selectedCity],
+  const { data: allRoutes = [], isLoading } = useQuery({
+    queryKey: ["routes-for-tracking"],
     queryFn: async () => {
-      let query = supabase
+      const { data, error } = await supabase
         .from("routes")
         .select(`
           *,
@@ -34,16 +36,16 @@ export default function LiveTracking() {
         .eq("is_active", true)
         .order("route_number", { ascending: true, nullsFirst: false });
 
-
-      if (selectedCity !== "all") {
-        query = query.eq("schools.city", selectedCity);
-      }
-
-      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
   });
+
+  const routes = React.useMemo(
+    () => allRoutes.filter((r: any) => matchesCity(r.schools?.city, selectedCity)),
+    [allRoutes, selectedCity],
+  );
+
 
   const { data: activeTrips = [] } = useQuery({
     queryKey: ["active-trips"],

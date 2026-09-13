@@ -3,6 +3,8 @@ import { GoogleMap, Marker, InfoWindow } from '@react-google-maps/api';
 import { useGoogleMaps } from "@/components/maps/GoogleMapsProvider";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCity } from "@/contexts/CityContext";
+import { matchesCity } from "@/lib/cityMatch";
+
 
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Bus, Users, Phone, MapPin, Clock, X } from "lucide-react";
@@ -114,7 +116,8 @@ export function OperationsMapView() {
   const activeTrips =
     selectedCity === "all"
       ? allActiveTrips
-      : allActiveTrips.filter((t) => t.routes?.schools?.city === selectedCity);
+      : allActiveTrips.filter((t) => matchesCity(t.routes?.schools?.city, selectedCity));
+
 
   const tripsWithLocation = activeTrips.filter((t) => t.current_latitude && t.current_longitude);
 
