@@ -88,6 +88,15 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
     return () => { stopTracking(); };
   }, []);
 
+  const handleRetryTracking = () => {
+    stopTracking();
+    startTracking((lat, lng) => {
+      if (activeTrip?.id) {
+        updateLocation({ tripId: activeTrip.id, lat, lng });
+      }
+    });
+  };
+
   const handleStartTrip = () => {
     startTrip({
       routeId,
