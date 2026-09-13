@@ -99,7 +99,7 @@ export default function ParentAuth() {
 
     setIsLoading(true);
     setError("");
-    const { error, needsOtp } = await loginWithPassword(phone, password);
+    const { error } = await loginWithPassword(phone, password);
     setIsLoading(false);
 
     if (error) {

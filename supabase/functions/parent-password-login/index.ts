@@ -11,7 +11,7 @@ import { hashPassword, verifyPassword } from "../_shared/password-utils.ts";
 
 const OTP_FALLBACK = {
   error:
-    "تعذر تسجيل الدخول بكلمة المرور. استخدم رمز التحقق للدخول أو إعادة تعيين كلمة المرور",
+    "رقم الهاتف أو كلمة المرور غير صحيحة. يمكنك الدخول برمز التحقق بدلاً من ذلك",
   needs_otp: true,
 };
 
