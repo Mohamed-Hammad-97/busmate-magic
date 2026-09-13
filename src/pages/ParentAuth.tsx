@@ -99,14 +99,12 @@ export default function ParentAuth() {
 
     setIsLoading(true);
     setError("");
-    const { error, needsOtp } = await loginWithPassword(phone, password);
+    const { error } = await loginWithPassword(phone, password);
     setIsLoading(false);
 
     if (error) {
-      if (needsOtp) {
-        await handleSwitchToOtp();
-        return;
-      }
+      // Always tell the parent the sign-in failed. The code option stays
+      // available through the button below instead of firing an SMS silently.
       setError(error.message);
       toast({ variant: "destructive", title: t('parentPortal.loginError'), description: error.message });
     }

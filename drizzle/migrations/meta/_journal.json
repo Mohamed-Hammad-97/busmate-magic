@@ -57,6 +57,13 @@
       "when": 1789207679562,
       "tag": "0007_mark_conversation_read_join_staff",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1789297153623,
+      "tag": "0008_allow_employee_records_to_create_conversations",
+      "breakpoints": true
     }
   ]
 }

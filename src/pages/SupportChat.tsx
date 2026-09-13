@@ -128,19 +128,36 @@ export default function SupportChat() {
       const counts: Record<string, number> = {};
       if (!user?.id) return counts;
 
-      const [{ data: myParts }, { data: unified }, { data: legacy }] = await Promise.all([
-        supabase.from("conversation_participants").select("conversation_id, last_read_at").eq("user_id", user.id),
-        supabase.from("unified_messages").select("conversation_id, sender_id, created_at"),
-        supabase.from("chat_messages").select("conversation_id, sender_id, is_read, sender_type").eq("is_read", false),
-      ]);
+      const { data: myParts } = await supabase
+        .from("conversation_participants")
+        .select("conversation_id, last_read_at")
+        .eq("user_id", user.id);
 
       const lastRead = new Map<string, string | null>(
         (myParts || []).map((p: any) => [p.conversation_id, p.last_read_at]),
       );
+      const myConvIds = Array.from(lastRead.keys());
+
+      // Only count conversations the user actually belongs to, and only
+      // messages newer than their own read position.
+      const [{ data: unified }, { data: legacy }] = await Promise.all([
+        myConvIds.length
+          ? supabase
+              .from("unified_messages")
+              .select("conversation_id, sender_id, created_at")
+              .in("conversation_id", myConvIds)
+              .order("created_at", { ascending: false })
+              .limit(2000)
+          : Promise.resolve({ data: [] as any[] }),
+        supabase.from("chat_messages").select("conversation_id, sender_id, is_read, sender_type").eq("is_read", false),
+      ]);
 
       (unified || []).forEach((m: any) => {
         if (m.sender_id === user.id) return;
         const seenAt = lastRead.get(m.conversation_id);
+        // No read position yet → treat the conversation as already seen up to
+        // now only for messages created before the participant joined is not
+        // tracked, so count them all; participants always have a row here.
         if (seenAt && new Date(m.created_at) <= new Date(seenAt)) return;
         counts[m.conversation_id] = (counts[m.conversation_id] || 0) + 1;
       });
