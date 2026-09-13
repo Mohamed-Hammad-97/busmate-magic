@@ -28,7 +28,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   dropped_off: { label: "تم التوصيل", color: "bg-muted-foreground" },
 };
 
-export function TripHistory({ routeId, routeName }: TripHistoryProps) {
+export function TripHistory({ routeId, routeName, routeNumber }: TripHistoryProps) {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
 
