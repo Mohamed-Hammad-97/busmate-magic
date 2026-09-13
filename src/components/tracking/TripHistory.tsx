@@ -18,6 +18,7 @@ import { ar } from "date-fns/locale";
 interface TripHistoryProps {
   routeId: string;
   routeName?: string;
+  routeNumber?: string | number | null;
 }
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
@@ -27,7 +28,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   dropped_off: { label: "تم التوصيل", color: "bg-muted-foreground" },
 };
 
-export function TripHistory({ routeId, routeName }: TripHistoryProps) {
+export function TripHistory({ routeId, routeName, routeNumber }: TripHistoryProps) {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
 
@@ -89,7 +90,7 @@ export function TripHistory({ routeId, routeName }: TripHistoryProps) {
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-base flex items-center gap-2">
           <CalendarDays className="h-5 w-5 text-primary" />
-          سجل الرحلات {routeName && `- ${routeName}`}
+          سجل الرحلات {routeName && `- #${routeNumber ?? '-'} - ${routeName}`}
         </h3>
         <Popover>
           <PopoverTrigger asChild>
