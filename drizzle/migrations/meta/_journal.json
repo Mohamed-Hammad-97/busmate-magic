@@ -64,6 +64,13 @@
       "when": 1789297153623,
       "tag": "0008_allow_employee_records_to_create_conversations",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1789308918374,
+      "tag": "0009_restrict_anon_definer_fns_and_trip_location",
+      "breakpoints": true
     }
   ]
 }
