@@ -90,7 +90,7 @@ export function TripHistory({ routeId, routeName, routeNumber }: TripHistoryProp
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-base flex items-center gap-2">
           <CalendarDays className="h-5 w-5 text-primary" />
-          سجل الرحلات {routeName && `- ${routeName}`}
+          سجل الرحلات {routeName && `- #${routeNumber ?? '-'} - ${routeName}`}
         </h3>
         <Popover>
           <PopoverTrigger asChild>
