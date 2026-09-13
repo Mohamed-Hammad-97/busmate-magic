@@ -18,6 +18,7 @@ import { ar } from "date-fns/locale";
 interface TripHistoryProps {
   routeId: string;
   routeName?: string;
+  routeNumber?: string | number | null;
 }
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
