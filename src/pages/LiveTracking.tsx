@@ -103,7 +103,10 @@ export default function LiveTracking() {
                   <Card key={route.id} className="hover:shadow-md transition-shadow">
                     <CardHeader className="pb-2">
                       <div className="flex items-center justify-between">
-                        <CardTitle className="text-base">{route.name}</CardTitle>
+                        <CardTitle className="text-base">
+                          <span className="text-muted-foreground font-normal">#{route.route_number ?? '-'}</span>
+                          {' - '}{route.name}
+                        </CardTitle>
                         {isActive && (
                           <Badge className="bg-green-500">{t('liveTracking.active')}</Badge>
                         )}
