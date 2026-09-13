@@ -385,15 +385,39 @@ export function OperationsMapView() {
         </div>
       )}
 
-      {/* Active trips with no GPS fix yet */}
-      {!tripsLoading && activeTrips.length > 0 && tripsWithLocation.length === 0 && (
-        <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm pointer-events-none">
-          <div className="text-center p-6 bg-background rounded-lg shadow-lg border pointer-events-auto">
-            <Bus className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-            <h3 className="font-semibold text-lg">بانتظار إشارة GPS من السائقين</h3>
-            <p className="text-muted-foreground text-sm">{activeTrips.length} رحلة نشطة</p>
-          </div>
-        </div>
+      {/* Active trips with no GPS signal */}
+      {!tripsLoading && staleTrips.length > 0 && !selectedTrip && (
+        <Card className="absolute bottom-4 right-4 w-[19rem] max-w-[calc(100%-2rem)] shadow-xl" dir="rtl">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-600" />
+              رحلات بدون إشارة GPS ({staleTrips.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <ScrollArea className="max-h-44">
+              <div className="space-y-2">
+                {staleTrips.map((trip) => (
+                  <div key={trip.id} className="rounded-md border bg-muted/30 p-2 text-sm">
+                    <p className="font-medium">{routeLabel(trip)}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {trip.drivers?.full_name || "بدون سائق"} · بدأت {signalAge(trip)}
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-2 h-7 w-full text-xs"
+                      disabled={endTripMutation.isPending}
+                      onClick={() => endTripMutation.mutate(trip.id)}
+                    >
+                      إنهاء الرحلة
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
       )}
 
       {/* Selected trip details panel */}
