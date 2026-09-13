@@ -79,7 +79,7 @@ const RegisterDailyLine: React.FC = () => {
     const today = new Date().toISOString().slice(0, 10);
     Promise.all([
       supabase.from('daily_line_stations').select('*').eq('line_id', lineId).eq('is_active', true).order('station_order'),
-      supabase.from('daily_line_trips').select('*').eq('line_id', lineId).eq('status', 'scheduled').gte('trip_date', today).order('trip_date').order('departure_time'),
+      supabase.from('daily_line_trips').select('id, line_id, trip_date, departure_time, total_seats, available_seats, cash_price, instapay_price, status, created_at, updated_at').eq('line_id', lineId).eq('status', 'scheduled').gte('trip_date', today).order('trip_date').order('departure_time'),
     ]).then(([{ data: st }, { data: tr }]) => {
       setStations(st ?? []);
       const now = new Date();
