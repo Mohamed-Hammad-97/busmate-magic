@@ -161,7 +161,10 @@ export default function LiveTracking() {
                         <div className="flex items-center gap-2">
                           <Bus className="h-5 w-5 text-primary" />
                           <div>
-                            <p className="font-medium text-sm">{route.name}</p>
+                            <p className="font-medium text-sm">
+                              <span className="text-muted-foreground font-normal">#{route.route_number ?? '-'}</span>
+                              {' - '}{route.name}
+                            </p>
                             <p className="text-xs text-muted-foreground">{route.schools?.name}</p>
                           </div>
                         </div>
@@ -179,6 +182,7 @@ export default function LiveTracking() {
                 <TripHistory
                   routeId={historyRouteId}
                   routeName={routes.find(r => r.id === historyRouteId)?.name}
+                  routeNumber={routes.find(r => r.id === historyRouteId)?.route_number}
                 />
               </div>
             )}
