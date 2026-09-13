@@ -318,6 +318,30 @@ export function OperationsMapView() {
             />
           );
         })}
+
+        {/* Faded markers at the school for trips without a GPS signal */}
+        {staleTrips.map((trip) => {
+          const school = trip.routes?.schools;
+          if (!school?.latitude || !school?.longitude) return null;
+          if (!window.google?.maps) return null;
+          return (
+            <Marker
+              key={`stale-${trip.id}`}
+              position={{ lat: Number(school.latitude), lng: Number(school.longitude) }}
+              opacity={0.55}
+              icon={{
+                url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                  <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 48 48">
+                    <circle cx="24" cy="24" r="21" fill="#94A3B8" stroke="white" stroke-width="3" stroke-dasharray="4 3"/>
+                    <path d="M35 23.5C35 22 34 21 32 21H29L27 16H21L19 21H16C14 21 13 22 13 23.5L13 32H15V33.5C15 34.3 15.7 35 16.5 35C17.3 35 18 34.3 18 33.5V32H30V33.5C30 34.3 30.7 35 31.5 35C32.3 35 33 34.3 33 33.5V32H35V23.5ZM17 28C16 28 15 27 15 26C15 25 16 24 17 24C18 24 19 25 19 26C19 27 18 28 17 28ZM31 28C30 28 29 27 29 26C29 25 30 24 31 24C32 24 33 25 33 26C33 27 32 28 31 28Z" fill="white"/>
+                  </svg>
+                `),
+                scaledSize: new google.maps.Size(44, 44),
+              }}
+              title={`${routeLabel(trip)} — بانتظار إشارة GPS`}
+            />
+          );
+        })}
       </GoogleMap>
 
       {/* Header: selected bus, or live bus counters */}
