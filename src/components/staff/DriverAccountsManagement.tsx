@@ -626,6 +626,76 @@ export function DriverAccountsManagement({ cityFilter, staffContext = "school" }
           })}
         </div>
       )}
+
+      {/* Manage login dialog */}
+      <Dialog open={!!manageAccountRow} onOpenChange={(open) => { if (!open) setManageAccountRow(null); }}>
+        <DialogContent className="rounded-2xl border-border/50">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-lg">
+              <div className="p-2 rounded-xl bg-primary/10">
+                <Settings2 className="h-5 w-5 text-primary" />
+              </div>
+              إدارة بيانات الدخول
+            </DialogTitle>
+            <DialogDescription>
+              {(manageAccountRow?.driver || manageAccountRow?.supervisor)?.full_name}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 mt-2">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">رقم الهاتف للدخول</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="tel"
+                  value={newPhone}
+                  onChange={(e) => setNewPhone(e.target.value)}
+                  className="h-11 rounded-xl border-border/50"
+                  dir="ltr"
+                />
+                <Button
+                  className="h-11 rounded-xl shrink-0"
+                  disabled={manageAccount.isPending || !newPhone || phoneDigits(newPhone) === phoneDigits(manageAccountRow?.phone)}
+                  onClick={() => manageAccount.mutate({ action: "update_phone", accountId: manageAccountRow.id, phone: newPhone })}
+                >
+                  حفظ
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">هذا هو الرقم الذي يسجل به الدخول.</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">كلمة مرور جديدة</Label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Key className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type={showNewPassword ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="6 أحرف على الأقل"
+                    className="pr-10 pl-10 h-11 rounded-xl border-border/50"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                <Button
+                  className="h-11 rounded-xl shrink-0"
+                  disabled={manageAccount.isPending || newPassword.length < 6}
+                  onClick={() => manageAccount.mutate({ action: "reset_password", accountId: manageAccountRow.id, password: newPassword })}
+                >
+                  تغيير
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
