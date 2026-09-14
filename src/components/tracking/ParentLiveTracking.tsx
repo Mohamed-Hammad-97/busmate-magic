@@ -396,6 +396,7 @@ export function ParentLiveTracking() {
           </div>
         </div>
       </Card>
+      <ParentTripHistory routeIds={routeIds} students={historyStudents} />
     </div>
   );
 }
