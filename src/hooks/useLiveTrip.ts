@@ -146,72 +146,44 @@ export function useLiveTrip(routeId?: string) {
     enabled: !!activeTrip?.id,
   });
 
-  // Start trip mutation
+  // Start trip mutation (handled server-side so permissions are checked safely)
   const startTripMutation = useMutation({
     mutationFn: async (data: { routeId: string; driverId?: string; supervisorId?: string }) => {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) throw new Error("Not authenticated");
-
-      // Create live trip
-      const { data: trip, error: tripError } = await supabase
-        .from("live_trips")
-        .insert({
-          route_id: data.routeId,
-          driver_id: data.driverId || null,
-          supervisor_id: data.supervisorId || null,
-          started_by: user.user.id,
-          status: "in_progress",
-          started_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
-
-      if (tripError) throw tripError;
-
-      // Get all students assigned to this route (cancelled registrations excluded)
-      const { data: rawAssignments, error: assignError } = await supabase
-        .from("route_assignments")
-        .select("registration_id, pickup_order, registrations(status)")
-        .eq("route_id", data.routeId);
-
-      if (assignError) throw assignError;
-
-      const assignments = (rawAssignments || []).filter(
-        (a: any) => a.registrations && a.registrations.status !== "cancelled"
-      );
-
-      // Create status entries for each student
-      if (assignments && assignments.length > 0) {
-        const studentStatuses = assignments.map((a) => ({
-          live_trip_id: trip.id,
-          registration_id: a.registration_id,
-          pickup_order: a.pickup_order,
-          status: "pending",
-        }));
-
-        const { error: statusError } = await supabase
-          .from("trip_student_status")
-          .insert(studentStatuses);
-
-        if (statusError) throw statusError;
+      // Make sure we send a fresh session; stale tokens caused silent permission errors
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        await supabase.auth.refreshSession();
       }
 
-      // Send trip started notification to all parents
-      const { error: notifError } = await supabase
-        .from("trip_notifications")
-        .insert(
-          assignments?.map((a) => ({
-            live_trip_id: trip.id,
-            registration_id: a.registration_id,
-            notification_type: "trip_started" as const,
-            title: "الرحلة بدأت",
-            message: "بدأ الباص في الطريق لاستلام الطلاب",
-          })) || []
+      const { data: result, error } = await supabase.functions.invoke("start-live-trip", {
+        body: { routeId: data.routeId },
+      });
+
+      if (error) {
+        let code = "";
+        let message = error.message;
+        try {
+          const ctx = (error as any).context;
+          const parsed = ctx && typeof ctx.json === "function" ? await ctx.json() : null;
+          if (parsed) {
+            code = parsed.code || "";
+            message = parsed.error || message;
+          }
+        } catch {
+          // keep default message
+        }
+        const err = new Error(
+          code === "SESSION_EXPIRED"
+            ? "انتهت صلاحية الجلسة. برجاء تسجيل الدخول مرة أخرى."
+            : code === "NOT_ASSIGNED"
+              ? "أنت غير مسؤول عن هذا الخط اليوم."
+              : message,
         );
+        (err as any).code = code;
+        throw err;
+      }
 
-      if (notifError) console.error("Failed to send notifications:", notifError);
-
-      return trip;
+      return (result as { trip: LiveTrip }).trip;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["live-trip"] });

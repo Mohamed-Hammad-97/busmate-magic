@@ -78,6 +78,13 @@
       "when": 1789308972777,
       "tag": "0010_scope_remaining_helper_policies_to_authenticated",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1789403883111,
+      "tag": "0011_fix_live_trips_start_policy",
+      "breakpoints": true
     }
   ]
 }
