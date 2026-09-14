@@ -28,6 +28,8 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const phoneSchema = z.string().regex(/^01[0125]\d{8}$/, "رقم الهاتف غير صالح");
 
+const phoneDigits = (value?: string | null) => String(value ?? "").replace(/\D/g, "");
+
 const cityMapping: Record<string, string[]> = {
   cairo: ['cairo', 'القاهرة', 'قاهرة', 'Cairo'],
   giza: ['giza', 'الجيزة', 'جيزة', 'Giza'],
