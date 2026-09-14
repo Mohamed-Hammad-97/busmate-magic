@@ -47,7 +47,9 @@ export default function DriverAuth() {
     setIsLoading(false);
 
     if (error) {
-      toast({ variant: "destructive", title: t('driverPortal.loginError'), description: t('driverPortal.loginErrorDesc') });
+      const description = error.message || t('driverPortal.loginErrorDesc');
+      setError(description);
+      toast({ variant: "destructive", title: t('driverPortal.loginError'), description });
     }
   };
 
