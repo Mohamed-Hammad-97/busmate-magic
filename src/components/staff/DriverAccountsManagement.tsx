@@ -235,6 +235,36 @@ export function DriverAccountsManagement({ cityFilter, staffContext = "school" }
     },
   });
 
+  const manageAccount = useMutation({
+    mutationFn: async (payload: { action: "reset_password" | "update_phone"; accountId: string; password?: string; phone?: string }) => {
+      const { data, error } = await supabase.functions.invoke("manage-driver-account", { body: payload });
+      if (error) {
+        let message = "";
+        try {
+          const parsed = await (error as any).context?.json?.();
+          message = parsed?.error || "";
+        } catch {
+          /* ignore */
+        }
+        throw new Error(message || "تعذر تنفيذ العملية");
+      }
+      if ((data as any)?.error) throw new Error((data as any).error);
+      return data;
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["driver-accounts"] });
+      toast({
+        title: variables.action === "reset_password" ? "تم تغيير كلمة المرور" : "تم تحديث رقم الدخول",
+      });
+      setManageAccountRow(null);
+      setNewPassword("");
+      setNewPhone("");
+    },
+    onError: (error: any) => {
+      toast({ variant: "destructive", title: "خطأ", description: error.message });
+    },
+  });
+
   const resetForm = () => {
     setAccountType("driver");
     setSelectedPersonId("");
