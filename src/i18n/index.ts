@@ -765,6 +765,8 @@ const resources = {
         liveTrackingDesc: 'Track the bus location in real time',
         notifications: 'Instant Notifications',
         notificationsDesc: 'Get alerts when the bus arrives',
+        closeTripDetails: 'Close trip details',
+        showTripDetails: 'Trip details',
         // Dashboard
         welcome: 'Welcome',
         accountOverview: "Here's an overview of your account",
@@ -1807,6 +1809,8 @@ const resources = {
         liveTrackingDesc: 'تابع موقع الباص في الوقت الفعلي',
         notifications: 'إشعارات فورية',
         notificationsDesc: 'احصل على تنبيهات عند وصول الباص',
+        closeTripDetails: 'إغلاق تفاصيل الرحلة',
+        showTripDetails: 'تفاصيل الرحلة',
         // Dashboard
         welcome: 'مرحباً',
         accountOverview: 'إليك نظرة عامة على حسابك',
