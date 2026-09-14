@@ -55,19 +55,18 @@ serve(async (req) => {
 
     const today = new Date().toISOString().slice(0, 10);
     let isCovering = false;
-    if (account) {
+    if (account && (account.driver_id || account.supervisor_id)) {
+      const filters = [
+        account.driver_id ? `covering_driver_id.eq.${account.driver_id}` : null,
+        account.supervisor_id ? `covering_supervisor_id.eq.${account.supervisor_id}` : null,
+      ].filter(Boolean) as string[];
+
       const { data: coverage } = await admin
         .from("staff_coverage")
         .select("id")
         .eq("route_id", routeId)
         .eq("coverage_date", today)
-        .or(
-          [
-            account.covering_key ? "" : null,
-            account.driver_id ? `covering_driver_id.eq.${account.driver_id}` : null,
-            account.supervisor_id ? `covering_supervisor_id.eq.${account.supervisor_id}` : null,
-          ].filter(Boolean).join(","),
-        )
+        .or(filters.join(","))
         .limit(1)
         .maybeSingle();
       isCovering = !!coverage;
