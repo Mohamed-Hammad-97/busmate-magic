@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, UserPlus, User, Phone, Key, Eye, EyeOff, Shield, ShieldCheck, MapPin, Building2, Car, Users, Power, PowerOff, Search } from "lucide-react";
+import { Loader2, Plus, UserPlus, User, Phone, Key, Eye, EyeOff, Shield, ShieldCheck, MapPin, Building2, Car, Users, Power, PowerOff, Search, Settings2, AlertTriangle } from "lucide-react";
 import { z } from "zod";
 import { useCity } from "@/contexts/CityContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -60,6 +60,10 @@ export function DriverAccountsManagement({ cityFilter, staffContext = "school" }
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [manageAccountRow, setManageAccountRow] = useState<any>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [newPhone, setNewPhone] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
 
   const allowedServices = useMemo<ServiceType[]>(() => {
     if (isSuperAdmin) return ["school", "corporate", "daily_lines"];
