@@ -4,16 +4,18 @@
 
 I checked all eight names against the supervisor list and their login accounts.
 
-| Supervisor | Status |
-| --- | --- |
-| بسمة محمد محمود | Account active, signed in 27 Aug. Duplicate supervisor record exists with no account. |
-| رباب على | Account active, signed in today. |
-| نهلة محمود | **Broken.** Her phone is 01281551672, but her login is tied to 01550832871. A second, disabled account exists on 01007212486. She has never signed in. |
-| رشا رمضان | Account active, signed in 10 Sep. |
-| ولاء | Two different people named ولاء; both accounts active and both have signed in. |
-| امينة محمود | Account active, signed in 2 Sep. |
-| اية | **No supervisor record and no account exist under this name at all.** |
-| شيرين مجدى | Account active, signed in today. |
+
+| Supervisor      | Status                                                                                                                                                 |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| بسمة محمد محمود | Account active, signed in 27 Aug. Duplicate supervisor record exists with no account.                                                                  |
+| رباب على        | Account active, signed in today.                                                                                                                       |
+| نهلة محمود      | **Broken.** Her phone is 01281551672, but her login is tied to 01550832871. A second, disabled account exists on 01007212486. She has never signed in. |
+| رشا رمضان       | Account active, signed in 10 Sep.                                                                                                                      |
+| ولاء            | Two different people named ولاء; both accounts active and both have signed in.                                                                         |
+| امينة محمود     | Account active, signed in 2 Sep.                                                                                                                       |
+| اية             | **No supervisor record and no account exist under this name at all.**                                                                                  |
+| شيرين مجدى      | Account active, signed in today.                                                                                                                       |
+
 
 So there are three separate problems, not one:
 
@@ -30,6 +32,7 @@ Today the app turns whatever phone is typed into a hidden login address, so if t
 **2. Reset password and change login phone from the staff screen**
 
 On the driver/supervisor accounts screen the office gets, per account:
+
 - "Reset password" — set a new password and show it once, to read out to her.
 - "Change login phone" — update the number she signs in with, kept in sync with her record.
 - The phone her login currently uses, shown on the card, plus a warning badge when it differs from her staff record.
@@ -39,7 +42,6 @@ On the driver/supervisor accounts screen the office gets, per account:
 - Point نهلة's active account at her real number 01281551672 and remove her duplicate disabled account and duplicate supervisor record.
 - Same phone correction for عايده and منه الله.
 - Remove the duplicate بسمة supervisor record that has no account.
-- اية: I need her full name and phone number to create her, so I will leave the office a clear "create account" path on the staff screen and add her once you send the details.
 
 **4. Clearer error messages**
 
@@ -52,7 +54,3 @@ Wrong password, unknown phone, and disabled account each show their own Arabic m
 - `DriverAccountsManagement.tsx`: add the two actions, show account phone and a mismatch badge derived from `normalize_eg_phone`-style digit comparison.
 - Data corrections applied as a one-off migration, phone values normalized with `regexp_replace(phone,'\D','','g')` before comparison.
 - No RLS or schema changes beyond the data corrections.
-
-## Open item
-
-Send me اية's full name (as it should appear) and phone number and I will create her supervisor record and account.
