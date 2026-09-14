@@ -81,11 +81,17 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchDriverAccount(session.user.id);
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      let current = session;
+      // Refresh on open so a stale token never silently breaks writes (e.g. starting a trip)
+      if (current) {
+        const { data: refreshed } = await supabase.auth.refreshSession();
+        if (refreshed?.session) current = refreshed.session;
+      }
+      setSession(current);
+      setUser(current?.user ?? null);
+      if (current?.user) {
+        fetchDriverAccount(current.user.id);
       }
       setIsLoading(false);
     });

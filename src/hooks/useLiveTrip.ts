@@ -189,8 +189,14 @@ export function useLiveTrip(routeId?: string) {
       queryClient.invalidateQueries({ queryKey: ["live-trip"] });
       toast({ title: "تم بدء الرحلة", description: "تم إرسال إشعار لجميع أولياء الأمور" });
     },
-    onError: (error) => {
+    onError: async (error) => {
       toast({ title: "خطأ", description: error.message, variant: "destructive" });
+      if ((error as any).code === "SESSION_EXPIRED") {
+        await supabase.auth.signOut();
+        if (window.location.pathname.startsWith("/driver")) {
+          window.location.assign("/driver/login");
+        }
+      }
     },
   });
 
