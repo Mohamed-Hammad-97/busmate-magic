@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useParentNotifications, type LiveTrip, type TripStudentStatus } from "@/hooks/useLiveTrip";
 import { useParentAuth } from "@/contexts/ParentAuthContext";
@@ -11,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import {
   Bus, Bell, Clock, CheckCircle2, Navigation, Phone,
-  User, Loader2, Shield, AlertTriangle, MapPin, Gauge,
+  User, Loader2, Shield, AlertTriangle, MapPin, Gauge, X,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -24,12 +25,15 @@ const STATUS_LABELS: Record<string, { label: string; color: string; description:
 };
 
 export function ParentLiveTracking() {
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.language === "ar";
   const { user, parentAccount, parentAccountIds } = useParentAuth();
   const familyIds = parentAccountIds.length > 0 ? parentAccountIds : parentAccount ? [parentAccount.id] : [];
   const familyKey = familyIds.join(",");
   const { notifications, markAsRead } = useParentNotifications(user?.id);
   const isMobile = useIsMobile();
   const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
+  const [showPanel, setShowPanel] = useState(true);
 
   const { data: registrations = [], isLoading: registrationsLoading } = useQuery({
     queryKey: ["parent-registrations-tracking", familyKey],
@@ -182,127 +186,156 @@ export function ParentLiveTracking() {
         <div className="relative h-[65vh] min-h-[400px]">
           <LiveTripMap trip={currentTrip} students={currentStudentStatuses} showDriverLocation={true} isDriver={false} />
 
+          {/* Reopen button when panel is hidden */}
+          {!showPanel && (
+            <div className="absolute top-3 left-3 z-10">
+              <Button
+                variant="secondary"
+                size="sm"
+                className="rounded-full shadow-lg bg-background/95 backdrop-blur-xl"
+                onClick={() => setShowPanel(true)}
+                aria-label={t('parentPortal.showTripDetails')}
+              >
+                <Bus className="h-4 w-4" />
+                <span className="hidden sm:inline ltr:ml-2 rtl:mr-2">
+                  {t('parentPortal.showTripDetails')}
+                </span>
+              </Button>
+            </div>
+          )}
+
           {/* Floating overlay panel */}
-          <div className={`absolute top-3 left-3 z-10 ${isMobile ? 'right-3 max-w-none' : 'w-80'}`}>
-            <Card className="border-0 shadow-2xl bg-background/95 backdrop-blur-xl rounded-2xl overflow-hidden">
-              <CardContent className="p-0">
-                {/* Live badge + route */}
-                <div className="p-3 border-b bg-gradient-to-r from-green-500/10 to-emerald-500/10">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <Badge className="bg-green-500 text-white border-0 text-[10px] px-2 py-0.5 gap-1 animate-pulse">
-                      <span className="h-1.5 w-1.5 rounded-full bg-white" />
-                      LIVE NOW
-                    </Badge>
-                    <Badge variant="outline" className="text-[10px]">
-                      {currentTrip.routes?.name}
-                    </Badge>
-                  </div>
-                </div>
-
-                {/* Bus info */}
-                <div className="p-3 border-b">
-                  <div className="flex items-center gap-3">
-                    <div className="h-11 w-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                      <Bus className="h-6 w-6 text-primary" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-sm truncate">{currentTrip.routes?.schools?.name}</h3>
-                      <p className="text-xs text-muted-foreground truncate">
+          {showPanel && (
+            <div className={`absolute top-3 left-3 z-10 ${isMobile ? 'right-3 max-w-none' : 'w-80'}`}>
+              <Card className="relative border-0 shadow-2xl bg-background/95 backdrop-blur-xl rounded-2xl overflow-hidden">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-2 right-2 h-8 w-8 rounded-full bg-muted/50 hover:bg-muted"
+                  onClick={() => setShowPanel(false)}
+                  aria-label={t('parentPortal.closeTripDetails')}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+                <CardContent className="p-0">
+                  {/* Live badge + route */}
+                  <div className="p-3 border-b bg-gradient-to-r from-green-500/10 to-emerald-500/10">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <Badge className="bg-green-500 text-white border-0 text-[10px] px-2 py-0.5 gap-1 animate-pulse">
+                        <span className="h-1.5 w-1.5 rounded-full bg-white" />
+                        LIVE NOW
+                      </Badge>
+                      <Badge variant="outline" className="text-[10px]">
                         {currentTrip.routes?.name}
-                      </p>
+                      </Badge>
                     </div>
                   </div>
-                </div>
 
-                {/* Speed + Driver */}
-                <div className="p-3 border-b grid grid-cols-2 gap-3">
-                  <div className="flex items-center gap-2">
-                    <Gauge className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-[10px] text-muted-foreground uppercase">Speed</p>
-                      <p className="text-sm font-semibold">— km/h</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-[10px] text-muted-foreground uppercase">Driver</p>
-                      <p className="text-sm font-semibold truncate">{currentTrip.routes?.drivers?.full_name || "—"}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Route progress */}
-                {currentStudentStatuses.length > 0 && (
+                  {/* Bus info */}
                   <div className="p-3 border-b">
-                    <p className="text-xs text-muted-foreground mb-2">Route Progress</p>
-                    <div className="space-y-2">
-                      {currentStudentStatuses.map((student) => {
-                        const statusConfig = STATUS_LABELS[student.status] || STATUS_LABELS.pending;
-                        return (
-                          <div key={student.id} className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <div className={`w-2 h-2 rounded-full ${statusConfig.color}`} />
-                              <span className="text-xs font-medium">{student.registrations?.student_name}</span>
-                            </div>
-                            <Badge variant="outline" className="text-[10px] h-5">
-                              {statusConfig.label}
-                            </Badge>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* Call Driver button */}
-                {currentTrip.routes?.drivers?.phone && (
-                  <div className="p-3 space-y-2">
-                    <a
-                      href={`tel:${currentTrip.routes.drivers.phone}`}
-                      className="flex items-center justify-center gap-2 w-full bg-green-600 hover:bg-green-700 text-white rounded-xl py-2.5 text-sm font-medium transition-colors"
-                    >
-                      <Phone className="h-4 w-4" />
-                      Call Driver
-                    </a>
-                    <button className="flex items-center justify-center gap-2 w-full text-muted-foreground hover:text-foreground rounded-xl py-2 text-xs transition-colors">
-                      <AlertTriangle className="h-3.5 w-3.5" />
-                      Report an Issue
-                    </button>
-                  </div>
-                )}
-
-                {/* Your child info */}
-                {studentReg && (
-                  <div className="p-3 border-t bg-muted/30">
-                    <div className="flex items-center gap-2.5">
-                      {(() => {
-                        const photoPath = (studentReg as any).student_photo_url;
-                        const photoUrl = photoPath
-                          ? (photoPath.startsWith('http') ? photoPath : signedUrls[photoPath])
-                          : null;
-                        return photoUrl ? (
-                          <img
-                            src={photoUrl}
-                            alt={studentReg.student_name}
-                            className="h-9 w-9 rounded-full object-cover border-2 border-background shadow"
-                          />
-                        ) : (
-                          <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
-                            <User className="h-4 w-4 text-primary" />
-                          </div>
-                        );
-                      })()}
-                      <div>
-                        <p className="text-[10px] text-muted-foreground uppercase">Your Child</p>
-                        <p className="text-xs font-semibold">{studentReg.student_name}</p>
+                    <div className="flex items-center gap-3">
+                      <div className="h-11 w-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                        <Bus className="h-6 w-6 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-bold text-sm truncate">{currentTrip.routes?.schools?.name}</h3>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {currentTrip.routes?.name}
+                        </p>
                       </div>
                     </div>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+
+                  {/* Speed + Driver */}
+                  <div className="p-3 border-b grid grid-cols-2 gap-3">
+                    <div className="flex items-center gap-2">
+                      <Gauge className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="text-[10px] text-muted-foreground uppercase">Speed</p>
+                        <p className="text-sm font-semibold">— km/h</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="text-[10px] text-muted-foreground uppercase">Driver</p>
+                        <p className="text-sm font-semibold truncate">{currentTrip.routes?.drivers?.full_name || "—"}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Route progress */}
+                  {currentStudentStatuses.length > 0 && (
+                    <div className="p-3 border-b">
+                      <p className="text-xs text-muted-foreground mb-2">Route Progress</p>
+                      <div className="space-y-2">
+                        {currentStudentStatuses.map((student) => {
+                          const statusConfig = STATUS_LABELS[student.status] || STATUS_LABELS.pending;
+                          return (
+                            <div key={student.id} className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <div className={`w-2 h-2 rounded-full ${statusConfig.color}`} />
+                                <span className="text-xs font-medium">{student.registrations?.student_name}</span>
+                              </div>
+                              <Badge variant="outline" className="text-[10px] h-5">
+                                {statusConfig.label}
+                              </Badge>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Call Driver button */}
+                  {currentTrip.routes?.drivers?.phone && (
+                    <div className="p-3 space-y-2">
+                      <a
+                        href={`tel:${currentTrip.routes.drivers.phone}`}
+                        className="flex items-center justify-center gap-2 w-full bg-green-600 hover:bg-green-700 text-white rounded-xl py-2.5 text-sm font-medium transition-colors"
+                      >
+                        <Phone className="h-4 w-4" />
+                        Call Driver
+                      </a>
+                      <button className="flex items-center justify-center gap-2 w-full text-muted-foreground hover:text-foreground rounded-xl py-2 text-xs transition-colors">
+                        <AlertTriangle className="h-3.5 w-3.5" />
+                        Report an Issue
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Your child info */}
+                  {studentReg && (
+                    <div className="p-3 border-t bg-muted/30">
+                      <div className="flex items-center gap-2.5">
+                        {(() => {
+                          const photoPath = (studentReg as any).student_photo_url;
+                          const photoUrl = photoPath
+                            ? (photoPath.startsWith('http') ? photoPath : signedUrls[photoPath])
+                            : null;
+                          return photoUrl ? (
+                            <img
+                              src={photoUrl}
+                              alt={studentReg.student_name}
+                              className="h-9 w-9 rounded-full object-cover border-2 border-background shadow"
+                            />
+                          ) : (
+                            <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
+                              <User className="h-4 w-4 text-primary" />
+                            </div>
+                          );
+                        })()}
+                        <div>
+                          <p className="text-[10px] text-muted-foreground uppercase">Your Child</p>
+                          <p className="text-xs font-semibold">{studentReg.student_name}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
           {/* Notification bell */}
           <div className="absolute top-3 right-3 z-10">
