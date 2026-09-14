@@ -588,6 +588,18 @@ export function DriverAccountsManagement({ cityFilter, staffContext = "school" }
 
                   {/* Action */}
                   <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-xl gap-1.5 text-xs shrink-0"
+                    onClick={() => {
+                      setManageAccountRow(account);
+                      setNewPassword("");
+                      setNewPhone(phoneDigits(account.phone));
+                    }}
+                  >
+                    <Settings2 className="h-3.5 w-3.5" /> إدارة الدخول
+                  </Button>
+                  <Button
                     variant={account.is_active ? "outline" : "default"}
                     size="sm"
                     className={`rounded-xl gap-1.5 text-xs shrink-0 transition-all ${
