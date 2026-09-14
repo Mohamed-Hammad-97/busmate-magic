@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { ParentTripHistory } from "./ParentTripHistory";
 
 const STATUS_LABELS: Record<string, { label: string; color: string; description: string }> = {
   pending: { label: "Waiting", color: "bg-amber-500", description: "Bus hasn't arrived yet" },
@@ -156,19 +157,24 @@ export function ParentLiveTracking() {
     );
   }
 
+  const historyStudents = registrations.map((r) => ({ id: r.id, student_name: r.student_name }));
+
   if (activeTrips.length === 0) {
     return (
-      <Card className="border-0 shadow-md">
-        <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="h-20 w-20 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-            <Bus className="h-10 w-10 text-primary/60" />
-          </div>
-          <h3 className="font-bold text-lg mb-2">No Active Trips</h3>
-          <p className="text-muted-foreground text-sm max-w-xs">
-            The bus trip will appear here when the driver starts the route
-          </p>
-        </CardContent>
-      </Card>
+      <div>
+        <Card className="border-0 shadow-md">
+          <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="h-20 w-20 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+              <Bus className="h-10 w-10 text-primary/60" />
+            </div>
+            <h3 className="font-bold text-lg mb-2">No Active Trips</h3>
+            <p className="text-muted-foreground text-sm max-w-xs">
+              The bus trip will appear here when the driver starts the route
+            </p>
+          </CardContent>
+        </Card>
+        <ParentTripHistory routeIds={routeIds} students={historyStudents} />
+      </div>
     );
   }
 
