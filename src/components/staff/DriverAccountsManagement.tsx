@@ -567,6 +567,12 @@ export function DriverAccountsManagement({ cityFilter, staffContext = "school" }
                         <Phone className="h-3 w-3" />
                         <span dir="ltr">{account.phone}</span>
                       </span>
+                      {phoneDigits(account.phone) !== phoneDigits(person?.phone) && person?.phone && (
+                        <span className="flex items-center gap-1 text-warning">
+                          <AlertTriangle className="h-3 w-3" />
+                          رقم الدخول مختلف عن رقم الموظف (<span dir="ltr">{phoneDigits(person.phone)}</span>)
+                        </span>
+                      )}
                       {person?.city && (
                         <span className="flex items-center gap-1">
                           <MapPin className="h-3 w-3" />
