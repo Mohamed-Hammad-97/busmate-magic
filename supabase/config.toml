@@ -62,3 +62,6 @@ verify_jwt = false
 
 [functions.parent-start-conversation]
 verify_jwt = false
+
+[functions.start-live-trip]
+verify_jwt = false

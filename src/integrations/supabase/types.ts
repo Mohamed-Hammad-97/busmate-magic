@@ -2960,6 +2960,10 @@ export type Database = {
         Args: { _conversation_id: string; _user_id: string }
         Returns: boolean
       }
+      can_start_route_trip: {
+        Args: { _route_id: string; _user_id: string }
+        Returns: boolean
+      }
       cleanup_expired_otps: { Args: never; Returns: undefined }
       conversation_type_of: {
         Args: { _conversation_id: string }
