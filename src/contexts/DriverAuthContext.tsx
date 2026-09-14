@@ -100,16 +100,50 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
   }, []);
 
   const signIn = async (phone: string, password: string) => {
-    // Format phone as email for Supabase auth
     const formattedPhone = phone.replace(/\D/g, "");
-    const email = `driver_${formattedPhone}@seater.app`;
-    
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    
-    return { error: error as Error | null };
+
+    // Resolve the real login address for this phone (it may differ from the
+    // number stored on the staff record), then sign in with it.
+    let email = `driver_${formattedPhone}@seater.app`;
+    try {
+      const { data, error } = await supabase.functions.invoke("driver-login-lookup", {
+        body: { phone: formattedPhone },
+      });
+
+      if (error) {
+        let code = "";
+        try {
+          const parsed = await (error as any).context?.json?.();
+          code = parsed?.code || "";
+        } catch {
+          /* ignore parse errors */
+        }
+        if (code === "NOT_FOUND") {
+          const notFound = new Error("لا يوجد حساب بهذا الرقم. تواصل مع إدارة التشغيل.") as Error & { code?: string };
+          notFound.code = "NOT_FOUND";
+          return { error: notFound };
+        }
+        if (code === "INACTIVE") {
+          const inactive = new Error("هذا الحساب معطل. تواصل مع إدارة التشغيل.") as Error & { code?: string };
+          inactive.code = "INACTIVE";
+          return { error: inactive };
+        }
+      } else if (data?.email) {
+        email = data.email;
+      }
+    } catch {
+      /* fall back to the derived address */
+    }
+
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (error) {
+      const wrong = new Error("كلمة المرور غير صحيحة.") as Error & { code?: string };
+      wrong.code = "WRONG_PASSWORD";
+      return { error: wrong };
+    }
+
+    return { error: null };
   };
 
   const signOut = async () => {

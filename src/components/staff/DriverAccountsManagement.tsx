@@ -21,12 +21,14 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, UserPlus, User, Phone, Key, Eye, EyeOff, Shield, ShieldCheck, MapPin, Building2, Car, Users, Power, PowerOff, Search } from "lucide-react";
+import { Loader2, Plus, UserPlus, User, Phone, Key, Eye, EyeOff, Shield, ShieldCheck, MapPin, Building2, Car, Users, Power, PowerOff, Search, Settings2, AlertTriangle } from "lucide-react";
 import { z } from "zod";
 import { useCity } from "@/contexts/CityContext";
 import { useAuth } from "@/contexts/AuthContext";
 
 const phoneSchema = z.string().regex(/^01[0125]\d{8}$/, "رقم الهاتف غير صالح");
+
+const phoneDigits = (value?: string | null) => String(value ?? "").replace(/\D/g, "");
 
 const cityMapping: Record<string, string[]> = {
   cairo: ['cairo', 'القاهرة', 'قاهرة', 'Cairo'],
@@ -60,6 +62,10 @@ export function DriverAccountsManagement({ cityFilter, staffContext = "school" }
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [manageAccountRow, setManageAccountRow] = useState<any>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [newPhone, setNewPhone] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
 
   const allowedServices = useMemo<ServiceType[]>(() => {
     if (isSuperAdmin) return ["school", "corporate", "daily_lines"];
@@ -232,6 +238,36 @@ export function DriverAccountsManagement({ cityFilter, staffContext = "school" }
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["driver-accounts"] });
       toast({ title: "تم تحديث حالة الحساب" });
+    },
+  });
+
+  const manageAccount = useMutation({
+    mutationFn: async (payload: { action: "reset_password" | "update_phone"; accountId: string; password?: string; phone?: string }) => {
+      const { data, error } = await supabase.functions.invoke("manage-driver-account", { body: payload });
+      if (error) {
+        let message = "";
+        try {
+          const parsed = await (error as any).context?.json?.();
+          message = parsed?.error || "";
+        } catch {
+          /* ignore */
+        }
+        throw new Error(message || "تعذر تنفيذ العملية");
+      }
+      if ((data as any)?.error) throw new Error((data as any).error);
+      return data;
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["driver-accounts"] });
+      toast({
+        title: variables.action === "reset_password" ? "تم تغيير كلمة المرور" : "تم تحديث رقم الدخول",
+      });
+      setManageAccountRow(null);
+      setNewPassword("");
+      setNewPhone("");
+    },
+    onError: (error: any) => {
+      toast({ variant: "destructive", title: "خطأ", description: error.message });
     },
   });
 
@@ -533,6 +569,12 @@ export function DriverAccountsManagement({ cityFilter, staffContext = "school" }
                         <Phone className="h-3 w-3" />
                         <span dir="ltr">{account.phone}</span>
                       </span>
+                      {phoneDigits(account.phone) !== phoneDigits(person?.phone) && person?.phone && (
+                        <span className="flex items-center gap-1 text-warning">
+                          <AlertTriangle className="h-3 w-3" />
+                          رقم الدخول مختلف عن رقم الموظف (<span dir="ltr">{phoneDigits(person.phone)}</span>)
+                        </span>
+                      )}
                       {person?.city && (
                         <span className="flex items-center gap-1">
                           <MapPin className="h-3 w-3" />
@@ -547,6 +589,18 @@ export function DriverAccountsManagement({ cityFilter, staffContext = "school" }
                   </div>
 
                   {/* Action */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-xl gap-1.5 text-xs shrink-0"
+                    onClick={() => {
+                      setManageAccountRow(account);
+                      setNewPassword("");
+                      setNewPhone(phoneDigits(account.phone));
+                    }}
+                  >
+                    <Settings2 className="h-3.5 w-3.5" /> إدارة الدخول
+                  </Button>
                   <Button
                     variant={account.is_active ? "outline" : "default"}
                     size="sm"
@@ -572,6 +626,76 @@ export function DriverAccountsManagement({ cityFilter, staffContext = "school" }
           })}
         </div>
       )}
+
+      {/* Manage login dialog */}
+      <Dialog open={!!manageAccountRow} onOpenChange={(open) => { if (!open) setManageAccountRow(null); }}>
+        <DialogContent className="rounded-2xl border-border/50">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-lg">
+              <div className="p-2 rounded-xl bg-primary/10">
+                <Settings2 className="h-5 w-5 text-primary" />
+              </div>
+              إدارة بيانات الدخول
+            </DialogTitle>
+            <DialogDescription>
+              {(manageAccountRow?.driver || manageAccountRow?.supervisor)?.full_name}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 mt-2">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">رقم الهاتف للدخول</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="tel"
+                  value={newPhone}
+                  onChange={(e) => setNewPhone(e.target.value)}
+                  className="h-11 rounded-xl border-border/50"
+                  dir="ltr"
+                />
+                <Button
+                  className="h-11 rounded-xl shrink-0"
+                  disabled={manageAccount.isPending || !newPhone || phoneDigits(newPhone) === phoneDigits(manageAccountRow?.phone)}
+                  onClick={() => manageAccount.mutate({ action: "update_phone", accountId: manageAccountRow.id, phone: newPhone })}
+                >
+                  حفظ
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">هذا هو الرقم الذي يسجل به الدخول.</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">كلمة مرور جديدة</Label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Key className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type={showNewPassword ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="6 أحرف على الأقل"
+                    className="pr-10 pl-10 h-11 rounded-xl border-border/50"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                <Button
+                  className="h-11 rounded-xl shrink-0"
+                  disabled={manageAccount.isPending || newPassword.length < 6}
+                  onClick={() => manageAccount.mutate({ action: "reset_password", accountId: manageAccountRow.id, password: newPassword })}
+                >
+                  تغيير
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -65,3 +65,9 @@ verify_jwt = false
 
 [functions.start-live-trip]
 verify_jwt = false
+
+[functions.driver-login-lookup]
+verify_jwt = false
+
+[functions.manage-driver-account]
+verify_jwt = false
