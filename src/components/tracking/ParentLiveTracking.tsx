@@ -217,7 +217,7 @@ export function ParentLiveTracking() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="absolute top-2 right-2 z-20 h-10 w-10 rounded-full bg-background border shadow-md hover:bg-muted text-foreground"
+                  className="absolute top-2 left-2 z-20 h-10 w-10 rounded-full bg-background border shadow-md hover:bg-muted text-foreground"
                   onClick={() => setShowPanel(false)}
                   aria-label={t('parentPortal.closeTripDetails')}
                 >
@@ -225,14 +225,14 @@ export function ParentLiveTracking() {
                 </Button>
                 <CardContent className="p-0">
                   {/* Live badge + route */}
-                  <div className="p-3 border-b bg-gradient-to-r from-green-500/10 to-emerald-500/10">
-                    <div className="flex items-center justify-between mb-1.5">
+                  <div className="p-3 ps-14 border-b bg-gradient-to-r from-green-500/10 to-emerald-500/10">
+                    <div className="flex items-center justify-end gap-2 mb-1.5">
+                      <Badge variant="outline" className="text-[10px]">
+                        {currentTrip.routes?.name}
+                      </Badge>
                       <Badge className="bg-green-500 text-white border-0 text-[10px] px-2 py-0.5 gap-1 animate-pulse">
                         <span className="h-1.5 w-1.5 rounded-full bg-white" />
                         LIVE NOW
-                      </Badge>
-                      <Badge variant="outline" className="text-[10px]">
-                        {currentTrip.routes?.name}
                       </Badge>
                     </div>
                   </div>
