@@ -225,9 +225,9 @@ export function ParentLiveTracking() {
                 </Button>
                 <CardContent className="p-0">
                   {/* Live badge + route */}
-                  <div className="p-3 ps-14 border-b bg-gradient-to-r from-green-500/10 to-emerald-500/10">
-                    <div className="flex items-center justify-end gap-2 mb-1.5">
-                      <Badge variant="outline" className="text-[10px]">
+                  <div className="p-3 pl-14 border-b bg-gradient-to-r from-green-500/10 to-emerald-500/10">
+                    <div dir="ltr" className="flex items-center justify-end gap-2 mb-1.5">
+                      <Badge variant="outline" dir="auto" className="text-[10px]">
                         {currentTrip.routes?.name}
                       </Badge>
                       <Badge className="bg-green-500 text-white border-0 text-[10px] px-2 py-0.5 gap-1 animate-pulse">
