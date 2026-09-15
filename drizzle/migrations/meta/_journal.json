@@ -85,6 +85,13 @@
       "when": 1789403883111,
       "tag": "0011_fix_live_trips_start_policy",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1789484854815,
+      "tag": "0012_employees_can_view_live_trips_and_drivers",
+      "breakpoints": true
     }
   ]
 }
