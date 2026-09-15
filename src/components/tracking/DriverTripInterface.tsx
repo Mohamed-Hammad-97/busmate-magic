@@ -157,9 +157,9 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
   return (
     <div className="h-full flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="p-4 border-b bg-background shrink-0">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2 min-w-0">
+      <div className="p-4 border-b bg-background shrink-0 sticky top-0 z-30">
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
               {onClose && (
                 <Button variant="ghost" size="icon" className="shrink-0" onClick={onClose} aria-label="رجوع">
                   <ArrowRight className="h-5 w-5" />
@@ -173,17 +173,18 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
 
             
             {!activeTrip || activeTrip.status === "completed" ? (
-              <Button onClick={handleStartTrip} disabled={isStarting} size="sm" className="gap-2">
+              <Button onClick={handleStartTrip} disabled={isStarting} size="sm" className="gap-2 shrink-0">
                 {isStarting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
                 بدء الرحلة
               </Button>
             ) : (
-              <Button onClick={handleEndTrip} disabled={isEnding} variant="destructive" size="sm" className="gap-2">
+              <Button onClick={handleEndTrip} disabled={isEnding} variant="destructive" size="sm" className="gap-2 shrink-0">
                 {isEnding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Square className="h-4 w-4" />}
                 إنهاء الرحلة
               </Button>
             )}
           </div>
+
 
           {/* Stats */}
           {activeTrip?.status === "in_progress" && (
