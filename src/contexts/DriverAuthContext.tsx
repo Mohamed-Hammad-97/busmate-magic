@@ -138,9 +138,32 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
     const { error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
-      const wrong = new Error("كلمة المرور غير صحيحة.") as Error & { code?: string };
-      wrong.code = "WRONG_PASSWORD";
-      return { error: wrong };
+      const raw = (error.message || "").toLowerCase();
+      const status = (error as any).status as number | undefined;
+
+      let message = "تعذر تسجيل الدخول. حاول مرة أخرى.";
+      let code = "SIGNIN_FAILED";
+
+      if (raw.includes("invalid login credentials")) {
+        message = "كلمة المرور غير صحيحة.";
+        code = "WRONG_PASSWORD";
+      } else if (raw.includes("email not confirmed") || raw.includes("not confirmed")) {
+        message = "الحساب غير مفعل. تواصل مع إدارة التشغيل.";
+        code = "NOT_CONFIRMED";
+      } else if (status === 429 || raw.includes("rate limit") || raw.includes("too many")) {
+        message = "محاولات كثيرة. انتظر قليلاً ثم حاول مرة أخرى.";
+        code = "RATE_LIMITED";
+      } else if (raw.includes("failed to fetch") || raw.includes("network")) {
+        message = "تعذر الاتصال بالإنترنت. تأكد من الشبكة وحاول مرة أخرى.";
+        code = "NETWORK";
+      } else if (raw.includes("banned") || raw.includes("disabled")) {
+        message = "هذا الحساب معطل. تواصل مع إدارة التشغيل.";
+        code = "INACTIVE";
+      }
+
+      const failure = new Error(message) as Error & { code?: string };
+      failure.code = code;
+      return { error: failure };
     }
 
     return { error: null };
