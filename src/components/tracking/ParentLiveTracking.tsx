@@ -217,11 +217,11 @@ export function ParentLiveTracking() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="absolute top-2 right-2 h-8 w-8 rounded-full bg-muted/50 hover:bg-muted"
+                  className="absolute top-2 right-2 z-20 h-10 w-10 rounded-full bg-background border shadow-md hover:bg-muted text-foreground"
                   onClick={() => setShowPanel(false)}
                   aria-label={t('parentPortal.closeTripDetails')}
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-5 w-5" />
                 </Button>
                 <CardContent className="p-0">
                   {/* Live badge + route */}
