@@ -235,7 +235,7 @@ export function OperationsMapView() {
     const bounds = new google.maps.LatLngBounds();
     let points = 0;
 
-    activeTrips.forEach((trip) => {
+    tripsWithLocation.forEach((trip) => {
       if (trip.current_latitude && trip.current_longitude) {
         bounds.extend({ lat: trip.current_latitude, lng: trip.current_longitude });
         points += 1;
@@ -248,6 +248,7 @@ export function OperationsMapView() {
     } else if (points > 1) {
       map.fitBounds(bounds, 100);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, activeTrips, selectedTrip, isLoaded]);
 
 
@@ -291,7 +292,7 @@ export function OperationsMapView() {
         }}
       >
         {/* Bus Markers */}
-        {activeTrips.map((trip) => {
+        {tripsWithLocation.map((trip) => {
           if (!trip.current_latitude || !trip.current_longitude) return null;
           if (!window.google?.maps) return null;
           
