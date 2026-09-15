@@ -222,7 +222,21 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
           )}
         </div>
 
+        {/* Always-reachable end trip button */}
+        {activeTrip?.status === "in_progress" && (
+          <Button
+            onClick={handleEndTrip}
+            disabled={isEnding}
+            variant="destructive"
+            className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 gap-2 shadow-xl rounded-full px-6 h-11"
+          >
+            {isEnding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Square className="h-4 w-4" />}
+            إنهاء الرحلة
+          </Button>
+        )}
+
         {/* Map */}
+
         <div className="h-[350px] relative">
           <LiveTripMap
             trip={activeTrip}
