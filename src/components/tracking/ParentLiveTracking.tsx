@@ -293,22 +293,27 @@ export function ParentLiveTracking() {
                     </div>
                   )}
 
-                  {/* Call Driver button */}
-                  {currentTrip.routes?.drivers?.phone && (
-                    <div className="p-3 space-y-2">
-                      <a
-                        href={`tel:${currentTrip.routes.drivers.phone}`}
-                        className="flex items-center justify-center gap-2 w-full bg-green-600 hover:bg-green-700 text-white rounded-xl py-2.5 text-sm font-medium transition-colors"
-                      >
-                        <Phone className="h-4 w-4" />
-                        Call Driver
-                      </a>
-                      <button className="flex items-center justify-center gap-2 w-full text-muted-foreground hover:text-foreground rounded-xl py-2 text-xs transition-colors">
-                        <AlertTriangle className="h-3.5 w-3.5" />
-                        Report an Issue
-                      </button>
-                    </div>
-                  )}
+                  {/* Call Supervisor button (falls back to driver) */}
+                  {(() => {
+                    const supervisorPhone = currentTrip.routes?.supervisors?.phone;
+                    const contactPhone = supervisorPhone || currentTrip.routes?.drivers?.phone;
+                    if (!contactPhone) return null;
+                    return (
+                      <div className="p-3 space-y-2">
+                        <a
+                          href={`tel:${contactPhone}`}
+                          className="flex items-center justify-center gap-2 w-full bg-green-600 hover:bg-green-700 text-white rounded-xl py-2.5 text-sm font-medium transition-colors"
+                        >
+                          <Phone className="h-4 w-4" />
+                          {supervisorPhone ? 'Call Supervisor' : 'Call Driver'}
+                        </a>
+                        <button className="flex items-center justify-center gap-2 w-full text-muted-foreground hover:text-foreground rounded-xl py-2 text-xs transition-colors">
+                          <AlertTriangle className="h-3.5 w-3.5" />
+                          Report an Issue
+                        </button>
+                      </div>
+                    );
+                  })()}
 
                   {/* Your child info */}
                   {studentReg && (
