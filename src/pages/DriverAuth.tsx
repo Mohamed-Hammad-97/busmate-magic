@@ -171,7 +171,14 @@ export default function DriverAuth() {
               </div>
             </div>
 
+            {storageBlocked && (
+              <p className="text-sm text-amber-600 text-center leading-6">
+                متصفحك يمنع حفظ بيانات الموقع، لذلك لن يتم تذكر تسجيل الدخول. أغلق وضع التصفح الخاص واسمح ببيانات الموقع ثم حاول مرة أخرى.
+              </p>
+            )}
+
             {error && <p className="text-sm text-destructive text-center">{error}</p>}
+
 
             <Button type="submit" className="w-full h-12 text-base font-medium bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-600/30 hover:shadow-xl hover:shadow-blue-600/40 transition-all" disabled={isLoading}>
               {isLoading ? <Loader2 className="ml-2 h-5 w-5 animate-spin" /> : (
