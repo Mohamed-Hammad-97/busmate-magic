@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Navigate, Link } from "react-router-dom";
+import { Navigate, Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useDriverAuth } from "@/contexts/DriverAuthContext";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ const phoneSchema = z.string().regex(/^01[0125]\d{8}$/, "Invalid phone");
 
 export default function DriverAuth() {
   const { t } = useTranslation();
+  const location = useLocation();
   const { user, driverAccount, isLoading: authLoading, signIn } = useDriverAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -23,8 +24,13 @@ export default function DriverAuth() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
 
+  const requestedPath = (location.state as { returnTo?: unknown } | null)?.returnTo;
+  const returnTo = typeof requestedPath === "string" && requestedPath.startsWith("/driver/")
+    ? requestedPath
+    : "/driver";
+
   if (!authLoading && user && driverAccount) {
-    return <Navigate to="/driver" replace />;
+    return <Navigate to={returnTo} replace />;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {

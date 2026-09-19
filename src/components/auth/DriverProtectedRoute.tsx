@@ -1,4 +1,4 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { useDriverAuth } from "@/contexts/DriverAuthContext";
 import { Loader2 } from "lucide-react";
 
@@ -8,6 +8,7 @@ interface DriverProtectedRouteProps {
 
 export function DriverProtectedRoute({ children }: DriverProtectedRouteProps) {
   const { isAuthenticated, isLoading } = useDriverAuth();
+  const location = useLocation();
 
   if (isLoading) {
     return (
@@ -18,7 +19,8 @@ export function DriverProtectedRoute({ children }: DriverProtectedRouteProps) {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/driver/login" replace />;
+    const returnTo = `${location.pathname}${location.search}${location.hash}`;
+    return <Navigate to="/driver/login" replace state={{ returnTo }} />;
   }
 
   return <>{children}</>;
