@@ -13,6 +13,21 @@ import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 
 const phoneSchema = z.string().regex(/^01[0125]\d{8}$/, "Invalid phone");
 
+// Some mobile browsers (private browsing / strict tracking protection) block
+// site storage, so the sign-in can never be remembered and the person is
+// silently returned to this page. Detect it and explain it instead.
+function isStorageAvailable() {
+  try {
+    const key = "__seater_storage_test__";
+    window.localStorage.setItem(key, "1");
+    window.localStorage.removeItem(key);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+
 export default function DriverAuth() {
   const { t } = useTranslation();
   const location = useLocation();
