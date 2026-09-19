@@ -45,6 +45,28 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
   const sessionResolutionRef = useRef(0);
   const activeSessionRef = useRef<Session | null>(null);
 
+  const loadAccountDetails = async (account: DriverAccount) => {
+    try {
+      if (account.driver_id) {
+        const { data, error } = await supabase
+          .from("drivers")
+          .select("id, full_name, phone")
+          .eq("id", account.driver_id)
+          .maybeSingle();
+        if (!error && data) setDriverAccount((current) => current?.id === account.id ? { ...current, driver: data } : current);
+      } else if (account.supervisor_id) {
+        const { data, error } = await supabase
+          .from("supervisors")
+          .select("id, full_name, phone")
+          .eq("id", account.supervisor_id)
+          .maybeSingle();
+        if (!error && data) setDriverAccount((current) => current?.id === account.id ? { ...current, supervisor: data } : current);
+      }
+    } catch (error) {
+      console.warn("Account details will load later:", error);
+    }
+  };
+
   const fetchDriverAccount = async (userId: string) => {
     const ACCOUNT_TIMEOUT_MS = 8000;
 
@@ -75,29 +97,7 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
         if (error) throw error;
         if (!data) return null;
 
-        const account: DriverAccount = { ...data, driver: null, supervisor: null };
-
-        // Names are useful to the dashboard, but must not block authentication.
-        // Load only the linked record after the account itself is confirmed.
-        try {
-          if (data.driver_id) {
-            const result = await withTimeout(
-              supabase.from("drivers").select("id, full_name, phone").eq("id", data.driver_id).maybeSingle(),
-              "driver details"
-            );
-            if (!result.error) account.driver = result.data;
-          } else if (data.supervisor_id) {
-            const result = await withTimeout(
-              supabase.from("supervisors").select("id, full_name, phone").eq("id", data.supervisor_id).maybeSingle(),
-              "supervisor details"
-            );
-            if (!result.error) account.supervisor = result.data;
-          }
-        } catch (detailsError) {
-          console.warn("Account details will load later:", detailsError);
-        }
-
-        return account;
+        return { ...data, driver: null, supervisor: null } as DriverAccount;
       } catch (error) {
         if (attempt === 1) {
           console.error("Error fetching driver account:", error);
@@ -129,6 +129,7 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
       setDriverAccount(account);
       setAccountLoadError(!account);
       setIsLoading(false);
+      if (account) void loadAccountDetails(account);
       return account;
     } catch {
       if (resolutionId !== sessionResolutionRef.current) return null;
@@ -157,7 +158,11 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
         if (event !== "INITIAL_SESSION" || session) sawAuthEvent = true;
         // Defer so we never run supabase queries inside the auth callback.
         setTimeout(() => {
-          if (mounted) void applySession(session);
+          if (!mounted) return;
+          // signIn handles its returned session directly. Ignore the duplicate
+          // event so it cannot supersede that in-flight account request.
+          if (session?.access_token === activeSessionRef.current?.access_token) return;
+          void applySession(session);
         }, 0);
       }
     );
