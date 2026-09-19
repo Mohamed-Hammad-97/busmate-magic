@@ -31,13 +31,14 @@ function isStorageAvailable() {
 export default function DriverAuth() {
   const { t } = useTranslation();
   const location = useLocation();
-  const { user, driverAccount, isLoading: authLoading, signIn } = useDriverAuth();
+  const { user, driverAccount, isLoading: authLoading, accountLoadError, signIn, retryAccount } = useDriverAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [isRetrying, setIsRetrying] = useState(false);
   const [storageBlocked] = useState(() => !isStorageAvailable());
 
 
@@ -80,6 +81,19 @@ export default function DriverAuth() {
       toast({ variant: "destructive", title: t('driverPortal.loginError'), description });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleAccountRetry = async () => {
+    setError("");
+    setIsRetrying(true);
+    try {
+      const loaded = await retryAccount();
+      if (!loaded) {
+        setError("ما زال الاتصال ضعيفًا. تأكد من الإنترنت ثم اضغط إعادة المحاولة.");
+      }
+    } finally {
+      setIsRetrying(false);
     }
   };
 
@@ -177,13 +191,14 @@ export default function DriverAuth() {
               </p>
             )}
 
-            {user && !driverAccount && (
+            {user && !driverAccount && accountLoadError && (
               <div className="space-y-2 text-center">
                 <p className="text-sm text-amber-600 leading-6">
-                  تم تسجيل الدخول لكن تعذر تحميل بيانات الحساب بسبب ضعف الشبكة.
+                  تم قبول كلمة المرور، لكن تعذر تحميل بيانات الحساب بسبب ضعف الشبكة.
                 </p>
-                <Button type="button" variant="outline" className="w-full h-11" onClick={() => window.location.reload()}>
-                  إعادة المحاولة
+                <Button type="button" variant="outline" className="w-full h-11" onClick={handleAccountRetry} disabled={isRetrying}>
+                  {isRetrying && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
+                  إعادة المحاولة بدون كلمة المرور
                 </Button>
               </div>
             )}
