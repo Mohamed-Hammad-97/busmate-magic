@@ -48,11 +48,10 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
     // after password authentication succeeds. Keep this query small, abort it
     // if it stalls, then retry once before allowing the auth gate to finish.
     for (let attempt = 0; attempt < 2; attempt += 1) {
-      const controller = new AbortController();
-      const timer = window.setTimeout(() => controller.abort(), ACCOUNT_TIMEOUT_MS);
+      let timer: number | undefined;
 
       try {
-        const { data, error } = await supabase
+        const accountQuery = supabase
           .from("driver_accounts")
           .select(`
             id,
@@ -65,8 +64,11 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
           `)
           .eq("user_id", userId)
           .eq("is_active", true)
-          .maybeSingle()
-          .abortSignal(controller.signal);
+          .maybeSingle();
+        const timeout = new Promise<never>((_, reject) => {
+          timer = window.setTimeout(() => reject(new Error("account lookup timeout")), ACCOUNT_TIMEOUT_MS);
+        });
+        const { data, error } = await Promise.race([accountQuery, timeout]);
 
         if (error) throw error;
         return data ? data as unknown as DriverAccount : null;
@@ -75,7 +77,7 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
           console.error("Error fetching driver account:", error);
         }
       } finally {
-        window.clearTimeout(timer);
+        if (timer !== undefined) window.clearTimeout(timer);
       }
     }
 
