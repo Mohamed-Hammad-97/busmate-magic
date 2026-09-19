@@ -43,6 +43,7 @@ import DailyLinePortal from "./pages/DailyLinePortal";
 import DailyLineTripTracking from "./pages/DailyLineTripTracking";
 import DriverAuth from "./pages/DriverAuth";
 import DriverDashboard from "./pages/DriverDashboard";
+import DriverTripPage from "./pages/DriverTripPage";
 import CompanyAuth from "./pages/CompanyAuth";
 import CompanyDashboard from "./pages/CompanyDashboard";
 import CompanyEmployeeRegister from "./pages/CompanyEmployeeRegister";
@@ -116,6 +117,7 @@ const App = () => (
               <Routes>
                 <Route path="/login" element={<DriverAuth />} />
                 <Route path="/" element={<DriverProtectedRoute><DriverDashboard /></DriverProtectedRoute>} />
+                <Route path="/trip/:routeId" element={<DriverProtectedRoute><DriverTripPage /></DriverProtectedRoute>} />
                 <Route path="*" element={<Navigate to="/driver" replace />} />
               </Routes>
             </DriverAuthProvider>
