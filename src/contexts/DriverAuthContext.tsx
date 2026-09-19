@@ -149,11 +149,25 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
       /* fall back to the derived address */
     }
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    let error: { message?: string; status?: number } | null = null;
+    try {
+      const signInResult = await Promise.race([
+        supabase.auth.signInWithPassword({ email, password }),
+        new Promise<"timeout">((resolve) => setTimeout(() => resolve("timeout"), 20000)),
+      ]);
+      if (signInResult === "timeout") {
+        error = { message: "network timeout" };
+      } else {
+        error = signInResult.error;
+      }
+    } catch (e) {
+      error = { message: (e as Error)?.message || "network" };
+    }
 
     if (error) {
       const raw = (error.message || "").toLowerCase();
-      const status = (error as any).status as number | undefined;
+      const status = error.status;
+
 
       let message = "تعذر تسجيل الدخول. حاول مرة أخرى.";
       let code = "SIGNIN_FAILED";
