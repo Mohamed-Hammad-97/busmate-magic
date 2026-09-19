@@ -70,6 +70,36 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
   const [accountLoadError, setAccountLoadError] = useState(false);
   const sessionResolutionRef = useRef(0);
   const activeSessionRef = useRef<Session | null>(null);
+  const driverAccountRef = useRef<DriverAccount | null>(null);
+  const refreshTimerRef = useRef<number | undefined>(undefined);
+
+  const scheduleSessionRefresh = (nextSession: Session | null) => {
+    if (refreshTimerRef.current !== undefined) {
+      window.clearTimeout(refreshTimerRef.current);
+      refreshTimerRef.current = undefined;
+    }
+    if (!nextSession) return;
+
+    // Use the server-provided lifetime as a duration instead of comparing
+    // expires_at with the device clock. Refresh one minute before expiry.
+    const lifetimeSeconds = Math.max(nextSession.expires_in ?? 3600, 120);
+    const refreshDelay = Math.max((lifetimeSeconds - 60) * 1000, 60_000);
+    refreshTimerRef.current = window.setTimeout(async () => {
+      const currentSession = activeSessionRef.current;
+      if (!currentSession) return;
+      const { data, error } = await driverPortalClient.auth.refreshSession({
+        refresh_token: currentSession.refresh_token,
+      });
+      if (!error && data.session) {
+        void applySession(data.session);
+      }
+    }, refreshDelay);
+  };
+
+  const updateDriverAccount = (account: DriverAccount | null) => {
+    driverAccountRef.current = account;
+    setDriverAccount(account);
+  };
 
   const loadAccountDetails = async (account: DriverAccount, accessToken: string) => {
     try {
@@ -79,14 +109,18 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
           accessToken,
         );
         const data = rows[0];
-        if (data) setDriverAccount((current) => current?.id === account.id ? { ...current, driver: data } : current);
+        if (data && driverAccountRef.current?.id === account.id) {
+          updateDriverAccount({ ...driverAccountRef.current, driver: data });
+        }
       } else if (account.supervisor_id) {
         const rows = await fetchAuthenticatedRows<NonNullable<DriverAccount["supervisor"]>>(
           `supervisors?select=id,full_name,phone&id=eq.${encodeURIComponent(account.supervisor_id)}&limit=1`,
           accessToken,
         );
         const data = rows[0];
-        if (data) setDriverAccount((current) => current?.id === account.id ? { ...current, supervisor: data } : current);
+        if (data && driverAccountRef.current?.id === account.id) {
+          updateDriverAccount({ ...driverAccountRef.current, supervisor: data });
+        }
       }
     } catch (error) {
       console.warn("Account details will load later:", error);
@@ -136,11 +170,12 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
   const applySession = async (nextSession: Session | null) => {
     const resolutionId = ++sessionResolutionRef.current;
     activeSessionRef.current = nextSession;
+    scheduleSessionRefresh(nextSession);
     setSession(nextSession);
     setUser(nextSession?.user ?? null);
 
     if (!nextSession?.user) {
-      setDriverAccount(null);
+      updateDriverAccount(null);
       setAccountLoadError(false);
       setIsLoading(false);
       return null;
@@ -149,19 +184,27 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
     try {
       const account = await fetchDriverAccount(nextSession.user.id, nextSession.access_token);
       if (resolutionId !== sessionResolutionRef.current) return null;
-      setDriverAccount(account);
-      setAccountLoadError(!account);
+      const existingAccount = driverAccountRef.current;
+      const accountToKeep = account ?? (
+        existingAccount && activeSessionRef.current?.user.id === nextSession.user.id
+          ? existingAccount
+          : null
+      );
+      updateDriverAccount(accountToKeep);
+      setAccountLoadError(!accountToKeep);
       setIsLoading(false);
       if (account) void loadAccountDetails(account, nextSession.access_token);
-      return account;
+      return accountToKeep;
     } catch {
       if (resolutionId !== sessionResolutionRef.current) return null;
       // Keep the accepted session. The user can retry this account request
       // without entering the password again.
-      setDriverAccount(null);
-      setAccountLoadError(true);
+      const existingAccount = driverAccountRef.current;
+      const canKeepAccount = existingAccount && activeSessionRef.current?.user.id === nextSession.user.id;
+      if (!canKeepAccount) updateDriverAccount(null);
+      setAccountLoadError(!canKeepAccount);
       setIsLoading(false);
-      return null;
+      return canKeepAccount ? existingAccount : null;
     }
   };
 
@@ -182,6 +225,10 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
         // Defer so we never run supabase queries inside the auth callback.
         setTimeout(() => {
           if (!mounted) return;
+          // On some ColorOS/MIUI browsers INITIAL_SESSION can arrive after
+          // signInWithPassword has already returned a valid session. That
+          // delayed null startup snapshot is stale, not a real logout.
+          if (event === "INITIAL_SESSION" && !session && activeSessionRef.current) return;
           // signIn handles its returned session directly. Ignore the duplicate
           // event so it cannot supersede that in-flight account request.
           if (session?.access_token === activeSessionRef.current?.access_token) return;
@@ -196,7 +243,7 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
 
     driverPortalClient.auth.getSession().then(({ data: { session } }) => {
       // A late, empty initial read must never override a live sign-in.
-      if (!session && sawAuthEvent) {
+      if (!session && (sawAuthEvent || activeSessionRef.current)) {
         if (mounted) setIsLoading(false);
         return;
       }
@@ -208,6 +255,7 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
     return () => {
       mounted = false;
       window.clearTimeout(startupWatchdog);
+      if (refreshTimerRef.current !== undefined) window.clearTimeout(refreshTimerRef.current);
       subscription.unsubscribe();
     };
   }, []);
@@ -336,7 +384,7 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
 
   const signOut = async () => {
     await driverPortalClient.auth.signOut();
-    setDriverAccount(null);
+    updateDriverAccount(null);
   };
 
   const value: DriverAuthContextType = {

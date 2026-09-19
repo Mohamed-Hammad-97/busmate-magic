@@ -25,9 +25,16 @@ const phoneSafeLock = async <R>(
 
 export const driverPortalClient = createClient<Database>(supabaseUrl, supabaseKey, {
   auth: {
+    // Keep the driver portal isolated from the general site client. Both
+    // clients are loaded by the app bundle; sharing one key lets competing
+    // startup/refresh cycles replace a newly accepted mobile session.
+    storageKey: "seater-driver-portal-auth",
     storage: brokeredPreviewStorage(),
     persistSession: true,
-    autoRefreshToken: true,
+    // Refresh is scheduled from the returned expires_in duration by the
+    // driver auth provider. The SDK's immediate clock-based refresh can
+    // invalidate fresh sessions on phones with inaccurate system clocks.
+    autoRefreshToken: false,
     detectSessionInUrl: false,
     lock: phoneSafeLock,
   },
