@@ -67,7 +67,7 @@ const SchoolManagement = () => {
               <CreditCard className="h-4 w-4" />
               {t('schoolMgmt.staffFiles')}
             </TabsTrigger>
-            {isFinance && (
+            {(isFinance || canEdit) && (
               <TabsTrigger value="salaries" className={triggerClass}>
                 <DollarSign className="h-4 w-4" />
                 {t('schoolMgmt.salaries')}
@@ -96,7 +96,7 @@ const SchoolManagement = () => {
           </TabsContent>
 
           <TabsContent value="salaries">
-            <SchoolSalaries canEdit={isFinance} />
+            <SchoolSalaries canEdit={isFinance || canEdit} />
           </TabsContent>
         </Tabs>
       </div>

@@ -92,6 +92,13 @@
       "when": 1789484854815,
       "tag": "0012_employees_can_view_live_trips_and_drivers",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1789823012638,
+      "tag": "0013_operations_can_manage_salary_payments",
+      "breakpoints": true
     }
   ]
 }
