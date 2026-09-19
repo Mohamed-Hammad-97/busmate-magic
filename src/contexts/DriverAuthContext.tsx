@@ -2,6 +2,25 @@ import React, { createContext, useContext, useEffect, useRef, useState } from "r
 import { User, Session } from "@supabase/supabase-js";
 import { driverPortalClient } from "@/lib/driverPortalClient";
 
+const backendUrl = import.meta.env.VITE_SUPABASE_URL;
+const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+async function fetchAuthenticatedRows<T>(path: string, accessToken: string): Promise<T[]> {
+  const response = await fetch(`${backendUrl}/rest/v1/${path}`, {
+    headers: {
+      apikey: publishableKey,
+      Authorization: `Bearer ${accessToken}`,
+      Accept: "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`account request failed (${response.status})`);
+  }
+
+  return await response.json() as T[];
+}
+
 interface DriverAccount {
   id: string;
   phone: string;
@@ -52,29 +71,29 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
   const sessionResolutionRef = useRef(0);
   const activeSessionRef = useRef<Session | null>(null);
 
-  const loadAccountDetails = async (account: DriverAccount) => {
+  const loadAccountDetails = async (account: DriverAccount, accessToken: string) => {
     try {
       if (account.driver_id) {
-        const { data, error } = await driverPortalClient
-          .from("drivers")
-          .select("id, full_name, phone")
-          .eq("id", account.driver_id)
-          .maybeSingle();
-        if (!error && data) setDriverAccount((current) => current?.id === account.id ? { ...current, driver: data } : current);
+        const rows = await fetchAuthenticatedRows<NonNullable<DriverAccount["driver"]>>(
+          `drivers?select=id,full_name,phone&id=eq.${encodeURIComponent(account.driver_id)}&limit=1`,
+          accessToken,
+        );
+        const data = rows[0];
+        if (data) setDriverAccount((current) => current?.id === account.id ? { ...current, driver: data } : current);
       } else if (account.supervisor_id) {
-        const { data, error } = await driverPortalClient
-          .from("supervisors")
-          .select("id, full_name, phone")
-          .eq("id", account.supervisor_id)
-          .maybeSingle();
-        if (!error && data) setDriverAccount((current) => current?.id === account.id ? { ...current, supervisor: data } : current);
+        const rows = await fetchAuthenticatedRows<NonNullable<DriverAccount["supervisor"]>>(
+          `supervisors?select=id,full_name,phone&id=eq.${encodeURIComponent(account.supervisor_id)}&limit=1`,
+          accessToken,
+        );
+        const data = rows[0];
+        if (data) setDriverAccount((current) => current?.id === account.id ? { ...current, supervisor: data } : current);
       }
     } catch (error) {
       console.warn("Account details will load later:", error);
     }
   };
 
-  const fetchDriverAccount = async (userId: string) => {
+  const fetchDriverAccount = async (userId: string, accessToken: string) => {
     const ACCOUNT_TIMEOUT_MS = 8000;
 
     const withTimeout = async <T,>(request: PromiseLike<T>, label: string): Promise<T> => {
@@ -93,15 +112,12 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
     // struggle with a joined request immediately after writing a new session.
     for (let attempt = 0; attempt < 2; attempt += 1) {
       try {
-        const accountQuery = driverPortalClient
-          .from("driver_accounts")
-          .select("id, phone, driver_id, supervisor_id, is_active")
-          .eq("user_id", userId)
-          .eq("is_active", true)
-          .maybeSingle();
-        const { data, error } = await withTimeout(accountQuery, "account lookup");
-
-        if (error) throw error;
+        const accountRequest = fetchAuthenticatedRows<DriverAccount>(
+          `driver_accounts?select=id,phone,driver_id,supervisor_id,is_active&user_id=eq.${encodeURIComponent(userId)}&is_active=eq.true&limit=1`,
+          accessToken,
+        );
+        const rows = await withTimeout(accountRequest, "account lookup");
+        const data = rows[0];
         if (!data) return null;
 
         return { ...data, driver: null, supervisor: null } as DriverAccount;
@@ -131,12 +147,12 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
     }
 
     try {
-      const account = await fetchDriverAccount(nextSession.user.id);
+      const account = await fetchDriverAccount(nextSession.user.id, nextSession.access_token);
       if (resolutionId !== sessionResolutionRef.current) return null;
       setDriverAccount(account);
       setAccountLoadError(!account);
       setIsLoading(false);
-      if (account) void loadAccountDetails(account);
+      if (account) void loadAccountDetails(account, nextSession.access_token);
       return account;
     } catch {
       if (resolutionId !== sessionResolutionRef.current) return null;
