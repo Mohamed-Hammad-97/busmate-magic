@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Navigate, Link, useLocation } from "react-router-dom";
+import { Navigate, Link, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useDriverAuth } from "@/contexts/DriverAuthContext";
 import { Button } from "@/components/ui/button";
@@ -31,6 +31,7 @@ function isStorageAvailable() {
 export default function DriverAuth() {
   const { t } = useTranslation();
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, driverAccount, isLoading: authLoading, accountLoadError, signIn, retryAccount } = useDriverAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -75,9 +76,10 @@ export default function DriverAuth() {
         setError(description);
         toast({ variant: "destructive", title: t('driverPortal.loginError'), description });
       } else {
-        // Start the dashboard from a clean page load. This avoids waiting for
-        // delayed React/auth events on ColorOS and MIUI browsers.
-        window.location.replace(returnTo);
+        // Keep the accepted in-memory session during navigation. A full reload
+        // immediately after login can make ColorOS/MIUI re-bootstrap auth before
+        // their storage write is visible.
+        navigate(returnTo, { replace: true });
       }
     } catch (err) {
       const description = (err as Error)?.message || t('driverPortal.loginErrorDesc');
@@ -96,7 +98,7 @@ export default function DriverAuth() {
       if (!loaded) {
         setError("ما زال الاتصال ضعيفًا. تأكد من الإنترنت ثم اضغط إعادة المحاولة.");
       } else {
-        window.location.replace(returnTo);
+        navigate(returnTo, { replace: true });
       }
     } finally {
       setIsRetrying(false);

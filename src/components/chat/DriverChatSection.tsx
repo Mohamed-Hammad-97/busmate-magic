@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { driverPortalClient as supabase } from "@/lib/driverPortalClient";
 import { useDriverAuth } from "@/contexts/DriverAuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
