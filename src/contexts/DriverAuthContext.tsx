@@ -34,7 +34,14 @@ interface DriverAuthContextType {
   signOut: () => Promise<void>;
 }
 
-const DriverAuthContext = createContext<DriverAuthContextType | undefined>(undefined);
+// Keep a single context instance across hot-module reloads so the provider and
+// consumers never end up bound to two different context objects in dev.
+const globalScope = globalThis as unknown as {
+  __driverAuthContext?: React.Context<DriverAuthContextType | undefined>;
+};
+const DriverAuthContext =
+  globalScope.__driverAuthContext ??
+  (globalScope.__driverAuthContext = createContext<DriverAuthContextType | undefined>(undefined));
 
 export function DriverAuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
