@@ -1,9 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors'
+import { z } from 'npm:zod@3.23.8'
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -12,6 +9,13 @@ const json = (body: unknown, status = 200) =>
   })
 
 const digits = (phone: unknown) => String(phone ?? '').replace(/\D/g, '')
+
+const RequestSchema = z.object({
+  action: z.enum(['reset_password', 'update_phone', 'delete_supervisor_account']),
+  accountId: z.string().uuid(),
+  password: z.string().optional(),
+  phone: z.string().optional(),
+})
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -53,7 +57,9 @@ Deno.serve(async (req) => {
 
     if (!authorized) return json({ error: 'Unauthorized' }, 403)
 
-    const { action, accountId, password, phone } = await req.json()
+    const parsed = RequestSchema.safeParse(await req.json())
+    if (!parsed.success) return json({ error: 'بيانات الطلب غير صالحة' }, 400)
+    const { action, accountId, password, phone } = parsed.data
 
     if (action === 'delete_supervisor_account' && roleRow?.role !== 'super_admin') {
       return json({ error: 'هذه العملية متاحة للمدير العام فقط' }, 403)
@@ -84,7 +90,9 @@ Deno.serve(async (req) => {
         return json({ error: 'تعذر حذف حساب دخول المشرف' }, 400)
       }
 
-      const { error: authDeleteError } = await admin.auth.admin.deleteUser(account.user_id)
+      // Soft-delete the auth identity so database records linked to this user remain intact.
+      // The login credentials are anonymized and the user can no longer authenticate.
+      const { error: authDeleteError } = await admin.auth.admin.deleteUser(account.user_id, true)
       if (authDeleteError) {
         const { error: restoreError } = await admin.from('driver_accounts').insert(account)
         console.error('supervisor auth delete failed:', authDeleteError.message)
