@@ -71,6 +71,30 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
   const sessionResolutionRef = useRef(0);
   const activeSessionRef = useRef<Session | null>(null);
   const driverAccountRef = useRef<DriverAccount | null>(null);
+  const refreshTimerRef = useRef<number | undefined>(undefined);
+
+  const scheduleSessionRefresh = (nextSession: Session | null) => {
+    if (refreshTimerRef.current !== undefined) {
+      window.clearTimeout(refreshTimerRef.current);
+      refreshTimerRef.current = undefined;
+    }
+    if (!nextSession) return;
+
+    // Use the server-provided lifetime as a duration instead of comparing
+    // expires_at with the device clock. Refresh one minute before expiry.
+    const lifetimeSeconds = Math.max(nextSession.expires_in ?? 3600, 120);
+    const refreshDelay = Math.max((lifetimeSeconds - 60) * 1000, 60_000);
+    refreshTimerRef.current = window.setTimeout(async () => {
+      const currentSession = activeSessionRef.current;
+      if (!currentSession) return;
+      const { data, error } = await driverPortalClient.auth.refreshSession({
+        refresh_token: currentSession.refresh_token,
+      });
+      if (!error && data.session) {
+        void applySession(data.session);
+      }
+    }, refreshDelay);
+  };
 
   const updateDriverAccount = (account: DriverAccount | null) => {
     driverAccountRef.current = account;
@@ -146,6 +170,7 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
   const applySession = async (nextSession: Session | null) => {
     const resolutionId = ++sessionResolutionRef.current;
     activeSessionRef.current = nextSession;
+    scheduleSessionRefresh(nextSession);
     setSession(nextSession);
     setUser(nextSession?.user ?? null);
 
@@ -230,6 +255,7 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
     return () => {
       mounted = false;
       window.clearTimeout(startupWatchdog);
+      if (refreshTimerRef.current !== undefined) window.clearTimeout(refreshTimerRef.current);
       subscription.unsubscribe();
     };
   }, []);

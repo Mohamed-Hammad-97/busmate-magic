@@ -31,7 +31,10 @@ export const driverPortalClient = createClient<Database>(supabaseUrl, supabaseKe
     storageKey: "seater-driver-portal-auth",
     storage: brokeredPreviewStorage(),
     persistSession: true,
-    autoRefreshToken: true,
+    // Refresh is scheduled from the returned expires_in duration by the
+    // driver auth provider. The SDK's immediate clock-based refresh can
+    // invalidate fresh sessions on phones with inaccurate system clocks.
+    autoRefreshToken: false,
     detectSessionInUrl: false,
     lock: phoneSafeLock,
   },
