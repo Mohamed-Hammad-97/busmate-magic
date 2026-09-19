@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -39,6 +39,7 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
   const [session, setSession] = useState<Session | null>(null);
   const [driverAccount, setDriverAccount] = useState<DriverAccount | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const sessionResolutionRef = useRef(0);
 
   const fetchDriverAccount = async (userId: string) => {
     try {
@@ -53,14 +54,10 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
         .eq("is_active", true)
         .maybeSingle();
 
-      if (data) {
-        setDriverAccount(data as unknown as DriverAccount);
-      } else {
-        setDriverAccount(null);
-      }
+      return data ? data as unknown as DriverAccount : null;
     } catch (error) {
       console.error("Error fetching driver account:", error);
-      setDriverAccount(null);
+      return null;
     }
   };
 
@@ -69,14 +66,19 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
     // session and the driver/supervisor account record are resolved. Otherwise a
     // fresh tab (e.g. opening a trip in a new tab) briefly thinks the user is
     // logged out and bounces to /driver/login, then back to /driver.
-    const resolveSession = async (session: Session | null) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        await fetchDriverAccount(session.user.id);
-      } else {
-        setDriverAccount(null);
-      }
+    let mounted = true;
+
+    const resolveSession = async (nextSession: Session | null) => {
+      const resolutionId = ++sessionResolutionRef.current;
+      const account = nextSession?.user
+        ? await fetchDriverAccount(nextSession.user.id)
+        : null;
+
+      if (!mounted || resolutionId !== sessionResolutionRef.current) return;
+
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
+      setDriverAccount(account);
       setIsLoading(false);
     };
 
@@ -89,17 +91,14 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
       }
     );
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      let current = session;
-      // Refresh on open so a stale token never silently breaks writes (e.g. starting a trip)
-      if (current) {
-        const { data: refreshed } = await supabase.auth.refreshSession();
-        if (refreshed?.session) current = refreshed.session;
-      }
-      await resolveSession(current);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      resolveSession(session);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (phone: string, password: string) => {
