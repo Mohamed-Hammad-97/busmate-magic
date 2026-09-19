@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { driverPortalClient as supabase } from "@/lib/driverPortalClient";
+import { driverPortalClient as supabase, ensureFreshDriverSession } from "@/lib/driverPortalClient";
 import { useToast } from "@/hooks/use-toast";
 
 export type TripStatus = "pending" | "in_progress" | "completed" | "cancelled";
@@ -149,54 +149,70 @@ export function useLiveTrip(routeId?: string) {
   // Start trip mutation (handled server-side so permissions are checked safely)
   const startTripMutation = useMutation({
     mutationFn: async (data: { routeId: string; driverId?: string; supervisorId?: string }) => {
-      // Make sure we send a fresh session; stale tokens caused silent permission errors
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session) {
-        await supabase.auth.refreshSession();
-      }
+      // Make sure we send a usable session; stale tokens caused silent permission errors
+      await ensureFreshDriverSession();
 
-      const { data: result, error } = await supabase.functions.invoke("start-live-trip", {
-        body: { routeId: data.routeId },
-      });
+      const attempt = async () => {
+        const { data: result, error } = await supabase.functions.invoke("start-live-trip", {
+          body: { routeId: data.routeId },
+        });
 
-      if (error) {
-        let code = "";
-        let message = error.message;
-        try {
-          const ctx = (error as any).context;
-          const parsed = ctx && typeof ctx.json === "function" ? await ctx.json() : null;
-          if (parsed) {
-            code = parsed.code || "";
-            message = parsed.error || message;
+        if (error) {
+          let code = "";
+          let message = error.message;
+          try {
+            const ctx = (error as any).context;
+            const parsed = ctx && typeof ctx.json === "function" ? await ctx.json() : null;
+            if (parsed) {
+              code = parsed.code || "";
+              message = parsed.error || message;
+            }
+          } catch {
+            // keep default message
           }
-        } catch {
-          // keep default message
+          const err = new Error(
+            code === "NOT_ASSIGNED" ? "أنت غير مسؤول عن هذا الخط اليوم." : message,
+          );
+          (err as any).code = code;
+          throw err;
         }
-        const err = new Error(
-          code === "SESSION_EXPIRED"
-            ? "انتهت صلاحية الجلسة. برجاء تسجيل الدخول مرة أخرى."
-            : code === "NOT_ASSIGNED"
-              ? "أنت غير مسؤول عن هذا الخط اليوم."
-              : message,
-        );
-        (err as any).code = code;
-        throw err;
-      }
 
-      return (result as { trip: LiveTrip }).trip;
+        return (result as { trip: LiveTrip }).trip;
+      };
+
+      try {
+        return await attempt();
+      } catch (error) {
+        if ((error as any).code !== "SESSION_EXPIRED") throw error;
+        // Renew silently and retry once before bothering the supervisor.
+        const { data: current } = await supabase.auth.getSession();
+        const token = current.session?.refresh_token;
+        const renewed = token
+          ? await supabase.auth.refreshSession({ refresh_token: token })
+          : null;
+        if (!renewed || renewed.error || !renewed.data.session) {
+          const err = new Error("انتهت صلاحية الجلسة. برجاء تسجيل الدخول مرة أخرى.");
+          (err as any).code = "SESSION_EXPIRED_FINAL";
+          throw err;
+        }
+        return await attempt();
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["live-trip"] });
       toast({ title: "تم بدء الرحلة", description: "تم إرسال إشعار لجميع أولياء الأمور" });
     },
     onError: async (error) => {
-      toast({ title: "خطأ", description: error.message, variant: "destructive" });
-      if ((error as any).code === "SESSION_EXPIRED") {
-        await supabase.auth.signOut();
-        if (window.location.pathname.startsWith("/driver")) {
-          window.location.assign("/driver/login");
-        }
+      const code = (error as any).code;
+      if (code === "SESSION_EXPIRED_FINAL") {
+        toast({
+          title: "انتهت صلاحية الجلسة",
+          description: "برجاء تسجيل الدخول مرة أخرى لبدء الرحلة.",
+          variant: "destructive",
+        });
+        return;
       }
+      toast({ title: "خطأ", description: error.message, variant: "destructive" });
     },
   });
 
