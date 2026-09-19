@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import { User, Session } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
+import { driverPortalClient } from "@/lib/driverPortalClient";
 
 interface DriverAccount {
   id: string;
@@ -55,14 +55,14 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
   const loadAccountDetails = async (account: DriverAccount) => {
     try {
       if (account.driver_id) {
-        const { data, error } = await supabase
+        const { data, error } = await driverPortalClient
           .from("drivers")
           .select("id, full_name, phone")
           .eq("id", account.driver_id)
           .maybeSingle();
         if (!error && data) setDriverAccount((current) => current?.id === account.id ? { ...current, driver: data } : current);
       } else if (account.supervisor_id) {
-        const { data, error } = await supabase
+        const { data, error } = await driverPortalClient
           .from("supervisors")
           .select("id, full_name, phone")
           .eq("id", account.supervisor_id)
@@ -93,7 +93,7 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
     // struggle with a joined request immediately after writing a new session.
     for (let attempt = 0; attempt < 2; attempt += 1) {
       try {
-        const accountQuery = supabase
+        const accountQuery = driverPortalClient
           .from("driver_accounts")
           .select("id, phone, driver_id, supervisor_id, is_active")
           .eq("user_id", userId)
@@ -160,7 +160,7 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
     // session, throwing the person straight back to the login page.
     let sawAuthEvent = false;
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    const { data: { subscription } } = driverPortalClient.auth.onAuthStateChange(
       (event, session) => {
         if (event !== "INITIAL_SESSION" || session) sawAuthEvent = true;
         // Defer so we never run supabase queries inside the auth callback.
@@ -178,7 +178,7 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
       if (mounted) setIsLoading(false);
     }, 10000);
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    driverPortalClient.auth.getSession().then(({ data: { session } }) => {
       // A late, empty initial read must never override a live sign-in.
       if (!session && sawAuthEvent) {
         if (mounted) setIsLoading(false);
@@ -206,7 +206,7 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
       // Hard time limit: on flaky mobile networks this lookup can hang forever,
       // which used to leave the login button spinning with no feedback.
       const LOOKUP_TIMEOUT_MS = 8000;
-      const lookup = supabase.functions.invoke("driver-login-lookup", {
+      const lookup = driverPortalClient.functions.invoke("driver-login-lookup", {
         body: { phone: formattedPhone },
       });
       const timeout = new Promise<null>((resolve) =>
@@ -248,7 +248,7 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
     let authenticatedSession: Session | null = null;
     try {
       const signInResult = await Promise.race([
-        supabase.auth.signInWithPassword({ email, password }),
+        driverPortalClient.auth.signInWithPassword({ email, password }),
         new Promise<"timeout">((resolve) => setTimeout(() => resolve("timeout"), 20000)),
       ]);
       if (signInResult === "timeout") {
@@ -319,7 +319,7 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    await driverPortalClient.auth.signOut();
     setDriverAccount(null);
   };
 

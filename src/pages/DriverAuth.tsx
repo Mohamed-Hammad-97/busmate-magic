@@ -74,6 +74,10 @@ export default function DriverAuth() {
         const description = error.message || t('driverPortal.loginErrorDesc');
         setError(description);
         toast({ variant: "destructive", title: t('driverPortal.loginError'), description });
+      } else {
+        // Start the dashboard from a clean page load. This avoids waiting for
+        // delayed React/auth events on ColorOS and MIUI browsers.
+        window.location.replace(returnTo);
       }
     } catch (err) {
       const description = (err as Error)?.message || t('driverPortal.loginErrorDesc');
@@ -91,6 +95,8 @@ export default function DriverAuth() {
       const loaded = await retryAccount();
       if (!loaded) {
         setError("ما زال الاتصال ضعيفًا. تأكد من الإنترنت ثم اضغط إعادة المحاولة.");
+      } else {
+        window.location.replace(returnTo);
       }
     } finally {
       setIsRetrying(false);
