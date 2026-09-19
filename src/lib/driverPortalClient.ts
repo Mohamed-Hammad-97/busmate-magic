@@ -25,6 +25,10 @@ const phoneSafeLock = async <R>(
 
 export const driverPortalClient = createClient<Database>(supabaseUrl, supabaseKey, {
   auth: {
+    // Keep the driver portal isolated from the general site client. Both
+    // clients are loaded by the app bundle; sharing one key lets competing
+    // startup/refresh cycles replace a newly accepted mobile session.
+    storageKey: "seater-driver-portal-auth",
     storage: brokeredPreviewStorage(),
     persistSession: true,
     autoRefreshToken: true,
