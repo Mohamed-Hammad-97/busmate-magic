@@ -3,27 +3,27 @@ import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { useDriverAuth } from "@/contexts/DriverAuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { DriverTripInterface } from "@/components/tracking/DriverTripInterface";
 import { TripHistory } from "@/components/tracking/TripHistory";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Bus, LogOut, User, MapPin, Users, Play, Clock,
-  CheckCircle, Navigation, Phone, History, Shield, UserCircle, MessageCircle,
+  CheckCircle, Navigation, Phone, History, Shield, MessageCircle,
 } from "lucide-react";
-import { GoogleMapsProvider } from "@/components/maps/GoogleMapsProvider";
 import seaterLogo from "@/assets/seater-logo.jpg";
 import { DriverChatSection } from "@/components/chat/DriverChatSection";
 import { DriverDailyLineTrips } from "@/components/tracking/DriverDailyLineTrips";
 import { DriverStudentsList } from "@/components/tracking/DriverStudentsList";
 
+const openTripTab = (routeId: string) => {
+  window.open(`/driver/trip/${routeId}`, "_blank", "noopener");
+};
+
 export default function DriverDashboard() {
   const { t } = useTranslation();
   const { driverAccount, isDriver, isSupervisor, signOut } = useDriverAuth();
-  const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
   const [historyRouteId, setHistoryRouteId] = useState<string | null>(null);
 
   const personName = isDriver
@@ -166,7 +166,7 @@ export default function DriverDashboard() {
                     <p className="text-sm text-white/80">{t('driverPortal.tapToContinue')}</p>
                   </div>
                 </div>
-                <Button className="bg-white text-green-700 hover:bg-white/90 shadow-lg" onClick={() => setSelectedRouteId(activeTrips[0].route_id)}>
+                <Button className="bg-white text-green-700 hover:bg-white/90 shadow-lg" onClick={() => openTripTab(activeTrips[0].route_id)}>
                   {t('driverPortal.continueTrip')}
                 </Button>
               </div>
@@ -284,7 +284,7 @@ export default function DriverDashboard() {
 
                         <Button
                           className={`w-full gap-2 h-11 rounded-xl shadow-md ${activeTrip ? "bg-green-600 hover:bg-green-700 shadow-green-200" : "bg-primary hover:bg-primary/90 shadow-primary/20"}`}
-                          onClick={() => setSelectedRouteId(route.id)}
+                          onClick={() => openTripTab(route.id)}
                         >
                           {activeTrip ? (
                             <><Navigation className="h-4 w-4" />{t('driverPortal.continueTrip2')}</>
@@ -354,16 +354,6 @@ export default function DriverDashboard() {
           </TabsContent>
         </Tabs>
       </main>
-
-      <Dialog open={!!selectedRouteId} onOpenChange={() => setSelectedRouteId(null)}>
-        <DialogContent className="h-[95dvh] w-[calc(100vw-1rem)] max-w-4xl overflow-auto p-0 overscroll-contain">
-          {selectedRouteId && (
-            <GoogleMapsProvider>
-              <DriverTripInterface routeId={selectedRouteId} onClose={() => setSelectedRouteId(null)} />
-            </GoogleMapsProvider>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
