@@ -13,6 +13,21 @@ import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 
 const phoneSchema = z.string().regex(/^01[0125]\d{8}$/, "Invalid phone");
 
+// Some mobile browsers (private browsing / strict tracking protection) block
+// site storage, so the sign-in can never be remembered and the person is
+// silently returned to this page. Detect it and explain it instead.
+function isStorageAvailable() {
+  try {
+    const key = "__seater_storage_test__";
+    window.localStorage.setItem(key, "1");
+    window.localStorage.removeItem(key);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+
 export default function DriverAuth() {
   const { t } = useTranslation();
   const location = useLocation();
@@ -23,6 +38,9 @@ export default function DriverAuth() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [storageBlocked] = useState(() => !isStorageAvailable());
+
+
 
   const requestedPath = (location.state as { returnTo?: unknown } | null)?.returnTo;
   const returnTo = typeof requestedPath === "string" && requestedPath.startsWith("/driver/")
@@ -49,15 +67,22 @@ export default function DriverAuth() {
     }
 
     setIsLoading(true);
-    const { error } = await signIn(phone, password);
-    setIsLoading(false);
-
-    if (error) {
-      const description = error.message || t('driverPortal.loginErrorDesc');
+    try {
+      const { error } = await signIn(phone, password);
+      if (error) {
+        const description = error.message || t('driverPortal.loginErrorDesc');
+        setError(description);
+        toast({ variant: "destructive", title: t('driverPortal.loginError'), description });
+      }
+    } catch (err) {
+      const description = (err as Error)?.message || t('driverPortal.loginErrorDesc');
       setError(description);
       toast({ variant: "destructive", title: t('driverPortal.loginError'), description });
+    } finally {
+      setIsLoading(false);
     }
   };
+
 
   if (authLoading) {
     return (
@@ -146,7 +171,14 @@ export default function DriverAuth() {
               </div>
             </div>
 
+            {storageBlocked && (
+              <p className="text-sm text-amber-600 text-center leading-6">
+                متصفحك يمنع حفظ بيانات الموقع، لذلك لن يتم تذكر تسجيل الدخول. أغلق وضع التصفح الخاص واسمح ببيانات الموقع ثم حاول مرة أخرى.
+              </p>
+            )}
+
             {error && <p className="text-sm text-destructive text-center">{error}</p>}
+
 
             <Button type="submit" className="w-full h-12 text-base font-medium bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-600/30 hover:shadow-xl hover:shadow-blue-600/40 transition-all" disabled={isLoading}>
               {isLoading ? <Loader2 className="ml-2 h-5 w-5 animate-spin" /> : (

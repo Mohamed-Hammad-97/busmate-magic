@@ -108,9 +108,21 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
     // number stored on the staff record), then sign in with it.
     let email = `driver_${formattedPhone}@seater.app`;
     try {
-      const { data, error } = await supabase.functions.invoke("driver-login-lookup", {
+      // Hard time limit: on flaky mobile networks this lookup can hang forever,
+      // which used to leave the login button spinning with no feedback.
+      const LOOKUP_TIMEOUT_MS = 8000;
+      const lookup = supabase.functions.invoke("driver-login-lookup", {
         body: { phone: formattedPhone },
       });
+      const timeout = new Promise<null>((resolve) =>
+        setTimeout(() => resolve(null), LOOKUP_TIMEOUT_MS)
+      );
+      const result = await Promise.race([lookup, timeout]);
+      const { data, error } = (result ?? { data: null, error: null }) as {
+        data: { email?: string } | null;
+        error: unknown;
+      };
+
 
       if (error) {
         let code = "";
@@ -137,11 +149,25 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
       /* fall back to the derived address */
     }
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    let error: { message?: string; status?: number } | null = null;
+    try {
+      const signInResult = await Promise.race([
+        supabase.auth.signInWithPassword({ email, password }),
+        new Promise<"timeout">((resolve) => setTimeout(() => resolve("timeout"), 20000)),
+      ]);
+      if (signInResult === "timeout") {
+        error = { message: "network timeout" };
+      } else {
+        error = signInResult.error;
+      }
+    } catch (e) {
+      error = { message: (e as Error)?.message || "network" };
+    }
 
     if (error) {
       const raw = (error.message || "").toLowerCase();
-      const status = (error as any).status as number | undefined;
+      const status = error.status;
+
 
       let message = "تعذر تسجيل الدخول. حاول مرة أخرى.";
       let code = "SIGNIN_FAILED";
