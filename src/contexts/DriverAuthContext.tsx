@@ -42,23 +42,46 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
   const sessionResolutionRef = useRef(0);
 
   const fetchDriverAccount = async (userId: string) => {
-    try {
-      const { data } = await supabase
-        .from("driver_accounts")
-        .select(`
-          *,
-          driver:drivers(*),
-          supervisor:supervisors(*)
-        `)
-        .eq("user_id", userId)
-        .eq("is_active", true)
-        .maybeSingle();
+    const ACCOUNT_TIMEOUT_MS = 8000;
 
-      return data ? data as unknown as DriverAccount : null;
-    } catch (error) {
-      console.error("Error fetching driver account:", error);
-      return null;
+    // Mobile connections can occasionally leave the account query pending even
+    // after password authentication succeeds. Keep this query small, abort it
+    // if it stalls, then retry once before allowing the auth gate to finish.
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      let timer: number | undefined;
+
+      try {
+        const accountQuery = supabase
+          .from("driver_accounts")
+          .select(`
+            id,
+            phone,
+            driver_id,
+            supervisor_id,
+            is_active,
+            driver:drivers(id, full_name, phone),
+            supervisor:supervisors(id, full_name, phone)
+          `)
+          .eq("user_id", userId)
+          .eq("is_active", true)
+          .maybeSingle();
+        const timeout = new Promise<never>((_, reject) => {
+          timer = window.setTimeout(() => reject(new Error("account lookup timeout")), ACCOUNT_TIMEOUT_MS);
+        });
+        const { data, error } = await Promise.race([accountQuery, timeout]);
+
+        if (error) throw error;
+        return data ? data as unknown as DriverAccount : null;
+      } catch (error) {
+        if (attempt === 1) {
+          console.error("Error fetching driver account:", error);
+        }
+      } finally {
+        if (timer !== undefined) window.clearTimeout(timer);
+      }
     }
+
+    return null;
   };
 
   useEffect(() => {
