@@ -28,7 +28,9 @@ interface DriverAuthContextType {
   isAuthenticated: boolean;
   isDriver: boolean;
   isSupervisor: boolean;
+  accountLoadError: boolean;
   signIn: (phone: string, password: string) => Promise<{ error: Error | null }>;
+  retryAccount: () => Promise<boolean>;
   signOut: () => Promise<void>;
 }
 
@@ -39,49 +41,104 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
   const [session, setSession] = useState<Session | null>(null);
   const [driverAccount, setDriverAccount] = useState<DriverAccount | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [accountLoadError, setAccountLoadError] = useState(false);
   const sessionResolutionRef = useRef(0);
+  const activeSessionRef = useRef<Session | null>(null);
 
   const fetchDriverAccount = async (userId: string) => {
     const ACCOUNT_TIMEOUT_MS = 8000;
 
-    // Mobile connections can occasionally leave the account query pending even
-    // after password authentication succeeds. Keep this query small, abort it
-    // if it stalls, then retry once before allowing the auth gate to finish.
-    for (let attempt = 0; attempt < 2; attempt += 1) {
+    const withTimeout = async <T,>(request: PromiseLike<T>, label: string): Promise<T> => {
       let timer: number | undefined;
+      try {
+        const timeout = new Promise<never>((_, reject) => {
+          timer = window.setTimeout(() => reject(new Error(`${label} timeout`)), ACCOUNT_TIMEOUT_MS);
+        });
+        return await Promise.race([Promise.resolve(request), timeout]);
+      } finally {
+        if (timer !== undefined) window.clearTimeout(timer);
+      }
+    };
 
+    // Keep the required account lookup small. Embedded Android browsers can
+    // struggle with a joined request immediately after writing a new session.
+    for (let attempt = 0; attempt < 2; attempt += 1) {
       try {
         const accountQuery = supabase
           .from("driver_accounts")
-          .select(`
-            id,
-            phone,
-            driver_id,
-            supervisor_id,
-            is_active,
-            driver:drivers(id, full_name, phone),
-            supervisor:supervisors(id, full_name, phone)
-          `)
+          .select("id, phone, driver_id, supervisor_id, is_active")
           .eq("user_id", userId)
           .eq("is_active", true)
           .maybeSingle();
-        const timeout = new Promise<never>((_, reject) => {
-          timer = window.setTimeout(() => reject(new Error("account lookup timeout")), ACCOUNT_TIMEOUT_MS);
-        });
-        const { data, error } = await Promise.race([accountQuery, timeout]);
+        const { data, error } = await withTimeout(accountQuery, "account lookup");
 
         if (error) throw error;
-        return data ? data as unknown as DriverAccount : null;
+        if (!data) return null;
+
+        const account: DriverAccount = { ...data, driver: null, supervisor: null };
+
+        // Names are useful to the dashboard, but must not block authentication.
+        // Load only the linked record after the account itself is confirmed.
+        try {
+          if (data.driver_id) {
+            const result = await withTimeout(
+              supabase.from("drivers").select("id, full_name, phone").eq("id", data.driver_id).maybeSingle(),
+              "driver details"
+            );
+            if (!result.error) account.driver = result.data;
+          } else if (data.supervisor_id) {
+            const result = await withTimeout(
+              supabase.from("supervisors").select("id, full_name, phone").eq("id", data.supervisor_id).maybeSingle(),
+              "supervisor details"
+            );
+            if (!result.error) account.supervisor = result.data;
+          }
+        } catch (detailsError) {
+          console.warn("Account details will load later:", detailsError);
+        }
+
+        return account;
       } catch (error) {
         if (attempt === 1) {
           console.error("Error fetching driver account:", error);
+          throw error;
         }
-      } finally {
-        if (timer !== undefined) window.clearTimeout(timer);
+        await new Promise((resolve) => window.setTimeout(resolve, 700));
       }
     }
 
     return null;
+  };
+
+  const applySession = async (nextSession: Session | null) => {
+    const resolutionId = ++sessionResolutionRef.current;
+    activeSessionRef.current = nextSession;
+    setSession(nextSession);
+    setUser(nextSession?.user ?? null);
+
+    if (!nextSession?.user) {
+      setDriverAccount(null);
+      setAccountLoadError(false);
+      setIsLoading(false);
+      return null;
+    }
+
+    try {
+      const account = await fetchDriverAccount(nextSession.user.id);
+      if (resolutionId !== sessionResolutionRef.current) return null;
+      setDriverAccount(account);
+      setAccountLoadError(!account);
+      setIsLoading(false);
+      return account;
+    } catch {
+      if (resolutionId !== sessionResolutionRef.current) return null;
+      // Keep the accepted session. The user can retry this account request
+      // without entering the password again.
+      setDriverAccount(null);
+      setAccountLoadError(true);
+      setIsLoading(false);
+      return null;
+    }
   };
 
   useEffect(() => {
@@ -95,29 +152,19 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
     // session, throwing the person straight back to the login page.
     let sawAuthEvent = false;
 
-    const resolveSession = async (nextSession: Session | null) => {
-      const resolutionId = ++sessionResolutionRef.current;
-      const account = nextSession?.user
-        ? await fetchDriverAccount(nextSession.user.id)
-        : null;
-
-      if (!mounted || resolutionId !== sessionResolutionRef.current) return;
-
-      setSession(nextSession);
-      setUser(nextSession?.user ?? null);
-      setDriverAccount(account);
-      setIsLoading(false);
-    };
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (event !== "INITIAL_SESSION" || session) sawAuthEvent = true;
         // Defer so we never run supabase queries inside the auth callback.
         setTimeout(() => {
-          resolveSession(session);
+          if (mounted) void applySession(session);
         }, 0);
       }
     );
+
+    const startupWatchdog = window.setTimeout(() => {
+      if (mounted) setIsLoading(false);
+    }, 10000);
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       // A late, empty initial read must never override a live sign-in.
@@ -125,11 +172,14 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
         if (mounted) setIsLoading(false);
         return;
       }
-      resolveSession(session);
+      if (mounted) void applySession(session);
+    }).catch(() => {
+      if (mounted) setIsLoading(false);
     });
 
     return () => {
       mounted = false;
+      window.clearTimeout(startupWatchdog);
       subscription.unsubscribe();
     };
   }, []);
@@ -183,6 +233,7 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
     }
 
     let error: { message?: string; status?: number } | null = null;
+    let authenticatedSession: Session | null = null;
     try {
       const signInResult = await Promise.race([
         supabase.auth.signInWithPassword({ email, password }),
@@ -192,6 +243,7 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
         error = { message: "network timeout" };
       } else {
         error = signInResult.error;
+        authenticatedSession = signInResult.data.session;
       }
     } catch (e) {
       error = { message: (e as Error)?.message || "network" };
@@ -227,7 +279,31 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
       return { error: failure };
     }
 
+    if (!authenticatedSession) {
+      const failure = new Error("تعذر حفظ تسجيل الدخول على هذا الهاتف. افتح الصفحة في Google Chrome وحاول مرة أخرى.") as Error & { code?: string };
+      failure.code = "SESSION_MISSING";
+      return { error: failure };
+    }
+
+    // Complete the whole handoff before telling the form that login succeeded.
+    // This avoids depending on auth-event timing in OPPO/Redmi browsers.
+    const account = await applySession(authenticatedSession);
+    if (!account) {
+      const failure = new Error("تم قبول كلمة المرور، لكن تعذر تحميل بيانات الحساب. اضغط إعادة المحاولة دون إدخال كلمة المرور مرة أخرى.") as Error & { code?: string };
+      failure.code = "ACCOUNT_LOAD_FAILED";
+      return { error: failure };
+    }
+
     return { error: null };
+  };
+
+  const retryAccount = async () => {
+    const currentSession = activeSessionRef.current;
+    if (!currentSession) return false;
+    setIsLoading(true);
+    setAccountLoadError(false);
+    const account = await applySession(currentSession);
+    return Boolean(account);
   };
 
   const signOut = async () => {
@@ -243,7 +319,9 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
     isAuthenticated: !!user && !!driverAccount,
     isDriver: !!driverAccount?.driver_id,
     isSupervisor: !!driverAccount?.supervisor_id,
+    accountLoadError,
     signIn,
+    retryAccount,
     signOut,
   };
 
