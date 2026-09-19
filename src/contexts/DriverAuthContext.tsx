@@ -90,6 +90,10 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
     // fresh tab (e.g. opening a trip in a new tab) briefly thinks the user is
     // logged out and bounces to /driver/login, then back to /driver.
     let mounted = true;
+    // On slow mobile networks the initial getSession() can settle AFTER a fresh
+    // sign-in event. Its (stale) empty result used to wipe the brand new
+    // session, throwing the person straight back to the login page.
+    let sawAuthEvent = false;
 
     const resolveSession = async (nextSession: Session | null) => {
       const resolutionId = ++sessionResolutionRef.current;
@@ -106,7 +110,8 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
+        if (event !== "INITIAL_SESSION" || session) sawAuthEvent = true;
         // Defer so we never run supabase queries inside the auth callback.
         setTimeout(() => {
           resolveSession(session);
@@ -115,6 +120,11 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
     );
 
     supabase.auth.getSession().then(({ data: { session } }) => {
+      // A late, empty initial read must never override a live sign-in.
+      if (!session && sawAuthEvent) {
+        if (mounted) setIsLoading(false);
+        return;
+      }
       resolveSession(session);
     });
 
