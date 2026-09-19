@@ -295,54 +295,72 @@ export function useLiveTrip(routeId?: string) {
     },
   });
 
-  // End trip mutation
+  // End trip mutation (handled server-side so a stale token never silently skips the update)
   const endTripMutation = useMutation({
     mutationFn: async (tripId: string) => {
-      // Mark all remaining students as dropped off
-      await supabase
-        .from("trip_student_status")
-        .update({
-          status: "dropped_off",
-          dropped_off_at: new Date().toISOString(),
-        })
-        .eq("live_trip_id", tripId)
-        .neq("status", "dropped_off");
+      await ensureFreshDriverSession();
 
-      // Complete the trip
-      const { error } = await supabase
-        .from("live_trips")
-        .update({
-          status: "completed",
-          completed_at: new Date().toISOString(),
-        })
-        .eq("id", tripId);
+      const attempt = async () => {
+        const { data: result, error } = await supabase.functions.invoke("end-live-trip", {
+          body: { tripId },
+        });
 
-      if (error) throw error;
+        if (error) {
+          let code = "";
+          let message = error.message;
+          try {
+            const ctx = (error as any).context;
+            const parsed = ctx && typeof ctx.json === "function" ? await ctx.json() : null;
+            if (parsed) {
+              code = parsed.code || "";
+              message = parsed.error || message;
+            }
+          } catch {
+            // keep default message
+          }
+          const err = new Error(
+            code === "NOT_ASSIGNED" ? "أنت غير مسؤول عن هذا الخط اليوم." : message,
+          );
+          (err as any).code = code;
+          throw err;
+        }
 
-      // Send completion notifications
-      const { data: students } = await supabase
-        .from("trip_student_status")
-        .select("registration_id")
-        .eq("live_trip_id", tripId);
+        const trip = (result as { trip?: { status?: string } } | null)?.trip;
+        if (!trip || trip.status !== "completed") {
+          throw new Error("لم يتم إنهاء الرحلة. برجاء المحاولة مرة أخرى.");
+        }
+        return trip;
+      };
 
-      if (students) {
-        await supabase.from("trip_notifications").insert(
-          students.map((s) => ({
-            live_trip_id: tripId,
-            registration_id: s.registration_id,
-            notification_type: "trip_completed" as const,
-            title: "انتهت الرحلة",
-            message: "تم توصيل الطلاب بنجاح",
-          }))
-        );
+      try {
+        return await attempt();
+      } catch (error) {
+        if ((error as any).code !== "SESSION_EXPIRED") throw error;
+        const { data: current } = await supabase.auth.getSession();
+        const token = current.session?.refresh_token;
+        const renewed = token
+          ? await supabase.auth.refreshSession({ refresh_token: token })
+          : null;
+        if (!renewed || renewed.error || !renewed.data.session) {
+          const err = new Error("انتهت صلاحية الجلسة. برجاء المحاولة مرة أخرى.");
+          (err as any).code = "SESSION_EXPIRED_FINAL";
+          throw err;
+        }
+        return await attempt();
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["live-trip"] });
+      queryClient.invalidateQueries({ queryKey: ["trip-students"] });
       toast({ title: "تم إنهاء الرحلة", description: "تم إرسال إشعار لجميع أولياء الأمور" });
     },
     onError: (error) => {
-      toast({ title: "خطأ", description: error.message, variant: "destructive" });
+      const code = (error as any).code;
+      toast({
+        title: code === "SESSION_EXPIRED_FINAL" ? "انتهت صلاحية الجلسة" : "خطأ",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
