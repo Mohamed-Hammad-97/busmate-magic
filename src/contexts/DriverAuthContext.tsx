@@ -287,10 +287,27 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
       if (mounted) setIsLoading(false);
     });
 
+    // Phone browsers freeze timers while a tab is in the background, so the
+    // scheduled renewal may never fire. Re-check as soon as the tab is shown.
+    const handleVisible = () => {
+      if (!mounted || document.visibilityState !== "visible") return;
+      const current = activeSessionRef.current;
+      if (!current) return;
+      if (secondsRemaining(current) <= 120) {
+        void refreshNow();
+      } else {
+        scheduleSessionRefresh(current);
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisible);
+    window.addEventListener("focus", handleVisible);
+
     return () => {
       mounted = false;
       window.clearTimeout(startupWatchdog);
       if (refreshTimerRef.current !== undefined) window.clearTimeout(refreshTimerRef.current);
+      document.removeEventListener("visibilitychange", handleVisible);
+      window.removeEventListener("focus", handleVisible);
       subscription.unsubscribe();
     };
   }, []);
