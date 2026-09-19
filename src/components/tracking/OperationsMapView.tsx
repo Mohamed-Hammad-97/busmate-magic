@@ -358,21 +358,107 @@ export function OperationsMapView() {
           </div>
         ) : (
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-sm">
+            <button
+              type="button"
+              onClick={() => setShowTripList((v) => !v)}
+              className="flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-sm transition-colors hover:bg-primary/20"
+            >
               <Bus className="h-4 w-4 text-primary" />
               <span className="font-semibold">{tripsWithLocation.length}</span>
               <span className="text-muted-foreground">باص على الخريطة</span>
-            </span>
+            </button>
             {staleTrips.length > 0 && (
-              <span className="flex items-center gap-1.5 rounded-full bg-amber-500/15 px-2.5 py-1 text-sm">
+              <button
+                type="button"
+                onClick={() => setShowTripList((v) => !v)}
+                className="flex items-center gap-1.5 rounded-full bg-amber-500/15 px-2.5 py-1 text-sm transition-colors hover:bg-amber-500/25"
+              >
                 <AlertTriangle className="h-4 w-4 text-amber-600" />
                 <span className="font-semibold">{staleTrips.length}</span>
                 <span className="text-muted-foreground">بدون إشارة</span>
-              </span>
+              </button>
             )}
           </div>
         )}
       </div>
+
+      {/* Active lines list */}
+      {showTripList && !selectedTrip && (
+        <Card
+          dir="rtl"
+          className="absolute top-16 left-4 z-10 w-[21rem] max-w-[calc(100%-2rem)] shadow-xl"
+        >
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center justify-between gap-2">
+              <span className="flex items-center gap-2">
+                <Bus className="h-4 w-4 text-primary" />
+                الخطوط النشطة ({activeTrips.length})
+              </span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6"
+                onClick={() => setShowTripList(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <ScrollArea className="h-[22rem] pl-2">
+              <div className="space-y-2">
+                {activeTrips.length === 0 && (
+                  <p className="text-sm text-muted-foreground py-4 text-center">
+                    لا توجد رحلات نشطة
+                  </p>
+                )}
+                {[...tripsWithLocation, ...staleTrips].map((trip) => (
+                  <button
+                    key={trip.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedTrip(trip);
+                      setActiveMarker(trip.id);
+                      setShowTripList(false);
+                    }}
+                    className="w-full text-right rounded-lg border p-2.5 transition-colors hover:bg-muted/60"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-semibold text-sm truncate">{routeLabel(trip)}</span>
+                      {isStale(trip) ? (
+                        <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-500/40 shrink-0">
+                          بدون إشارة
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-[10px] text-green-600 border-green-500/40 shrink-0">
+                          على الخريطة
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground truncate mt-0.5">
+                      {trip.routes?.schools?.name}
+                    </p>
+                    {(trip.supervisors?.full_name || trip.drivers?.full_name) && (
+                      <p className="text-xs text-muted-foreground truncate mt-0.5">
+                        {trip.supervisors?.full_name
+                          ? `المشرفة: ${trip.supervisors.full_name}${trip.supervisors.phone ? ` - ${trip.supervisors.phone}` : ""}`
+                          : `السائق: ${trip.drivers?.full_name}`}
+                      </p>
+                    )}
+                    {trip.started_at && (
+                      <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-1">
+                        <Clock className="h-3 w-3" />
+                        بدأت منذ{" "}
+                        {formatDistanceToNowStrict(new Date(trip.started_at), { locale: ar })}
+                      </p>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      )}
 
 
 
