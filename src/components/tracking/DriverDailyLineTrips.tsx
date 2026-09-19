@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useDriverAuth } from "@/contexts/DriverAuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { driverPortalClient as supabase } from "@/lib/driverPortalClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

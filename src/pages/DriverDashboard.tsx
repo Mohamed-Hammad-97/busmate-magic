@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { useDriverAuth } from "@/contexts/DriverAuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { driverPortalClient as supabase } from "@/lib/driverPortalClient";
 import { TripHistory } from "@/components/tracking/TripHistory";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

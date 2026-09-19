@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { driverPortalClient as supabase } from "@/lib/driverPortalClient";
 import { useLiveTrip, useLiveTripRealtime, type TripStudentStatus, type StudentStatus } from "@/hooks/useLiveTrip";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { LiveTripMap } from "./LiveTripMap";
