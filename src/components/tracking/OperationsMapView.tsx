@@ -86,6 +86,7 @@ export function OperationsMapView() {
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [selectedTrip, setSelectedTrip] = useState<ActiveTrip | null>(null);
   const [activeMarker, setActiveMarker] = useState<string | null>(null);
+  const [showTripList, setShowTripList] = useState(false);
 
   // Fetch all active trips with realtime refresh
   const { data: allActiveTrips = [], isLoading: tripsLoading } = useQuery({
