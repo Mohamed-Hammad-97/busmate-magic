@@ -73,6 +73,49 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
   const driverAccountRef = useRef<DriverAccount | null>(null);
   const refreshTimerRef = useRef<number | undefined>(undefined);
 
+  // Seconds left on a stored session. Uses expires_at when it looks sane, so a
+  // tab opened long after login does not restart a full-lifetime countdown.
+  const secondsRemaining = (target: Session): number => {
+    const lifetime = Math.max(target.expires_in ?? 3600, 120);
+    if (!target.expires_at) return lifetime;
+    const remaining = target.expires_at - Math.floor(Date.now() / 1000);
+    // Guard against inaccurate device clocks: never trust a value bigger than
+    // the issued lifetime, and treat a wildly negative value as "renew now".
+    if (remaining > lifetime) return lifetime;
+    return remaining;
+  };
+
+  const refreshNow = async () => {
+    if (refreshInFlightRef.current) return refreshInFlightRef.current;
+    const run = (async () => {
+      // Another tab may already have renewed this login. Reuse the stored one
+      // instead of spending our refresh token on a parallel renewal.
+      const { data: stored } = await driverPortalClient.auth.getSession();
+      const current = activeSessionRef.current;
+      if (
+        stored.session &&
+        stored.session.access_token !== current?.access_token &&
+        secondsRemaining(stored.session) > 120
+      ) {
+        await applySession(stored.session);
+        return true;
+      }
+
+      const token = stored.session?.refresh_token ?? current?.refresh_token;
+      if (!token) return false;
+      const { data, error } = await driverPortalClient.auth.refreshSession({ refresh_token: token });
+      if (error || !data.session) return false;
+      await applySession(data.session);
+      return true;
+    })();
+    refreshInFlightRef.current = run;
+    try {
+      return await run;
+    } finally {
+      refreshInFlightRef.current = null;
+    }
+  };
+
   const scheduleSessionRefresh = (nextSession: Session | null) => {
     if (refreshTimerRef.current !== undefined) {
       window.clearTimeout(refreshTimerRef.current);
@@ -80,19 +123,10 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
     }
     if (!nextSession) return;
 
-    // Use the server-provided lifetime as a duration instead of comparing
-    // expires_at with the device clock. Refresh one minute before expiry.
-    const lifetimeSeconds = Math.max(nextSession.expires_in ?? 3600, 120);
-    const refreshDelay = Math.max((lifetimeSeconds - 60) * 1000, 60_000);
-    refreshTimerRef.current = window.setTimeout(async () => {
-      const currentSession = activeSessionRef.current;
-      if (!currentSession) return;
-      const { data, error } = await driverPortalClient.auth.refreshSession({
-        refresh_token: currentSession.refresh_token,
-      });
-      if (!error && data.session) {
-        void applySession(data.session);
-      }
+    // Refresh one minute before the real remaining time runs out.
+    const refreshDelay = Math.max((secondsRemaining(nextSession) - 60) * 1000, 1_000);
+    refreshTimerRef.current = window.setTimeout(() => {
+      void refreshNow();
     }, refreshDelay);
   };
 
