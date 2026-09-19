@@ -177,6 +177,17 @@ export default function DriverAuth() {
               </p>
             )}
 
+            {user && !driverAccount && (
+              <div className="space-y-2 text-center">
+                <p className="text-sm text-amber-600 leading-6">
+                  تم تسجيل الدخول لكن تعذر تحميل بيانات الحساب بسبب ضعف الشبكة.
+                </p>
+                <Button type="button" variant="outline" className="w-full h-11" onClick={() => window.location.reload()}>
+                  إعادة المحاولة
+                </Button>
+              </div>
+            )}
+
             {error && <p className="text-sm text-destructive text-center">{error}</p>}
 
 
