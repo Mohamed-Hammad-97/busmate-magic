@@ -19,9 +19,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, UserPlus, User, Phone, Key, Eye, EyeOff, Shield, ShieldCheck, MapPin, Building2, Car, Users, Power, PowerOff, Search, Settings2, AlertTriangle } from "lucide-react";
+import { Loader2, Plus, UserPlus, User, Phone, Key, Eye, EyeOff, Shield, ShieldCheck, MapPin, Building2, Car, Users, Power, PowerOff, Search, Settings2, AlertTriangle, Trash2 } from "lucide-react";
 import { z } from "zod";
 import { useCity } from "@/contexts/CityContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -66,6 +76,7 @@ export function DriverAccountsManagement({ cityFilter, staffContext = "school" }
   const [newPassword, setNewPassword] = useState("");
   const [newPhone, setNewPhone] = useState("");
   const [showNewPassword, setShowNewPassword] = useState(false);
+  const [accountToDelete, setAccountToDelete] = useState<any>(null);
 
   const allowedServices = useMemo<ServiceType[]>(() => {
     if (isSuperAdmin) return ["school", "corporate", "daily_lines"];
@@ -242,7 +253,7 @@ export function DriverAccountsManagement({ cityFilter, staffContext = "school" }
   });
 
   const manageAccount = useMutation({
-    mutationFn: async (payload: { action: "reset_password" | "update_phone"; accountId: string; password?: string; phone?: string }) => {
+    mutationFn: async (payload: { action: "reset_password" | "update_phone" | "delete_supervisor_account"; accountId: string; password?: string; phone?: string }) => {
       const { data, error } = await supabase.functions.invoke("manage-driver-account", { body: payload });
       if (error) {
         let message = "";
@@ -259,10 +270,16 @@ export function DriverAccountsManagement({ cityFilter, staffContext = "school" }
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["driver-accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["available-supervisors"] });
       toast({
-        title: variables.action === "reset_password" ? "تم تغيير كلمة المرور" : "تم تحديث رقم الدخول",
+        title: variables.action === "reset_password"
+          ? "تم تغيير كلمة المرور"
+          : variables.action === "update_phone"
+            ? "تم تحديث رقم الدخول"
+            : "تم حذف حساب دخول المشرف",
       });
       setManageAccountRow(null);
+      setAccountToDelete(null);
       setNewPassword("");
       setNewPhone("");
     },
@@ -601,6 +618,18 @@ export function DriverAccountsManagement({ cityFilter, staffContext = "school" }
                   >
                     <Settings2 className="h-3.5 w-3.5" /> إدارة الدخول
                   </Button>
+                  {isSuperAdmin && !isDriver && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      onClick={() => setAccountToDelete(account)}
+                      title="حذف حساب دخول المشرف"
+                      aria-label="حذف حساب دخول المشرف"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                   <Button
                     variant={account.is_active ? "outline" : "default"}
                     size="sm"
@@ -696,6 +725,32 @@ export function DriverAccountsManagement({ cityFilter, staffContext = "school" }
           </div>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!accountToDelete} onOpenChange={(open) => { if (!open) setAccountToDelete(null); }}>
+        <AlertDialogContent dir="rtl" className="max-w-md rounded-2xl">
+          <AlertDialogHeader className="text-right sm:text-right">
+            <AlertDialogTitle>حذف حساب دخول المشرف؟</AlertDialogTitle>
+            <AlertDialogDescription>
+              سيتم حذف حساب دخول {(accountToDelete?.supervisor)?.full_name} نهائيًا. سيبقى سجل المشرف وبياناته محفوظين، ويمكن إنشاء حساب دخول جديد له لاحقًا.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:space-x-0">
+            <AlertDialogCancel disabled={manageAccount.isPending}>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={manageAccount.isPending}
+              onClick={() => {
+                if (accountToDelete?.id) {
+                  manageAccount.mutate({ action: "delete_supervisor_account", accountId: accountToDelete.id });
+                }
+              }}
+            >
+              {manageAccount.isPending && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
+              حذف الحساب
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

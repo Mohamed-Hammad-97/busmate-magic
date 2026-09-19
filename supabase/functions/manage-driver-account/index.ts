@@ -55,15 +55,46 @@ Deno.serve(async (req) => {
 
     const { action, accountId, password, phone } = await req.json()
 
+    if (action === 'delete_supervisor_account' && roleRow?.role !== 'super_admin') {
+      return json({ error: 'هذه العملية متاحة للمدير العام فقط' }, 403)
+    }
+
     if (!accountId) return json({ error: 'accountId is required' }, 400)
 
     const { data: account, error: accountErr } = await admin
       .from('driver_accounts')
-      .select('id, user_id, phone')
+      .select('*')
       .eq('id', accountId)
       .maybeSingle()
 
     if (accountErr || !account) return json({ error: 'Account not found' }, 404)
+
+    if (action === 'delete_supervisor_account') {
+      if (!account.supervisor_id || account.driver_id) {
+        return json({ error: 'يمكن حذف حسابات دخول المشرفين فقط' }, 400)
+      }
+
+      const { error: accountDeleteError } = await admin
+        .from('driver_accounts')
+        .delete()
+        .eq('id', accountId)
+
+      if (accountDeleteError) {
+        console.error('supervisor account row delete failed:', accountDeleteError.message)
+        return json({ error: 'تعذر حذف حساب دخول المشرف' }, 400)
+      }
+
+      const { error: authDeleteError } = await admin.auth.admin.deleteUser(account.user_id)
+      if (authDeleteError) {
+        const { error: restoreError } = await admin.from('driver_accounts').insert(account)
+        console.error('supervisor auth delete failed:', authDeleteError.message)
+        if (restoreError) console.error('supervisor account restore failed:', restoreError.message)
+        return json({ error: 'تعذر حذف حساب دخول المشرف' }, 400)
+      }
+
+      console.log('supervisor login account deleted', accountId, 'by', caller.id)
+      return json({ success: true })
+    }
 
     if (action === 'reset_password') {
       if (!password || String(password).length < 6) {
