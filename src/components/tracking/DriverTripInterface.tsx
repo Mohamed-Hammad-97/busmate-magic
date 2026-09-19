@@ -155,7 +155,7 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
   }
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
+    <div className="min-h-full min-w-[640px] overflow-visible">
       {/* Header */}
       <div className="p-4 border-b bg-background shrink-0 sticky top-0 z-30">
           <div className="flex items-center justify-between gap-2 mb-3">
@@ -249,14 +249,14 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
 
         {/* Student List */}
         {activeTrip?.status === "in_progress" && (
-          <div className="border-t flex-1 min-h-0 flex flex-col">
+          <div className="border-t">
             <div className="p-3 bg-muted/50 shrink-0">
               <h3 className="font-semibold flex items-center gap-2 text-sm">
                 <Users className="h-4 w-4" />
                 الطلاب ({tripStudents.length})
               </h3>
             </div>
-            <ScrollArea className="flex-1">
+            <ScrollArea className="max-h-[55vh]">
               <div className="p-2 space-y-2">
                 {tripStudents.map((student) => {
                 const config = STATUS_CONFIG[student.status as StudentStatus];

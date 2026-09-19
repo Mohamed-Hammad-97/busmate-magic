@@ -356,7 +356,7 @@ export default function DriverDashboard() {
       </main>
 
       <Dialog open={!!selectedRouteId} onOpenChange={() => setSelectedRouteId(null)}>
-        <DialogContent className="max-w-4xl h-[95vh] p-0">
+        <DialogContent className="h-[95dvh] w-[calc(100vw-1rem)] max-w-4xl overflow-auto p-0 overscroll-contain">
           {selectedRouteId && (
             <GoogleMapsProvider>
               <DriverTripInterface routeId={selectedRouteId} onClose={() => setSelectedRouteId(null)} />
