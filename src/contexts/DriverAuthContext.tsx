@@ -52,7 +52,7 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
         .eq("user_id", userId)
         .eq("is_active", true)
         .maybeSingle();
-      
+
       if (data) {
         setDriverAccount(data as unknown as DriverAccount);
       } else {
@@ -65,19 +65,27 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
   };
 
   useEffect(() => {
+    // The auth gate (DriverProtectedRoute) must stay in "loading" until BOTH the
+    // session and the driver/supervisor account record are resolved. Otherwise a
+    // fresh tab (e.g. opening a trip in a new tab) briefly thinks the user is
+    // logged out and bounces to /driver/login, then back to /driver.
+    const resolveSession = async (session: Session | null) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        await fetchDriverAccount(session.user.id);
+      } else {
+        setDriverAccount(null);
+      }
+      setIsLoading(false);
+    };
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          setTimeout(() => {
-            fetchDriverAccount(session.user.id);
-          }, 0);
-        } else {
-          setDriverAccount(null);
-        }
-        setIsLoading(false);
+      (_event, session) => {
+        // Defer so we never run supabase queries inside the auth callback.
+        setTimeout(() => {
+          resolveSession(session);
+        }, 0);
       }
     );
 
@@ -88,12 +96,7 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
         const { data: refreshed } = await supabase.auth.refreshSession();
         if (refreshed?.session) current = refreshed.session;
       }
-      setSession(current);
-      setUser(current?.user ?? null);
-      if (current?.user) {
-        fetchDriverAccount(current.user.id);
-      }
-      setIsLoading(false);
+      await resolveSession(current);
     });
 
     return () => subscription.unsubscribe();
