@@ -72,6 +72,7 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
   const activeSessionRef = useRef<Session | null>(null);
   const driverAccountRef = useRef<DriverAccount | null>(null);
   const refreshTimerRef = useRef<number | undefined>(undefined);
+  const refreshInFlightRef = useRef<Promise<boolean> | null>(null);
 
   // Seconds left on a stored session. Uses expires_at when it looks sane, so a
   // tab opened long after login does not restart a full-lifetime countdown.
