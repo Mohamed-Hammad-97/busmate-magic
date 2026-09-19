@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { driverPortalClient as supabase } from "@/lib/driverPortalClient";
+import { driverPortalClient as supabase, ensureFreshDriverSession } from "@/lib/driverPortalClient";
 import { useToast } from "@/hooks/use-toast";
 
 export type TripStatus = "pending" | "in_progress" | "completed" | "cancelled";
