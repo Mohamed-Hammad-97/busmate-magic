@@ -38,6 +38,9 @@ export default function DriverAuth() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [storageBlocked] = useState(() => !isStorageAvailable());
+
+
 
   const requestedPath = (location.state as { returnTo?: unknown } | null)?.returnTo;
   const returnTo = typeof requestedPath === "string" && requestedPath.startsWith("/driver/")
