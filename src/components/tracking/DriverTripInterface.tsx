@@ -7,7 +7,6 @@ import { LiveTripMap } from "./LiveTripMap";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Play, Square, MapPin, Phone, Bell, CheckCircle2,
@@ -155,9 +154,9 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
   }
 
   return (
-    <div className="min-h-full min-w-[640px] overflow-visible">
+    <div className="min-h-[100dvh] w-full max-w-3xl mx-auto bg-background pb-24">
       {/* Header */}
-      <div className="p-4 border-b bg-background shrink-0 sticky top-0 z-30">
+      <div className="p-4 border-b bg-background/95 backdrop-blur shrink-0 sticky top-0 z-30">
           <div className="flex items-center justify-between gap-2 mb-3">
             <div className="flex items-center gap-2 min-w-0 flex-1">
               {onClose && (
@@ -228,16 +227,16 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
             onClick={handleEndTrip}
             disabled={isEnding}
             variant="destructive"
-            className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 gap-2 shadow-xl rounded-full px-6 h-11"
+            className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 gap-2 shadow-xl rounded-full px-6 h-12 text-base"
           >
-            {isEnding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Square className="h-4 w-4" />}
+            {isEnding ? <Loader2 className="h-5 w-5 animate-spin" /> : <Square className="h-5 w-5" />}
             إنهاء الرحلة
           </Button>
         )}
 
         {/* Map */}
 
-        <div className="h-[350px] relative">
+        <div className="h-[45dvh] min-h-[260px] max-h-[480px] relative">
           <LiveTripMap
             trip={activeTrip}
             students={tripStudents}
@@ -256,9 +255,8 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
                 الطلاب ({tripStudents.length})
               </h3>
             </div>
-            <ScrollArea className="max-h-[55vh]">
-              <div className="p-2 space-y-2">
-                {tripStudents.map((student) => {
+            <div className="p-3 space-y-3">
+              {tripStudents.map((student) => {
                 const config = STATUS_CONFIG[student.status as StudentStatus];
                 const isAbsent = todayAbsences.includes(student.registration_id);
                 return (
@@ -334,8 +332,7 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
                   </Card>
                 );
               })}
-              </div>
-            </ScrollArea>
+            </div>
           </div>
         )}
 
