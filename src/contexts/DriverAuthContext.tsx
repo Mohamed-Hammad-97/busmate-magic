@@ -42,23 +42,44 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
   const sessionResolutionRef = useRef(0);
 
   const fetchDriverAccount = async (userId: string) => {
-    try {
-      const { data } = await supabase
-        .from("driver_accounts")
-        .select(`
-          *,
-          driver:drivers(*),
-          supervisor:supervisors(*)
-        `)
-        .eq("user_id", userId)
-        .eq("is_active", true)
-        .maybeSingle();
+    const ACCOUNT_TIMEOUT_MS = 8000;
 
-      return data ? data as unknown as DriverAccount : null;
-    } catch (error) {
-      console.error("Error fetching driver account:", error);
-      return null;
+    // Mobile connections can occasionally leave the account query pending even
+    // after password authentication succeeds. Keep this query small, abort it
+    // if it stalls, then retry once before allowing the auth gate to finish.
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      const controller = new AbortController();
+      const timer = window.setTimeout(() => controller.abort(), ACCOUNT_TIMEOUT_MS);
+
+      try {
+        const { data, error } = await supabase
+          .from("driver_accounts")
+          .select(`
+            id,
+            phone,
+            driver_id,
+            supervisor_id,
+            is_active,
+            driver:drivers(id, full_name, phone),
+            supervisor:supervisors(id, full_name, phone)
+          `)
+          .eq("user_id", userId)
+          .eq("is_active", true)
+          .maybeSingle()
+          .abortSignal(controller.signal);
+
+        if (error) throw error;
+        return data ? data as unknown as DriverAccount : null;
+      } catch (error) {
+        if (attempt === 1) {
+          console.error("Error fetching driver account:", error);
+        }
+      } finally {
+        window.clearTimeout(timer);
+      }
     }
+
+    return null;
   };
 
   useEffect(() => {
