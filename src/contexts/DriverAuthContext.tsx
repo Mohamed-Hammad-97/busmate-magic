@@ -108,9 +108,21 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
     // number stored on the staff record), then sign in with it.
     let email = `driver_${formattedPhone}@seater.app`;
     try {
-      const { data, error } = await supabase.functions.invoke("driver-login-lookup", {
+      // Hard time limit: on flaky mobile networks this lookup can hang forever,
+      // which used to leave the login button spinning with no feedback.
+      const LOOKUP_TIMEOUT_MS = 8000;
+      const lookup = supabase.functions.invoke("driver-login-lookup", {
         body: { phone: formattedPhone },
       });
+      const timeout = new Promise<null>((resolve) =>
+        setTimeout(() => resolve(null), LOOKUP_TIMEOUT_MS)
+      );
+      const result = await Promise.race([lookup, timeout]);
+      const { data, error } = (result ?? { data: null, error: null }) as {
+        data: { email?: string } | null;
+        error: unknown;
+      };
+
 
       if (error) {
         let code = "";
