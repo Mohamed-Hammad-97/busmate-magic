@@ -49,15 +49,22 @@ export default function DriverAuth() {
     }
 
     setIsLoading(true);
-    const { error } = await signIn(phone, password);
-    setIsLoading(false);
-
-    if (error) {
-      const description = error.message || t('driverPortal.loginErrorDesc');
+    try {
+      const { error } = await signIn(phone, password);
+      if (error) {
+        const description = error.message || t('driverPortal.loginErrorDesc');
+        setError(description);
+        toast({ variant: "destructive", title: t('driverPortal.loginError'), description });
+      }
+    } catch (err) {
+      const description = (err as Error)?.message || t('driverPortal.loginErrorDesc');
       setError(description);
       toast({ variant: "destructive", title: t('driverPortal.loginError'), description });
+    } finally {
+      setIsLoading(false);
     }
   };
+
 
   if (authLoading) {
     return (
