@@ -385,6 +385,15 @@ export function LiveTripMap({
         })}
       </GoogleMap>
       
+      {!isDriver && showDriverLocation && (
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 rounded-full border bg-background/95 px-3 py-1 text-xs font-medium shadow-lg" dir="rtl">
+          {!hasBusFix
+            ? "بانتظار إشارة موقع الباص..."
+            : secondsSinceUpdate !== null && secondsSinceUpdate > 60
+              ? `آخر موقع للباص منذ ${Math.round(secondsSinceUpdate / 60)} دقيقة`
+              : "موقع الباص مباشر • يتحدث كل 3 ثوانٍ"}
+        </div>
+      )}
       {/* Legend */}
       <div className="absolute bottom-4 left-4 bg-background/95 backdrop-blur-sm rounded-lg p-3 shadow-lg border">
         <h4 className="text-xs font-semibold mb-2">الحالة</h4>
