@@ -46,6 +46,7 @@ export function LiveTripMap({
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [activeMarker, setActiveMarker] = useState<string | null>(null);
   const [roadPath, setRoadPath] = useState<google.maps.LatLngLiteral[] | null>(null);
+  const hasCoordinate = (value: number | null | undefined) => typeof value === "number" && Number.isFinite(value);
 
   // Fetch today's absences for students on this trip
   const registrationIds = students.map(s => s.registration_id);
@@ -105,7 +106,7 @@ export function LiveTripMap({
   // Compute a real driving route (following roads) through the stops
   useEffect(() => {
     let cancelled = false;
-    if (!isLoaded || stopPoints.length < 2) {
+    if (!isDriver || !isLoaded || stopPoints.length < 2) {
       setRoadPath(null);
       return;
     }
@@ -115,7 +116,7 @@ export function LiveTripMap({
       setRoadPath(result.path.length > 1 ? result.path : null);
     })();
     return () => { cancelled = true; };
-  }, [stopsKey, isLoaded]);
+  }, [stopsKey, isLoaded, isDriver]);
 
   // Path drawn on the map: real road route when available, straight lines meanwhile
   const routePath = roadPath ?? stopPoints;
@@ -127,7 +128,7 @@ export function LiveTripMap({
     const destination = stopPoints[stopPoints.length - 1];
     const waypoints = stopPoints.slice(0, -1).slice(0, 9);
     const origin =
-      trip?.current_latitude && trip?.current_longitude
+      hasCoordinate(trip?.current_latitude) && hasCoordinate(trip?.current_longitude)
         ? `${trip.current_latitude},${trip.current_longitude}`
         : waypoints.length > 0
           ? fmt(waypoints[0])
@@ -143,7 +144,7 @@ export function LiveTripMap({
   }, [stopPoints, trip?.current_latitude, trip?.current_longitude]);
 
   // Fit bounds once per trip (and again when the bus first gets a GPS fix)
-  const hasBusFix = !!(trip?.current_latitude && trip?.current_longitude);
+  const hasBusFix = hasCoordinate(trip?.current_latitude) && hasCoordinate(trip?.current_longitude);
   const fittedKeyRef = React.useRef<string>("");
   useEffect(() => {
     if (!map || !isLoaded || !window.google?.maps) return;
@@ -158,7 +159,7 @@ export function LiveTripMap({
       hasValidBounds = true;
     }
 
-    if (showDriverLocation && trip?.current_latitude && trip?.current_longitude) {
+    if (showDriverLocation && hasCoordinate(trip?.current_latitude) && hasCoordinate(trip?.current_longitude)) {
       bounds.extend({ lat: trip.current_latitude, lng: trip.current_longitude });
       hasValidBounds = true;
     }
@@ -181,7 +182,7 @@ export function LiveTripMap({
 
   // Keep the bus in view as it moves
   useEffect(() => {
-    if (!map || isDriver || !showDriverLocation || !trip?.current_latitude || !trip?.current_longitude) return;
+    if (!map || isDriver || !showDriverLocation || !hasCoordinate(trip?.current_latitude) || !hasCoordinate(trip?.current_longitude)) return;
     const pos = { lat: trip.current_latitude, lng: trip.current_longitude };
     const b = map.getBounds();
     if (b && !b.contains(pos)) map.panTo(pos);
@@ -256,7 +257,7 @@ export function LiveTripMap({
         }}
       >
         {/* Route Polyline */}
-        {routePath.length > 1 && (
+        {isDriver && routePath.length > 1 && (
           <Polyline
             path={routePath}
             options={{
@@ -303,7 +304,7 @@ export function LiveTripMap({
         )}
 
         {/* Driver Marker */}
-        {showDriverLocation && trip?.current_latitude && trip?.current_longitude && window.google?.maps && (
+        {showDriverLocation && hasCoordinate(trip?.current_latitude) && hasCoordinate(trip?.current_longitude) && window.google?.maps && (
           <Marker
             position={{
               lat: trip.current_latitude,
