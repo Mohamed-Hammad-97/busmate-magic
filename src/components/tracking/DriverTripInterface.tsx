@@ -87,6 +87,21 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
     return () => { stopTracking(); };
   }, []);
 
+  // Heartbeat: push the latest GPS fix every 3 seconds so parents' maps stay live
+  const latestPosRef = React.useRef<{ lat: number; lng: number } | null>(null);
+  useEffect(() => {
+    if (latitude != null && longitude != null) latestPosRef.current = { lat: latitude, lng: longitude };
+  }, [latitude, longitude]);
+  useEffect(() => {
+    if (activeTrip?.status !== "in_progress" || !activeTrip?.id) return;
+    const tripId = activeTrip.id;
+    const id = window.setInterval(() => {
+      const p = latestPosRef.current;
+      if (p) updateLocation({ tripId, lat: p.lat, lng: p.lng });
+    }, 3000);
+    return () => window.clearInterval(id);
+  }, [activeTrip?.status, activeTrip?.id]);
+
   const handleRetryTracking = () => {
     stopTracking();
     startTracking((lat, lng) => {
