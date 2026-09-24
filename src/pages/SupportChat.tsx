@@ -174,15 +174,35 @@ export default function SupportChat() {
 
   const totalUnread = Object.values(unreadMap).reduce((a: number, b: number) => a + b, 0);
 
+  // Load every line so existing group headers stay accurate even if a line is inactive.
+  const { data: routes = [] } = useQuery({
+    queryKey: ["routes-for-groups"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("routes")
+        .select("id, name, route_number, school_id, driver_id, supervisor_id, is_active, schools(name)")
+        .order("route_number", { ascending: true, nullsFirst: false });
+      return data || [];
+    },
+  });
+
+  const routeById = new Map(routes.map((route: any) => [route.id, route]));
+
   // Combine into one list
   const allConversations = [
     ...unifiedConvs.map((c) => {
       const parentId = (c.conversation_participants || []).find(
         (p: any) => p.participant_type === "parent" && p.participant_ref_id,
       )?.participant_ref_id as string | undefined;
+      const linkedRoute = c.type === "route_group" && c.route_id
+        ? routeById.get(c.route_id) as any
+        : null;
+      const routeGroupName = linkedRoute
+        ? `${linkedRoute.route_number ? `#${linkedRoute.route_number} - ` : ""}${linkedRoute.name}`
+        : null;
       return {
         id: c.id,
-        name: c.subject?.replace("Chat with ", "") || "Chat",
+        name: routeGroupName || c.subject?.replace("Chat with ", "") || "Chat",
         subtitle:
           c.type === "staff_dm" ? "Staff"
           : c.type === "customer_dm" ? "Customer"
@@ -369,14 +389,6 @@ export default function SupportChat() {
   });
 
   // ---- New chat helpers ----
-  const { data: routes = [] } = useQuery({
-    queryKey: ["routes-for-groups"],
-    queryFn: async () => {
-      const { data } = await supabase.from("routes").select("id, name, route_number, school_id, driver_id, supervisor_id, schools(name)").eq("is_active", true).order("route_number", { ascending: true, nullsFirst: false });
-      return data || [];
-    },
-  });
-
   const startStaffChat = useMutation({
     mutationFn: async (staff: StaffTarget) => {
       if (!user?.id) throw new Error("Not authenticated");
@@ -454,7 +466,7 @@ export default function SupportChat() {
 
   const [selectedRouteId, setSelectedRouteId] = useState("");
   const existingRouteIds = new Set(unifiedConvs.filter((c) => c.type === "route_group").map((c) => c.route_id));
-  const availableRoutes = routes.filter((r) => !existingRouteIds.has(r.id));
+  const availableRoutes = routes.filter((r: any) => r.is_active && !existingRouteIds.has(r.id));
 
   const createGroupChat = useMutation({
     mutationFn: async (routeId: string) => {
@@ -712,7 +724,7 @@ export default function SupportChat() {
                       )}
                       <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.message}</p>
                       <div className={`flex items-center gap-1 text-[10px] mt-1 ${isMine ? "text-primary-foreground/60" : "text-muted-foreground"}`} dir="ltr">
-                        <span>{format(new Date(msg.created_at), "hh:mm a")}</span>
+                        <span>{format(new Date(msg.created_at), "dd/MM/yyyy hh:mm a")}</span>
                         {isMine && msg.is_read && <CheckCircle className="h-3 w-3" />}
                       </div>
                     </div>
