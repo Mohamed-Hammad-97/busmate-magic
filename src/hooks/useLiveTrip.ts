@@ -219,17 +219,40 @@ export function useLiveTrip(routeId?: string) {
   // Update driver location
   const updateLocationMutation = useMutation({
     mutationFn: async (data: { tripId: string; lat: number; lng: number }) => {
-      const { error } = await supabase
-        .from("live_trips")
-        .update({
-          current_latitude: data.lat,
-          current_longitude: data.lng,
-          last_location_update: new Date().toISOString(),
-        })
-        .eq("id", data.tripId);
+      await ensureFreshDriverSession();
 
-      if (error) throw error;
+      const attempt = async () => {
+        const { data: result, error } = await supabase.functions.invoke("update-live-trip-location", {
+          body: data,
+        });
+
+        if (!error) return result;
+
+        let code = "";
+        let message = error.message;
+        try {
+          const ctx = (error as { context?: { json?: () => Promise<{ code?: string; error?: string }> } }).context;
+          const parsed = ctx?.json ? await ctx.json() : null;
+          code = parsed?.code ?? "";
+          message = parsed?.error ?? message;
+        } catch {
+          // Keep the original function error.
+        }
+
+        const requestError = new Error(message) as Error & { code?: string };
+        requestError.code = code;
+        throw requestError;
+      };
+
+      try {
+        return await attempt();
+      } catch (error) {
+        if ((error as Error & { code?: string }).code !== "SESSION_EXPIRED") throw error;
+        await ensureFreshDriverSession();
+        return attempt();
+      }
     },
+    retry: 1,
   });
 
   // Update student status
@@ -369,11 +392,13 @@ export function useLiveTrip(routeId?: string) {
     tripStudents,
     isLoading: tripLoading || studentsLoading,
     startTrip: startTripMutation.mutate,
-    updateLocation: updateLocationMutation.mutate,
+    updateLocation: updateLocationMutation.mutateAsync,
     updateStudentStatus: updateStudentStatusMutation.mutate,
     endTrip: endTripMutation.mutate,
     isStarting: startTripMutation.isPending,
     isEnding: endTripMutation.isPending,
+    isUpdatingLocation: updateLocationMutation.isPending,
+    locationUpdateError: updateLocationMutation.error,
   };
 }
 

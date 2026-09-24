@@ -93,7 +93,8 @@ export function ParentLiveTracking() {
           )
         `)
         .in("route_id", routeIds)
-        .eq("status", "in_progress");
+        .eq("status", "in_progress")
+        .order("started_at", { ascending: false });
       if (error) throw error;
       return data as LiveTrip[];
     },

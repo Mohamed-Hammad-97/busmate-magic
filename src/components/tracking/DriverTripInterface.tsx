@@ -35,7 +35,7 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
   const {
     activeTrip, tripStudents, isLoading,
     startTrip, updateLocation, updateStudentStatus, endTrip,
-    isStarting, isEnding,
+    isStarting, isEnding, isUpdatingLocation, locationUpdateError,
   } = useLiveTrip(routeId);
 
   useLiveTripRealtime(activeTrip?.id);
@@ -77,7 +77,7 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
     if (activeTrip?.status === "in_progress" && !isTracking) {
       startTracking((lat, lng) => {
         if (activeTrip?.id) {
-          updateLocation({ tripId: activeTrip.id, lat, lng });
+          void updateLocation({ tripId: activeTrip.id, lat, lng });
         }
       });
     }
@@ -97,16 +97,16 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
     const tripId = activeTrip.id;
     const id = window.setInterval(() => {
       const p = latestPosRef.current;
-      if (p) updateLocation({ tripId, lat: p.lat, lng: p.lng });
+      if (p && !isUpdatingLocation) void updateLocation({ tripId, lat: p.lat, lng: p.lng });
     }, 3000);
     return () => window.clearInterval(id);
-  }, [activeTrip?.status, activeTrip?.id]);
+  }, [activeTrip?.status, activeTrip?.id, isUpdatingLocation, updateLocation]);
 
   const handleRetryTracking = () => {
     stopTracking();
     startTracking((lat, lng) => {
       if (activeTrip?.id) {
-        updateLocation({ tripId: activeTrip.id, lat, lng });
+        void updateLocation({ tripId: activeTrip.id, lat, lng });
       }
     });
   };
@@ -217,12 +217,14 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
             </div>
           )}
 
-          {activeTrip?.status === "in_progress" && (geoError || !isTracking || (!latitude && !longitude)) && (
+          {activeTrip?.status === "in_progress" && (geoError || locationUpdateError || !isTracking || (latitude == null && longitude == null)) && (
             <div className="mt-2 p-3 bg-destructive/10 rounded-lg flex items-start gap-2 text-destructive text-sm">
               <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
               <div className="min-w-0 flex-1">
                 <p className="font-medium">موقع الباص غير ظاهر للإدارة وأولياء الأمور</p>
-                <p className="text-xs opacity-80">{geoError || "لم يتم تشغيل تتبع الموقع بعد"}</p>
+                <p className="text-xs opacity-80">
+                  {geoError || (locationUpdateError ? "تعذر إرسال الموقع. اضغط للمحاولة مرة أخرى." : "لم يتم تشغيل تتبع الموقع بعد")}
+                </p>
                 <Button
                   size="sm"
                   variant="outline"
