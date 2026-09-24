@@ -142,9 +142,13 @@ export function LiveTripMap({
     return `https://www.google.com/maps/dir/?${params.toString()}`;
   }, [stopPoints, trip?.current_latitude, trip?.current_longitude]);
 
-  // Fit bounds
+  // Fit bounds once per trip (and again when the bus first gets a GPS fix)
+  const hasBusFix = !!(trip?.current_latitude && trip?.current_longitude);
+  const fittedKeyRef = React.useRef<string>("");
   useEffect(() => {
     if (!map || !isLoaded || !window.google?.maps) return;
+    const key = `${trip?.id ?? ""}|${hasBusFix}|${students.length}`;
+    if (fittedKeyRef.current === key) return;
 
     const bounds = new google.maps.LatLngBounds();
     let hasValidBounds = false;
@@ -171,8 +175,25 @@ export function LiveTripMap({
 
     if (hasValidBounds) {
       map.fitBounds(bounds, 50);
+      fittedKeyRef.current = key;
     }
-  }, [map, trip, students, showDriverLocation, isLoaded]);
+  }, [map, trip, students, showDriverLocation, isLoaded, hasBusFix]);
+
+  // Keep the bus in view as it moves
+  useEffect(() => {
+    if (!map || isDriver || !showDriverLocation || !trip?.current_latitude || !trip?.current_longitude) return;
+    const pos = { lat: trip.current_latitude, lng: trip.current_longitude };
+    const b = map.getBounds();
+    if (b && !b.contains(pos)) map.panTo(pos);
+  }, [map, isDriver, showDriverLocation, trip?.current_latitude, trip?.current_longitude]);
+
+  const lastUpdateMs = trip?.last_location_update ? new Date(trip.last_location_update).getTime() : 0;
+  const [nowMs, setNowMs] = useState(Date.now());
+  useEffect(() => {
+    const id = window.setInterval(() => setNowMs(Date.now()), 3000);
+    return () => window.clearInterval(id);
+  }, []);
+  const secondsSinceUpdate = lastUpdateMs ? Math.max(0, Math.round((nowMs - lastUpdateMs) / 1000)) : null;
 
   if (!isLoaded) {
     return (

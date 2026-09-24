@@ -98,7 +98,8 @@ export function ParentLiveTracking() {
       return data as LiveTrip[];
     },
     enabled: routeIds.length > 0,
-    refetchInterval: 10000,
+    refetchInterval: 3000,
+    refetchIntervalInBackground: true,
   });
 
   const activeTripIds = activeTrips.map((t) => t.id);
