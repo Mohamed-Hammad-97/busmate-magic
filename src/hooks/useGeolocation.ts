@@ -25,6 +25,7 @@ export function useGeolocation(options: UseGeolocationOptions = {}) {
 
   const watchIdRef = useRef<number | null>(null);
   const onUpdateRef = useRef<((lat: number, lng: number) => void) | null>(null);
+  const trackingRequestedRef = useRef(false);
 
   const defaultOptions: PositionOptions = {
     enableHighAccuracy: options.enableHighAccuracy ?? true,
@@ -74,6 +75,11 @@ export function useGeolocation(options: UseGeolocationOptions = {}) {
       }
 
       onUpdateRef.current = onUpdate || null;
+      trackingRequestedRef.current = true;
+
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+      }
       
       // Get initial position
       navigator.geolocation.getCurrentPosition(
@@ -95,6 +101,7 @@ export function useGeolocation(options: UseGeolocationOptions = {}) {
   );
 
   const stopTracking = useCallback(() => {
+    trackingRequestedRef.current = false;
     if (watchIdRef.current !== null) {
       navigator.geolocation.clearWatch(watchIdRef.current);
       watchIdRef.current = null;
@@ -102,6 +109,25 @@ export function useGeolocation(options: UseGeolocationOptions = {}) {
     onUpdateRef.current = null;
     setState((prev) => ({ ...prev, isTracking: false }));
   }, []);
+
+  // Mobile browsers can suspend their GPS watcher while the screen is locked.
+  // Request a fresh fix and rebuild the watcher as soon as the trip tab returns.
+  useEffect(() => {
+    const resumeTracking = () => {
+      if (document.visibilityState !== "visible" || !trackingRequestedRef.current || !navigator.geolocation) return;
+
+      navigator.geolocation.getCurrentPosition(handleSuccess, handleError, defaultOptions);
+      if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = navigator.geolocation.watchPosition(handleSuccess, handleError, defaultOptions);
+    };
+
+    document.addEventListener("visibilitychange", resumeTracking);
+    window.addEventListener("focus", resumeTracking);
+    return () => {
+      document.removeEventListener("visibilitychange", resumeTracking);
+      window.removeEventListener("focus", resumeTracking);
+    };
+  }, [handleSuccess, handleError]);
 
   // Cleanup on unmount
   useEffect(() => {
