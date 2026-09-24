@@ -42,6 +42,12 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
 
   const { latitude, longitude, startTracking, stopTracking, isTracking, error: geoError } = useGeolocation();
 
+  const pushLocation = React.useCallback((tripId: string, lat: number, lng: number) => {
+    void updateLocation({ tripId, lat, lng }).catch(() => {
+      // The mutation exposes the failure state in the on-screen retry notice.
+    });
+  }, [updateLocation]);
+
   const { data: route } = useQuery({
     queryKey: ["route-details", routeId],
     queryFn: async () => {
@@ -77,11 +83,11 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
     if (activeTrip?.status === "in_progress" && !isTracking) {
       startTracking((lat, lng) => {
         if (activeTrip?.id) {
-          void updateLocation({ tripId: activeTrip.id, lat, lng });
+          pushLocation(activeTrip.id, lat, lng);
         }
       });
     }
-  }, [activeTrip?.status, activeTrip?.id, isTracking]);
+  }, [activeTrip?.status, activeTrip?.id, isTracking, pushLocation, startTracking]);
 
   useEffect(() => {
     return () => { stopTracking(); };
@@ -97,16 +103,16 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
     const tripId = activeTrip.id;
     const id = window.setInterval(() => {
       const p = latestPosRef.current;
-      if (p && !isUpdatingLocation) void updateLocation({ tripId, lat: p.lat, lng: p.lng });
+      if (p && !isUpdatingLocation) pushLocation(tripId, p.lat, p.lng);
     }, 3000);
     return () => window.clearInterval(id);
-  }, [activeTrip?.status, activeTrip?.id, isUpdatingLocation, updateLocation]);
+  }, [activeTrip?.status, activeTrip?.id, isUpdatingLocation, pushLocation]);
 
   const handleRetryTracking = () => {
     stopTracking();
     startTracking((lat, lng) => {
       if (activeTrip?.id) {
-        void updateLocation({ tripId: activeTrip.id, lat, lng });
+        pushLocation(activeTrip.id, lat, lng);
       }
     });
   };
