@@ -11,6 +11,7 @@ import type { TripStudentStatus, LiveTrip } from "@/hooks/useLiveTrip";
 interface LiveTripMapProps {
   trip: LiveTrip | null;
   students: TripStudentStatus[];
+  client?: typeof supabase;
   onStudentClick?: (student: TripStudentStatus) => void;
   showDriverLocation?: boolean;
   isDriver?: boolean;
