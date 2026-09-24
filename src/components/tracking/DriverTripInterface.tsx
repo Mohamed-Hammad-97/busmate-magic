@@ -243,6 +243,7 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
             onStudentClick={handleStudentClick}
             showDriverLocation={isTracking}
             isDriver={true}
+            client={supabase}
           />
         </div>
 

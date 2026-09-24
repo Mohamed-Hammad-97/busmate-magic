@@ -19,6 +19,7 @@ interface TripHistoryProps {
   routeId: string;
   routeName?: string;
   routeNumber?: string | number | null;
+  client?: typeof supabase;
 }
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
@@ -28,7 +29,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   dropped_off: { label: "تم التوصيل", color: "bg-muted-foreground" },
 };
 
-export function TripHistory({ routeId, routeName, routeNumber }: TripHistoryProps) {
+export function TripHistory({ routeId, routeName, routeNumber, client = supabase }: TripHistoryProps) {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
 
@@ -36,7 +37,7 @@ export function TripHistory({ routeId, routeName, routeNumber }: TripHistoryProp
   const { data: trips = [], isLoading } = useQuery({
     queryKey: ["trip-history", routeId, selectedDate?.toISOString()],
     queryFn: async () => {
-      let query = supabase
+      let query = client
         .from("live_trips")
         .select(`
           id, status, started_at, completed_at, 
@@ -69,7 +70,7 @@ export function TripHistory({ routeId, routeName, routeNumber }: TripHistoryProp
     queryKey: ["trip-detail", selectedTripId],
     queryFn: async () => {
       if (!selectedTripId) return [];
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from("trip_student_status")
         .select(`
           id, status, arrived_at, picked_up_at, dropped_off_at, pickup_order,

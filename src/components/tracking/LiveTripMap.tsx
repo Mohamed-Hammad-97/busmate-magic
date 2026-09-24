@@ -11,6 +11,7 @@ import type { TripStudentStatus, LiveTrip } from "@/hooks/useLiveTrip";
 interface LiveTripMapProps {
   trip: LiveTrip | null;
   students: TripStudentStatus[];
+  client?: typeof supabase;
   onStudentClick?: (student: TripStudentStatus) => void;
   showDriverLocation?: boolean;
   isDriver?: boolean;
@@ -39,6 +40,7 @@ export function LiveTripMap({
   onStudentClick,
   showDriverLocation = true,
   isDriver = false,
+  client = supabase,
 }: LiveTripMapProps) {
   const { isLoaded } = useGoogleMaps();
   const [map, setMap] = useState<google.maps.Map | null>(null);
@@ -52,7 +54,7 @@ export function LiveTripMap({
     queryFn: async () => {
       if (registrationIds.length === 0) return [];
       const today = new Date().toISOString().split("T")[0];
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from("student_absences")
         .select("registration_id")
         .in("registration_id", registrationIds)

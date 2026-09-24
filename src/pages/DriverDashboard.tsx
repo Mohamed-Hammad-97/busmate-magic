@@ -321,7 +321,7 @@ export default function DriverDashboard() {
                 </CardContent>
               </Card>
             ) : assignedRoutes.length === 1 ? (
-              <TripHistory routeId={assignedRoutes[0].id} routeName={assignedRoutes[0].name} />
+              <TripHistory routeId={assignedRoutes[0].id} routeName={assignedRoutes[0].name} client={supabase} />
             ) : (
               <div className="space-y-4">
                 {!historyRouteId ? (
@@ -346,7 +346,7 @@ export default function DriverDashboard() {
                     <Button variant="ghost" size="sm" className="mb-3" onClick={() => setHistoryRouteId(null)}>
                       {t('driverPortal.backToRoutes')}
                     </Button>
-                    <TripHistory routeId={historyRouteId} routeName={assignedRoutes.find((r) => r.id === historyRouteId)?.name} />
+                    <TripHistory routeId={historyRouteId} routeName={assignedRoutes.find((r) => r.id === historyRouteId)?.name} client={supabase} />
                   </div>
                 )}
               </div>
