@@ -1,3 +1,4 @@
+import { safeRows } from "@/lib/safeSheet";
 import * as XLSX from 'xlsx';
 import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
@@ -143,7 +144,7 @@ export function exportPaymentsExcel(grouped: Record<string, any>, filename = 'pa
     r.totalAmount, r.paidAmount, r.remaining,
     r.progress, r.status, r.createdAt,
   ])];
-  const ws = XLSX.utils.aoa_to_sheet(data);
+  const ws = XLSX.utils.aoa_to_sheet(safeRows(data));
   ws['!cols'] = [{ wch: 22 }, { wch: 22 }, { wch: 24 }, { wch: 10 }, { wch: 16 }, { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 10 }, { wch: 14 }, { wch: 18 }];
 
   const details = buildInstallmentRows(grouped);
@@ -151,7 +152,7 @@ export function exportPaymentsExcel(grouped: Record<string, any>, filename = 'pa
     d.parentName, d.studentName, d.schoolName, d.lineNumber, d.paymentPhone, d.subscriptionType,
     d.installmentLabel, d.amount, d.extraFees, d.dueDate, d.paidDate, d.status, d.paidBy, d.note, d.noteStatus,
   ])];
-  const wsDetails = XLSX.utils.aoa_to_sheet(detailData);
+  const wsDetails = XLSX.utils.aoa_to_sheet(safeRows(detailData));
   wsDetails['!cols'] = [{ wch: 22 }, { wch: 22 }, { wch: 24 }, { wch: 10 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 13 }, { wch: 13 }, { wch: 12 }, { wch: 18 }, { wch: 28 }, { wch: 12 }];
 
   const wb = XLSX.utils.book_new();
