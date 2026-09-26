@@ -113,6 +113,7 @@ const StudentRegistrationForm: React.FC = () => {
 
   const submitMutation = useMutation({
     mutationFn: async () => {
+     const run = async (otpCode?: string): Promise<any> => {
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/public-register`,
         {
@@ -141,15 +142,27 @@ const StudentRegistrationForm: React.FC = () => {
             grade: formData.grade,
             car_type: formData.car_type,
             education_department: formData.education_department,
+            otp_code: otpCode || undefined,
           }),
         }
       );
 
       const data = await response.json();
+      if (response.status === 409 && data.code === 'OTP_REQUIRED') {
+        // This phone already has a family account: prove ownership by SMS.
+        await supabase.functions.invoke('send-otp', { body: { phone: data.otp_phone } });
+        const code = window.prompt(
+          'هذا الرقم مسجل بالفعل. أدخل كود التحقق المرسل إلى هاتف ولي الأمر\nThis phone is already registered. Enter the code sent by SMS:'
+        );
+        if (!code?.trim()) throw new Error('كود التحقق مطلوب / Verification code required');
+        return run(code.trim());
+      }
       if (!response.ok) {
         throw new Error(data.error || 'Registration failed');
       }
       return data;
+     };
+     return run();
     },
     onSuccess: () => {
       setSubmitted(true);

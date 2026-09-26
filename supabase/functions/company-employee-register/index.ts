@@ -84,6 +84,8 @@ Deno.serve(async (req) => {
         pickup_latitude: pickup_latitude || null,
         pickup_longitude: pickup_longitude || null,
         notes: notes?.trim() || null,
+        // New self sign-ups wait for staff/company approval
+        is_active: false,
       })
       .select("id")
       .single();
