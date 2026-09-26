@@ -160,12 +160,24 @@ Deno.serve(async (req) => {
     }
     const final = Math.max(0, original - discount);
 
-    // Try to look up parent by phone (so logged-in customer portal will see this booking)
-    const { data: parent } = await admin
-      .from("parent_accounts")
-      .select("id")
-      .eq("father_phone", passenger_phone)
-      .maybeSingle();
+    // Link the booking to a parent account ONLY when the caller is signed in as
+    // that parent — never based on a phone number typed into the form.
+    let parent: { id: string } | null = null;
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+    if (token) {
+      const { data: userRes } = await admin.auth.getUser(token);
+      const uid = userRes?.user?.id;
+      if (uid) {
+        const { data: own } = await admin
+          .from("parent_accounts")
+          .select("id")
+          .eq("user_id", uid)
+          .limit(1)
+          .maybeSingle();
+        parent = own ?? null;
+      }
+    }
 
     // Existing boarding codes for this trip
     const { data: existing } = await admin

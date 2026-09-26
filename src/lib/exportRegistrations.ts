@@ -1,3 +1,4 @@
+import { safeRows } from "@/lib/safeSheet";
 import * as XLSX from 'xlsx';
 import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
@@ -62,7 +63,7 @@ function toRows(regs: any[]) {
 
 export function exportRegistrationsExcel(regs: any[], filename = 'registrations') {
   const data = [HEADERS, ...toRows(regs)];
-  const ws = XLSX.utils.aoa_to_sheet(data);
+  const ws = XLSX.utils.aoa_to_sheet(safeRows(data));
   ws['!cols'] = HEADERS.map((h) => ({ wch: Math.max(14, Math.min(h.length + 4, 28)) }));
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Registrations');

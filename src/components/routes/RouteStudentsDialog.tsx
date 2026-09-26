@@ -1,3 +1,4 @@
+import { safeRows } from "@/lib/safeSheet";
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -133,7 +134,7 @@ const RouteStudentsDialog: React.FC<RouteStudentsDialogProps> = ({ route, open, 
     ]);
 
   const exportExcel = () => {
-    const ws = XLSX.utils.aoa_to_sheet([HEADERS, ...toArray()]);
+    const ws = XLSX.utils.aoa_to_sheet(safeRows([HEADERS, ...toArray()]));
     ws['!cols'] = [{ wch: 5 }, { wch: 26 }, { wch: 10 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 55 }];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Students');

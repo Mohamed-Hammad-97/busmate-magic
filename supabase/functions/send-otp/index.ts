@@ -11,7 +11,7 @@ interface SendOtpRequest {
 }
 
 const generateOtp = (): string => {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  const a = new Uint32Array(1); crypto.getRandomValues(a); return (100000 + (a[0] % 900000)).toString();
 };
 
 const handler = async (req: Request): Promise<Response> => {

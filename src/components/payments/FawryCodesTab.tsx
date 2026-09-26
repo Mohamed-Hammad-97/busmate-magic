@@ -1,3 +1,4 @@
+import { safeRows } from "@/lib/safeSheet";
 import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -273,7 +274,7 @@ export const FawryCodesTab: React.FC = () => {
         p.fawry_note ? (p.fawry_note_resolved_at ? 'تم الحل' : 'مفتوحة') : '',
       ];
     });
-    const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
+    const ws = XLSX.utils.aoa_to_sheet(safeRows([headers, ...data]));
     ws['!cols'] = [{ wch: 22 }, { wch: 22 }, { wch: 24 }, { wch: 20 }, { wch: 12 }, { wch: 18 }, { wch: 12 }, { wch: 14 }, { wch: 14 }, { wch: 18 }, { wch: 18 }, { wch: 28 }, { wch: 14 }];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'اكواد فورى');
