@@ -270,7 +270,7 @@ serve(async (req) => {
       const otpPhone = String(data.father_phone).replace(/\s/g, '').replace(/^0/, '');
       if (!otpCode) {
         return new Response(
-          JSON.stringify({ code: 'OTP_REQUIRED', error: 'Verification code required for this phone' }),
+          JSON.stringify({ code: 'OTP_REQUIRED', otp_phone: otpPhone, error: 'Verification code required for this phone' }),
           { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
