@@ -112,7 +112,8 @@ const StudentRegistrationForm: React.FC = () => {
   });
 
   const submitMutation = useMutation({
-    mutationFn: async (otpCode?: string) => {
+    mutationFn: async () => {
+     const run = async (otpCode?: string): Promise<any> => {
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/public-register`,
         {
@@ -154,12 +155,14 @@ const StudentRegistrationForm: React.FC = () => {
           'هذا الرقم مسجل بالفعل. أدخل كود التحقق المرسل إلى هاتف ولي الأمر\nThis phone is already registered. Enter the code sent by SMS:'
         );
         if (!code?.trim()) throw new Error('كود التحقق مطلوب / Verification code required');
-        return submitMutation.mutateAsync(code.trim());
+        return run(code.trim());
       }
       if (!response.ok) {
         throw new Error(data.error || 'Registration failed');
       }
       return data;
+     };
+     return run();
     },
     onSuccess: () => {
       setSubmitted(true);
