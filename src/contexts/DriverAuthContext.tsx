@@ -315,25 +315,24 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
   const signIn = async (phone: string, password: string) => {
     const formattedPhone = phone.replace(/\D/g, "");
 
-    // Resolve the real login address for this phone (it may differ from the
-    // number stored on the staff record), then sign in with it.
-    let email = `driver_${formattedPhone}@seater.app`;
+    // The server verifies phone + password and returns a session directly
+    // (the login email is never exposed). Falls back to the derived address
+    // if the server call times out on flaky networks.
+    const email = `driver_${formattedPhone}@seater.app`;
+    let serverSession: { access_token: string; refresh_token: string } | null = null;
     try {
-      // Hard time limit: on flaky mobile networks this lookup can hang forever,
-      // which used to leave the login button spinning with no feedback.
-      const LOOKUP_TIMEOUT_MS = 8000;
+      const LOOKUP_TIMEOUT_MS = 12000;
       const lookup = driverPortalClient.functions.invoke("driver-login-lookup", {
-        body: { phone: formattedPhone },
+        body: { phone: formattedPhone, password },
       });
       const timeout = new Promise<null>((resolve) =>
         setTimeout(() => resolve(null), LOOKUP_TIMEOUT_MS)
       );
       const result = await Promise.race([lookup, timeout]);
       const { data, error } = (result ?? { data: null, error: null }) as {
-        data: { email?: string } | null;
+        data: { session?: { access_token: string; refresh_token: string } } | null;
         error: unknown;
       };
-
 
       if (error) {
         let code = "";
@@ -343,18 +342,17 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
         } catch {
           /* ignore parse errors */
         }
-        if (code === "NOT_FOUND") {
-          const notFound = new Error("لا يوجد حساب بهذا الرقم. تواصل مع إدارة التشغيل.") as Error & { code?: string };
-          notFound.code = "NOT_FOUND";
-          return { error: notFound };
-        }
-        if (code === "INACTIVE") {
-          const inactive = new Error("هذا الحساب معطل. تواصل مع إدارة التشغيل.") as Error & { code?: string };
-          inactive.code = "INACTIVE";
-          return { error: inactive };
-        }
-      } else if (data?.email) {
-        email = data.email;
+        const fail = (msg: string, c: string) => {
+          const e = new Error(msg) as Error & { code?: string };
+          e.code = c;
+          return { error: e };
+        };
+        if (code === "NOT_FOUND") return fail("لا يوجد حساب بهذا الرقم. تواصل مع إدارة التشغيل.", "NOT_FOUND");
+        if (code === "INACTIVE") return fail("هذا الحساب معطل. تواصل مع إدارة التشغيل.", "INACTIVE");
+        if (code === "WRONG_PASSWORD") return fail("كلمة المرور غير صحيحة.", "WRONG_PASSWORD");
+        if (code === "RATE_LIMITED") return fail("محاولات كثيرة. انتظر قليلاً ثم حاول مرة أخرى.", "RATE_LIMITED");
+      } else if (data?.session?.access_token) {
+        serverSession = data.session;
       }
     } catch {
       /* fall back to the derived address */
@@ -364,7 +362,9 @@ export function DriverAuthProvider({ children }: { children: React.ReactNode }) 
     let authenticatedSession: Session | null = null;
     try {
       const signInResult = await Promise.race([
-        driverPortalClient.auth.signInWithPassword({ email, password }),
+        serverSession
+          ? driverPortalClient.auth.setSession(serverSession)
+          : driverPortalClient.auth.signInWithPassword({ email, password }),
         new Promise<"timeout">((resolve) => setTimeout(() => resolve("timeout"), 20000)),
       ]);
       if (signInResult === "timeout") {
