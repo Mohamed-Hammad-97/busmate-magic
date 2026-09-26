@@ -45,7 +45,10 @@ serve(async (req) => {
       .eq("id", tripId)
       .maybeSingle();
 
-    if (tripError) return json({ code: "LOOKUP_FAILED", error: tripError.message }, 500);
+    if (tripError) {
+      console.error("[update-live-trip-location] LOOKUP_FAILED", tripId, tripError);
+      return json({ code: "LOOKUP_FAILED", error: tripError.message, retryable: true }, 503);
+    }
     if (!trip) return json({ code: "NOT_FOUND", error: "Trip not found" }, 404);
     if (trip.status !== "in_progress") {
       return json({ code: "TRIP_NOT_ACTIVE", error: "Trip is not active" }, 409);
@@ -56,7 +59,10 @@ serve(async (req) => {
       _route_id: trip.route_id,
     });
 
-    if (permissionError) return json({ code: "PERMISSION_CHECK_FAILED", error: permissionError.message }, 500);
+    if (permissionError) {
+      console.error("[update-live-trip-location] PERMISSION_CHECK_FAILED", tripId, permissionError);
+      return json({ code: "PERMISSION_CHECK_FAILED", error: permissionError.message, retryable: true }, 503);
+    }
     if (!allowed) return json({ code: "NOT_ASSIGNED", error: "Not assigned to this route" }, 403);
 
     const updatedAt = new Date().toISOString();
@@ -72,12 +78,18 @@ serve(async (req) => {
       .select("id, current_latitude, current_longitude, last_location_update")
       .maybeSingle();
 
-    if (updateError || !updated) {
-      return json({ code: "UPDATE_FAILED", error: updateError?.message ?? "Location was not saved" }, 500);
+    if (updateError) {
+      console.error("[update-live-trip-location] UPDATE_FAILED", tripId, updateError);
+      return json({ code: "UPDATE_FAILED", error: updateError.message, retryable: true }, 503);
+    }
+    if (!updated) {
+      // Trip ended (or changed) between the lookup and the update.
+      return json({ code: "TRIP_NOT_ACTIVE", error: "Trip is not active" }, 409);
     }
 
     return json({ location: updated });
   } catch (error) {
+    console.error("[update-live-trip-location] UNEXPECTED", error);
     return json({ code: "UNEXPECTED", error: error instanceof Error ? error.message : "Unexpected error" }, 500);
   }
 });
