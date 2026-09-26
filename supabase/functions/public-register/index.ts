@@ -264,15 +264,42 @@ serve(async (req) => {
 
     let parentId: string;
 
+    // Adding a child to an EXISTING family requires proof of owning the phone.
+    const verifyFamilyOtp = async (): Promise<Response | null> => {
+      const otpCode = typeof (data as any).otp_code === 'string' ? (data as any).otp_code.trim() : '';
+      const otpPhone = String(data.father_phone).replace(/\s/g, '').replace(/^0/, '');
+      if (!otpCode) {
+        return new Response(
+          JSON.stringify({ code: 'OTP_REQUIRED', error: 'Verification code required for this phone' }),
+          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      const { data: otp } = await supabase
+        .from('otp_codes')
+        .select('id, code, attempts')
+        .eq('phone', otpPhone)
+        .eq('verified', false)
+        .gt('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!otp || (otp.attempts ?? 0) >= 5 || otp.code !== otpCode || otpCode.length > 10) {
+        if (otp) await supabase.from('otp_codes').update({ attempts: (otp.attempts ?? 0) + 1 }).eq('id', otp.id);
+        return new Response(
+          JSON.stringify({ code: 'OTP_INVALID', error: 'Invalid or expired verification code' }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      await supabase.from('otp_codes').delete().eq('id', otp.id);
+      return null;
+    };
+
     if (existingParent) {
+      const otpFail = await verifyFamilyOtp();
+      if (otpFail) return otpFail;
       // Existing parent - add another child registration
       console.log("Existing parent found by phone, adding new registration:", data.father_phone);
       parentId = existingParent.id;
-      const { error: reactivateError } = await supabase
-        .from('parent_accounts')
-        .update({ is_active: true })
-        .eq('id', parentId);
-      if (reactivateError) throw reactivateError;
     } else {
       // Check for duplicate national ID (only for new parents, and only if national_id provided)
       if (data.national_id?.trim()) {
@@ -284,7 +311,9 @@ serve(async (req) => {
 
         if (existingByNationalId) {
           // Same national ID but different phone - use existing parent
-          console.log("National ID already registered:", data.national_id);
+          console.log("National ID already registered");
+          const otpFail = await verifyFamilyOtp();
+          if (otpFail) return otpFail;
           parentId = existingByNationalId.id;
         }
       }
