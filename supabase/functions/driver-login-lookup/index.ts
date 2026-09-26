@@ -31,8 +31,9 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}))
     const target = normalize(body?.phone)
+    const password = typeof body?.password === 'string' ? body.password : ''
 
-    if (target.length < 9) {
+    if (target.length < 9 || target.length > 15 || !password || password.length > 200) {
       return json({ code: 'BAD_REQUEST', error: 'Invalid phone' }, 400)
     }
 
@@ -67,7 +68,28 @@ Deno.serve(async (req) => {
       return json({ code: 'NOT_FOUND', error: 'No login for this account' }, 404)
     }
 
-    return json({ email: userRes.user.email })
+    // Verify the password server-side; the login email is never returned.
+    const anon = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { auth: { autoRefreshToken: false, persistSession: false } },
+    )
+    const { data: signIn, error: signInErr } = await anon.auth.signInWithPassword({
+      email: userRes.user.email,
+      password,
+    })
+    if (signInErr || !signIn?.session) {
+      const status = (signInErr as any)?.status
+      if (status === 429) return json({ code: 'RATE_LIMITED', error: 'Too many attempts' }, 429)
+      return json({ code: 'WRONG_PASSWORD', error: 'Invalid credentials' }, 401)
+    }
+
+    return json({
+      session: {
+        access_token: signIn.session.access_token,
+        refresh_token: signIn.session.refresh_token,
+      },
+    })
   } catch (e) {
     console.error('driver-login-lookup error:', e instanceof Error ? e.message : e)
     return json({ code: 'UNEXPECTED', error: 'Unexpected error' }, 500)
