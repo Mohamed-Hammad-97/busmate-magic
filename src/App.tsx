@@ -12,6 +12,7 @@ import { CompanyAuthProvider } from "@/contexts/CompanyAuthContext";
 import { CityProvider } from "@/contexts/CityContext";
 import { SidebarProvider } from "@/contexts/SidebarContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import OAuthConsent from "@/pages/OAuthConsent";
 import { ParentProtectedRoute } from "@/components/auth/ParentProtectedRoute";
 import { DriverProtectedRoute } from "@/components/auth/DriverProtectedRoute";
 import { CompanyProtectedRoute } from "@/components/auth/CompanyProtectedRoute";
@@ -142,6 +143,7 @@ const App = () => (
               <CityProvider>
               <Routes>
                 <Route path="/auth" element={<Auth />} />
+                <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
                 <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                 <Route path="/schools" element={<ProtectedRoute><Schools /></ProtectedRoute>} />
                 <Route path="/registrations" element={<ProtectedRoute><Registrations /></ProtectedRoute>} />

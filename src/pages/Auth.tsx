@@ -28,6 +28,14 @@ export default function Auth() {
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Redirect back to OAuth consent (AI assistant connection) if requested
+  const nextParam = new URLSearchParams(location.search).get("next");
+  const safeNext = nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : null;
+  if (!authLoading && user && safeNext) {
+    window.location.replace(safeNext);
+    return null;
+  }
+
   // Redirect if already logged in
   if (!authLoading && user && isEmployee) {
     const from = (location.state as { from?: Location })?.from?.pathname || "/dashboard";
