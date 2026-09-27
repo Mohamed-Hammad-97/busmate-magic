@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { z } from "npm:zod@3.25.76";
 
@@ -15,6 +15,10 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
+// Per-isolate cache of "user may update this trip" checks (avoids lookup + RPC every tick).
+const allowedCache = new Map<string, number>();
+const ALLOW_TTL_MS = 60_000;
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ code: "METHOD_NOT_ALLOWED", error: "Method not allowed" }, 405);
@@ -28,8 +32,10 @@ serve(async (req) => {
     const token = (req.headers.get("Authorization") ?? "").replace("Bearer ", "").trim();
     if (!token) return json({ code: "SESSION_EXPIRED", error: "Unauthorized" }, 401);
 
-    const { data: userData, error: userError } = await admin.auth.getUser(token);
-    if (userError || !userData.user) {
+    // Verify the JWT locally (signing keys) instead of calling the auth server each tick.
+    const { data: claimsData, error: claimsError } = await admin.auth.getClaims(token);
+    const userId = claimsData?.claims?.sub as string | undefined;
+    if (claimsError || !userId) {
       return json({ code: "SESSION_EXPIRED", error: "Unauthorized" }, 401);
     }
 
@@ -39,31 +45,37 @@ serve(async (req) => {
     }
 
     const { tripId, lat, lng } = parsed.data;
-    const { data: trip, error: tripError } = await admin
-      .from("live_trips")
-      .select("id, route_id, status")
-      .eq("id", tripId)
-      .maybeSingle();
+    const cacheKey = `${userId}:${tripId}`;
+    const cachedUntil = allowedCache.get(cacheKey);
+    if (!cachedUntil || cachedUntil < Date.now()) {
+      const { data: trip, error: tripError } = await admin
+        .from("live_trips")
+        .select("id, route_id, status")
+        .eq("id", tripId)
+        .maybeSingle();
 
-    if (tripError) {
-      console.error("[update-live-trip-location] LOOKUP_FAILED", tripId, tripError);
-      return json({ code: "LOOKUP_FAILED", error: tripError.message, retryable: true }, 503);
-    }
-    if (!trip) return json({ code: "NOT_FOUND", error: "Trip not found" }, 404);
-    if (trip.status !== "in_progress") {
-      return json({ code: "TRIP_NOT_ACTIVE", error: "Trip is not active" }, 409);
-    }
+      if (tripError) {
+        console.error("[update-live-trip-location] LOOKUP_FAILED", tripId, tripError);
+        return json({ code: "LOOKUP_FAILED", error: tripError.message, retryable: true }, 503);
+      }
+      if (!trip) return json({ code: "NOT_FOUND", error: "Trip not found" }, 404);
+      if (trip.status !== "in_progress") {
+        return json({ code: "TRIP_NOT_ACTIVE", error: "Trip is not active" }, 409);
+      }
 
-    const { data: allowed, error: permissionError } = await admin.rpc("can_start_route_trip", {
-      _user_id: userData.user.id,
-      _route_id: trip.route_id,
-    });
+      const { data: allowed, error: permissionError } = await admin.rpc("can_start_route_trip", {
+        _user_id: userId,
+        _route_id: trip.route_id,
+      });
 
-    if (permissionError) {
-      console.error("[update-live-trip-location] PERMISSION_CHECK_FAILED", tripId, permissionError);
-      return json({ code: "PERMISSION_CHECK_FAILED", error: permissionError.message, retryable: true }, 503);
+      if (permissionError) {
+        console.error("[update-live-trip-location] PERMISSION_CHECK_FAILED", tripId, permissionError);
+        return json({ code: "PERMISSION_CHECK_FAILED", error: permissionError.message, retryable: true }, 503);
+      }
+      if (!allowed) return json({ code: "NOT_ASSIGNED", error: "Not assigned to this route" }, 403);
+      allowedCache.set(cacheKey, Date.now() + ALLOW_TTL_MS);
+      if (allowedCache.size > 5000) allowedCache.clear();
     }
-    if (!allowed) return json({ code: "NOT_ASSIGNED", error: "Not assigned to this route" }, 403);
 
     const updatedAt = new Date().toISOString();
     const { data: updated, error: updateError } = await admin
