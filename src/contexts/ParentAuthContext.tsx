@@ -78,31 +78,31 @@ export function ParentAuthProvider({ children }: { children: React.ReactNode }) 
   };
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          setTimeout(() => {
-            fetchParentAccount(session.user.id);
-          }, 0);
-        } else {
-          setParentAccount(null);
-          setParentAccountIds([]);
-        }
-        setIsLoading(false);
-      }
-    );
+    let loadedFor: string | null | undefined = undefined;
+    const withTimeout = (p: Promise<unknown>) =>
+      Promise.race([p, new Promise((r) => setTimeout(r, 10000))]);
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const handle = async (session: Session | null) => {
       setSession(session);
       setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchParentAccount(session.user.id);
+      const uid = session?.user?.id ?? null;
+      if (uid === loadedFor) return;
+      loadedFor = uid;
+      if (uid) {
+        setIsLoading(true);
+        await withTimeout(fetchParentAccount(uid));
+      } else {
+        setParentAccount(null);
+        setParentAccountIds([]);
       }
       setIsLoading(false);
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setTimeout(() => { void handle(session); }, 0);
     });
+
+    supabase.auth.getSession().then(({ data: { session } }) => { void handle(session); });
 
     return () => subscription.unsubscribe();
   }, []);

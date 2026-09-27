@@ -69,34 +69,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          // Defer Supabase calls with setTimeout to prevent deadlock
-          setTimeout(() => {
-            fetchUserData(session.user.id);
-          }, 0);
-        } else {
-          setRole(null);
-          setEmployee(null);
-        }
-        setIsLoading(false);
-      }
-    );
+    let loadedFor: string | null | undefined = undefined;
+    const withTimeout = (p: Promise<unknown>) =>
+      Promise.race([p, new Promise((r) => setTimeout(r, 10000))]);
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const handle = async (session: Session | null) => {
       setSession(session);
       setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchUserData(session.user.id);
+      const uid = session?.user?.id ?? null;
+      if (uid === loadedFor) return; // token refresh etc. — no reload
+      loadedFor = uid;
+      if (uid) {
+        setIsLoading(true);
+        await withTimeout(fetchUserData(uid));
+      } else {
+        setRole(null);
+        setEmployee(null);
       }
       setIsLoading(false);
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      // Defer Supabase calls to avoid auth deadlock
+      setTimeout(() => { void handle(session); }, 0);
     });
+
+    supabase.auth.getSession().then(({ data: { session } }) => { void handle(session); });
 
     return () => subscription.unsubscribe();
   }, []);
