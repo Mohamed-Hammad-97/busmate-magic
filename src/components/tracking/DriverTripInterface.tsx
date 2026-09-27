@@ -98,12 +98,24 @@ export function DriverTripInterface({ routeId, onClose }: DriverTripInterfacePro
   useEffect(() => {
     if (latitude != null && longitude != null) latestPosRef.current = { lat: latitude, lng: longitude };
   }, [latitude, longitude]);
+  const lastSentRef = React.useRef<{ lat: number; lng: number; at: number } | null>(null);
+  const inFlightRef = React.useRef(false);
   useEffect(() => {
     if (activeTrip?.status !== "in_progress" || !activeTrip?.id) return;
     const tripId = activeTrip.id;
     const id = window.setInterval(() => {
       const p = latestPosRef.current;
-      if (p && !isUpdatingLocation) pushLocation(tripId, p.lat, p.lng);
+      if (!p || inFlightRef.current || isUpdatingLocation) return;
+      const last = lastSentRef.current;
+      const now = Date.now();
+      // Skip when the bus hasn't moved (~10 m), but still send a keep-alive every 20 s.
+      if (last) {
+        const moved = Math.hypot(p.lat - last.lat, (p.lng - last.lng) * Math.cos((p.lat * Math.PI) / 180)) * 111000;
+        if (moved < 10 && now - last.at < 20000) return;
+      }
+      lastSentRef.current = { ...p, at: now };
+      inFlightRef.current = true;
+      Promise.resolve(pushLocation(tripId, p.lat, p.lng)).finally(() => { inFlightRef.current = false; });
     }, 3000);
     return () => window.clearInterval(id);
   }, [activeTrip?.status, activeTrip?.id, isUpdatingLocation, pushLocation]);

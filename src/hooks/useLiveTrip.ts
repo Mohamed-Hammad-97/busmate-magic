@@ -244,26 +244,17 @@ export function useLiveTrip(routeId?: string) {
         throw requestError;
       };
 
-      const TRANSIENT = new Set(["LOOKUP_FAILED", "PERMISSION_CHECK_FAILED", "UPDATE_FAILED", "UNEXPECTED", ""]);
-      let sessionRetried = false;
-      for (let i = 0; ; i++) {
-        try {
+      // No backoff retries: a fresh GPS point is sent again on the next tick,
+      // and retrying while the server is struggling only adds load.
+      try {
+        return await attempt();
+      } catch (error) {
+        const code = (error as Error & { code?: string }).code ?? "";
+        if (code === "SESSION_EXPIRED") {
+          await ensureFreshDriverSession();
           return await attempt();
-        } catch (error) {
-          const code = (error as Error & { code?: string }).code ?? "";
-          if (code === "SESSION_EXPIRED" && !sessionRetried) {
-            sessionRetried = true;
-            await ensureFreshDriverSession();
-            continue;
-          }
-          // Brief backoff for temporary server/network hiccups; a newer GPS
-          // point arrives every few seconds anyway, so don't retry for long.
-          if (TRANSIENT.has(code) && i < 2) {
-            await new Promise((r) => setTimeout(r, 500 * 2 ** i));
-            continue;
-          }
-          throw error;
         }
+        throw error;
       }
     },
     retry: false,
