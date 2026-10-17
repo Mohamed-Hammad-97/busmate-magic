@@ -32,3 +32,20 @@ export function stationMinutesMap(stations: EtaStation[]): Record<string, number
   }
   return out;
 }
+
+/** Current Cairo date "YYYY-MM-DD" and minutes since midnight. */
+export function cairoNow(now: Date = new Date()): { date: string; minutes: number } {
+  const p = Object.fromEntries(
+    new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Cairo", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
+      .formatToParts(now).map((x) => [x.type, x.value]),
+  );
+  return { date: `${p.year}-${p.month}-${p.day}`, minutes: Number(p.hour) * 60 + Number(p.minute) };
+}
+
+/** True when the bus has not yet reached a station (Cairo time); unknown ETA counts as departure time. */
+export function isStationUpcoming(tripDate: string, departure: string, minutesFromStart: number | null | undefined, now: Date = new Date()): boolean {
+  const [h, m] = departure.split(":").map(Number);
+  const c = cairoNow(now);
+  const dayDiff = Math.round((Date.parse(tripDate) - Date.parse(c.date)) / 86400000);
+  return dayDiff * 1440 + h * 60 + m + (minutesFromStart ?? 0) > c.minutes;
+}

@@ -1,4 +1,4 @@
-import { etaFor, stationMinutesMap } from '@/lib/stationEta';
+import { etaFor, stationMinutesMap, isStationUpcoming } from '@/lib/stationEta';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Bus, MapPin, Calendar, Clock, Tag, CreditCard, Wallet, CheckCircle2, Upload, MessageCircle, Loader2 } from 'lucide-react';
@@ -21,7 +21,7 @@ type Line = { id: string; name: string; city: string; description: string | null
 type Station = { id: string; line_id: string; name: string; station_type: string; station_order: number; latitude: number | null; longitude: number | null; minutes_from_start?: number | null };
 type Trip = {
   id: string; line_id: string; trip_date: string; departure_time: string;
-  total_seats: number; available_seats: number; cash_price: number; instapay_price: number;
+  total_seats: number; available_seats: number; cash_price: number; instapay_price: number; status?: string;
 };
 
 const STEPS = ['contact', 'line', 'trip', 'stations', 'payment', 'confirm', 'done'] as const;
@@ -83,14 +83,14 @@ const RegisterDailyLine: React.FC = () => {
     const today = new Date().toISOString().slice(0, 10);
     Promise.all([
       supabase.from('daily_line_stations').select('*').eq('line_id', lineId).eq('is_active', true).order('station_order'),
-      supabase.from('daily_line_trips').select('id, line_id, trip_date, departure_time, total_seats, available_seats, cash_price, instapay_price, status, created_at, updated_at').eq('line_id', lineId).eq('status', 'scheduled').gte('trip_date', today).order('trip_date').order('departure_time'),
+      supabase.from('daily_line_trips').select('id, line_id, trip_date, departure_time, total_seats, available_seats, cash_price, instapay_price, status, created_at, updated_at').eq('line_id', lineId).in('status', ['scheduled', 'in_progress']).gt('available_seats', 0).gte('trip_date', today).order('trip_date').order('departure_time'),
     ]).then(([{ data: st }, { data: tr }]) => {
       setStations(st ?? []);
-      const now = new Date();
-      const upcoming = (tr ?? []).filter((t: Trip) => {
-        const dt = new Date(`${t.trip_date}T${t.departure_time}`);
-        return dt.getTime() > now.getTime();
-      });
+      const mins = stationMinutesMap((st ?? []) as Station[]);
+      const pickups = ((st ?? []) as Station[]).filter(s => s.station_type !== 'dropoff');
+      // Keep a trip while at least one pickup station is still ahead of the bus.
+      const upcoming = (tr ?? []).filter((t: Trip) =>
+        pickups.some(s => isStationUpcoming(t.trip_date, t.departure_time, mins[s.id])));
       setTrips(upcoming);
     });
   }, [lineId]);
@@ -100,8 +100,15 @@ const RegisterDailyLine: React.FC = () => {
   const stationMins = useMemo(() => stationMinutesMap(stations), [stations]);
   const depTime = trips.find(t => t.id === tripId)?.departure_time;
   const etaOf = (id: string) => etaFor(depTime, stationMins[id]);
-  const pickupStations = useMemo(() => stations.filter(s => s.station_type !== 'dropoff'), [stations]);
-  const dropoffStations = useMemo(() => stations.filter(s => s.station_type !== 'pickup'), [stations]);
+  const pickupStations = useMemo(() => stations.filter(s => s.station_type !== 'dropoff'
+    && (!selectedTrip || isStationUpcoming(selectedTrip.trip_date, selectedTrip.departure_time, stationMins[s.id]))), [stations, selectedTrip, stationMins]);
+  const pickupOrder = stations.find(s => s.id === pickupId)?.station_order;
+  const dropoffStations = useMemo(() => stations.filter(s => s.station_type !== 'pickup'
+    && (pickupOrder == null || s.station_order > pickupOrder)), [stations, pickupOrder]);
+  useEffect(() => {
+    if (pickupId && !pickupStations.some(s => s.id === pickupId)) setPickupId('');
+    if (dropoffId && !dropoffStations.some(s => s.id === dropoffId)) setDropoffId('');
+  }, [pickupStations, dropoffStations, pickupId, dropoffId]);
 
   const basePrice = selectedTrip
     ? (paymentMethod === 'cash' ? Number(selectedTrip.cash_price) : Number(selectedTrip.instapay_price))
@@ -325,9 +332,12 @@ const RegisterDailyLine: React.FC = () => {
                           <Clock className="w-4 h-4 text-orange-500 ml-2" />
                           {tr.departure_time.slice(0, 5)}
                         </div>
+                        <div className="flex items-center gap-1">
+                        {tr.status === 'in_progress' && <Badge className="bg-green-600 text-white border-0">جارية الآن · Ongoing</Badge>}
                         <Badge variant={tr.available_seats > 0 ? 'default' : 'secondary'}>
                           {tr.available_seats} / {tr.total_seats} seats
                         </Badge>
+                        </div>
                       </div>
                       <div className="text-sm text-muted-foreground">
                         Cash: {tr.cash_price} EGP · Instapay: {tr.instapay_price} EGP
@@ -348,8 +358,8 @@ const RegisterDailyLine: React.FC = () => {
                     highlightStationId={pickupId || dropoffId || undefined}
                     onStationClick={(id) => {
                       // tap on a marker selects it as pickup if not set, otherwise dropoff
-                      if (!pickupId) setPickupId(id);
-                      else if (id !== pickupId) setDropoffId(id);
+                      if (!pickupId) { if (pickupStations.some(s => s.id === id)) setPickupId(id); }
+                      else if (dropoffStations.some(s => s.id === id)) setDropoffId(id);
                     }}
                   />
                   <div>
