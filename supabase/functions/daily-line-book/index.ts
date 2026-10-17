@@ -156,6 +156,11 @@ Deno.serve(async (req) => {
           ? Math.round(((original * Number(promo.value)) / 100) * 100) / 100
           : Number(promo.value);
         if (discount > original) discount = original;
+      } else {
+        return new Response(JSON.stringify({ error: "كود الخصم غير صالح أو منتهي الصلاحية" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
     }
     const final = Math.max(0, original - discount);
