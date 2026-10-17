@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "bun:test";
 import { etaFor } from "./stationEta";
 describe("etaFor", () => {
   it("adds minutes to departure", () => expect(etaFor("17:00:00", 12)).toBe("17:12"));
