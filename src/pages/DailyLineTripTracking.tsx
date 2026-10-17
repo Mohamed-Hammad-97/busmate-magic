@@ -81,7 +81,7 @@ export default function DailyLineTripTracking() {
     queryFn: async () => {
       const { data } = await supabase
         .from("drivers")
-        .select("id, full_name, phone, vehicle_plate, vehicle_model, vehicle_color")
+        .select("id, full_name, phone, vehicle_plate, license_number, vehicle_model, vehicle_color")
         .eq("id", driverId!)
         .maybeSingle();
       return data;
@@ -364,7 +364,7 @@ export default function DailyLineTripTracking() {
                 </div>
                 <div className="flex items-center justify-between p-2 bg-muted/50 rounded-lg text-sm">
                   <span className="text-muted-foreground flex items-center gap-1"><Car className="h-4 w-4 text-primary" />{isRtl ? "رقم اللوحة" : "Car plate"}</span>
-                  <span className="font-bold">{driver.vehicle_plate || (isRtl ? "لم تُضف بعد" : "Not added yet")}</span>
+                  <span className="font-bold">{driver.license_number || driver.vehicle_plate || (isRtl ? "لم تُضف بعد" : "Not added yet")}</span>
                 </div>
                 {(driver.vehicle_model || driver.vehicle_color) && (
                   <div className="pt-3 border-t space-y-2">
