@@ -1,3 +1,4 @@
+// @ts-ignore bun test runner types
 import { describe, it, expect } from "bun:test";
 import { etaFor } from "./stationEta";
 describe("etaFor", () => {
