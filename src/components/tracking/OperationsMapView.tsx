@@ -377,6 +377,15 @@ export function OperationsMapView() {
       </div>
 
       {/* Active lines list */}
+      <Button
+        size="sm"
+        variant="secondary"
+        className="absolute bottom-6 left-4 z-10 shadow-lg gap-1"
+        onClick={() => { setSelectedTrip(null); setTimeout(() => fitAll(), 0); }}
+      >
+        <Bus className="h-4 w-4" /> عرض كل الباصات
+      </Button>
+
       {showTripList && !selectedTrip && (
         <Card
           dir="rtl"

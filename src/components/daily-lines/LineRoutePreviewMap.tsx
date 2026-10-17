@@ -22,6 +22,10 @@ interface Props {
   highlightStationId?: string;
   driverLocation?: { lat: number; lng: number } | null;
   onStationClick?: (id: string) => void;
+  /** Center on the bus at a comfortable zoom and follow it. */
+  focusOnDriver?: boolean;
+  /** When set, only these stations are drawn (and the route line is hidden). */
+  onlyStationIds?: string[] | null;
 }
 
 const containerStyle = (h: string) => ({ width: "100%", height: h });
@@ -34,7 +38,10 @@ export default function LineRoutePreviewMap(props: Props) {
   );
 }
 
-function Inner({ stations, height = "300px", highlightStationId, driverLocation, onStationClick }: Props) {
+function Inner({ stations, height = "300px", highlightStationId, driverLocation, onStationClick, focusOnDriver, onlyStationIds }: Props) {
+  const [mapObj, setMapObj] = useState<google.maps.Map | null>(null);
+  const [following, setFollowing] = useState(true);
+  const zoomedRef = React.useRef(false);
   const { isLoaded } = useGoogleMaps();
   useCarIconReady();
   const headingFor = useHeadings();
@@ -82,6 +89,15 @@ function Inner({ stations, height = "300px", highlightStationId, driverLocation,
     };
   }, [isLoaded, valid, custom]);
 
+  useEffect(() => {
+    if (!mapObj || !focusOnDriver || !driverLocation || !following) return;
+    if (!zoomedRef.current) {
+      mapObj.setZoom(15);
+      zoomedRef.current = true;
+    }
+    mapObj.panTo(driverLocation);
+  }, [mapObj, focusOnDriver, driverLocation, following]);
+
   if (!isLoaded) {
     return (
       <div className="flex items-center justify-center bg-muted rounded-lg" style={{ height }}>
@@ -102,13 +118,25 @@ function Inner({ stations, height = "300px", highlightStationId, driverLocation,
   }
 
   return (
-    <div className="rounded-lg overflow-hidden border">
+    <div className="relative rounded-lg overflow-hidden border">
+      {focusOnDriver && driverLocation && !following && (
+        <button
+          type="button"
+          onClick={() => setFollowing(true)}
+          className="absolute bottom-3 right-3 z-10 rounded-full bg-primary text-primary-foreground px-3 py-1.5 text-xs font-medium shadow-lg"
+        >
+          تتبع الباص · Follow bus
+        </button>
+      )}
       <GoogleMap
         mapContainerStyle={containerStyle(height)}
         center={center}
         zoom={13}
         options={{ streetViewControl: false, mapTypeControl: false, fullscreenControl: false }}
         onLoad={(map) => {
+          setMapObj(map);
+          map.addListener("dragstart", () => setFollowing(false));
+          if (focusOnDriver && driverLocation) return;
           if (valid.length > 1) {
             const bounds = new google.maps.LatLngBounds();
             valid.forEach((s) => bounds.extend({ lat: s.latitude!, lng: s.longitude! }));
@@ -118,6 +146,7 @@ function Inner({ stations, height = "300px", highlightStationId, driverLocation,
         }}
       >
         {valid.map((s, i) => {
+          if (onlyStationIds && !onlyStationIds.includes(s.id)) return null;
           const isHighlight = highlightStationId === s.id;
           const isStart = i === 0;
           const isEnd = i === valid.length - 1;
@@ -158,7 +187,7 @@ function Inner({ stations, height = "300px", highlightStationId, driverLocation,
             </Marker>
           );
         })}
-        {routePath.length > 0 && (
+        {routePath.length > 0 && !onlyStationIds && (
           <Polyline
             path={routePath}
             options={
