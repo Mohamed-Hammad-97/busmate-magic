@@ -1,3 +1,4 @@
+import { etaFor } from "@/lib/stationEta";
 import { useEffect, useMemo, useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -49,7 +50,7 @@ export default function DailyLinePortal() {
       phones.forEach((p) => orParts.push(`passenger_phone.eq.${p}`));
       const { data } = await supabase
         .from("daily_line_bookings")
-        .select("*, daily_line_trips(*, daily_lines(name, city)), pickup:pickup_station_id(name, latitude, longitude), dropoff:dropoff_station_id(name, latitude, longitude)")
+        .select("*, daily_line_trips(*, daily_lines(name, city)), pickup:pickup_station_id(name, latitude, longitude, minutes_from_start), dropoff:dropoff_station_id(name, latitude, longitude, minutes_from_start)")
         .or(orParts.join(","))
         .order("created_at", { ascending: false });
       return data || [];
@@ -477,7 +478,7 @@ function BookingCard({ booking: b, isRtl, compact }: { booking: any; isRtl: bool
               {!compact && (
                 <div className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
                   <MapPin className="h-3 w-3" />
-                  {pickup?.name || "—"} → {dropoff?.name || "—"}
+                  {pickup?.name || "—"}{etaFor(trip?.departure_time, pickup?.minutes_from_start) ? ` (${etaFor(trip?.departure_time, pickup?.minutes_from_start)})` : ""} → {dropoff?.name || "—"}{etaFor(trip?.departure_time, dropoff?.minutes_from_start) ? ` (${etaFor(trip?.departure_time, dropoff?.minutes_from_start)})` : ""}
                 </div>
               )}
             </div>
