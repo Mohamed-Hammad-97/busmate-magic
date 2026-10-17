@@ -7,6 +7,7 @@ const resources = {
     translation: {
       // Common
       common: {
+        back: 'Back',
         save: 'Save',
         cancel: 'Cancel',
         edit: 'Edit',
@@ -456,6 +457,7 @@ const resources = {
           corporate: 'Corporate',
         },
         common: {
+        back: 'رجوع',
           next: 'Next',
           previous: 'Previous',
           submit: 'Submit',
