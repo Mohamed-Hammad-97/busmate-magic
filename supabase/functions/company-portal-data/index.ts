@@ -320,8 +320,7 @@ Deno.serve(async (req) => {
       // === INTERNAL ACCOUNTS MANAGEMENT ===
       case "get-pickup-mode": {
         const { data: c } = await supabase.from("companies").select("employee_pickup_mode").eq("id", companyId).single();
-        result = { pickup_mode: c?.employee_pickup_mode || "both" };
-        break;
+        return new Response(JSON.stringify({ pickup_mode: c?.employee_pickup_mode || "both" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
       case "update-pickup-mode": {
@@ -335,8 +334,7 @@ Deno.serve(async (req) => {
         }
         const { error: upErr } = await supabase.from("companies").update({ employee_pickup_mode: mode }).eq("id", companyId);
         if (upErr) throw upErr;
-        result = { success: true, pickup_mode: mode };
-        break;
+        return new Response(JSON.stringify({ success: true, pickup_mode: mode }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
       case "get-accounts": {
