@@ -162,7 +162,7 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({ messages }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       companyId = adminCompanyId;
-      claims = { company_id: adminCompanyId, sub: null, role: "admin_view" };
+      claims = { company_id: adminCompanyId, sub: null, role: "admin", permissions: [] };
     } else {
       claims = await verifyCompanyToken(token);
       companyId = claims.company_id;
