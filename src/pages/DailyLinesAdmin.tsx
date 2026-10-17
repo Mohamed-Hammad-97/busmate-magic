@@ -185,7 +185,7 @@ function LinesTab({ isRtl }: { isRtl: boolean }) {
                     </TableCell>
                   </TableRow>
                 ))}
-                {lines.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">{isRtl ? "لا توجد خطوط" : "No lines yet"}</TableCell></TableRow>}
+                {visibleLines.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">{isRtl ? "لا توجد خطوط" : "No lines yet"}</TableCell></TableRow>}
               </TableBody>
             </Table>
           )}
