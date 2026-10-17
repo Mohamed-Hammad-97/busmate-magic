@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { etaFor } from "@/lib/stationEta";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useDriverAuth } from "@/contexts/DriverAuthContext";
 import { driverPortalClient as supabase } from "@/lib/driverPortalClient";
@@ -173,7 +174,7 @@ function DailyTripPassengers({ tripId, onComplete, completing }: { tripId: strin
     queryFn: async () => {
       const { data } = await supabase
         .from("daily_line_trips")
-        .select("line_id, daily_lines(id, name)")
+        .select("line_id, departure_time, daily_lines(id, name)")
         .eq("id", tripId)
         .single();
       return data;
@@ -207,6 +208,34 @@ function DailyTripPassengers({ tripId, onComplete, completing }: { tripId: strin
     },
     refetchInterval: 5000,
   });
+
+  // Realtime: passengers asking to stop
+  useEffect(() => {
+    const ch = supabase
+      .channel(`dl-driver-bookings-${tripId}`)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "daily_line_bookings", filter: `trip_id=eq.${tripId}` },
+        () => queryClient.invalidateQueries({ queryKey: ["daily-line-trip-bookings", tripId] }))
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [tripId, queryClient]);
+
+  const [dismissed, setDismissed] = useState<Record<string, string>>({});
+  const stopRequests = (bookings as any[]).filter((b) => b.stop_requested_at && !b.dropped_at && dismissed[b.id] !== b.stop_requested_at);
+  const alertedRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    stopRequests.forEach((b) => {
+      const key = `${b.id}:${b.stop_requested_at}`;
+      if (alertedRef.current.has(key)) return;
+      alertedRef.current.add(key);
+      try { navigator.vibrate?.([400, 150, 400, 150, 400]); } catch { /* ignore */ }
+      try {
+        const Ctx = (window as any).AudioContext || (window as any).webkitAudioContext;
+        const ctx = new Ctx(); const o = ctx.createOscillator(); const g = ctx.createGain();
+        o.frequency.value = 880; o.connect(g); g.connect(ctx.destination); g.gain.value = 0.3;
+        o.start(); setTimeout(() => { o.stop(); ctx.close(); }, 900);
+      } catch { /* ignore */ }
+    });
+  }, [stopRequests]);
 
   // Start GPS tracking
   useEffect(() => {
@@ -262,7 +291,7 @@ function DailyTripPassengers({ tripId, onComplete, completing }: { tripId: strin
 
   const dropMutation = useMutation({
     mutationFn: async (bookingId: string) => {
-      const { error } = await supabase.from("daily_line_bookings").update({ dropped_at: new Date().toISOString() }).eq("id", bookingId);
+      const { error } = await supabase.from("daily_line_bookings").update({ dropped_at: new Date().toISOString(), stop_requested_at: null } as any).eq("id", bookingId);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -311,6 +340,16 @@ function DailyTripPassengers({ tripId, onComplete, completing }: { tripId: strin
 
   return (
     <div className="flex-1 overflow-y-auto space-y-3 pr-2">
+      {stopRequests.map((b: any) => (
+        <div key={b.id} dir="rtl" className="sticky top-0 z-20 rounded-xl border-2 border-destructive bg-destructive p-4 text-destructive-foreground shadow-xl animate-pulse">
+          <p className="text-lg font-extrabold leading-snug">الرجاء الانتباه يوجد تنبيه من عميل بطلب الوقوف للنزول الان</p>
+          <p className="mt-1 text-sm font-bold">{b.passenger_name} · كود {b.boarding_code} · {b.dropoff?.name || "—"}</p>
+          <div className="mt-3 flex gap-2">
+            <Button size="sm" variant="secondary" className="font-bold" disabled={dropMutation.isPending} onClick={() => dropMutation.mutate(b.id)}>تم النزول</Button>
+            <Button size="sm" variant="outline" className="bg-transparent text-destructive-foreground" onClick={() => setDismissed((d) => ({ ...d, [b.id]: b.stop_requested_at }))}>إغلاق</Button>
+          </div>
+        </div>
+      ))}
       {/* Trip Map */}
       <LineRoutePreviewMap
         stations={stations as any}
@@ -351,6 +390,9 @@ function DailyTripPassengers({ tripId, onComplete, completing }: { tripId: strin
                 <span className="h-5 w-5 rounded-full bg-white/20 flex items-center justify-center">{i + 1}</span>
                 <span className="max-w-[120px] truncate">{s.name}</span>
               </div>
+              {etaFor((tripInfo as any)?.departure_time, s.minutes_from_start) && (
+                <div className="text-[10px] mt-0.5 opacity-90 flex items-center gap-0.5"><Clock className="h-3 w-3" />~{etaFor((tripInfo as any)?.departure_time, s.minutes_from_start)}</div>
+              )}
               <div className="flex gap-2 text-[10px] mt-1 opacity-90">
                 <span className="flex items-center gap-0.5"><ArrowUpCircle className="h-3 w-3" />{pCount}</span>
                 <span className="flex items-center gap-0.5"><ArrowDownCircle className="h-3 w-3" />{dCount}</span>
