@@ -134,6 +134,13 @@
       "when": 1792249020795,
       "tag": "0018_migration",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1792255640111,
+      "tag": "0019_daily_line_cancellations",
+      "breakpoints": true
     }
   ]
 }
