@@ -1,20 +1,34 @@
 import { useEffect, useRef, useState } from "react";
-import carImg from "@/assets/microbus-3d.png";
+import upImg from "@/assets/microbus/up.png";
+import downImg from "@/assets/microbus/down.png";
+import rightImg from "@/assets/microbus/right.png";
+import leftImg from "@/assets/microbus/left.png";
+
+const VIEWS = [upImg, rightImg, downImg, leftImg];
+const carImg = rightImg;
 
 const SIZE = 128;
+let imgs: HTMLImageElement[] | null = null;
 let img: HTMLImageElement | null = null;
 let loaded = false;
 const listeners = new Set<() => void>();
 const cache = new Map<string, string>();
 
 function ensureImage() {
-  if (img || typeof window === "undefined") return;
-  img = new Image();
-  img.onload = () => {
-    loaded = true;
-    listeners.forEach((l) => l());
-  };
-  img.src = carImg;
+  if (imgs || typeof window === "undefined") return;
+  let n = 0;
+  imgs = VIEWS.map((src) => {
+    const i = new Image();
+    i.onload = () => {
+      if (++n === VIEWS.length) {
+        loaded = true;
+        listeners.forEach((l) => l());
+      }
+    };
+    i.src = src;
+    return i;
+  });
+  img = imgs[1];
 }
 
 /** Re-renders the caller once the car image has loaded. */
@@ -33,8 +47,9 @@ export function useCarIconReady() {
 /** Data URL of the car rotated to `heading` degrees (0 = north). */
 export function carIconUrl(heading = 0, opts: { faded?: boolean; ring?: string } = {}) {
   ensureImage();
-  if (!loaded || !img) return carImg;
-  const h = (Math.round(((heading % 360) + 360) % 360 / 10) * 10) % 360;
+  const h = Math.round((((heading % 360) + 360) % 360) / 90) % 4;
+  if (!loaded || !imgs) return VIEWS[h];
+  const view = imgs[h];
   const key = `${h}|${opts.faded ? 1 : 0}|${opts.ring ?? ""}`;
   const hit = cache.get(key);
   if (hit) return hit;
@@ -53,12 +68,11 @@ export function carIconUrl(heading = 0, opts: { faded?: boolean; ring?: string }
   }
   ctx.globalAlpha = opts.faded ? 0.45 : 1;
   ctx.translate(SIZE / 2, SIZE / 2);
-  ctx.rotate((h * Math.PI) / 180);
   ctx.shadowColor = "rgba(0,0,0,0.35)";
   ctx.shadowBlur = 8;
   ctx.shadowOffsetY = 3;
-  const bh = SIZE * 0.9, bw = bh * (img.naturalWidth / img.naturalHeight);
-  ctx.drawImage(img, -bw / 2, -bh / 2, bw, bh);
+  const d = SIZE * 0.88;
+  ctx.drawImage(view, -d / 2, -d / 2, d, d);
   const url = c.toDataURL("image/png");
   cache.set(key, url);
   return url;
