@@ -106,19 +106,47 @@ function LinesTab({ isRtl }: { isRtl: boolean }) {
 
   const remove = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("daily_lines").delete().eq("id", id);
+      const { data, error } = await supabase.from("daily_lines").delete().eq("id", id).select("id");
       if (error) throw error;
+      if (!data || data.length === 0) throw new Error(isRtl ? "لم يتم الحذف — ليس لديك صلاحية" : "Not deleted — permission denied");
     },
-    onSuccess: () => {
+    onSuccess: (_d, id) => {
+      qc.setQueryData(["dla-lines"], (old: any[] = []) => old.filter((l) => l.id !== id));
       qc.invalidateQueries({ queryKey: ["dla-lines"] });
+      qc.invalidateQueries({ predicate: (q) => String(q.queryKey[0]).startsWith("dla-") });
       toast({ title: isRtl ? "تم الحذف" : "Deleted" });
     },
     onError: (e: any) => toast({ title: e.message, variant: "destructive" }),
   });
 
+  const toggleActive = useMutation({
+    mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
+      const { error } = await supabase.from("daily_lines").update({ is_active }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["dla-lines"] }),
+    onError: (e: any) => toast({ title: e.message, variant: "destructive" }),
+  });
+
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
+  const activeCount = lines.filter((l: any) => l.is_active).length;
+  const visibleLines = lines.filter((l: any) => statusFilter === "all" ? true : statusFilter === "active" ? l.is_active : !l.is_active);
+  const filterOpts = [
+    { k: "all" as const, label: isRtl ? "الكل" : "All", n: lines.length },
+    { k: "active" as const, label: isRtl ? "نشط" : "Active", n: activeCount },
+    { k: "inactive" as const, label: isRtl ? "متوقف" : "Inactive", n: lines.length - activeCount },
+  ];
+
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex gap-1 rounded-lg border p-1">
+          {filterOpts.map((o) => (
+            <Button key={o.k} size="sm" variant={statusFilter === o.k ? "default" : "ghost"} onClick={() => setStatusFilter(o.k)}>
+              {o.label} <span className="ms-1 opacity-70">({o.n})</span>
+            </Button>
+          ))}
+        </div>
         <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setEditing(null); }}>
           <DialogTrigger asChild>
             <Button onClick={() => setEditing(null)}><Plus className="h-4 w-4 mr-1" />{isRtl ? "خط جديد" : "New Line"}</Button>
@@ -139,16 +167,21 @@ function LinesTab({ isRtl }: { isRtl: boolean }) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {lines.map((l: any) => (
+                {visibleLines.map((l: any) => (
                   <TableRow key={l.id}>
                     <TableCell className="font-medium">{l.name}</TableCell>
                     <TableCell>{l.city}</TableCell>
-                    <TableCell><Badge variant={l.is_active ? "default" : "secondary"}>{l.is_active ? (isRtl ? "نشط" : "Active") : (isRtl ? "متوقف" : "Inactive")}</Badge></TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Switch checked={!!l.is_active} disabled={toggleActive.isPending} onCheckedChange={(v) => toggleActive.mutate({ id: l.id, is_active: v })} />
+                        <Badge variant={l.is_active ? "default" : "secondary"}>{l.is_active ? (isRtl ? "نشط" : "Active") : (isRtl ? "متوقف" : "Inactive")}</Badge>
+                      </div>
+                    </TableCell>
                     <TableCell className="text-end space-x-2">
                       <Button size="sm" variant="outline" onClick={() => setStationsLineId(l.id)}><MapPin className="h-3 w-3 mr-1" />{isRtl ? "محطات" : "Stations"}</Button>
                       <Button size="sm" variant="outline" onClick={() => setPreviewLineId(l.id)}><Eye className="h-3 w-3 mr-1" />{isRtl ? "معاينة" : "Preview"}</Button>
                       <Button size="sm" variant="ghost" onClick={() => { setEditing(l); setOpen(true); }}><Pencil className="h-3 w-3" /></Button>
-                      {isSuperAdmin && (<Button size="sm" variant="ghost" onClick={() => { if (confirm(isRtl ? "حذف؟" : "Delete?")) remove.mutate(l.id); }}><Trash2 className="h-3 w-3 text-destructive" /></Button>)}
+                      {isSuperAdmin && (<Button size="sm" variant="ghost" disabled={remove.isPending} onClick={() => { if (confirm(isRtl ? `حذف الخط "${l.name}"؟ سيتم حذف المحطات والرحلات والحجوزات المرتبطة به نهائياً.` : `Delete line "${l.name}"? Its stations, trips and bookings will be permanently removed.`)) remove.mutate(l.id); }}><Trash2 className="h-3 w-3 text-destructive" /></Button>)}
                     </TableCell>
                   </TableRow>
                 ))}
