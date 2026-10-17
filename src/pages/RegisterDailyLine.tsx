@@ -351,7 +351,7 @@ const RegisterDailyLine: React.FC = () => {
                     const showHeader = dayFilter === 'all' && (i === 0 || visibleTrips[i - 1].trip_date !== tr.trip_date);
                     return (
                       <React.Fragment key={tr.id}>
-                        {showHeader && <p className="pt-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">{dayLabel(tr.trip_date)} · {fullDate(tr.trip_date)}</p>}
+                        {showHeader && <p className="pt-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">{fullDate(tr.trip_date)}</p>}
                         <button type="button" onClick={() => setTripId(tr.id)}
                           className={`relative w-full text-start p-4 rounded-2xl border-2 transition-all ${sel ? 'border-primary bg-primary/5 shadow-md' : 'border-border bg-card hover:border-primary/40'}`}>
                           {sel && <CheckCircle2 className="absolute top-3 end-3 w-5 h-5 text-primary" />}
@@ -360,7 +360,7 @@ const RegisterDailyLine: React.FC = () => {
                               <div className="flex items-center gap-2 text-2xl font-extrabold text-foreground">
                                 <Clock className="w-5 h-5 text-primary" />{tr.departure_time.slice(0, 5)}
                               </div>
-                              <div className="mt-0.5 text-xs text-muted-foreground">{dayLabel(tr.trip_date)} · {fullDate(tr.trip_date)}</div>
+                              <div className="mt-0.5 text-xs text-muted-foreground">{fullDate(tr.trip_date)}</div>
                             </div>
                             <div className="flex flex-col items-end gap-1 shrink-0 pe-6">
                               <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">{isRtl ? 'كاش' : 'Cash'} {tr.cash_price}</span>
