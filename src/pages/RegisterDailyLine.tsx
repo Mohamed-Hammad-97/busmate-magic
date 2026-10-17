@@ -50,6 +50,9 @@ const RegisterDailyLine: React.FC = () => {
   const [pickupId, setPickupId] = useState('');
   const [dropoffId, setDropoffId] = useState('');
   const [promo, setPromo] = useState('');
+  const [appliedPromo, setAppliedPromo] = useState<{ code: string; promo_type: 'percentage' | 'fixed'; value: number } | null>(null);
+  const [promoChecking, setPromoChecking] = useState(false);
+  const [promoError, setPromoError] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'instapay'>('cash');
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [bookingResult, setBookingResult] = useState<{ id: string; boarding_code: string; final_price: number } | null>(null);
@@ -99,6 +102,45 @@ const RegisterDailyLine: React.FC = () => {
   const basePrice = selectedTrip
     ? (paymentMethod === 'cash' ? Number(selectedTrip.cash_price) : Number(selectedTrip.instapay_price))
     : 0;
+  const discountFor = (price: number) => {
+    if (!appliedPromo) return 0;
+    const d = appliedPromo.promo_type === 'percentage'
+      ? Math.round(price * appliedPromo.value) / 100
+      : appliedPromo.value;
+    return Math.min(d, price);
+  };
+  const discount = discountFor(basePrice);
+  const finalPrice = Math.max(0, basePrice - discount);
+  const PriceTag = ({ price }: { price: number }) => {
+    const d = discountFor(price);
+    return d > 0 ? (
+      <span className="text-right">
+        <span className="text-xs line-through text-muted-foreground mr-1">{price}</span>
+        <span className="font-bold text-green-600">{price - d} EGP</span>
+      </span>
+    ) : <span className="font-bold">{price} EGP</span>;
+  };
+
+  const applyPromo = async () => {
+    const code = promo.trim();
+    if (!code) return;
+    setPromoChecking(true);
+    setPromoError('');
+    try {
+      const { data } = await supabase.functions.invoke('daily-line-validate-promo', { body: { code } });
+      const r = data as { valid: boolean; reason?: string; code?: string; promo_type?: 'percentage' | 'fixed'; value?: number };
+      if (r?.valid && r.code && r.promo_type && r.value != null) {
+        setAppliedPromo({ code: r.code, promo_type: r.promo_type, value: r.value });
+      } else {
+        setAppliedPromo(null);
+        setPromoError(r?.reason === 'expired' ? 'هذا الكود منتهي الصلاحية' : r?.reason === 'used_up' ? 'تم استخدام هذا الكود بالكامل' : 'كود الخصم غير صحيح');
+      }
+    } catch {
+      setPromoError('تعذر التحقق من الكود، حاول مرة أخرى');
+    } finally {
+      setPromoChecking(false);
+    }
+  };
 
   const goNext = () => {
     const idx = STEPS.indexOf(step);
@@ -150,7 +192,7 @@ const RegisterDailyLine: React.FC = () => {
           pickup_station_id: pickupId,
           dropoff_station_id: dropoffId,
           payment_method: paymentMethod,
-          promocode: promo || undefined,
+          promocode: appliedPromo?.code || undefined,
           proof_file_base64,
           proof_file_ext,
           proof_file_type,
@@ -326,10 +368,26 @@ const RegisterDailyLine: React.FC = () => {
                   </div>
                   <div>
                     <Label>Promo code (optional)</Label>
-                    <div className="relative">
-                      <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input value={promo} onChange={e => setPromo(e.target.value)} placeholder="Enter code" className="pl-9" />
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input value={promo} onChange={e => { setPromo(e.target.value); setAppliedPromo(null); setPromoError(''); }} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); applyPromo(); } }} placeholder="Enter code" className="pl-9" />
+                      </div>
+                      {appliedPromo ? (
+                        <Button type="button" variant="outline" onClick={() => { setAppliedPromo(null); setPromo(''); }}>Remove</Button>
+                      ) : (
+                        <Button type="button" onClick={applyPromo} disabled={!promo.trim() || promoChecking}>
+                          {promoChecking ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Apply'}
+                        </Button>
+                      )}
                     </div>
+                    {appliedPromo && (
+                      <p className="mt-2 text-sm text-green-600 flex items-center gap-1">
+                        <CheckCircle2 className="w-4 h-4" />
+                        تم تطبيق الخصم: {appliedPromo.promo_type === 'percentage' ? `${appliedPromo.value}%` : `${appliedPromo.value} EGP`}
+                      </p>
+                    )}
+                    {promoError && <p className="mt-2 text-sm text-destructive">{promoError}</p>}
                   </div>
                 </CardContent>
               </>
@@ -345,20 +403,20 @@ const RegisterDailyLine: React.FC = () => {
                       <Label htmlFor="cash" className="flex-1 flex items-center gap-2 cursor-pointer">
                         <Wallet className="w-5 h-5" /> Cash on board
                       </Label>
-                      {selectedTrip && <span className="font-bold">{selectedTrip.cash_price} EGP</span>}
+                      {selectedTrip && <PriceTag price={Number(selectedTrip.cash_price)} />}
                     </div>
                     <div className="flex items-center space-x-3 p-4 rounded-lg border-2 border-border has-[:checked]:border-orange-500 has-[:checked]:bg-orange-500/5">
                       <RadioGroupItem value="instapay" id="instapay" />
                       <Label htmlFor="instapay" className="flex-1 flex items-center gap-2 cursor-pointer">
                         <CreditCard className="w-5 h-5" /> Instapay
                       </Label>
-                      {selectedTrip && <span className="font-bold">{selectedTrip.instapay_price} EGP</span>}
+                      {selectedTrip && <PriceTag price={Number(selectedTrip.instapay_price)} />}
                     </div>
                   </RadioGroup>
 
                   {paymentMethod === 'instapay' && (
                     <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/30 space-y-2 text-sm">
-                      <p className="font-semibold">Send {basePrice} EGP via Instapay to:</p>
+                      <p className="font-semibold">Send {finalPrice} EGP via Instapay to:</p>
                       <div>Account: <span className="font-mono">{settings.instapay_account_name || '—'}</span></div>
                       <div>IPA: <span className="font-mono">{settings.instapay_ipa || '—'}</span></div>
                       <div>Bank: <span className="font-mono">{settings.instapay_bank_name || '—'}</span></div>
@@ -370,7 +428,7 @@ const RegisterDailyLine: React.FC = () => {
                         <p className="text-xs text-muted-foreground">— or —</p>
                         {settings.whatsapp_number && (
                           <Button asChild variant="outline" className="w-full">
-                            <a href={`https://wa.me/${settings.whatsapp_number.replace(/\D/g, '')}?text=${encodeURIComponent(`Hi, I just paid ${basePrice} EGP via Instapay for a Daily Line trip. My phone: ${phone}`)}`} target="_blank" rel="noreferrer">
+                            <a href={`https://wa.me/${settings.whatsapp_number.replace(/\D/g, '')}?text=${encodeURIComponent(`Hi, I just paid ${finalPrice} EGP via Instapay for a Daily Line trip. My phone: ${phone}`)}`} target="_blank" rel="noreferrer">
                               <MessageCircle className="w-4 h-4 mr-2" /> Send proof on WhatsApp
                             </a>
                           </Button>
@@ -394,10 +452,12 @@ const RegisterDailyLine: React.FC = () => {
                   <Row label="Pickup" value={stations.find(s => s.id === pickupId)?.name ?? ''} />
                   <Row label="Drop-off" value={stations.find(s => s.id === dropoffId)?.name ?? ''} />
                   <Row label="Payment" value={paymentMethod === 'cash' ? 'Cash on board' : 'Instapay'} />
-                  {promo && <Row label="Promo" value={promo} />}
+                  {appliedPromo && <Row label="Promo" value={appliedPromo.code} />}
+                  {discount > 0 && <Row label="Original price" value={`${basePrice} EGP`} />}
+                  {discount > 0 && <Row label="Discount" value={`- ${discount} EGP`} />}
                   <div className="pt-3 mt-3 border-t flex items-center justify-between">
                     <span className="font-semibold">Total</span>
-                    <span className="text-2xl font-bold text-orange-500">{basePrice} EGP</span>
+                    <span className="text-2xl font-bold text-orange-500">{finalPrice} EGP</span>
                   </div>
                 </CardContent>
               </>
