@@ -1,3 +1,4 @@
+import { claimBookings } from "../_shared/claim-bookings.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
@@ -159,6 +160,8 @@ serve(async (req) => {
         loginRow.id,
       );
     }
+
+    await claimBookings(supabase, loginRow.id, [cleanPhone]);
 
     return json({
       success: true,

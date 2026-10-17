@@ -53,6 +53,11 @@ export default function ParentAuth() {
 
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/parent";
+  const prefillPhone = searchParams.get("phone");
+  useEffect(() => {
+    if (prefillPhone && !phone) setPhone(prefillPhone);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefillPhone]);
 
   if (!authLoading && user && parentAccount) {
     return <Navigate to={redirectTo} replace />;
