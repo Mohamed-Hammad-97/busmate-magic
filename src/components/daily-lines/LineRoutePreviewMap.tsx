@@ -36,6 +36,8 @@ export default function LineRoutePreviewMap(props: Props) {
 
 function Inner({ stations, height = "300px", highlightStationId, driverLocation, onStationClick }: Props) {
   const { isLoaded } = useGoogleMaps();
+  useCarIconReady();
+  const headingFor = useHeadings();
   const [routePath, setRoutePath] = useState<google.maps.LatLngLiteral[]>([]);
   const [routeSource, setRouteSource] = useState<string>("");
   const [openId, setOpenId] = useState<string | null>(null);
