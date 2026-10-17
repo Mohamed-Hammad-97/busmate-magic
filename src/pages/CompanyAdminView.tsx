@@ -34,7 +34,7 @@ export default function CompanyAdminView() {
   if (!company || !accessToken) return <div className="p-8 text-center text-muted-foreground">جاري التحميل...</div>;
 
   const account = {
-    id: 'admin-view', email: '', full_name: 'Seater Admin', phone: null, role: 'viewer', permissions: [],
+    id: 'admin-view', email: '', full_name: 'Seater Admin', phone: null, role: 'admin', permissions: [],
     company_id: company.id, company_name: company.name, company_city: company.city, company_logo_url: company.logo_url,
   };
 
