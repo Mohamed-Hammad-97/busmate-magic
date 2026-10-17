@@ -1,4 +1,5 @@
 import { etaFor } from "@/lib/stationEta";
+import { getBookingOutcome } from "@/lib/bookingOutcome";
 import { useEffect, useMemo, useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -317,20 +318,15 @@ export default function DailyLinePortal() {
               bookings.map((b: any) => (
                 <Card key={b.id}>
                   <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-3">
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <div className="font-medium flex items-center gap-2">
-                        <Receipt className="h-4 w-4" />
-                        {b.daily_line_trips?.daily_lines?.name} — {b.daily_line_trips?.trip_date}
+                        <Receipt className="h-4 w-4 text-primary" />
+                        {b.daily_line_trips?.daily_lines?.name}
                       </div>
-                      <div className="text-sm text-muted-foreground">
-                        {b.payment_method === "cash" ? (isRtl ? "نقدي" : "Cash") : "Instapay"} • {Number(b.final_price).toFixed(2)} EGP
-                        {Number(b.discount_amount) > 0 && (
-                          <span className="ml-2 text-xs">({isRtl ? "خصم" : "discount"} {Number(b.discount_amount).toFixed(2)})</span>
-                        )}
-                      </div>
+                      <BookingDetails b={b} isRtl={isRtl} />
                     </div>
-                    <PaymentStatusBadge status={b.payment_status} isRtl={isRtl} />
-                    {b.payment_method === "instapay" && b.payment_status === "pending" && (
+                    <OutcomeBadge b={b} isRtl={isRtl} />
+                    {b.payment_method === "instapay" && b.payment_status === "pending" && getBookingOutcome(b) === "upcoming" && (
                       <label className="cursor-pointer">
                         <input
                           type="file"
