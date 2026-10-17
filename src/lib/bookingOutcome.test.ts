@@ -1,4 +1,5 @@
-import { describe, it, expect } from "vitest";
+// @ts-ignore bun test runner types
+import { describe, it, expect } from "bun:test";
 import { getBookingOutcome } from "./bookingOutcome";
 
 describe("getBookingOutcome", () => {
