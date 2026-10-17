@@ -1,0 +1,2 @@
+ALTER TABLE public.companies ADD COLUMN IF NOT EXISTS employee_pickup_mode text NOT NULL DEFAULT 'both';
+ALTER TABLE public.companies ADD CONSTRAINT companies_employee_pickup_mode_check CHECK (employee_pickup_mode IN ('line','custom','both'));

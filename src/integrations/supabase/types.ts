@@ -172,6 +172,7 @@ export type Database = {
           contact_person_name: string
           contact_person_phone: string
           created_at: string
+          employee_pickup_mode: string
           id: string
           is_active: boolean
           latitude: number | null
@@ -187,6 +188,7 @@ export type Database = {
           contact_person_name: string
           contact_person_phone: string
           created_at?: string
+          employee_pickup_mode?: string
           id?: string
           is_active?: boolean
           latitude?: number | null
@@ -202,6 +204,7 @@ export type Database = {
           contact_person_name?: string
           contact_person_phone?: string
           created_at?: string
+          employee_pickup_mode?: string
           id?: string
           is_active?: boolean
           latitude?: number | null

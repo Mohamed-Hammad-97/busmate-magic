@@ -99,6 +99,13 @@
       "when": 1789823012638,
       "tag": "0013_operations_can_manage_salary_payments",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1792234410856,
+      "tag": "0014_company_employee_pickup_mode",
+      "breakpoints": true
     }
   ]
 }

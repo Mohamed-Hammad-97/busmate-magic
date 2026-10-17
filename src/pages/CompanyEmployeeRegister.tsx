@@ -77,6 +77,7 @@ export default function CompanyEmployeeRegister() {
   const [error, setError] = useState("");
   const [invalidCompany, setInvalidCompany] = useState(false);
   const [pickupMode, setPickupMode] = useState<"line" | "custom">("line");
+  const [allowedMode, setAllowedMode] = useState<"line" | "custom" | "both">("both");
   const [markerPos, setMarkerPos] = useState<{ lat: number; lng: number } | null>(null);
 
 
@@ -109,7 +110,11 @@ export default function CompanyEmployeeRegister() {
         setCompanyName(res.data.company.name);
         setCompanyLogo(res.data.company.logo_url || null);
         setLines(res.data.lines || []);
-        if (!res.data.lines?.length) setPickupMode("custom");
+        const mode = res.data.company.employee_pickup_mode || "both";
+        const hasLines = !!res.data.lines?.length;
+        const effective = !hasLines ? "custom" : mode;
+        setAllowedMode(effective);
+        setPickupMode(effective === "custom" ? "custom" : "line");
       }
     } catch {
       setInvalidCompany(true);
@@ -279,7 +284,7 @@ export default function CompanyEmployeeRegister() {
               </div>
 
               {/* Pickup Mode Selection */}
-              {lines.length > 0 && (
+              {lines.length > 0 && allowedMode === "both" && (
                 <div className="space-y-3">
                   <Label className="flex items-center gap-1.5 text-sm font-medium">
                     <MapPin className="h-4 w-4 text-primary" />

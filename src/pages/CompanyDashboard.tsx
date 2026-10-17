@@ -24,6 +24,7 @@ import { CompanyNotificationBell } from "@/components/corporate/CompanyNotificat
 import { CompanyChatView } from "@/components/corporate/CompanyChatView";
 import { CompanyPortalSidebar } from "@/components/corporate/CompanyPortalSidebar";
 import { CompanyStaffProfilesView } from "@/components/corporate/CompanyStaffProfilesView";
+import { CompanyPickupModeSetting } from "@/components/corporate/CompanyPickupModeSetting";
 import { CompanyChangePassword } from "@/components/corporate/CompanyChangePassword";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
@@ -292,6 +293,7 @@ export default function CompanyDashboard() {
                 </Button>
               </CardContent>
             </Card>
+            <CompanyPickupModeSetting />
             {employees.length === 0 ? (
               <Card className="border-0 shadow-md">
                 <CardContent className="py-12 text-center text-muted-foreground">
