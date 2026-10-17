@@ -326,6 +326,7 @@ export default function DailyLineTripTracking() {
                 </div>
               </div>
             </div>
+            {booking && <div className="flex"><CancelBookingButton booking={booking} isRtl={isRtl} /></div>}
             {pickupNav && (
               <Button asChild variant="outline" size="sm" className="w-full">
                 <a href={pickupNav} target="_blank" rel="noreferrer">
@@ -372,12 +373,6 @@ export default function DailyLineTripTracking() {
                       {isRtl ? "بيانات السيارة" : "Vehicle Details"}
                     </div>
                     <div className="grid grid-cols-3 gap-2 text-center">
-                      {driver.vehicle_plate && (
-                        <div className="p-2 bg-muted/50 rounded-lg">
-                          <div className="text-[10px] text-muted-foreground">{isRtl ? "اللوحة" : "Plate"}</div>
-                          <div className="font-bold text-sm">{driver.vehicle_plate}</div>
-                        </div>
-                      )}
                       {driver.vehicle_model && (
                         <div className="p-2 bg-muted/50 rounded-lg">
                           <div className="text-[10px] text-muted-foreground">{isRtl ? "الموديل" : "Model"}</div>
