@@ -834,6 +834,8 @@ export type Database = {
         Row: {
           boarded_at: string | null
           boarding_code: string
+          cancelled_at: string | null
+          cancelled_by: string | null
           created_at: string
           discount_amount: number
           dropoff_station_id: string | null
@@ -858,6 +860,8 @@ export type Database = {
         Insert: {
           boarded_at?: string | null
           boarding_code: string
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           created_at?: string
           discount_amount?: number
           dropoff_station_id?: string | null
@@ -882,6 +886,8 @@ export type Database = {
         Update: {
           boarded_at?: string | null
           boarding_code?: string
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           created_at?: string
           discount_amount?: number
           dropoff_station_id?: string | null
@@ -1057,6 +1063,7 @@ export type Database = {
       daily_line_trips: {
         Row: {
           available_seats: number
+          cancel_cutoff_hours: number
           cash_price: number
           completed_at: string | null
           created_at: string
@@ -1078,6 +1085,7 @@ export type Database = {
         }
         Insert: {
           available_seats?: number
+          cancel_cutoff_hours?: number
           cash_price?: number
           completed_at?: string | null
           created_at?: string
@@ -1099,6 +1107,7 @@ export type Database = {
         }
         Update: {
           available_seats?: number
+          cancel_cutoff_hours?: number
           cash_price?: number
           completed_at?: string | null
           created_at?: string
@@ -2979,6 +2988,11 @@ export type Database = {
         Args: { _route_id: string; _user_id: string }
         Returns: boolean
       }
+      cancel_daily_line_booking: {
+        Args: { _booking_id: string }
+        Returns: undefined
+      }
+      cancel_daily_line_trip: { Args: { _trip_id: string }; Returns: undefined }
       cleanup_expired_otps: { Args: never; Returns: undefined }
       conversation_type_of: {
         Args: { _conversation_id: string }

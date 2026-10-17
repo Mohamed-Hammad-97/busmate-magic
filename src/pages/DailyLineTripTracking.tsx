@@ -10,8 +10,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft, Bus, Loader2, Navigation, Car, MapPin, Clock,
-  Calendar, User, CheckCircle2, AlertCircle,
+  Calendar, User, CheckCircle2, AlertCircle, Phone,
 } from "lucide-react";
+import { CancelBookingButton } from "@/components/daily-lines/CancelBookingButton";
 import { format } from "date-fns";
 import { etaFor } from "@/lib/stationEta";
 import { toast } from "@/hooks/use-toast";
@@ -325,6 +326,7 @@ export default function DailyLineTripTracking() {
                 </div>
               </div>
             </div>
+            {booking && <div className="flex"><CancelBookingButton booking={booking} isRtl={isRtl} /></div>}
             {pickupNav && (
               <Button asChild variant="outline" size="sm" className="w-full">
                 <a href={pickupNav} target="_blank" rel="noreferrer">
@@ -352,21 +354,25 @@ export default function DailyLineTripTracking() {
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold">{driver.full_name}</div>
                     <div className="text-xs text-muted-foreground">{isRtl ? "كابتن الرحلة" : "Trip captain"}</div>
+                    {driver.phone && <div dir="ltr" className="text-sm font-medium tabular-nums text-start">{driver.phone}</div>}
                   </div>
+                  {driver.phone && (
+                    <Button size="icon" asChild className="h-11 w-11 rounded-full shrink-0" aria-label={isRtl ? "اتصال بالكابتن" : "Call captain"}>
+                      <a href={`tel:${driver.phone}`}><Phone className="h-5 w-5" /></a>
+                    </Button>
+                  )}
                 </div>
-                {(driver.vehicle_plate || driver.vehicle_model || driver.vehicle_color) && (
+                <div className="flex items-center justify-between p-2 bg-muted/50 rounded-lg text-sm">
+                  <span className="text-muted-foreground flex items-center gap-1"><Car className="h-4 w-4 text-primary" />{isRtl ? "رقم اللوحة" : "Car plate"}</span>
+                  <span className="font-bold">{driver.vehicle_plate || (isRtl ? "لم تُضف بعد" : "Not added yet")}</span>
+                </div>
+                {(driver.vehicle_model || driver.vehicle_color) && (
                   <div className="pt-3 border-t space-y-2">
                     <div className="flex items-center gap-2 text-sm font-semibold">
                       <Car className="h-4 w-4 text-primary" />
                       {isRtl ? "بيانات السيارة" : "Vehicle Details"}
                     </div>
-                    <div className="grid grid-cols-3 gap-2 text-center">
-                      {driver.vehicle_plate && (
-                        <div className="p-2 bg-muted/50 rounded-lg">
-                          <div className="text-[10px] text-muted-foreground">{isRtl ? "اللوحة" : "Plate"}</div>
-                          <div className="font-bold text-sm">{driver.vehicle_plate}</div>
-                        </div>
-                      )}
+                    <div className="grid grid-cols-2 gap-2 text-center">
                       {driver.vehicle_model && (
                         <div className="p-2 bg-muted/50 rounded-lg">
                           <div className="text-[10px] text-muted-foreground">{isRtl ? "الموديل" : "Model"}</div>

@@ -1,5 +1,6 @@
 import { etaFor } from "@/lib/stationEta";
 import { getBookingOutcome } from "@/lib/bookingOutcome";
+import { CancelBookingButton } from "@/components/daily-lines/CancelBookingButton";
 import { useEffect, useMemo, useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -548,6 +549,7 @@ function BookingCard({ booking: b, isRtl, compact }: { booking: any; isRtl: bool
                 </a>
               </Button>
             )}
+            <CancelBookingButton booking={b} isRtl={isRtl} />
           </div>
         )}
       </CardContent>

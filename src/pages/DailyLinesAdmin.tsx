@@ -373,6 +373,12 @@ function TripsTab({ isRtl }: { isRtl: boolean }) {
     onError: (e: any) => toast({ title: e.message, variant: "destructive" }),
   });
 
+  const cancelTrip = useMutation({
+    mutationFn: async (id: string) => { const { error } = await supabase.rpc("cancel_daily_line_trip", { _trip_id: id }); if (error) throw error; },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["dla-trips"] }); qc.invalidateQueries({ queryKey: ["dla-bookings"] }); toast({ title: isRtl ? "تم إلغاء الرحلة" : "Trip cancelled" }); },
+    onError: (e: any) => toast({ title: e.message, variant: "destructive" }),
+  });
+
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
@@ -406,6 +412,11 @@ function TripsTab({ isRtl }: { isRtl: boolean }) {
                   <TableCell><Badge variant="outline" className="text-xs">{t.status}</Badge></TableCell>
                   <TableCell className="text-end space-x-1">
                     <Button size="sm" variant="ghost" onClick={() => { setEditing(t); setOpen(true); }}><Pencil className="h-3 w-3" /></Button>
+                    {t.status !== "cancelled" && t.status !== "completed" && (
+                      <Button size="sm" variant="ghost" className="text-destructive text-xs" onClick={() => { if (confirm(isRtl ? "إلغاء الرحلة وكل حجوزاتها؟" : "Cancel this trip and all its bookings?")) cancelTrip.mutate(t.id); }}>
+                        {isRtl ? "إلغاء الرحلة" : "Cancel trip"}
+                      </Button>
+                    )}
                     {isSuperAdmin && (<Button size="sm" variant="ghost" onClick={() => { if (confirm(isRtl ? "حذف؟" : "Delete?")) remove.mutate(t.id); }}><Trash2 className="h-3 w-3 text-destructive" /></Button>)}
                   </TableCell>
                 </TableRow>
@@ -422,14 +433,15 @@ function TripsTab({ isRtl }: { isRtl: boolean }) {
 function TripDialog({ editing, lines, drivers, onSubmit, saving, isRtl }: any) {
   const [form, setForm] = useState<any>({
     line_id: "", trip_date: "", departure_time: "", driver_id: null,
-    total_seats: 14, cash_price: 0, instapay_price: 0, status: "scheduled", notes: "",
+    total_seats: 14, cash_price: 0, instapay_price: 0, status: "scheduled", notes: "", cancel_cutoff_hours: 2,
   });
   useEffect(() => {
     setForm(editing ? {
       line_id: editing.line_id, trip_date: editing.trip_date, departure_time: editing.departure_time?.slice(0, 5),
       driver_id: editing.driver_id, total_seats: editing.total_seats, cash_price: editing.cash_price,
       instapay_price: editing.instapay_price, status: editing.status, notes: editing.notes || "",
-    } : { line_id: "", trip_date: "", departure_time: "", driver_id: null, total_seats: 14, cash_price: 0, instapay_price: 0, status: "scheduled", notes: "" });
+      cancel_cutoff_hours: editing.cancel_cutoff_hours ?? 2,
+    } : { line_id: "", trip_date: "", departure_time: "", driver_id: null, total_seats: 14, cash_price: 0, instapay_price: 0, status: "scheduled", notes: "", cancel_cutoff_hours: 2 });
   }, [editing]);
   return (
     <DialogContent className="max-w-lg">
@@ -458,6 +470,16 @@ function TripDialog({ editing, lines, drivers, onSubmit, saving, isRtl }: any) {
           <div><Label>{isRtl ? "المقاعد" : "Seats"}</Label><Input type="number" value={form.total_seats} onChange={(e) => setForm({ ...form, total_seats: Number(e.target.value) })} /></div>
           <div><Label>{isRtl ? "نقدي" : "Cash"}</Label><Input type="number" step="0.01" value={form.cash_price} onChange={(e) => setForm({ ...form, cash_price: Number(e.target.value) })} /></div>
           <div><Label>Instapay</Label><Input type="number" step="0.01" value={form.instapay_price} onChange={(e) => setForm({ ...form, instapay_price: Number(e.target.value) })} /></div>
+        </div>
+        <div><Label>{isRtl ? "مهلة إلغاء العميل" : "Customer cancellation"}</Label>
+          <Select value={String(form.cancel_cutoff_hours ?? 2)} onValueChange={(v) => setForm({ ...form, cancel_cutoff_hours: Number(v) })}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="1">{isRtl ? "حتى ساعة قبل الانطلاق" : "Until 1 hour before departure"}</SelectItem>
+              <SelectItem value="2">{isRtl ? "حتى ساعتين قبل الانطلاق" : "Until 2 hours before departure"}</SelectItem>
+              <SelectItem value="0">{isRtl ? "لا يمكن الإلغاء" : "No cancellation"}</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div><Label>{isRtl ? "الحالة" : "Status"}</Label>
           <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
@@ -571,6 +593,14 @@ function BookingsTab({ isRtl }: { isRtl: boolean }) {
                   </TableCell>
                   <TableCell className="text-end">
                     <Button size="sm" variant="ghost" onClick={() => setViewing(b)}><Eye className="h-3 w-3" /></Button>
+                    {b.payment_status !== "cancelled" && (
+                      <Button size="sm" variant="ghost" className="text-destructive text-xs" onClick={async () => {
+                        if (!confirm(isRtl ? "إلغاء هذا الحجز؟" : "Cancel this booking?")) return;
+                        const { error } = await supabase.rpc("cancel_daily_line_booking", { _booking_id: b.id });
+                        if (error) toast({ title: error.message, variant: "destructive" });
+                        else { qc.invalidateQueries({ queryKey: ["dla-bookings"] }); toast({ title: isRtl ? "تم إلغاء الحجز" : "Booking cancelled" }); }
+                      }}>{isRtl ? "إلغاء" : "Cancel"}</Button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
