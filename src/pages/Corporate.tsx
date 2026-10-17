@@ -382,12 +382,12 @@ const Corporate = () => {
 
       {/* Add/Edit Company Dialog */}
       <Dialog open={companyDialogOpen} onOpenChange={(open) => { setCompanyDialogOpen(open); if (!open) resetForm(); }}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{selectedCompany ? t('corporateMgmt.editCompany') : t('corporateMgmt.addNewCompany')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t('corporateMgmt.companyName')} *</Label>
                 <Input value={companyForm.name} onChange={(e) => setCompanyForm({ ...companyForm, name: e.target.value })} />
@@ -408,7 +408,7 @@ const Corporate = () => {
               <Label>{t('corporateMgmt.address')}</Label>
               <Input value={companyForm.location_address} onChange={(e) => setCompanyForm({ ...companyForm, location_address: e.target.value })} />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t('corporateMgmt.contactPerson')} *</Label>
                 <Input value={companyForm.contact_person_name} onChange={(e) => setCompanyForm({ ...companyForm, contact_person_name: e.target.value })} />
@@ -437,7 +437,7 @@ const Corporate = () => {
               {selectedCompany && (
                 <p className="text-xs text-muted-foreground mb-3">اترك الحقول فارغة إذا لم ترد إنشاء حساب جديد</p>
               )}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>البريد الإلكتروني {!selectedCompany && '*'}</Label>
                   <Input value={companyForm.supervisor_email} onChange={(e) => setCompanyForm({ ...companyForm, supervisor_email: e.target.value })} placeholder="supervisor@company.com" dir="ltr" type="email" />
