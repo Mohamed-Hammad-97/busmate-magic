@@ -24,7 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   Bus, MapPin, CalendarDays, Sparkles, ClipboardList, Plus, Trash2,
-  Pencil, Loader2, CheckCircle2, XCircle, Eye, CreditCard,
+  Pencil, Loader2, CheckCircle2, XCircle, Eye, CreditCard, ArrowLeftRight,
 } from "lucide-react";
 import { format } from "date-fns";
 import LineMapEditor from "@/components/daily-lines/LineMapEditor";
@@ -128,6 +128,40 @@ function LinesTab({ isRtl }: { isRtl: boolean }) {
     onError: (e: any) => toast({ title: e.message, variant: "destructive" }),
   });
 
+  const [reverseSrc, setReverseSrc] = useState<any>(null);
+  const [reverseName, setReverseName] = useState("");
+  const [reversedFrom, setReversedFrom] = useState<Set<string>>(new Set());
+  const openReverse = (l: any) => { setReverseSrc(l); setReverseName(""); };
+
+  const createReverse = useMutation({
+    mutationFn: async () => {
+      const src = reverseSrc;
+      const { data: st, error: sErr } = await supabase.from("daily_line_stations").select("*").eq("line_id", src.id).order("station_order");
+      if (sErr) throw sErr;
+      if (!st || st.length < 2) throw new Error(isRtl ? "يجب أن يحتوي الخط على محطتين على الأقل" : "The line needs at least 2 stations");
+      const { data: newLine, error } = await supabase.from("daily_lines")
+        .insert({ name: reverseName.trim(), city: src.city, description: null, is_active: src.is_active })
+        .select("id").single();
+      if (error) throw error;
+      const swap = (t: string) => (t === "pickup" ? "dropoff" : t === "dropoff" ? "pickup" : t);
+      const rows = [...st].reverse().map((s: any, i: number) => ({
+        line_id: newLine.id, name: s.name, station_type: swap(s.station_type), station_order: i,
+        latitude: s.latitude, longitude: s.longitude, is_active: s.is_active,
+      }));
+      const { error: iErr } = await supabase.from("daily_line_stations").insert(rows);
+      if (iErr) throw iErr;
+      return { srcId: src.id, newId: newLine.id as string };
+    },
+    onSuccess: ({ srcId, newId }) => {
+      setReversedFrom((s) => new Set(s).add(srcId).add(newId));
+      setReverseSrc(null);
+      qc.invalidateQueries({ predicate: (q) => String(q.queryKey[0]).startsWith("dla-") || String(q.queryKey[0]).includes("line") });
+      toast({ title: isRtl ? "تم إنشاء خط العودة" : "Return line created" });
+      setStationsLineId(newId);
+    },
+    onError: (e: any) => toast({ title: e.message, variant: "destructive" }),
+  });
+
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const activeCount = lines.filter((l: any) => l.is_active).length;
   const visibleLines = lines.filter((l: any) => statusFilter === "all" ? true : statusFilter === "active" ? l.is_active : !l.is_active);
@@ -180,6 +214,7 @@ function LinesTab({ isRtl }: { isRtl: boolean }) {
                     <TableCell className="text-end space-x-2">
                       <Button size="sm" variant="outline" onClick={() => setStationsLineId(l.id)}><MapPin className="h-3 w-3 mr-1" />{isRtl ? "محطات" : "Stations"}</Button>
                       <Button size="sm" variant="outline" onClick={() => setPreviewLineId(l.id)}><Eye className="h-3 w-3 mr-1" />{isRtl ? "معاينة" : "Preview"}</Button>
+                      <Button size="sm" variant="outline" onClick={() => openReverse(l)}><ArrowLeftRight className="h-3 w-3 mr-1" />{isRtl ? "إنشاء خط العودة" : "Return line"}</Button>
                       <Button size="sm" variant="ghost" onClick={() => { setEditing(l); setOpen(true); }}><Pencil className="h-3 w-3" /></Button>
                       {isSuperAdmin && (<Button size="sm" variant="ghost" disabled={remove.isPending} onClick={() => { if (confirm(isRtl ? `حذف الخط "${l.name}"؟ سيتم حذف المحطات والرحلات والحجوزات المرتبطة به نهائياً.` : `Delete line "${l.name}"? Its stations, trips and bookings will be permanently removed.`)) remove.mutate(l.id); }}><Trash2 className="h-3 w-3 text-destructive" /></Button>)}
                     </TableCell>
@@ -195,7 +230,39 @@ function LinesTab({ isRtl }: { isRtl: boolean }) {
       <Dialog open={!!stationsLineId} onOpenChange={(o) => { if (!o) { setStationsLineId(null); qc.invalidateQueries({ queryKey: ["dla-lines"] }); } }}>
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-auto">
           <DialogHeader><DialogTitle>{isRtl ? "محطات الخط على الخريطة" : "Line Stations on Map"}</DialogTitle></DialogHeader>
-          {stationsLineId && <LineMapEditor lineId={stationsLineId} isRtl={isRtl} />}
+          {stationsLineId && (
+            <LineMapEditor
+              key={stationsLineId}
+              lineId={stationsLineId}
+              isRtl={isRtl}
+              onSaved={(st) => {
+                if (st.length < 2 || reversedFrom.has(stationsLineId)) return;
+                const src = lines.find((l: any) => l.id === stationsLineId);
+                if (src) openReverse(src);
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!reverseSrc} onOpenChange={(o) => !o && setReverseSrc(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{isRtl ? "هل تريد إنشاء خط العودة؟" : "Create the return line?"}</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            {isRtl
+              ? `سيتم إنشاء خط جديد بنفس محطات "${reverseSrc?.name ?? ""}" بترتيب عكسي.`
+              : `A new line will be created with the stations of "${reverseSrc?.name ?? ""}" in reverse order.`}
+          </p>
+          <div className="space-y-1">
+            <Label>{isRtl ? "اسم خط العودة" : "Return line name"}</Label>
+            <Input value={reverseName} onChange={(e) => setReverseName(e.target.value)} placeholder={isRtl ? "اكتب اسم الخط" : "Enter line name"} autoFocus />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setReverseSrc(null)}>{isRtl ? "لاحقاً" : "Later"}</Button>
+            <Button disabled={!reverseName.trim() || createReverse.isPending} onClick={() => createReverse.mutate()}>
+              {createReverse.isPending && <Loader2 className="h-4 w-4 animate-spin mr-1" />}{isRtl ? "إنشاء" : "Create"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

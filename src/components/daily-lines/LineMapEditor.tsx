@@ -26,6 +26,7 @@ export interface StationDraft {
 interface Props {
   lineId: string;
   isRtl: boolean;
+  onSaved?: (stations: StationDraft[]) => void;
 }
 
 const DEFAULT_CENTER = { lat: 30.0444, lng: 31.2357 }; // Cairo
@@ -39,7 +40,7 @@ export default function LineMapEditor(props: Props) {
   );
 }
 
-function Inner({ lineId, isRtl }: Props) {
+function Inner({ lineId, isRtl, onSaved }: Props) {
   const { isLoaded } = useGoogleMaps();
   const { toast } = useToast();
   const [stations, setStations] = useState<StationDraft[]>([]);
@@ -212,6 +213,7 @@ function Inner({ lineId, isRtl }: Props) {
         }
       }
       toast({ title: isRtl ? "تم حفظ الخط" : "Line saved" });
+      onSaved?.(stations);
     } catch (e: any) {
       toast({ title: e.message, variant: "destructive" });
     } finally {
