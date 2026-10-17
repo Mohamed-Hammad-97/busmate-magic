@@ -1,4 +1,4 @@
-import { etaFor } from '@/lib/stationEta';
+import { etaFor, stationMinutesMap } from '@/lib/stationEta';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Bus, MapPin, Calendar, Clock, Tag, CreditCard, Wallet, CheckCircle2, Upload, MessageCircle, Loader2 } from 'lucide-react';
@@ -97,6 +97,9 @@ const RegisterDailyLine: React.FC = () => {
 
   const selectedTrip = useMemo(() => trips.find(tr => tr.id === tripId), [trips, tripId]);
   const selectedLine = useMemo(() => lines.find(l => l.id === lineId), [lines, lineId]);
+  const stationMins = useMemo(() => stationMinutesMap(stations), [stations]);
+  const depTime = trips.find(t => t.id === tripId)?.departure_time;
+  const etaOf = (id: string) => etaFor(depTime, stationMins[id]);
   const pickupStations = useMemo(() => stations.filter(s => s.station_type !== 'dropoff'), [stations]);
   const dropoffStations = useMemo(() => stations.filter(s => s.station_type !== 'pickup'), [stations]);
 
@@ -354,7 +357,7 @@ const RegisterDailyLine: React.FC = () => {
                     <Select value={pickupId} onValueChange={setPickupId}>
                       <SelectTrigger><SelectValue placeholder="Select pickup" /></SelectTrigger>
                       <SelectContent>
-                        {pickupStations.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                        {pickupStations.map(s => <SelectItem key={s.id} value={s.id}>{s.name}{etaOf(s.id) ? ` (${etaOf(s.id)})` : ''}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
@@ -363,14 +366,14 @@ const RegisterDailyLine: React.FC = () => {
                     <Select value={dropoffId} onValueChange={setDropoffId}>
                       <SelectTrigger><SelectValue placeholder="Select drop-off" /></SelectTrigger>
                       <SelectContent>
-                        {dropoffStations.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                        {dropoffStations.map(s => <SelectItem key={s.id} value={s.id}>{s.name}{etaOf(s.id) ? ` (${etaOf(s.id)})` : ''}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
                   {(() => {
                     const dep = trips.find(t => t.id === tripId)?.departure_time;
-                    const pu = etaFor(dep, stations.find(s => s.id === pickupId)?.minutes_from_start);
-                    const dr = etaFor(dep, stations.find(s => s.id === dropoffId)?.minutes_from_start);
+                    const pu = etaFor(dep, stationMins[pickupId]);
+                    const dr = etaFor(dep, stationMins[dropoffId]);
                     if (!pu && !dr) return null;
                     return (
                       <div className="grid grid-cols-2 gap-2 rounded-lg bg-muted/50 p-3 text-sm">
@@ -465,8 +468,8 @@ const RegisterDailyLine: React.FC = () => {
                   <Row label="Time" value={selectedTrip.departure_time.slice(0, 5)} />
                   <Row label="Pickup" value={stations.find(s => s.id === pickupId)?.name ?? ''} />
                   <Row label="Drop-off" value={stations.find(s => s.id === dropoffId)?.name ?? ''} />
-                  {etaFor(selectedTrip.departure_time, stations.find(s => s.id === pickupId)?.minutes_from_start) && <Row label="Est. pickup time" value={etaFor(selectedTrip.departure_time, stations.find(s => s.id === pickupId)?.minutes_from_start)!} />}
-                  {etaFor(selectedTrip.departure_time, stations.find(s => s.id === dropoffId)?.minutes_from_start) && <Row label="Est. arrival time" value={etaFor(selectedTrip.departure_time, stations.find(s => s.id === dropoffId)?.minutes_from_start)!} />}
+                  {etaFor(selectedTrip.departure_time, stationMins[pickupId]) && <Row label="Est. pickup time" value={etaFor(selectedTrip.departure_time, stationMins[pickupId])!} />}
+                  {etaFor(selectedTrip.departure_time, stationMins[dropoffId]) && <Row label="Est. arrival time" value={etaFor(selectedTrip.departure_time, stationMins[dropoffId])!} />}
                   <Row label="Payment" value={paymentMethod === 'cash' ? 'Cash on board' : 'Instapay'} />
                   {appliedPromo && <Row label="Promo" value={appliedPromo.code} />}
                   {discount > 0 && <Row label="Original price" value={`${basePrice} EGP`} />}
