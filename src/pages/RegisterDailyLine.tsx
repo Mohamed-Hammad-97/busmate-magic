@@ -1,4 +1,4 @@
-import { etaFor, stationMinutesMap, isStationUpcoming } from '@/lib/stationEta';
+import { etaFor, stationMinutesMap, isStationUpcoming, cairoNow } from '@/lib/stationEta';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Bus, MapPin, Calendar, Clock, Tag, CreditCard, Wallet, CheckCircle2, Upload, MessageCircle, Loader2 } from 'lucide-react';
@@ -95,6 +95,20 @@ const RegisterDailyLine: React.FC = () => {
     });
   }, [lineId]);
 
+  const [dayFilter, setDayFilter] = useState<string>('all');
+  useEffect(() => { setDayFilter('all'); }, [lineId]);
+  const tripDays = useMemo(() => Array.from(new Set(trips.map(t => t.trip_date))), [trips]);
+  const visibleTrips = useMemo(() => dayFilter === 'all' ? trips : trips.filter(t => t.trip_date === dayFilter), [trips, dayFilter]);
+  useEffect(() => { if (tripId && !visibleTrips.some(t => t.id === tripId)) setTripId(''); }, [visibleTrips, tripId]);
+  const locale = isRtl ? 'ar-EG' : 'en-GB';
+  const dayLabel = (d: string) => {
+    const today = cairoNow().date;
+    const diff = Math.round((Date.parse(d) - Date.parse(today)) / 86400000);
+    if (diff === 0) return isRtl ? 'اليوم' : 'Today';
+    if (diff === 1) return isRtl ? 'غداً' : 'Tomorrow';
+    return new Date(`${d}T12:00:00`).toLocaleDateString(locale, { weekday: 'short', day: 'numeric' });
+  };
+  const fullDate = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'short' });
   const selectedTrip = useMemo(() => trips.find(tr => tr.id === tripId), [trips, tripId]);
   const selectedLine = useMemo(() => lines.find(l => l.id === lineId), [lines, lineId]);
   const stationMins = useMemo(() => stationMinutesMap(stations), [stations]);
@@ -229,9 +243,9 @@ const RegisterDailyLine: React.FC = () => {
         description="Book a seat on a scheduled Seater daily line trip. Pay with cash or Instapay and track your ride in real time."
         path="/register/daily-line"
       />
-      <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 via-background to-amber-500/5" />
-      <div className="absolute top-20 right-0 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl" />
-      <div className="absolute bottom-0 left-0 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl" />
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-primary/10" />
+      <div className="absolute top-20 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
 
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
@@ -254,13 +268,13 @@ const RegisterDailyLine: React.FC = () => {
             <div className="mb-6">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-muted-foreground">{t('common.step', 'Step')} {stepNumber} / {STEPS.length - 1}</span>
-                <Badge className="bg-gradient-to-r from-orange-500 to-amber-500 text-white border-0">
+                <Badge className="bg-primary text-primary-foreground hover:bg-primary/90 border-0">
                   <Bus className="w-3 h-3 mr-1" />
                   Daily Line Trip
                 </Badge>
               </div>
               <div className="h-2 bg-muted rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-orange-500 to-amber-500 transition-all" style={{ width: `${(stepNumber / (STEPS.length - 1)) * 100}%` }} />
+                <div className="h-full bg-primary transition-all" style={{ width: `${(stepNumber / (STEPS.length - 1)) * 100}%` }} />
               </div>
             </div>
           )}
@@ -318,32 +332,55 @@ const RegisterDailyLine: React.FC = () => {
               <>
                 <CardHeader><CardTitle>Pick a trip</CardTitle></CardHeader>
                 <CardContent className="space-y-3">
-                  {trips.length === 0 && <p className="text-sm text-muted-foreground">No upcoming trips for this line.</p>}
-                  {trips.map(tr => (
-                    <button
-                      key={tr.id}
-                      onClick={() => setTripId(tr.id)}
-                      className={`w-full text-left p-4 rounded-xl border-2 transition-all ${tripId === tr.id ? 'border-orange-500 bg-orange-500/5' : 'border-border hover:border-orange-300'}`}
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-2 font-semibold">
-                          <Calendar className="w-4 h-4 text-orange-500" />
-                          {new Date(tr.trip_date).toLocaleDateString()}
-                          <Clock className="w-4 h-4 text-orange-500 ml-2" />
-                          {tr.departure_time.slice(0, 5)}
-                        </div>
-                        <div className="flex items-center gap-1">
-                        {tr.status === 'in_progress' && <Badge className="bg-green-600 text-white border-0">جارية الآن · Ongoing</Badge>}
-                        <Badge variant={tr.available_seats > 0 ? 'default' : 'secondary'}>
-                          {tr.available_seats} / {tr.total_seats} seats
-                        </Badge>
-                        </div>
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        Cash: {tr.cash_price} EGP · Instapay: {tr.instapay_price} EGP
-                      </div>
-                    </button>
-                  ))}
+                  {trips.length === 0 && <p className="text-sm text-muted-foreground">{isRtl ? 'لا توجد رحلات قادمة لهذا الخط' : 'No upcoming trips for this line.'}</p>}
+                  {tripDays.length > 0 && (
+                    <div className="-mx-6 px-6 flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                      {(['all', ...tripDays] as string[]).map(d => {
+                        const active = dayFilter === d;
+                        return (
+                          <button key={d} type="button" onClick={() => setDayFilter(d)}
+                            className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold border transition-colors ${active ? 'bg-primary text-primary-foreground border-primary shadow-sm' : 'bg-primary/5 text-primary border-primary/20 hover:bg-primary/10'}`}>
+                            {d === 'all' ? (isRtl ? 'الكل' : 'All') : dayLabel(d)}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {visibleTrips.map((tr, i) => {
+                    const sel = tripId === tr.id;
+                    const showHeader = dayFilter === 'all' && (i === 0 || visibleTrips[i - 1].trip_date !== tr.trip_date);
+                    return (
+                      <React.Fragment key={tr.id}>
+                        {showHeader && <p className="pt-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">{fullDate(tr.trip_date)}</p>}
+                        <button type="button" onClick={() => setTripId(tr.id)}
+                          className={`relative w-full text-start p-4 rounded-2xl border-2 transition-all ${sel ? 'border-primary bg-primary/5 shadow-md' : 'border-border bg-card hover:border-primary/40'}`}>
+                          {sel && <CheckCircle2 className="absolute top-3 end-3 w-5 h-5 text-primary" />}
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 text-2xl font-extrabold text-foreground">
+                                <Clock className="w-5 h-5 text-primary" />{tr.departure_time.slice(0, 5)}
+                              </div>
+                              <div className="mt-0.5 text-xs text-muted-foreground">{fullDate(tr.trip_date)}</div>
+                            </div>
+                            <div className="flex flex-col items-end gap-1 shrink-0 pe-6">
+                              <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">{isRtl ? 'كاش' : 'Cash'} {tr.cash_price}</span>
+                              <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">Instapay {tr.instapay_price}</span>
+                            </div>
+                          </div>
+                          {(tr.status === 'in_progress' || tr.available_seats <= 4) && (
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {tr.status === 'in_progress' && <Badge className="bg-green-600 text-white border-0">جارية الآن · Ongoing</Badge>}
+                              {tr.available_seats <= 4 && (
+                                <span className="rounded-full bg-orange-500/10 border border-orange-500/30 px-2.5 py-0.5 text-xs font-bold text-orange-600">
+                                  {tr.available_seats === 1 ? 'باقي مقعد واحد فقط · Only 1 seat left' : `باقي ${tr.available_seats} مقاعد فقط · Only ${tr.available_seats} seats left`}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </button>
+                      </React.Fragment>
+                    );
+                  })}
                 </CardContent>
               </>
             )}
@@ -425,14 +462,14 @@ const RegisterDailyLine: React.FC = () => {
                 <CardHeader><CardTitle>Payment method</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
                   <RadioGroup value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as 'cash' | 'instapay')}>
-                    <div className="flex items-center space-x-3 p-4 rounded-lg border-2 border-border has-[:checked]:border-orange-500 has-[:checked]:bg-orange-500/5">
+                    <div className="flex items-center space-x-3 p-4 rounded-lg border-2 border-border has-[:checked]:border-primary has-[:checked]:bg-primary/5">
                       <RadioGroupItem value="cash" id="cash" />
                       <Label htmlFor="cash" className="flex-1 flex items-center gap-2 cursor-pointer">
                         <Wallet className="w-5 h-5" /> Cash on board
                       </Label>
                       {selectedTrip && <PriceTag price={Number(selectedTrip.cash_price)} />}
                     </div>
-                    <div className="flex items-center space-x-3 p-4 rounded-lg border-2 border-border has-[:checked]:border-orange-500 has-[:checked]:bg-orange-500/5">
+                    <div className="flex items-center space-x-3 p-4 rounded-lg border-2 border-border has-[:checked]:border-primary has-[:checked]:bg-primary/5">
                       <RadioGroupItem value="instapay" id="instapay" />
                       <Label htmlFor="instapay" className="flex-1 flex items-center gap-2 cursor-pointer">
                         <CreditCard className="w-5 h-5" /> Instapay
@@ -486,7 +523,7 @@ const RegisterDailyLine: React.FC = () => {
                   {discount > 0 && <Row label="Discount" value={`- ${discount} EGP`} />}
                   <div className="pt-3 mt-3 border-t flex items-center justify-between">
                     <span className="font-semibold">Total</span>
-                    <span className="text-2xl font-bold text-orange-500">{finalPrice} EGP</span>
+                    <span className="text-2xl font-bold text-primary">{finalPrice} EGP</span>
                   </div>
                 </CardContent>
               </>
@@ -499,11 +536,11 @@ const RegisterDailyLine: React.FC = () => {
                 </div>
                 <h2 className="text-2xl font-bold">Booking confirmed!</h2>
                 <p className="text-muted-foreground">Show your boarding code to the driver:</p>
-                <div className="text-6xl font-black tracking-wider text-orange-500">{bookingResult.boarding_code}</div>
+                <div className="text-6xl font-black tracking-wider text-primary">{bookingResult.boarding_code}</div>
                 <p className="text-sm text-muted-foreground">Total: <span className="font-bold">{bookingResult.final_price} EGP</span></p>
                 <div className="flex gap-2 justify-center pt-4">
                   <Button onClick={() => navigate('/')} variant="outline">Home</Button>
-                  <Button onClick={() => navigate(`/parent/auth?redirect=/daily-line/portal&phone=${encodeURIComponent(phone.trim())}`)} className="bg-gradient-to-r from-orange-500 to-amber-500 text-white">View my trips</Button>
+                  <Button onClick={() => navigate(`/parent/auth?redirect=/daily-line/portal&phone=${encodeURIComponent(phone.trim())}`)} className="bg-primary text-primary-foreground hover:bg-primary/90">View my trips</Button>
                 </div>
               </CardContent>
             )}
@@ -511,12 +548,12 @@ const RegisterDailyLine: React.FC = () => {
             {step !== 'done' && (
               <CardContent className="pt-0">
                 {step === 'confirm' ? (
-                  <Button onClick={submit} disabled={submitting} className="w-full bg-gradient-to-r from-orange-500 to-amber-500 text-white">
+                  <Button onClick={submit} disabled={submitting} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
                     {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
                     Confirm booking
                   </Button>
                 ) : (
-                  <Button onClick={goNext} disabled={!canNext()} className="w-full bg-gradient-to-r from-orange-500 to-amber-500 text-white">
+                  <Button onClick={goNext} disabled={!canNext()} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
                     Next {isRtl ? <ArrowLeft className="w-4 h-4 ml-2" /> : <ArrowRight className="w-4 h-4 ml-2" />}
                   </Button>
                 )}
