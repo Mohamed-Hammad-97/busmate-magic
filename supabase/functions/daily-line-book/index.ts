@@ -116,7 +116,7 @@ Deno.serve(async (req) => {
     // Load trip
     const { data: trip, error: tripErr } = await admin
       .from("daily_line_trips")
-      .select("id, available_seats, cash_price, instapay_price, status")
+      .select("id, line_id, trip_date, departure_time, available_seats, cash_price, instapay_price, status")
       .eq("id", trip_id)
       .maybeSingle();
     if (tripErr || !trip) {
@@ -125,7 +125,7 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    if (trip.status !== "scheduled") {
+    if (trip.status !== "scheduled" && trip.status !== "in_progress") {
       return new Response(JSON.stringify({ error: "Trip is not bookable" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -136,6 +136,29 @@ Deno.serve(async (req) => {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Station checks: pickup must still be ahead of the bus, drop-off after pickup
+    const { data: sts } = await admin
+      .from("daily_line_stations")
+      .select("id, station_order, minutes_from_start")
+      .eq("line_id", trip.line_id)
+      .in("id", [pickup_station_id, dropoff_station_id].filter(Boolean));
+    const pu = sts?.find((s) => s.id === pickup_station_id);
+    const dr = sts?.find((s) => s.id === dropoff_station_id);
+    const bad = (msg: string) => new Response(JSON.stringify({ error: msg }), {
+      status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+    if (!pu || !dr) return bad("محطة غير صالحة لهذا الخط");
+    if (dr.station_order <= pu.station_order) return bad("محطة النزول يجب أن تكون بعد محطة الركوب");
+    {
+      const p = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Cairo", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date()).map((x) => [x.type, x.value]));
+      const nowMin = Number(p.hour) * 60 + Number(p.minute);
+      const dayDiff = Math.round((Date.parse(trip.trip_date) - Date.parse(`${p.year}-${p.month}-${p.day}`)) / 86400000);
+      const [h, m] = String(trip.departure_time).split(":").map(Number);
+      if (dayDiff * 1440 + h * 60 + m + Number(pu.minutes_from_start ?? 0) <= nowMin) {
+        return bad("الأتوبيس تجاوز محطة الركوب هذه، اختر محطة تالية");
+      }
     }
 
     // Pricing
