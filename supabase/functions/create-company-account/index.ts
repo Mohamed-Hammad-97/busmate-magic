@@ -67,7 +67,34 @@ Deno.serve(async (req) => {
       }
     }
 
-    const { company_id, email, password, full_name, phone } = await req.json();
+    const body = await req.json();
+    const { company_id, email, password, full_name, phone } = body;
+
+    if (body?.action === "reset-password") {
+      const accountId = body.account_id;
+      if (typeof accountId !== "string" || typeof company_id !== "string" || typeof password !== "string") {
+        return new Response(JSON.stringify({ error: "Missing required fields" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      if (password.length < 6) {
+        return new Response(JSON.stringify({ error: "Password must be at least 6 characters" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const newHash = await hashPassword(password);
+      const { data: updated, error: updErr } = await serviceClient
+        .from("company_accounts")
+        .update({ password_hash: newHash })
+        .eq("id", accountId)
+        .eq("company_id", company_id)
+        .select("id");
+      if (updErr) throw updErr;
+      if (!updated || updated.length === 0) {
+        return new Response(JSON.stringify({ error: "Account not found" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      return new Response(JSON.stringify({ success: true }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     if (!company_id || !email || !password || !full_name) {
       return new Response(
