@@ -2,13 +2,15 @@ import React, { useEffect, useMemo, useState } from "react";
 import { GoogleMap, Marker, Polyline, InfoWindow } from "@react-google-maps/api";
 import { GoogleMapsProvider, useGoogleMaps } from "@/components/maps/GoogleMapsProvider";
 import { Loader2 } from "lucide-react";
-import { computeDrivingRoute } from "@/lib/googleRoutes";
+import { computeLineRoute, type RouteWaypoint, type RouteMode } from "@/lib/googleRoutes";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface PreviewStation {
   id: string;
   name: string;
   station_type: string;
   station_order: number;
+  line_id?: string;
   latitude: number | null;
   longitude: number | null;
 }
@@ -45,6 +47,15 @@ function Inner({ stations, height = "300px", highlightStationId, driverLocation,
     [stations],
   );
 
+  const lineId = stations.find((s) => s.line_id)?.line_id;
+  const [custom, setCustom] = useState<{ wps: RouteWaypoint[]; mode: RouteMode } | null>(null);
+  useEffect(() => {
+    if (!lineId) return;
+    supabase.from("daily_lines").select("route_waypoints, route_mode").eq("id", lineId).maybeSingle().then(({ data }) => {
+      if (data) setCustom({ wps: ((data as any).route_waypoints || []) as RouteWaypoint[], mode: ((data as any).route_mode || "road") as RouteMode });
+    });
+  }, [lineId]);
+
   const center = useMemo(() => {
     if (driverLocation) return driverLocation;
     if (valid[0]) return { lat: valid[0].latitude!, lng: valid[0].longitude! };
@@ -58,7 +69,7 @@ function Inner({ stations, height = "300px", highlightStationId, driverLocation,
     }
     let cancelled = false;
     const stops = valid.map((s) => ({ lat: s.latitude!, lng: s.longitude! }));
-    computeDrivingRoute(stops).then((res) => {
+    computeLineRoute(stops, custom?.wps, custom?.mode).then((res) => {
       if (cancelled) return;
       setRoutePath(res.path);
       setRouteSource(res.source);
@@ -66,7 +77,7 @@ function Inner({ stations, height = "300px", highlightStationId, driverLocation,
     return () => {
       cancelled = true;
     };
-  }, [isLoaded, valid]);
+  }, [isLoaded, valid, custom]);
 
   if (!isLoaded) {
     return (

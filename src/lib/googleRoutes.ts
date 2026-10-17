@@ -7,7 +7,27 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
-export type LatLng = { lat: number; lng: number };
+export type LatLng = { lat: number; lng: number; via?: boolean };
+
+export type RouteWaypoint = { lat: number; lng: number; after: number };
+export type RouteMode = "road" | "free";
+
+/** Merge ordered stations with shaping points (inserted after station index `after`). */
+export function mergeStopsWithWaypoints(stations: LatLng[], waypoints: RouteWaypoint[] = []): LatLng[] {
+  const out: LatLng[] = [];
+  stations.forEach((s, i) => {
+    out.push({ lat: s.lat, lng: s.lng });
+    if (i < stations.length - 1) waypoints.filter((w) => w.after === i).forEach((w) => out.push({ lat: w.lat, lng: w.lng, via: true }));
+  });
+  return out;
+}
+
+/** Compute the line route honouring custom shaping points and drawing mode. */
+export async function computeLineRoute(stations: LatLng[], waypoints: RouteWaypoint[] = [], mode: RouteMode = "road"): Promise<RouteResult> {
+  const stops = mergeStopsWithWaypoints(stations, waypoints);
+  if (mode === "free") return { path: stops.map(({ lat, lng }) => ({ lat, lng })), source: "routes_api" };
+  return computeDrivingRoute(stops);
+}
 
 export type RouteResult = {
   path: LatLng[];
@@ -83,6 +103,7 @@ async function tryRoutesApi(stops: LatLng[], apiKey: string): Promise<RouteResul
     },
     intermediates: intermediates.map((p) => ({
       location: { latLng: { latitude: p.lat, longitude: p.lng } },
+      ...(p.via ? { via: true } : {}),
     })),
     travelMode: "DRIVE",
     routingPreference: "TRAFFIC_UNAWARE",
@@ -123,7 +144,7 @@ function tryLegacyDirections(stops: LatLng[]): Promise<RouteResult | null> {
       {
         origin: stops[0],
         destination: stops[stops.length - 1],
-        waypoints: stops.slice(1, -1).map((p) => ({ location: p, stopover: true })),
+        waypoints: stops.slice(1, -1).map((p) => ({ location: { lat: p.lat, lng: p.lng }, stopover: !p.via })),
         travelMode: google.maps.TravelMode.DRIVING,
       },
       (res, status) => {
@@ -163,5 +184,5 @@ export async function computeDrivingRoute(stops: LatLng[]): Promise<RouteResult>
     console.warn("[computeDrivingRoute] Legacy Directions failed:", lastError);
   }
 
-  return { path: stops, source: "straight_fallback", error: lastError };
+  return { path: stops.map(({ lat, lng }) => ({ lat, lng })), source: "straight_fallback", error: lastError };
 }
