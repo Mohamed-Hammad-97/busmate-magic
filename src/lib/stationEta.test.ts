@@ -18,3 +18,12 @@ describe("stationMinutesMap", () => {
     expect(m.b).toBeGreaterThan(0);
   });
 });
+
+import { isStationUpcoming as up } from "./stationEta";
+describe("station ETA cutoff", () => {
+  // 2026-10-17 15:40 UTC = 18:40 Cairo (UTC+3)
+  const now = new Date("2026-10-17T15:40:00Z");
+  it("passed station at 18:30+0 is not bookable", () => expect(up("2026-10-17", "18:30", 0, now)).toBe(false));
+  it("station at 18:30+25 (18:55) is still bookable", () => expect(up("2026-10-17", "18:30", 25, now)).toBe(true));
+  it("tomorrow's trip is bookable", () => expect(up("2026-10-18", "06:00", 0, now)).toBe(true));
+});
