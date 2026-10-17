@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { resolveParentFamily, unifyFamilyId } from "../_shared/parent-family.ts";
+import { claimBookings, findUnlinkedBookings } from "../_shared/claim-bookings.ts";
 
 interface VerifyOtpRequest {
   phone: string;
@@ -81,7 +82,29 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Resolve the whole family for this number (father's or mother's, any format)
     // so both parents always reach the same single login.
-    const family = await resolveParentFamily(supabase, cleanPhone);
+    let family = await resolveParentFamily(supabase, cleanPhone);
+
+    // Guest who booked a daily-line trip but has no account yet: the phone is
+    // now proven by the SMS code, so create a minimal account for it.
+    if (!family.primary) {
+      const guestBookings = await findUnlinkedBookings(supabase, [cleanPhone]);
+      if (guestBookings.length > 0) {
+        const b = guestBookings[0];
+        const local = `0${cleanPhone.replace(/\D/g, "").replace(/^20/, "").replace(/^0/, "")}`;
+        const { error: createErr } = await supabase.from("parent_accounts").insert({
+          parent_name: String(b.passenger_name || "Customer").slice(0, 120),
+          national_id: "",
+          father_phone: local,
+          emergency_phone: local,
+          city: b.daily_line_trips?.daily_lines?.city ?? "",
+          pickup_latitude: 0,
+          pickup_longitude: 0,
+        });
+        if (createErr) console.error("Guest account creation failed:", createErr);
+        family = await resolveParentFamily(supabase, cleanPhone);
+      }
+    }
+
     await unifyFamilyId(supabase, family);
     const parentAccount = family.primary;
 
@@ -124,6 +147,9 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     await supabase.from("otp_codes").delete().eq("id", activeOtp.id);
+
+    // Attach guest daily-line bookings made with this proven number.
+    await claimBookings(supabase, parentAccount.id, [cleanPhone]);
 
     const { data: userData } = await supabase.auth.admin.getUserById(userId);
     const userEmail = userData?.user?.email || parentEmail;
