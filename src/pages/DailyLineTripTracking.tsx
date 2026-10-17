@@ -372,7 +372,7 @@ export default function DailyLineTripTracking() {
                       <Car className="h-4 w-4 text-primary" />
                       {isRtl ? "بيانات السيارة" : "Vehicle Details"}
                     </div>
-                    <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="grid grid-cols-2 gap-2 text-center">
                       {driver.vehicle_model && (
                         <div className="p-2 bg-muted/50 rounded-lg">
                           <div className="text-[10px] text-muted-foreground">{isRtl ? "الموديل" : "Model"}</div>
