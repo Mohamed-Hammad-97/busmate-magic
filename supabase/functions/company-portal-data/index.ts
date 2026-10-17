@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
       const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
       const { data: company } = await supabase
         .from("companies")
-        .select("id, name, city, is_active, logo_url")
+        .select("id, name, city, is_active, logo_url, employee_pickup_mode")
         .eq("id", companyId)
         .eq("is_active", true)
         .single();
@@ -318,6 +318,27 @@ Deno.serve(async (req) => {
       }
 
       // === INTERNAL ACCOUNTS MANAGEMENT ===
+      case "get-pickup-mode": {
+        const { data: c } = await supabase.from("companies").select("employee_pickup_mode").eq("id", companyId).single();
+        result = { pickup_mode: c?.employee_pickup_mode || "both" };
+        break;
+      }
+
+      case "update-pickup-mode": {
+        const perms: string[] = Array.isArray(claims.permissions) ? claims.permissions : [];
+        if (claims.role !== "admin" && !perms.includes("manage_accounts")) {
+          return new Response(JSON.stringify({ error: "غير مصرح" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+        const mode = data?.pickup_mode;
+        if (!["line", "custom", "both"].includes(mode)) {
+          return new Response(JSON.stringify({ error: "Invalid pickup mode" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+        const { error: upErr } = await supabase.from("companies").update({ employee_pickup_mode: mode }).eq("id", companyId);
+        if (upErr) throw upErr;
+        result = { success: true, pickup_mode: mode };
+        break;
+      }
+
       case "get-accounts": {
         if (claims.role !== "admin") {
           return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });

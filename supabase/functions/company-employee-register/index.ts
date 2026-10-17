@@ -28,7 +28,7 @@ Deno.serve(async (req) => {
     // Verify company exists and is active
     const { data: company, error: companyError } = await supabase
       .from("companies")
-      .select("id, name, is_active")
+      .select("id, name, is_active, employee_pickup_mode")
       .eq("id", company_id)
       .single();
 
@@ -37,6 +37,17 @@ Deno.serve(async (req) => {
         JSON.stringify({ error: "الشركة غير موجودة أو غير نشطة" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    const mode = (company as any).employee_pickup_mode || "both";
+    if (mode === "line" && !company_line_id) {
+      const { count } = await supabase.from("company_lines").select("id", { count: "exact", head: true }).eq("company_id", company_id).eq("is_active", true);
+      if ((count || 0) > 0) {
+        return new Response(JSON.stringify({ error: "يجب اختيار خط" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
+    if (mode === "custom" && company_line_id) {
+      return new Response(JSON.stringify({ error: "اختيار الخط غير متاح لهذه الشركة" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // Check for duplicate phone in same company
