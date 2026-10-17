@@ -433,6 +433,54 @@ function PaymentStatusBadge({ status, isRtl }: { status: string; isRtl: boolean 
   return <Badge variant="outline" className={m.cls}><Icon className="h-3 w-3 mr-1" />{m.label}</Badge>;
 }
 
+function OutcomeBadge({ b, isRtl }: { b: any; isRtl: boolean }) {
+  const outcome = getBookingOutcome(b);
+  if (outcome === "missed") {
+    return <Badge variant="outline" className="bg-red-500/15 text-red-700 dark:text-red-400 border-red-500/30"><AlertCircle className="h-3 w-3 mr-1" />{isRtl ? "لم يتم الركوب" : "Missed"}</Badge>;
+  }
+  if (outcome === "cancelled") return <PaymentStatusBadge status="cancelled" isRtl={isRtl} />;
+  return (
+    <div className="flex flex-col items-end gap-1">
+      {outcome === "completed" && (
+        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30"><CheckCircle2 className="h-3 w-3 mr-1" />{isRtl ? "أكملت الرحلة" : "Completed"}</Badge>
+      )}
+      <PaymentStatusBadge status={b.payment_status} isRtl={isRtl} />
+    </div>
+  );
+}
+
+function BookingDetails({ b, isRtl }: { b: any; isRtl: boolean }) {
+  const trip = b.daily_line_trips;
+  const pEta = etaFor(trip?.departure_time, b.pickup?.minutes_from_start);
+  const dEta = etaFor(trip?.departure_time, b.dropoff?.minutes_from_start);
+  const t = (v?: string) => (v ? format(new Date(v), "HH:mm") : null);
+  return (
+    <div className="space-y-1 mt-1 text-sm text-muted-foreground">
+      <div className="flex items-center gap-3 flex-wrap">
+        <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{trip?.trip_date}</span>
+        <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{trip?.departure_time?.slice(0, 5)}</span>
+      </div>
+      <div className="flex items-start gap-1">
+        <MapPin className="h-3 w-3 mt-1 shrink-0" />
+        <span>{b.pickup?.name || "—"}{pEta ? ` (${pEta})` : ""} → {b.dropoff?.name || "—"}{dEta ? ` (${dEta})` : ""}</span>
+      </div>
+      {(b.boarded_at || b.dropped_at) && (
+        <div className="flex gap-3 flex-wrap text-xs">
+          {b.boarded_at && <span>{isRtl ? "ركوب" : "Boarded"}: {t(b.boarded_at)}</span>}
+          {b.dropped_at && <span>{isRtl ? "نزول" : "Dropped off"}: {t(b.dropped_at)}</span>}
+        </div>
+      )}
+      <div className="flex items-center gap-2 flex-wrap">
+        <CreditCard className="h-3 w-3" />
+        {b.payment_method === "cash" ? (isRtl ? "نقدي" : "Cash") : "Instapay"} • <span className="font-medium text-foreground">{Number(b.final_price).toFixed(2)} EGP</span>
+        {Number(b.discount_amount) > 0 && (
+          <span className="text-xs">({isRtl ? "خصم" : "discount"} {Number(b.discount_amount).toFixed(2)})</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function BookingCard({ booking: b, isRtl, compact }: { booking: any; isRtl: boolean; compact?: boolean }) {
   const trip = b.daily_line_trips;
   const pickup = b.pickup;
@@ -467,19 +515,10 @@ function BookingCard({ booking: b, isRtl, compact }: { booking: any; isRtl: bool
                   </Badge>
                 )}
               </div>
-              <div className="text-sm text-muted-foreground flex items-center gap-3 flex-wrap">
-                <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{trip?.trip_date}</span>
-                <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{trip?.departure_time?.slice(0, 5)}</span>
-              </div>
-              {!compact && (
-                <div className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-                  <MapPin className="h-3 w-3" />
-                  {pickup?.name || "—"}{etaFor(trip?.departure_time, pickup?.minutes_from_start) ? ` (${etaFor(trip?.departure_time, pickup?.minutes_from_start)})` : ""} → {dropoff?.name || "—"}{etaFor(trip?.departure_time, dropoff?.minutes_from_start) ? ` (${etaFor(trip?.departure_time, dropoff?.minutes_from_start)})` : ""}
-                </div>
-              )}
+              <BookingDetails b={b} isRtl={isRtl} />
             </div>
             <div className="text-end space-y-2">
-              <PaymentStatusBadge status={b.payment_status} isRtl={isRtl} />
+              <OutcomeBadge b={b} isRtl={isRtl} />
               <div className="text-2xl font-bold tabular-nums">{b.boarding_code}</div>
               <div className="text-[10px] text-muted-foreground">{isRtl ? "كود الركوب" : "Boarding code"}</div>
             </div>
