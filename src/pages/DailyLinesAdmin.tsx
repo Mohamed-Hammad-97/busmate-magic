@@ -1,3 +1,4 @@
+import { computeStationMinutes } from "@/lib/googleRoutes";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -148,9 +149,14 @@ function LinesTab({ isRtl }: { isRtl: boolean }) {
         .select("id").single();
       if (error) throw error;
       const swap = (t: string) => (t === "pickup" ? "dropoff" : t === "dropoff" ? "pickup" : t);
-      const rows = [...st].reverse().map((s: any, i: number) => ({
+      const rev = [...st].reverse();
+      const revWps = ((src.route_waypoints || []) as any[]).map((w) => ({ lat: w.lat, lng: w.lng, after: st.length - 2 - w.after })).reverse();
+      const allLocated = rev.every((s: any) => s.latitude != null && s.longitude != null);
+      const mins = allLocated ? await computeStationMinutes(rev.map((s: any) => ({ lat: s.latitude, lng: s.longitude })), revWps).catch(() => []) : [];
+      const rows = rev.map((s: any, i: number) => ({
         line_id: newLine.id, name: s.name, station_type: swap(s.station_type), station_order: i,
         latitude: s.latitude, longitude: s.longitude, is_active: s.is_active,
+        minutes_from_start: mins[i] ?? null,
       }));
       const { error: iErr } = await supabase.from("daily_line_stations").insert(rows);
       if (iErr) throw iErr;

@@ -26,6 +26,8 @@ interface Props {
   focusOnDriver?: boolean;
   /** When set, only these stations are drawn (and the route line is hidden). */
   onlyStationIds?: string[] | null;
+  /** Draw only the route between these two stations and hide all other stations. */
+  segment?: { fromId: string; toId: string } | null;
 }
 
 const containerStyle = (h: string) => ({ width: "100%", height: h });
@@ -38,7 +40,7 @@ export default function LineRoutePreviewMap(props: Props) {
   );
 }
 
-function Inner({ stations, height = "300px", highlightStationId, driverLocation, onStationClick, focusOnDriver, onlyStationIds }: Props) {
+function Inner({ stations, height = "300px", highlightStationId, driverLocation, onStationClick, focusOnDriver, onlyStationIds: onlyIdsProp, segment }: Props) {
   const [mapObj, setMapObj] = useState<google.maps.Map | null>(null);
   const [following, setFollowing] = useState(true);
   const zoomedRef = React.useRef(false);
@@ -88,6 +90,33 @@ function Inner({ stations, height = "300px", highlightStationId, driverLocation,
       cancelled = true;
     };
   }, [isLoaded, valid, custom]);
+
+  const onlyStationIds = segment ? [segment.fromId, segment.toId] : onlyIdsProp;
+  const segmentPath = useMemo(() => {
+    if (!segment || routePath.length < 2) return null;
+    const a = valid.find((s) => s.id === segment.fromId);
+    const b = valid.find((s) => s.id === segment.toId);
+    if (!a || !b) return null;
+    const nearest = (lat: number, lng: number, from = 0) => {
+      let best = from, bd = Infinity;
+      for (let i = from; i < routePath.length; i++) {
+        const d = (routePath[i].lat - lat) ** 2 + (routePath[i].lng - lng) ** 2;
+        if (d < bd) { bd = d; best = i; }
+      }
+      return best;
+    };
+    const i = nearest(a.latitude!, a.longitude!);
+    const j = nearest(b.latitude!, b.longitude!, i);
+    return routePath.slice(i, j + 1);
+  }, [segment, routePath, valid]);
+
+  const zoomToBus = () => {
+    if (!mapObj || !driverLocation) return;
+    mapObj.panTo(driverLocation);
+    mapObj.setZoom(15);
+    zoomedRef.current = true;
+    setFollowing(true);
+  };
 
   useEffect(() => {
     if (!mapObj || !focusOnDriver || !driverLocation || !following) return;
@@ -187,6 +216,9 @@ function Inner({ stations, height = "300px", highlightStationId, driverLocation,
             </Marker>
           );
         })}
+        {segmentPath && segmentPath.length > 1 && (
+          <Polyline path={segmentPath} options={{ strokeColor: "#3b82f6", strokeWeight: 6, strokeOpacity: 0.95 }} />
+        )}
         {routePath.length > 0 && !onlyStationIds && (
           <Polyline
             path={routePath}
@@ -211,6 +243,7 @@ function Inner({ stations, height = "300px", highlightStationId, driverLocation,
             position={driverLocation}
             icon={carIcon(headingFor('bus', driverLocation.lat, driverLocation.lng), { size: 60 })}
             zIndex={1000}
+            onClick={zoomToBus}
           />
         )}
       </GoogleMap>

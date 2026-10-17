@@ -13,6 +13,8 @@ import {
   Calendar, User, CheckCircle2, AlertCircle,
 } from "lucide-react";
 import { format } from "date-fns";
+import { etaFor } from "@/lib/stationEta";
+import { toast } from "@/hooks/use-toast";
 import LineRoutePreviewMap from "@/components/daily-lines/LineRoutePreviewMap";
 
 export default function DailyLineTripTracking() {
@@ -22,8 +24,9 @@ export default function DailyLineTripTracking() {
   const { bookingId } = useParams<{ bookingId: string }>();
   const { user, parentAccount, isLoading } = useParentAuth();
   const qc = useQueryClient();
-  const [myStationOnly, setMyStationOnly] = useState(() => localStorage.getItem("dl-my-station-only") === "1");
-  useEffect(() => { localStorage.setItem("dl-my-station-only", myStationOnly ? "1" : "0"); }, [myStationOnly]);
+  const [fullLine, setFullLine] = useState(() => localStorage.getItem("dl-full-line") === "1");
+  useEffect(() => { localStorage.setItem("dl-full-line", fullLine ? "1" : "0"); }, [fullLine]);
+  const [stopSending, setStopSending] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -44,8 +47,8 @@ export default function DailyLineTripTracking() {
             *,
             daily_lines(name, city)
           ),
-          pickup:daily_line_stations!pickup_station_id(id, name, latitude, longitude),
-          dropoff:daily_line_stations!dropoff_station_id(id, name, latitude, longitude)
+          pickup:daily_line_stations!pickup_station_id(id, name, latitude, longitude, minutes_from_start),
+          dropoff:daily_line_stations!dropoff_station_id(id, name, latitude, longitude, minutes_from_start)
         `)
         .eq("id", bookingId!)
         .maybeSingle();
@@ -239,11 +242,11 @@ export default function DailyLineTripTracking() {
               highlightStationId={booking.pickup_station_id || undefined}
               driverLocation={driverLocationForMap}
               focusOnDriver={isLive}
-              onlyStationIds={myStationOnly ? [booking.pickup_station_id, booking.dropoff_station_id].filter(Boolean) as string[] : null}
+              segment={!fullLine && booking.pickup_station_id && booking.dropoff_station_id ? { fromId: booking.pickup_station_id, toId: booking.dropoff_station_id } : null}
             />
             <label className="absolute top-3 right-3 z-10 flex items-center gap-2 bg-background/95 backdrop-blur-sm rounded-full px-3 py-1.5 shadow-lg border text-xs font-medium cursor-pointer">
-              <Switch checked={myStationOnly} onCheckedChange={setMyStationOnly} />
-              {isRtl ? "محطتي فقط" : "My station only"}
+              <Switch checked={fullLine} onCheckedChange={setFullLine} />
+              {isRtl ? "عرض الخط كاملاً" : "Show full line"}
             </label>
             {isLive && livePos && (
               <div className="absolute top-3 left-3 bg-background/95 backdrop-blur-sm rounded-full px-3 py-1.5 shadow-lg border flex items-center gap-2">
@@ -268,6 +271,27 @@ export default function DailyLineTripTracking() {
           </div>
         </Card>
 
+        {isLive && booking.boarded_at && !booking.dropped_at && (() => {
+          const recent = booking.stop_requested_at && Date.now() - new Date(booking.stop_requested_at).getTime() < 60000;
+          return (
+            <Button
+              size="lg"
+              variant="destructive"
+              className="w-full h-14 text-lg font-bold"
+              disabled={stopSending || !!recent}
+              onClick={async () => {
+                setStopSending(true);
+                const { error } = await supabase.rpc("request_daily_line_stop" as any, { _booking_id: booking.id });
+                setStopSending(false);
+                if (error) toast({ title: isRtl ? "تعذر إرسال الطلب" : "Couldn't send request", description: error.message, variant: "destructive" });
+                else { toast({ title: isRtl ? "تم إرسال طلب الوقوف للكابتن" : "Stop request sent to the captain" }); qc.invalidateQueries({ queryKey: ["dl-tracking-booking", bookingId] }); }
+              }}
+            >
+              {stopSending ? <Loader2 className="h-5 w-5 animate-spin" /> : recent ? (isRtl ? "تم إرسال الطلب ✓" : "Request sent ✓") : (isRtl ? "اطلب الوقوف للنزول" : "Request stop")}
+            </Button>
+          );
+        })()}
+
         {/* Booking summary */}
         <Card>
           <CardContent className="p-4 space-y-3">
@@ -289,6 +313,7 @@ export default function DailyLineTripTracking() {
                 <div>
                   <div className="text-xs text-muted-foreground">{isRtl ? "محطة الركوب" : "Pickup"}</div>
                   <div className="font-medium">{booking.pickup?.name || "—"}</div>
+                  {etaFor(trip.departure_time, booking.pickup?.minutes_from_start) && <div className="text-xs text-muted-foreground">{isRtl ? "موعد متوقع" : "Est."} {etaFor(trip.departure_time, booking.pickup?.minutes_from_start)}</div>}
                 </div>
               </div>
               <div className="flex items-start gap-2">
@@ -296,6 +321,7 @@ export default function DailyLineTripTracking() {
                 <div>
                   <div className="text-xs text-muted-foreground">{isRtl ? "محطة النزول" : "Drop-off"}</div>
                   <div className="font-medium">{booking.dropoff?.name || "—"}</div>
+                  {etaFor(trip.departure_time, booking.dropoff?.minutes_from_start) && <div className="text-xs text-muted-foreground">{isRtl ? "موعد متوقع" : "Est."} {etaFor(trip.departure_time, booking.dropoff?.minutes_from_start)}</div>}
                 </div>
               </div>
             </div>

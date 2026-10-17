@@ -1,3 +1,4 @@
+import { etaFor } from '@/lib/stationEta';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Bus, MapPin, Calendar, Clock, Tag, CreditCard, Wallet, CheckCircle2, Upload, MessageCircle, Loader2 } from 'lucide-react';
@@ -17,7 +18,7 @@ import seaterLogo from '@/assets/seater-logo.jpg';
 import LineRoutePreviewMap from '@/components/daily-lines/LineRoutePreviewMap';
 
 type Line = { id: string; name: string; city: string; description: string | null };
-type Station = { id: string; line_id: string; name: string; station_type: string; station_order: number; latitude: number | null; longitude: number | null };
+type Station = { id: string; line_id: string; name: string; station_type: string; station_order: number; latitude: number | null; longitude: number | null; minutes_from_start?: number | null };
 type Trip = {
   id: string; line_id: string; trip_date: string; departure_time: string;
   total_seats: number; available_seats: number; cash_price: number; instapay_price: number;
@@ -366,6 +367,19 @@ const RegisterDailyLine: React.FC = () => {
                       </SelectContent>
                     </Select>
                   </div>
+                  {(() => {
+                    const dep = trips.find(t => t.id === tripId)?.departure_time;
+                    const pu = etaFor(dep, stations.find(s => s.id === pickupId)?.minutes_from_start);
+                    const dr = etaFor(dep, stations.find(s => s.id === dropoffId)?.minutes_from_start);
+                    if (!pu && !dr) return null;
+                    return (
+                      <div className="grid grid-cols-2 gap-2 rounded-lg bg-muted/50 p-3 text-sm">
+                        <div><div className="text-xs text-muted-foreground">موعد الركوب المتوقع · Est. pickup</div><div className="font-bold">{pu ?? '—'}</div></div>
+                        <div><div className="text-xs text-muted-foreground">موعد الوصول المتوقع · Est. arrival</div><div className="font-bold">{dr ?? '—'}</div></div>
+                        <div className="col-span-2 text-[11px] text-muted-foreground">أوقات تقديرية · Estimated times</div>
+                      </div>
+                    );
+                  })()}
                   <div>
                     <Label>Promo code (optional)</Label>
                     <div className="flex gap-2">
@@ -451,6 +465,8 @@ const RegisterDailyLine: React.FC = () => {
                   <Row label="Time" value={selectedTrip.departure_time.slice(0, 5)} />
                   <Row label="Pickup" value={stations.find(s => s.id === pickupId)?.name ?? ''} />
                   <Row label="Drop-off" value={stations.find(s => s.id === dropoffId)?.name ?? ''} />
+                  {etaFor(selectedTrip.departure_time, stations.find(s => s.id === pickupId)?.minutes_from_start) && <Row label="Est. pickup time" value={etaFor(selectedTrip.departure_time, stations.find(s => s.id === pickupId)?.minutes_from_start)!} />}
+                  {etaFor(selectedTrip.departure_time, stations.find(s => s.id === dropoffId)?.minutes_from_start) && <Row label="Est. arrival time" value={etaFor(selectedTrip.departure_time, stations.find(s => s.id === dropoffId)?.minutes_from_start)!} />}
                   <Row label="Payment" value={paymentMethod === 'cash' ? 'Cash on board' : 'Instapay'} />
                   {appliedPromo && <Row label="Promo" value={appliedPromo.code} />}
                   {discount > 0 && <Row label="Original price" value={`${basePrice} EGP`} />}
