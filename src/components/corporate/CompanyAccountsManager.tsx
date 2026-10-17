@@ -107,7 +107,7 @@ export function CompanyAccountsManager({ accounts }: { accounts: CompanyAccountI
               إنشاء حساب جديد
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>إنشاء حساب جديد</DialogTitle>
             </DialogHeader>
@@ -124,6 +124,7 @@ export function CompanyAccountsManager({ accounts }: { accounts: CompanyAccountI
                 <Label>البريد الإلكتروني *</Label>
                 <Input
                   type="email"
+                  autoComplete="off"
                   value={newAccount.email}
                   onChange={(e) => setNewAccount({ ...newAccount, email: e.target.value })}
                   placeholder="email@example.com"
@@ -134,6 +135,7 @@ export function CompanyAccountsManager({ accounts }: { accounts: CompanyAccountI
                 <Label>كلمة المرور *</Label>
                 <Input
                   type="password"
+                  autoComplete="new-password"
                   value={newAccount.password}
                   onChange={(e) => setNewAccount({ ...newAccount, password: e.target.value })}
                   placeholder="6 أحرف على الأقل"
@@ -150,7 +152,7 @@ export function CompanyAccountsManager({ accounts }: { accounts: CompanyAccountI
               </div>
               <div className="space-y-2">
                 <Label>الصلاحيات</Label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {AVAILABLE_PERMISSIONS.map((perm) => (
                     <label key={perm.key} className="flex items-center gap-2 text-sm cursor-pointer p-2 rounded-lg hover:bg-muted/50">
                       <Checkbox
