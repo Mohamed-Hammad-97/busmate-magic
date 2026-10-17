@@ -593,6 +593,14 @@ function BookingsTab({ isRtl }: { isRtl: boolean }) {
                   </TableCell>
                   <TableCell className="text-end">
                     <Button size="sm" variant="ghost" onClick={() => setViewing(b)}><Eye className="h-3 w-3" /></Button>
+                    {b.payment_status !== "cancelled" && (
+                      <Button size="sm" variant="ghost" className="text-destructive text-xs" onClick={async () => {
+                        if (!confirm(isRtl ? "إلغاء هذا الحجز؟" : "Cancel this booking?")) return;
+                        const { error } = await supabase.rpc("cancel_daily_line_booking", { _booking_id: b.id });
+                        if (error) toast({ title: error.message, variant: "destructive" });
+                        else { qc.invalidateQueries({ queryKey: ["dla-bookings"] }); toast({ title: isRtl ? "تم إلغاء الحجز" : "Booking cancelled" }); }
+                      }}>{isRtl ? "إلغاء" : "Cancel"}</Button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
