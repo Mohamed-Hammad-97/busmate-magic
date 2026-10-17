@@ -36,6 +36,7 @@ import { SalaryManagement } from '@/components/corporate/SalaryManagement';
 import { CompanyInvoices } from '@/components/corporate/CompanyInvoices';
 import { CompanyDetailView } from '@/components/corporate/CompanyDetailView';
 import { ImageUploadInput } from '@/components/shared/ImageUploadInput';
+import { CompanyLoginAccountsEditor } from '@/components/corporate/CompanyLoginAccountsEditor';
 
 const Corporate = () => {
   const queryClient = useQueryClient();
@@ -112,7 +113,7 @@ const Corporate = () => {
       }
       
       // Create supervisor account if email provided
-      if (supervisor_email && supervisor_password && companyIdForAccount) {
+      if (!selectedCompany && supervisor_email && supervisor_password && companyIdForAccount) {
         const { data: accountResult, error: accountError } = await supabase.functions.invoke('create-company-account', {
           body: {
             company_id: companyIdForAccount,
@@ -431,22 +432,27 @@ const Corporate = () => {
               previewVariant="logo"
             />
             <div className="border-t pt-4 mt-2">
-              <p className="text-sm font-semibold mb-1 text-primary">
-                {selectedCompany ? 'إنشاء حساب مشرف جديد (اختياري)' : 'حساب مشرف الشركة'}
-              </p>
-              {selectedCompany && (
-                <p className="text-xs text-muted-foreground mb-3">اترك الحقول فارغة إذا لم ترد إنشاء حساب جديد</p>
+              {selectedCompany ? (
+                <CompanyLoginAccountsEditor
+                  companyId={selectedCompany.id}
+                  defaultName={companyForm.contact_person_name}
+                  defaultPhone={companyForm.contact_person_phone}
+                />
+              ) : (
+                <>
+                  <p className="text-sm font-semibold mb-1 text-primary">حساب مشرف الشركة</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>البريد الإلكتروني *</Label>
+                      <Input value={companyForm.supervisor_email} onChange={(e) => setCompanyForm({ ...companyForm, supervisor_email: e.target.value })} placeholder="supervisor@company.com" dir="ltr" type="email" autoComplete="off" name="new-supervisor-email" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>كلمة المرور *</Label>
+                      <Input value={companyForm.supervisor_password} onChange={(e) => setCompanyForm({ ...companyForm, supervisor_password: e.target.value })} placeholder="••••••••" type="password" autoComplete="new-password" name="new-supervisor-password" />
+                    </div>
+                  </div>
+                </>
               )}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>البريد الإلكتروني {!selectedCompany && '*'}</Label>
-                  <Input value={companyForm.supervisor_email} onChange={(e) => setCompanyForm({ ...companyForm, supervisor_email: e.target.value })} placeholder="supervisor@company.com" dir="ltr" type="email" />
-                </div>
-                <div className="space-y-2">
-                  <Label>كلمة المرور {!selectedCompany && '*'}</Label>
-                  <Input value={companyForm.supervisor_password} onChange={(e) => setCompanyForm({ ...companyForm, supervisor_password: e.target.value })} placeholder="••••••••" type="password" />
-                </div>
-              </div>
             </div>
             {selectedCompany && (
               <div className="flex items-center gap-2">
