@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, GripVertical, Trash2, MapPin, Save, Plus, AlertTriangle, RotateCcw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { computeLineRoute, mergeStopsWithWaypoints, type RouteWaypoint, type RouteMode } from "@/lib/googleRoutes";
+import { computeLineRoute, computeStationMinutes, mergeStopsWithWaypoints, type RouteWaypoint, type RouteMode } from "@/lib/googleRoutes";
 import { Switch } from "@/components/ui/switch";
 import { attachAutocompleteEnterFix } from "@/lib/placesEnterHelper";
 
