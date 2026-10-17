@@ -851,6 +851,7 @@ export type Database = {
           payment_status: Database["public"]["Enums"]["daily_line_payment_status"]
           pickup_station_id: string | null
           promocode_id: string | null
+          stop_requested_at: string | null
           trip_id: string
           updated_at: string
         }
@@ -874,6 +875,7 @@ export type Database = {
           payment_status?: Database["public"]["Enums"]["daily_line_payment_status"]
           pickup_station_id?: string | null
           promocode_id?: string | null
+          stop_requested_at?: string | null
           trip_id: string
           updated_at?: string
         }
@@ -897,6 +899,7 @@ export type Database = {
           payment_status?: Database["public"]["Enums"]["daily_line_payment_status"]
           pickup_station_id?: string | null
           promocode_id?: string | null
+          stop_requested_at?: string | null
           trip_id?: string
           updated_at?: string
         }
@@ -1009,6 +1012,7 @@ export type Database = {
           latitude: number | null
           line_id: string
           longitude: number | null
+          minutes_from_start: number | null
           name: string
           station_order: number
           station_type: string
@@ -1021,6 +1025,7 @@ export type Database = {
           latitude?: number | null
           line_id: string
           longitude?: number | null
+          minutes_from_start?: number | null
           name: string
           station_order?: number
           station_type?: string
@@ -1033,6 +1038,7 @@ export type Database = {
           latitude?: number | null
           line_id?: string
           longitude?: number | null
+          minutes_from_start?: number | null
           name?: string
           station_order?: number
           station_type?: string
@@ -3066,6 +3072,10 @@ export type Database = {
           _student_name: string
         }
         Returns: boolean
+      }
+      request_daily_line_stop: {
+        Args: { _booking_id: string }
+        Returns: undefined
       }
       set_payment_note: {
         Args: {
