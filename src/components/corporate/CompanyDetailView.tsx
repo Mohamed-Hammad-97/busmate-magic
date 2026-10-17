@@ -14,6 +14,9 @@ import { CorporateAttendance } from './CorporateAttendance';
 import { StaffProfilesManagement } from './StaffProfilesManagement';
 import { SalaryManagement } from './SalaryManagement';
 import { CompanyInvoices } from './CompanyInvoices';
+import { CompanyRegistrationsTab } from './CompanyRegistrationsTab';
+import { useAuth } from '@/contexts/AuthContext';
+import { Eye, Users } from 'lucide-react';
 
 interface CompanyDetailViewProps {
   company: any;
@@ -25,6 +28,7 @@ interface CompanyDetailViewProps {
 export function CompanyDetailView({ company, onBack, canEdit, isFinance }: CompanyDetailViewProps) {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('lines');
+  const { isSuperAdmin } = useAuth();
 
   const { data: linesCount = 0 } = useQuery({
     queryKey: ['company-lines-count-detail', company.id],
@@ -53,6 +57,12 @@ export function CompanyDetailView({ company, onBack, canEdit, isFinance }: Compa
               <ArrowRight className="h-4 w-4" />
               <span className="text-sm">{t('corporateMgmt.back')}</span>
             </Button>
+            <div className="flex items-center gap-2">
+            {isSuperAdmin && (
+              <Button variant="outline" size="sm" className="gap-2 rounded-xl" onClick={() => window.open(`/corporate/${company.id}/portal-view`, '_blank')}>
+                <Eye className="h-4 w-4" /> عرض بوابة الشركة
+              </Button>
+            )}
             {company.is_active ? (
               <Badge className="bg-success/10 text-success border-success/20 text-xs font-semibold px-4 py-1.5 rounded-full backdrop-blur-sm">
                 <span className="w-1.5 h-1.5 rounded-full bg-success inline-block me-2 animate-pulse" />
@@ -61,6 +71,7 @@ export function CompanyDetailView({ company, onBack, canEdit, isFinance }: Compa
             ) : (
               <Badge variant="secondary" className="text-xs px-4 py-1.5 rounded-full">{t('corporateMgmt.inactive')}</Badge>
             )}
+            </div>
           </div>
           <div className="flex flex-col sm:flex-row items-start gap-5 mb-8">
             <div className="relative">
@@ -129,6 +140,12 @@ export function CompanyDetailView({ company, onBack, canEdit, isFinance }: Compa
                 {t('corporateMgmt.invoices')}
               </TabsTrigger>
             )}
+            {isSuperAdmin && (
+              <TabsTrigger value="registrations" className="gap-2.5 rounded-xl px-5 py-2.5 text-sm font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-primary/20 transition-all duration-200">
+                <Users className="h-4 w-4" />
+                تسجيلات الموظفين
+              </TabsTrigger>
+            )}
           </TabsList>
         </div>
         <div className="mt-6">
@@ -144,6 +161,11 @@ export function CompanyDetailView({ company, onBack, canEdit, isFinance }: Compa
           <TabsContent value="salaries" className="mt-0">
             <SalaryManagement staffContext="corporate" companyId={company.id} />
           </TabsContent>
+          {isSuperAdmin && (
+            <TabsContent value="registrations" className="mt-0">
+              <CompanyRegistrationsTab companyId={company.id} companyName={company.name} />
+            </TabsContent>
+          )}
           <TabsContent value="invoices" className="mt-0">
             <CompanyInvoices companyId={company.id} />
           </TabsContent>
