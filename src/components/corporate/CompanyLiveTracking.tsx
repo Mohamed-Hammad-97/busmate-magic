@@ -1,3 +1,4 @@
+import { carIcon, useCarIconReady, useHeadings } from "@/lib/carMarker";
 import { useState, useCallback, useEffect } from "react";
 import { GoogleMap, Marker } from "@react-google-maps/api";
 import { useGoogleMaps } from "@/components/maps/GoogleMapsProvider";
@@ -26,6 +27,8 @@ export function CompanyLiveTracking({ trips }: { trips: CompanyTrip[] }) {
   const { isLoaded } = useGoogleMaps();
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [selectedTrip, setSelectedTrip] = useState<CompanyTrip | null>(null);
+  useCarIconReady();
+  const headingFor = useHeadings();
 
   const onLoad = useCallback((m: google.maps.Map) => setMap(m), []);
   const onUnmount = useCallback(() => setMap(null), []);
@@ -122,15 +125,7 @@ export function CompanyLiveTracking({ trips }: { trips: CompanyTrip[] }) {
               <Marker
                 key={trip.id}
                 position={{ lat: trip.current_latitude, lng: trip.current_longitude }}
-                icon={{
-                  url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
-                      <circle cx="24" cy="24" r="${isSelected ? 24 : 22}" fill="${isSelected ? '#3B82F6' : '#2563EB'}" stroke="white" stroke-width="3"/>
-                      <path d="M35 23.5C35 22 34 21 32 21H29L27 16H21L19 21H16C14 21 13 22 13 23.5L13 32H15V33.5C15 34.3 15.7 35 16.5 35C17.3 35 18 34.3 18 33.5V32H30V33.5C30 34.3 30.7 35 31.5 35C32.3 35 33 34.3 33 33.5V32H35V23.5ZM17 28C16 28 15 27 15 26C15 25 16 24 17 24C18 24 19 25 19 26C19 27 18 28 17 28ZM31 28C30 28 29 27 29 26C29 25 30 24 31 24C32 24 33 25 33 26C33 27 32 28 31 28ZM15 23L17 18.5H31L33 23H15Z" fill="white"/>
-                    </svg>
-                  `),
-                  scaledSize: new google.maps.Size(48, 48),
-                }}
+                icon={carIcon(headingFor(trip.id, trip.current_latitude, trip.current_longitude), { ring: isSelected ? '#2563EB' : undefined, size: isSelected ? 68 : 58 })}
                 onClick={() => setSelectedTrip(trip)}
               />
             );

@@ -1,3 +1,4 @@
+import { carIcon, useCarIconReady, useHeadings } from "@/lib/carMarker";
 import React, { useState, useCallback, useEffect } from "react";
 import { GoogleMap, Marker, InfoWindow, Polyline } from '@react-google-maps/api';
 import { useGoogleMaps } from "@/components/maps/GoogleMapsProvider";
@@ -45,6 +46,8 @@ export function LiveTripMap({
   const { isLoaded } = useGoogleMaps();
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [activeMarker, setActiveMarker] = useState<string | null>(null);
+  useCarIconReady();
+  const headingFor = useHeadings();
   const [roadPath, setRoadPath] = useState<google.maps.LatLngLiteral[] | null>(null);
   const hasCoordinate = (value: number | null | undefined) => typeof value === "number" && Number.isFinite(value);
 
@@ -310,18 +313,8 @@ export function LiveTripMap({
               lat: trip.current_latitude,
               lng: trip.current_longitude,
             }}
-            icon={{
-              url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-                <svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 52 52">
-                  <circle cx="26" cy="26" r="24" fill="#2563EB" stroke="white" stroke-width="3">
-                    <animate attributeName="r" values="22;24;22" dur="2s" repeatCount="indefinite"/>
-                  </circle>
-                  <circle cx="26" cy="26" r="18" fill="#3b82f6" stroke="none"/>
-                  <path d="M37 25.5C37 24 36 23 34 23H31L29 18H23L21 23H18C16 23 15 24 15 25.5L15 34H17V35.5C17 36.3 17.7 37 18.5 37C19.3 37 20 36.3 20 35.5V34H32V35.5C32 36.3 32.7 37 33.5 37C34.3 37 35 36.3 35 35.5V34H37V25.5ZM19 30C18 30 17 29 17 28C17 27 18 26 19 26C20 26 21 27 21 28C21 29 20 30 19 30ZM33 30C32 30 31 29 31 28C31 27 32 26 33 26C34 26 35 27 35 28C35 29 34 30 33 30ZM17 25L19 20.5H33L35 25H17Z" fill="white"/>
-                </svg>
-              `),
-              scaledSize: new google.maps.Size(52, 52),
-            }}
+            icon={carIcon(headingFor('bus', trip.current_latitude, trip.current_longitude), { size: 64 })}
+            zIndex={1000}
           />
         )}
 
