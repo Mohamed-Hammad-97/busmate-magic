@@ -4,7 +4,7 @@
 1. After you save a line's stations on the map (and it has at least 2 stations), a prompt appears:
    "هل تريد إنشاء خط العودة؟" (Create the return line?) showing the suggested name, e.g. "التجمع - المعادي (عودة)", with buttons إنشاء / لاحقاً.
 2. Clicking إنشاء creates a new line with:
-   - Same city and description, name ending with "(عودة)" (editable in the prompt before confirming).
+   - Same city and empty description, empty name for the employee to write (editable in the prompt before confirming).
    - The same stations in reverse order. "Pickup only" stations become "Dropoff only" and vice versa; "Both" stays "Both".
    - Active status same as the original.
 3. The new line appears in the lines list immediately, and its map editor opens so you can review/adjust stations.
