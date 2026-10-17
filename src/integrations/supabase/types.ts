@@ -1137,6 +1137,8 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
+          route_mode: string
+          route_waypoints: Json
           updated_at: string
         }
         Insert: {
@@ -1146,6 +1148,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
+          route_mode?: string
+          route_waypoints?: Json
           updated_at?: string
         }
         Update: {
@@ -1155,6 +1159,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
+          route_mode?: string
+          route_waypoints?: Json
           updated_at?: string
         }
         Relationships: []
