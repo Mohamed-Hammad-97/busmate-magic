@@ -156,7 +156,8 @@ Deno.serve(async (req) => {
       const nowMin = Number(p.hour) * 60 + Number(p.minute);
       const dayDiff = Math.round((Date.parse(trip.trip_date) - Date.parse(`${p.year}-${p.month}-${p.day}`)) / 86400000);
       const [h, m] = String(trip.departure_time).split(":").map(Number);
-      if (dayDiff * 1440 + h * 60 + m + Number(pu.minutes_from_start ?? 0) <= nowMin) {
+      // Unknown ETA: the screen already filters with its distance estimate, so only enforce stored ETAs here.
+      if (pu.minutes_from_start != null && dayDiff * 1440 + h * 60 + m + Number(pu.minutes_from_start) <= nowMin) {
         return bad("الأتوبيس تجاوز محطة الركوب هذه، اختر محطة تالية");
       }
     }
