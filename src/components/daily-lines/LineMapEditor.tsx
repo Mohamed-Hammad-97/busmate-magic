@@ -228,6 +228,11 @@ function Inner({ lineId, isRtl, onSaved }: Props) {
       if (toDelete.length > 0) {
         await supabase.from("daily_line_stations").delete().in("id", toDelete);
       }
+      // Estimated minutes from the first station (Google driving times)
+      const ordered = [...stations].sort((a, b) => a.station_order - b.station_order);
+      const located = ordered.filter((s) => s.latitude != null && s.longitude != null);
+      const mins = await computeStationMinutes(located.map((s) => ({ lat: s.latitude!, lng: s.longitude! })), waypoints).catch(() => [] as number[]);
+      const minsFor = (s: StationDraft) => { const i = located.indexOf(s); return i >= 0 && mins[i] != null ? mins[i] : null; };
       // Upsert
       for (const s of stations) {
         const payload = {
@@ -238,6 +243,7 @@ function Inner({ lineId, isRtl, onSaved }: Props) {
           latitude: s.latitude,
           longitude: s.longitude,
           is_active: s.is_active ?? true,
+          minutes_from_start: minsFor(s),
         };
         if (s.id) {
           await supabase.from("daily_line_stations").update(payload).eq("id", s.id);
