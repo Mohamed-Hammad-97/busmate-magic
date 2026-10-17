@@ -14,7 +14,8 @@ interface CompanyAccount {
   company_logo_url: string | null;
 }
 
-interface CompanyAuthContextType {
+export interface CompanyAuthContextType {
+  readOnly?: boolean;
   account: CompanyAccount | null;
   token: string | null;
   isLoading: boolean;
@@ -23,7 +24,7 @@ interface CompanyAuthContextType {
   signOut: () => void;
 }
 
-const CompanyAuthContext = createContext<CompanyAuthContextType | undefined>(undefined);
+export const CompanyAuthContext = createContext<CompanyAuthContextType | undefined>(undefined);
 
 const STORAGE_KEY = "company_auth_token";
 const ACCOUNT_KEY = "company_auth_account";

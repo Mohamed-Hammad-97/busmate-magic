@@ -47,6 +47,7 @@ import DriverDashboard from "./pages/DriverDashboard";
 import DriverTripPage from "./pages/DriverTripPage";
 import CompanyAuth from "./pages/CompanyAuth";
 import CompanyDashboard from "./pages/CompanyDashboard";
+import CompanyAdminView from "./pages/CompanyAdminView";
 import CompanyEmployeeRegister from "./pages/CompanyEmployeeRegister";
 import SupportChat from "./pages/SupportChat";
 import HomepageAdmin from "./pages/HomepageAdmin";
@@ -145,6 +146,7 @@ const App = () => (
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
                 <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                <Route path="/corporate/:companyId/portal-view" element={<ProtectedRoute><CompanyAdminView /></ProtectedRoute>} />
                 <Route path="/schools" element={<ProtectedRoute><Schools /></ProtectedRoute>} />
                 <Route path="/registrations" element={<ProtectedRoute><Registrations /></ProtectedRoute>} />
                 <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />

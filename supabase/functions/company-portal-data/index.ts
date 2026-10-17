@@ -115,14 +115,63 @@ Deno.serve(async (req) => {
     }
 
     const token = authHeader.replace("Bearer ", "");
-    const claims = await verifyCompanyToken(token);
-    const companyId = claims.company_id;
+    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    let companyId: string;
+    let claims: any;
+
+    if (token.startsWith("admin:")) {
+      // Silent super-admin read-only view. Format: admin:<companyId>|<staff access token>
+      const rest = token.slice(6);
+      const sep = rest.indexOf("|");
+      const adminCompanyId = rest.slice(0, sep);
+      const staffToken = rest.slice(sep + 1);
+      const uuidRe = /^[0-9a-f-]{36}$/i;
+      if (sep < 0 || !uuidRe.test(adminCompanyId)) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const { data: userData, error: userErr } = await supabase.auth.getUser(staffToken);
+      if (userErr || !userData?.user) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: userData.user.id, _role: "super_admin" });
+      if (!isAdmin) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const READ_ONLY_ACTIONS = ["get-lines", "get-invoices", "get-employees", "get-live-trips", "get-drivers", "get-staff-profiles", "get-pickup-mode", "get-accounts", "get-notifications", "get-chat-channels", "get-chat-messages"];
+      if (!READ_ONLY_ACTIONS.includes(action)) {
+        return new Response(JSON.stringify({ error: "Admin view is read-only" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      // Internal accountability log only (never shown to the company)
+      if (action === "get-lines") {
+        await supabase.from("sensitive_data_access_log").insert({
+          user_id: userData.user.id, table_name: "company_portal_admin_view", record_id: adminCompanyId, action: "view",
+          user_agent: req.headers.get("user-agent"),
+        });
+      }
+      if (action === "get-chat-messages") {
+        // Read messages without marking them read
+        const { channel_type, channel_ref_id } = data || {};
+        if (!channel_type) {
+          return new Response(JSON.stringify({ error: "Missing channel_type" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+        let q = supabase.from("company_portal_messages").select("*").eq("company_id", adminCompanyId)
+          .eq("channel_type", channel_type).order("created_at", { ascending: true }).limit(100);
+        if (channel_ref_id) q = q.eq("channel_ref_id", channel_ref_id);
+        const { data: messages, error } = await q;
+        if (error) throw error;
+        return new Response(JSON.stringify({ messages }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      companyId = adminCompanyId;
+      claims = { company_id: adminCompanyId, sub: null, role: "admin", permissions: [] };
+    } else {
+      claims = await verifyCompanyToken(token);
+      companyId = claims.company_id;
+    }
 
     if (!companyId) {
       return new Response(JSON.stringify({ error: "Invalid token: no company_id" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
     switch (action) {
       case "get-lines": {

@@ -1,0 +1,2 @@
+GRANT SELECT ON public.company_employees TO authenticated;
+CREATE POLICY "Super admins can view company employees" ON public.company_employees FOR SELECT TO authenticated USING (public.has_role(auth.uid(), 'super_admin'));
