@@ -232,28 +232,35 @@ export function OperationsMapView() {
     setMap(null);
   }, []);
 
-  // Fit bounds to show all buses (zoomed out overview)
-  useEffect(() => {
-    if (!map || selectedTrip || !isLoaded || !window.google?.maps) return;
-
+  // Fit once to show all buses + schools (zoomed-out overview)
+  const fittedRef = useRef(false);
+  const fitAll = useCallback(() => {
+    if (!map || !window.google?.maps) return false;
     const bounds = new google.maps.LatLngBounds();
     let points = 0;
-
-    tripsWithLocation.forEach((trip) => {
-      if (trip.current_latitude && trip.current_longitude) {
+    activeTrips.forEach((trip) => {
+      if (trip.current_latitude && trip.current_longitude && !isStale(trip)) {
         bounds.extend({ lat: trip.current_latitude, lng: trip.current_longitude });
         points += 1;
       }
+      const sc = trip.routes?.schools;
+      if (sc?.latitude && sc?.longitude) {
+        bounds.extend({ lat: Number(sc.latitude), lng: Number(sc.longitude) });
+        points += 1;
+      }
     });
+    if (points === 0) return false;
+    map.fitBounds(bounds, 80);
+    google.maps.event.addListenerOnce(map, "idle", () => {
+      if ((map.getZoom() ?? 0) > 13) map.setZoom(13);
+    });
+    return true;
+  }, [map, activeTrips]);
 
-    if (points === 1) {
-      map.setCenter(bounds.getCenter());
-      map.setZoom(13);
-    } else if (points > 1) {
-      map.fitBounds(bounds, 100);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map, activeTrips, selectedTrip, isLoaded]);
+  useEffect(() => {
+    if (fittedRef.current || selectedTrip || !isLoaded) return;
+    if (fitAll()) fittedRef.current = true;
+  }, [fitAll, selectedTrip, isLoaded]);
 
 
   // Zoom in on the selected bus (only when the selection changes)

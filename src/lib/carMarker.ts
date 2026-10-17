@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import carImg from "@/assets/car-3d.png";
+import carImg from "@/assets/microbus-3d.png";
 
 const SIZE = 128;
 let img: HTMLImageElement | null = null;
@@ -57,7 +57,8 @@ export function carIconUrl(heading = 0, opts: { faded?: boolean; ring?: string }
   ctx.shadowColor = "rgba(0,0,0,0.35)";
   ctx.shadowBlur = 8;
   ctx.shadowOffsetY = 3;
-  ctx.drawImage(img, -SIZE / 2, -SIZE / 2, SIZE, SIZE);
+  const bh = SIZE * 0.9, bw = bh * (img.naturalWidth / img.naturalHeight);
+  ctx.drawImage(img, -bw / 2, -bh / 2, bw, bh);
   const url = c.toDataURL("image/png");
   cache.set(key, url);
   return url;
