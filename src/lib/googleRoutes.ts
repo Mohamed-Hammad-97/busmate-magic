@@ -186,3 +186,47 @@ export async function computeDrivingRoute(stops: LatLng[]): Promise<RouteResult>
 
   return { path: stops.map(({ lat, lng }) => ({ lat, lng })), source: "straight_fallback", error: lastError };
 }
+
+function haversineKm(a: LatLng, b: LatLng) {
+  const R = 6371, toR = (d: number) => (d * Math.PI) / 180;
+  const dLat = toR(b.lat - a.lat), dLng = toR(b.lng - a.lng);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(toR(a.lat)) * Math.cos(toR(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+/**
+ * Minutes from the first station to each station (cumulative), using Google
+ * driving times along the line route. Falls back to distance at ~25 km/h.
+ */
+export async function computeStationMinutes(stations: LatLng[], waypoints: RouteWaypoint[] = []): Promise<number[]> {
+  if (stations.length === 0) return [];
+  const legSecs: number[] = [];
+  const apiKey = await getApiKey();
+  if (apiKey && stations.length >= 2) {
+    try {
+      const stops = mergeStopsWithWaypoints(stations, waypoints);
+      const ll = (p: LatLng) => ({ location: { latLng: { latitude: p.lat, longitude: p.lng } } });
+      const res = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Goog-Api-Key": apiKey, "X-Goog-FieldMask": "routes.legs.duration" },
+        body: JSON.stringify({
+          origin: ll(stops[0]), destination: ll(stops[stops.length - 1]),
+          intermediates: stops.slice(1, -1).map((p) => ({ ...ll(p), ...(p.via ? { via: true } : {}) })),
+          travelMode: "DRIVE", routingPreference: "TRAFFIC_UNAWARE",
+        }),
+      });
+      if (res.ok) {
+        const legs = (await res.json())?.routes?.[0]?.legs || [];
+        if (legs.length === stations.length - 1) legs.forEach((l: any) => legSecs.push(parseFloat(String(l.duration || "0s"))));
+      }
+    } catch (e) { console.warn("[computeStationMinutes]", e); }
+  }
+  if (legSecs.length !== stations.length - 1) {
+    legSecs.length = 0;
+    for (let i = 1; i < stations.length; i++) legSecs.push((haversineKm(stations[i - 1], stations[i]) * 1.3 / 25) * 3600);
+  }
+  const out = [0];
+  let acc = 0;
+  legSecs.forEach((s) => { acc += s; out.push(Math.round(acc / 60)); });
+  return out;
+}
