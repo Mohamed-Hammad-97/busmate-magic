@@ -140,7 +140,11 @@ function LinesTab({ isRtl }: { isRtl: boolean }) {
       if (sErr) throw sErr;
       if (!st || st.length < 2) throw new Error(isRtl ? "يجب أن يحتوي الخط على محطتين على الأقل" : "The line needs at least 2 stations");
       const { data: newLine, error } = await supabase.from("daily_lines")
-        .insert({ name: reverseName.trim(), city: src.city, description: null, is_active: src.is_active })
+        .insert({
+          name: reverseName.trim(), city: src.city, description: null, is_active: src.is_active,
+          route_mode: src.route_mode || "road",
+          route_waypoints: ((src.route_waypoints || []) as any[]).map((w) => ({ lat: w.lat, lng: w.lng, after: st.length - 2 - w.after })).reverse(),
+        } as any)
         .select("id").single();
       if (error) throw error;
       const swap = (t: string) => (t === "pickup" ? "dropoff" : t === "dropoff" ? "pickup" : t);

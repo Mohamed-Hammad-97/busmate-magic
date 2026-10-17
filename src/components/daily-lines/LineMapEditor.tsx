@@ -6,10 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, GripVertical, Trash2, MapPin, Save, Plus, AlertTriangle } from "lucide-react";
+import { Loader2, GripVertical, Trash2, MapPin, Save, Plus, AlertTriangle, RotateCcw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { computeDrivingRoute } from "@/lib/googleRoutes";
+import { computeLineRoute, mergeStopsWithWaypoints, type RouteWaypoint, type RouteMode } from "@/lib/googleRoutes";
+import { Switch } from "@/components/ui/switch";
 import { attachAutocompleteEnterFix } from "@/lib/placesEnterHelper";
 
 export interface StationDraft {
@@ -53,6 +54,8 @@ function Inner({ lineId, isRtl, onSaved }: Props) {
   const [routeLoading, setRouteLoading] = useState(false);
   const [routeError, setRouteError] = useState<string | null>(null);
   const [routeSource, setRouteSource] = useState<string>("");
+  const [waypoints, setWaypoints] = useState<RouteWaypoint[]>([]);
+  const [routeMode, setRouteMode] = useState<RouteMode>("road");
   const mapRef = useRef<google.maps.Map | null>(null);
   const acRef = useRef<google.maps.places.Autocomplete | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
@@ -76,6 +79,9 @@ function Inner({ lineId, isRtl, onSaved }: Props) {
   useEffect(() => {
     (async () => {
       setLoading(true);
+      const { data: line } = await supabase.from("daily_lines").select("route_waypoints, route_mode").eq("id", lineId).maybeSingle();
+      setWaypoints((((line as any)?.route_waypoints) || []) as RouteWaypoint[]);
+      setRouteMode((((line as any)?.route_mode) || "road") as RouteMode);
       const { data } = await supabase
         .from("daily_line_stations")
         .select("*")
@@ -112,7 +118,7 @@ function Inner({ lineId, isRtl, onSaved }: Props) {
     setRouteLoading(true);
     setRouteError(null);
     const stops = stations.map((s) => ({ lat: s.latitude, lng: s.longitude }));
-    computeDrivingRoute(stops).then((res) => {
+    computeLineRoute(stops, waypoints, routeMode).then((res) => {
       if (cancelled) return;
       setRoutePath(res.path);
       setRouteSource(res.source);
@@ -122,7 +128,32 @@ function Inner({ lineId, isRtl, onSaved }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [isLoaded, stations]);
+  }, [isLoaded, stations, waypoints, routeMode]);
+
+  // Insert a shaping point where the employee clicks on the route line
+  const insertWaypointAt = (pt: { lat: number; lng: number }) => {
+    if (stations.length < 2) return;
+    const merged = mergeStopsWithWaypoints(stations.map((s) => ({ lat: s.latitude, lng: s.longitude })), waypoints);
+    const distToSeg = (p: any, a: any, b: any) => {
+      const dx = b.lng - a.lng, dy = b.lat - a.lat;
+      const l2 = dx * dx + dy * dy || 1e-12;
+      const t = Math.max(0, Math.min(1, ((p.lng - a.lng) * dx + (p.lat - a.lat) * dy) / l2));
+      return Math.hypot(p.lng - (a.lng + t * dx), p.lat - (a.lat + t * dy));
+    };
+    let best = 0, bestD = Infinity;
+    for (let k = 0; k < merged.length - 1; k++) {
+      const d = distToSeg(pt, merged[k], merged[k + 1]);
+      if (d < bestD) { bestD = d; best = k; }
+    }
+    merged.splice(best + 1, 0, { ...pt, via: true });
+    const next: RouteWaypoint[] = [];
+    let stationIdx = -1;
+    merged.forEach((m) => {
+      if (m.via) next.push({ lat: m.lat, lng: m.lng, after: stationIdx });
+      else stationIdx++;
+    });
+    setWaypoints(next);
+  };
 
   const handleMapClick = useCallback((e: google.maps.MapMouseEvent) => {
     if (!e.latLng) return;
@@ -161,6 +192,7 @@ function Inner({ lineId, isRtl, onSaved }: Props) {
   };
 
   const removeStation = (i: number) => {
+    setWaypoints((w) => w.map((p) => (p.after > i || (p.after === i && i > 0) ? { ...p, after: p.after - 1 } : p)).filter((p) => p.after >= 0 && p.after < stations.length - 2));
     setStations((s) => s.filter((_, idx) => idx !== i).map((st, idx) => ({ ...st, station_order: idx })));
   };
 
@@ -174,6 +206,7 @@ function Inner({ lineId, isRtl, onSaved }: Props) {
     const from = dragIdx.current;
     if (from === null || from === i) return;
     setStations((s) => {
+      setWaypoints([]);
       const copy = [...s];
       const [moved] = copy.splice(from, 1);
       copy.splice(i, 0, moved);
@@ -212,6 +245,7 @@ function Inner({ lineId, isRtl, onSaved }: Props) {
           await supabase.from("daily_line_stations").insert(payload);
         }
       }
+      await supabase.from("daily_lines").update({ route_waypoints: waypoints as any, route_mode: routeMode } as any).eq("id", lineId);
       toast({ title: isRtl ? "تم حفظ الخط" : "Line saved" });
       onSaved?.(stations);
     } catch (e: any) {
@@ -278,6 +312,7 @@ function Inner({ lineId, isRtl, onSaved }: Props) {
             {routePath.length > 0 && (
               <Polyline
                 path={routePath}
+                onClick={(e) => e.latLng && insertWaypointAt({ lat: e.latLng.lat(), lng: e.latLng.lng() })}
                 options={
                   routeSource === "straight_fallback"
                     ? {
@@ -292,12 +327,48 @@ function Inner({ lineId, isRtl, onSaved }: Props) {
                           },
                         ],
                       }
-                    : { strokeColor: "#3b82f6", strokeWeight: 5, strokeOpacity: 0.9 }
+                    : { strokeColor: "#3b82f6", strokeWeight: 6, strokeOpacity: 0.9 }
                 }
               />
             )}
+            {waypoints.map((w, wi) => (
+              <Marker
+                key={`wp-${wi}-${w.after}`}
+                position={{ lat: w.lat, lng: w.lng }}
+                draggable
+                zIndex={1000}
+                title={isRtl ? "اسحب لتعديل المسار، انقر للحذف" : "Drag to reshape, click to remove"}
+                onDragEnd={(e) => {
+                  if (!e.latLng) return;
+                  const lat = e.latLng.lat(), lng = e.latLng.lng();
+                  setWaypoints((ws) => ws.map((p, idx) => (idx === wi ? { ...p, lat, lng } : p)));
+                }}
+                onClick={() => setWaypoints((ws) => ws.filter((_, idx) => idx !== wi))}
+                icon={{ path: google.maps.SymbolPath.CIRCLE, scale: 6, fillColor: "#ffffff", fillOpacity: 1, strokeColor: "#1d4ed8", strokeWeight: 3 }}
+              />
+            ))}
           </GoogleMap>
         </div>
+
+        {stations.length >= 2 && (
+          <div className="flex flex-wrap items-center justify-between gap-2 p-2 border rounded-lg bg-muted/30 text-xs">
+            <span className="text-muted-foreground">
+              {isRtl
+                ? "انقر على الخط الأزرق لإضافة نقطة تشكيل، ثم اسحبها لتمديد المسار. انقر على النقطة لحذفها."
+                : "Click the blue line to add a shaping point, then drag it to stretch the route. Click a point to remove it."}
+            </span>
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-2">
+                <Switch checked={routeMode === "free"} onCheckedChange={(v) => setRouteMode(v ? "free" : "road")} />
+                {isRtl ? "وضع الرسم الحر" : "Free draw"}
+              </label>
+              <Button size="sm" variant="outline" disabled={waypoints.length === 0 && routeMode === "road"} onClick={() => { setWaypoints([]); setRouteMode("road"); }}>
+                <RotateCcw className="h-3 w-3 mr-1" />
+                {isRtl ? "إعادة ضبط المسار" : "Reset route"}
+              </Button>
+            </div>
+          </div>
+        )}
 
         {routeError && (
           <div className="flex items-start gap-2 p-2 border border-amber-300 bg-amber-50 dark:bg-amber-950/30 rounded text-xs text-amber-800 dark:text-amber-300">
