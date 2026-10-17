@@ -1,3 +1,4 @@
+import { Switch } from "@/components/ui/switch";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -21,6 +22,8 @@ export default function DailyLineTripTracking() {
   const { bookingId } = useParams<{ bookingId: string }>();
   const { user, parentAccount, isLoading } = useParentAuth();
   const qc = useQueryClient();
+  const [myStationOnly, setMyStationOnly] = useState(() => localStorage.getItem("dl-my-station-only") === "1");
+  useEffect(() => { localStorage.setItem("dl-my-station-only", myStationOnly ? "1" : "0"); }, [myStationOnly]);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -235,7 +238,13 @@ export default function DailyLineTripTracking() {
               height="380px"
               highlightStationId={booking.pickup_station_id || undefined}
               driverLocation={driverLocationForMap}
+              focusOnDriver={isLive}
+              onlyStationIds={myStationOnly ? [booking.pickup_station_id, booking.dropoff_station_id].filter(Boolean) as string[] : null}
             />
+            <label className="absolute top-3 right-3 z-10 flex items-center gap-2 bg-background/95 backdrop-blur-sm rounded-full px-3 py-1.5 shadow-lg border text-xs font-medium cursor-pointer">
+              <Switch checked={myStationOnly} onCheckedChange={setMyStationOnly} />
+              {isRtl ? "محطتي فقط" : "My station only"}
+            </label>
             {isLive && livePos && (
               <div className="absolute top-3 left-3 bg-background/95 backdrop-blur-sm rounded-full px-3 py-1.5 shadow-lg border flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />

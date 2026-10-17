@@ -75,6 +75,9 @@ function MapInner({ trips: initialTrips }: { trips: LiveTrip[] }) {
     });
     if (any) {
       map.fitBounds(bounds, 80);
+      google.maps.event.addListenerOnce(map, "idle", () => {
+        if ((map.getZoom() ?? 0) > 13) map.setZoom(13);
+      });
       fittedRef.current = true;
     }
   }, [map, trips, selected, isLoaded]);
@@ -151,6 +154,9 @@ function MapInner({ trips: initialTrips }: { trips: LiveTrip[] }) {
           <Navigation className="h-4 w-4 text-primary" />
           <span className="font-semibold">{withLocation.length}</span>
           <span className="text-muted-foreground">live · {trips.length - withLocation.length} pending GPS</span>
+          <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => { setSelected(null); fittedRef.current = false; }}>
+            Show all
+          </Button>
         </div>
       </div>
 
