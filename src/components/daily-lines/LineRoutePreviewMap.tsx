@@ -1,3 +1,4 @@
+import { carIcon, useCarIconReady, useHeadings } from "@/lib/carMarker";
 import React, { useEffect, useMemo, useState } from "react";
 import { GoogleMap, Marker, Polyline, InfoWindow } from "@react-google-maps/api";
 import { GoogleMapsProvider, useGoogleMaps } from "@/components/maps/GoogleMapsProvider";
@@ -177,14 +178,8 @@ function Inner({ stations, height = "300px", highlightStationId, driverLocation,
         {driverLocation && (
           <Marker
             position={driverLocation}
-            icon={{
-              path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-              scale: 6,
-              fillColor: "#7c3aed",
-              fillOpacity: 1,
-              strokeColor: "white",
-              strokeWeight: 2,
-            }}
+            icon={carIcon(headingFor('bus', driverLocation.lat, driverLocation.lng), { size: 60 })}
+            zIndex={1000}
           />
         )}
       </GoogleMap>
