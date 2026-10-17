@@ -106,6 +106,13 @@
       "when": 1792234410856,
       "tag": "0014_company_employee_pickup_mode",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1792236746862,
+      "tag": "0015_super_admin_read_company_employees",
+      "breakpoints": true
     }
   ]
 }
