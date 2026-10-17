@@ -141,6 +141,13 @@
       "when": 1792255640111,
       "tag": "0019_daily_line_cancellations",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1792255669194,
+      "tag": "0020_allow_rpc_booking_cancel",
+      "breakpoints": true
     }
   ]
 }
