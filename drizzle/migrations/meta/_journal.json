@@ -113,6 +113,13 @@
       "when": 1792236746862,
       "tag": "0015_super_admin_read_company_employees",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1792238440840,
+      "tag": "0016_daily_line_trips_cascade_on_line_delete",
+      "breakpoints": true
     }
   ]
 }

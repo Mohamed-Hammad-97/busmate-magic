@@ -1,0 +1,2 @@
+ALTER TABLE public.daily_line_trips DROP CONSTRAINT daily_line_trips_line_id_fkey;
+ALTER TABLE public.daily_line_trips ADD CONSTRAINT daily_line_trips_line_id_fkey FOREIGN KEY (line_id) REFERENCES public.daily_lines(id) ON DELETE CASCADE;
