@@ -1077,6 +1077,8 @@ export type Database = {
           last_location_update: string | null
           line_id: string
           notes: string | null
+          reopened_at: string | null
+          reopened_by: string | null
           started_at: string | null
           status: Database["public"]["Enums"]["daily_line_trip_status"]
           total_seats: number
@@ -1099,6 +1101,8 @@ export type Database = {
           last_location_update?: string | null
           line_id: string
           notes?: string | null
+          reopened_at?: string | null
+          reopened_by?: string | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["daily_line_trip_status"]
           total_seats?: number
@@ -1121,6 +1125,8 @@ export type Database = {
           last_location_update?: string | null
           line_id?: string
           notes?: string | null
+          reopened_at?: string | null
+          reopened_by?: string | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["daily_line_trip_status"]
           total_seats?: number
@@ -3087,6 +3093,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      reopen_daily_line_trip: { Args: { _trip_id: string }; Returns: undefined }
       request_daily_line_stop: {
         Args: { _booking_id: string }
         Returns: undefined
