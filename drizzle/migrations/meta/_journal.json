@@ -148,6 +148,13 @@
       "when": 1792255669194,
       "tag": "0020_allow_rpc_booking_cancel",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1792386388854,
+      "tag": "0021_reopen_daily_line_trip",
+      "breakpoints": true
     }
   ]
 }

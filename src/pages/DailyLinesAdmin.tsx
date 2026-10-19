@@ -379,6 +379,12 @@ function TripsTab({ isRtl }: { isRtl: boolean }) {
     onError: (e: any) => toast({ title: e.message, variant: "destructive" }),
   });
 
+  const reopenTrip = useMutation({
+    mutationFn: async (id: string) => { const { error } = await (supabase.rpc as any)("reopen_daily_line_trip", { _trip_id: id }); if (error) throw error; },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["dla-trips"] }); toast({ title: isRtl ? "تمت إعادة فتح الرحلة للسائق" : "Trip reopened for the driver" }); },
+    onError: (e: any) => toast({ title: e.message, variant: "destructive" }),
+  });
+
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
@@ -415,6 +421,11 @@ function TripsTab({ isRtl }: { isRtl: boolean }) {
                     {t.status !== "cancelled" && t.status !== "completed" && (
                       <Button size="sm" variant="ghost" className="text-destructive text-xs" onClick={() => { if (confirm(isRtl ? "إلغاء الرحلة وكل حجوزاتها؟" : "Cancel this trip and all its bookings?")) cancelTrip.mutate(t.id); }}>
                         {isRtl ? "إلغاء الرحلة" : "Cancel trip"}
+                      </Button>
+                    )}
+                    {isSuperAdmin && t.status === "completed" && (
+                      <Button size="sm" variant="ghost" className="text-primary text-xs" disabled={reopenTrip.isPending} onClick={() => { if (confirm(isRtl ? "إعادة فتح الرحلة للسائق بكل تفاصيلها؟" : "Reopen this trip for the driver with all its details?")) reopenTrip.mutate(t.id); }}>
+                        {isRtl ? "إعادة فتح الرحلة" : "Reopen trip"}
                       </Button>
                     )}
                     {isSuperAdmin && (<Button size="sm" variant="ghost" onClick={() => { if (confirm(isRtl ? "حذف؟" : "Delete?")) remove.mutate(t.id); }}><Trash2 className="h-3 w-3 text-destructive" /></Button>)}
