@@ -1,4 +1,5 @@
 import { etaFor, stationMinutesMap, isStationUpcoming, cairoNow } from '@/lib/stationEta';
+import { needsPromoValidation } from '@/lib/bookingPromo';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Bus, MapPin, Calendar, Clock, Tag, CreditCard, Wallet, CheckCircle2, Upload, MessageCircle, Loader2 } from 'lucide-react';
@@ -148,26 +149,34 @@ const RegisterDailyLine: React.FC = () => {
 
   const applyPromo = async () => {
     const code = promo.trim();
-    if (!code) return;
+    if (!code || promoChecking) return false;
     setPromoChecking(true);
     setPromoError('');
     try {
-      const { data } = await supabase.functions.invoke('daily-line-validate-promo', { body: { code } });
+      const { data, error } = await supabase.functions.invoke('daily-line-validate-promo', { body: { code } });
+      if (error) throw error;
       const r = data as { valid: boolean; reason?: string; code?: string; promo_type?: 'percentage' | 'fixed'; value?: number };
       if (r?.valid && r.code && r.promo_type && r.value != null) {
         setAppliedPromo({ code: r.code, promo_type: r.promo_type, value: r.value });
+        return true;
       } else {
         setAppliedPromo(null);
         setPromoError(r?.reason === 'expired' ? 'هذا الكود منتهي الصلاحية' : r?.reason === 'used_up' ? 'تم استخدام هذا الكود بالكامل' : 'كود الخصم غير صحيح');
       }
     } catch {
+      setAppliedPromo(null);
       setPromoError('تعذر التحقق من الكود، حاول مرة أخرى');
     } finally {
       setPromoChecking(false);
     }
+    return false;
   };
 
-  const goNext = () => {
+  const goNext = async () => {
+    if (promoChecking || !canNext()) return;
+    if (step === 'stations' && needsPromoValidation(promo, appliedPromo?.code)) {
+      if (!(await applyPromo())) return;
+    }
     const idx = STEPS.indexOf(step);
     if (idx < STEPS.length - 1) setStep(STEPS[idx + 1]);
   };
@@ -435,7 +444,7 @@ const RegisterDailyLine: React.FC = () => {
                     <div className="flex gap-2">
                       <div className="relative flex-1">
                         <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <Input value={promo} onChange={e => { setPromo(e.target.value); setAppliedPromo(null); setPromoError(''); }} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); applyPromo(); } }} placeholder="Enter code" className="pl-9" />
+                        <Input value={promo} disabled={promoChecking} onChange={e => { setPromo(e.target.value); setAppliedPromo(null); setPromoError(''); }} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); applyPromo(); } }} placeholder="Enter code" className="pl-9" />
                       </div>
                       {appliedPromo ? (
                         <Button type="button" variant="outline" onClick={() => { setAppliedPromo(null); setPromo(''); }}>Remove</Button>
@@ -553,7 +562,8 @@ const RegisterDailyLine: React.FC = () => {
                     Confirm booking
                   </Button>
                 ) : (
-                  <Button onClick={goNext} disabled={!canNext()} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+                  <Button onClick={goNext} disabled={!canNext() || promoChecking} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+                    {promoChecking && <Loader2 className="w-4 h-4 animate-spin" />}
                     Next {isRtl ? <ArrowLeft className="w-4 h-4 ml-2" /> : <ArrowRight className="w-4 h-4 ml-2" />}
                   </Button>
                 )}
