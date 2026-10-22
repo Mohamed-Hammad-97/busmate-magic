@@ -1,5 +1,5 @@
 import { computeStationMinutes } from "@/lib/googleRoutes";
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -450,7 +450,7 @@ function TripsTab({ isRtl }: { isRtl: boolean }) {
             </TableRow></TableHeader>
             <TableBody>
               {trips.map((t: any, i: number) => (
-                <>
+                <Fragment key={t.id}>
                 {selectedDate === "all" && trips[i - 1]?.trip_date !== t.trip_date && (
                   <TableRow key={`h-${t.trip_date}`} className="bg-primary/10 hover:bg-primary/10">
                     <TableCell colSpan={8} className="font-semibold text-primary py-2">{dayLabel(t.trip_date)}</TableCell>
@@ -479,7 +479,7 @@ function TripsTab({ isRtl }: { isRtl: boolean }) {
                     {isSuperAdmin && (<Button size="sm" variant="ghost" onClick={() => { if (confirm(isRtl ? "حذف؟" : "Delete?")) remove.mutate(t.id); }}><Trash2 className="h-3 w-3 text-destructive" /></Button>)}
                   </TableCell>
                 </TableRow>
-                </>
+                </Fragment>
               ))}
               {trips.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">{isRtl ? "لا توجد رحلات" : "No trips"}</TableCell></TableRow>}
             </TableBody>
