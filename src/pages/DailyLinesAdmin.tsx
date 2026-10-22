@@ -1,5 +1,5 @@
 import { computeStationMinutes } from "@/lib/googleRoutes";
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -28,6 +28,8 @@ import {
   Pencil, Loader2, CheckCircle2, XCircle, Eye, CreditCard, ArrowLeftRight,
 } from "lucide-react";
 import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import LineMapEditor from "@/components/daily-lines/LineMapEditor";
 import LineRoutePreviewMap from "@/components/daily-lines/LineRoutePreviewMap";
 
@@ -346,9 +348,27 @@ function TripsTab({ isRtl }: { isRtl: boolean }) {
         .contains("categories", ["daily_lines"])
       ).data || [],
   });
+  const cairoToday = () => new Date(Date.now() + 3 * 3600_000).toISOString().slice(0, 10);
+  const [selectedDate, setSelectedDate] = useState<string>(cairoToday());
+  const weekDays = useMemo(() => {
+    const base = new Date(cairoToday() + "T12:00:00Z");
+    return Array.from({ length: 7 }, (_, i) => new Date(base.getTime() + i * 86400_000).toISOString().slice(0, 10));
+  }, []);
+  const shortDay = (d: string) => {
+    if (d === weekDays[0]) return isRtl ? "اليوم" : "Today";
+    if (d === weekDays[1]) return isRtl ? "غداً" : "Tomorrow";
+    return new Date(d + "T12:00:00Z").toLocaleDateString(isRtl ? "ar-EG" : "en-US", { weekday: "short" });
+  };
+  const dayLabel = (d: string) => new Date(d + "T12:00:00Z").toLocaleDateString(isRtl ? "ar-EG" : "en-US", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
   const { data: trips = [], isLoading } = useQuery({
-    queryKey: ["dla-trips"],
-    queryFn: async () => (await supabase.from("daily_line_trips").select("*, daily_lines(name, city), drivers:driver_id(full_name)").order("trip_date", { ascending: false }).limit(200)).data || [],
+    queryKey: ["dla-trips", selectedDate],
+    queryFn: async () => {
+      let q = supabase.from("daily_line_trips").select("*, daily_lines(name, city), drivers:driver_id(full_name)");
+      q = selectedDate === "all"
+        ? q.order("trip_date", { ascending: false }).order("departure_time").limit(200)
+        : q.eq("trip_date", selectedDate).order("departure_time");
+      return (await q).data || [];
+    },
   });
 
   const save = useMutation({
@@ -387,11 +407,33 @@ function TripsTab({ isRtl }: { isRtl: boolean }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex gap-2 overflow-x-auto pb-1 flex-1 min-w-0">
+          <Button size="sm" variant={selectedDate === "all" ? "default" : "outline"} onClick={() => setSelectedDate("all")}>{isRtl ? "الكل" : "All"}</Button>
+          {weekDays.map((d) => (
+            <Button key={d} size="sm" variant={selectedDate === d ? "default" : "outline"} className="shrink-0 flex-col h-auto py-1 leading-tight" onClick={() => setSelectedDate(d)}>
+              <span>{shortDay(d)}</span><span className="text-[10px] opacity-80">{d.slice(5)}</span>
+            </Button>
+          ))}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button size="sm" variant={selectedDate !== "all" && !weekDays.includes(selectedDate) ? "default" : "outline"} className="shrink-0">
+                <CalendarDays className="h-4 w-4 mr-1" />
+                {selectedDate !== "all" && !weekDays.includes(selectedDate) ? selectedDate : (isRtl ? "اختر تاريخ" : "Choose date")}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar mode="single" selected={selectedDate === "all" ? undefined : new Date(selectedDate + "T12:00:00")} onSelect={(d) => d && setSelectedDate(format(d, "yyyy-MM-dd"))} initialFocus className="p-3 pointer-events-auto" />
+            </PopoverContent>
+          </Popover>
+        </div>
         <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setEditing(null); }}>
           <DialogTrigger asChild><Button onClick={() => setEditing(null)}><Plus className="h-4 w-4 mr-1" />{isRtl ? "رحلة جديدة" : "New Trip"}</Button></DialogTrigger>
           <TripDialog editing={editing} lines={lines} drivers={drivers} onSubmit={(f) => save.mutate(f)} saving={save.isPending} isRtl={isRtl} />
         </Dialog>
+      </div>
+      <div className="text-sm text-muted-foreground">
+        {selectedDate === "all" ? "" : dayLabel(selectedDate) + " · "}{trips.length} {isRtl ? "رحلة" : "trips"}
       </div>
       <Card><CardContent className="p-0">
         {isLoading ? <div className="p-6"><Loader2 className="h-5 w-5 animate-spin mx-auto" /></div> : (
@@ -407,7 +449,13 @@ function TripsTab({ isRtl }: { isRtl: boolean }) {
               <TableHead className="text-end"></TableHead>
             </TableRow></TableHeader>
             <TableBody>
-              {trips.map((t: any) => (
+              {trips.map((t: any, i: number) => (
+                <Fragment key={t.id}>
+                {selectedDate === "all" && trips[i - 1]?.trip_date !== t.trip_date && (
+                  <TableRow key={`h-${t.trip_date}`} className="bg-primary/10 hover:bg-primary/10">
+                    <TableCell colSpan={8} className="font-semibold text-primary py-2">{dayLabel(t.trip_date)}</TableCell>
+                  </TableRow>
+                )}
                 <TableRow key={t.id}>
                   <TableCell><div className="font-medium">{t.daily_lines?.name}</div><div className="text-xs text-muted-foreground">{t.daily_lines?.city}</div></TableCell>
                   <TableCell>{t.trip_date}</TableCell>
@@ -431,6 +479,7 @@ function TripsTab({ isRtl }: { isRtl: boolean }) {
                     {isSuperAdmin && (<Button size="sm" variant="ghost" onClick={() => { if (confirm(isRtl ? "حذف؟" : "Delete?")) remove.mutate(t.id); }}><Trash2 className="h-3 w-3 text-destructive" /></Button>)}
                   </TableCell>
                 </TableRow>
+                </Fragment>
               ))}
               {trips.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">{isRtl ? "لا توجد رحلات" : "No trips"}</TableCell></TableRow>}
             </TableBody>
